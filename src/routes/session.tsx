@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
+  Bell,
+  BellOff,
   Check,
   CheckCircle2,
   Lightbulb,
@@ -13,6 +15,7 @@ import {
   PartyPopper,
   Plus,
   Repeat,
+  TrendingUp,
   Trophy,
   Youtube,
   X,
@@ -25,6 +28,7 @@ import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
 import { plateStep } from "../lib/gym/plates";
+import { suggestWeight } from "../lib/gym/progression";
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
@@ -82,6 +86,7 @@ function SessionScreen() {
     restSeconds,
     restOverride,
     soundEnabled,
+    notifyEnabled,
     swapActiveExercise,
     appendBonusExercise,
     profiles,
@@ -137,6 +142,21 @@ function SessionScreen() {
       haptic([60, 60, 120]);
       if (soundEnabled) playRestEndBeep();
       flashActiveCard();
+      if (
+        notifyEnabled &&
+        document.visibilityState !== "visible" &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted"
+      ) {
+        try {
+          new Notification("Rest complete", {
+            body: "Time to lift — back to Forge.",
+            tag: "forge-rest",
+          });
+        } catch {
+          /* some browsers restrict Notification outside a service worker */
+        }
+      }
     },
     onDismiss: () => {
       const cb = afterRest.current;
@@ -283,6 +303,25 @@ function SessionScreen() {
     haptic(15);
     setListOpen(false);
     setCancelConfirmOpen(true);
+  };
+
+  const toggleNotify = async () => {
+    if (typeof Notification === "undefined") {
+      setToast("Notifications aren't supported in this browser.");
+      return;
+    }
+    if (notifyEnabled) {
+      update({ notifyEnabled: false });
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setToast("Notifications are blocked — enable them in your browser settings.");
+      return;
+    }
+    const permission =
+      Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission === "granted") update({ notifyEnabled: true });
+    else setToast("Notifications weren't allowed.");
   };
 
   const confirmCancelWorkout = () => {
@@ -525,6 +564,29 @@ function SessionScreen() {
               {soundEnabled ? "On" : "Off"}
             </span>
           </button>
+          <button
+            onClick={toggleNotify}
+            className="flex w-full items-center justify-between gap-2"
+            aria-pressed={notifyEnabled}
+          >
+            <span className="flex items-center gap-1.5 text-[15px] font-semibold">
+              {notifyEnabled ? (
+                <Bell className="size-4 text-primary" />
+              ) : (
+                <BellOff className="size-4 text-muted-foreground" />
+              )}
+              Rest-end notification
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
+                notifyEnabled
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {notifyEnabled ? "On" : "Off"}
+            </span>
+          </button>
           <p className="text-[13px] text-muted-foreground">
             iPhone gives no buzz between sets — the beep is your cue. All weights in kg.
           </p>
@@ -764,10 +826,17 @@ function ExerciseBlock({
   const lastLogged = logged[logged.length - 1];
   const [weight, setWeight] = useState<string>("");
   const [reps, setReps] = useState<string>("");
+  const [rpe, setRpe] = useState<number | null>(null);
   const [setType, setSetType] = useState<SetType>(planned.warmup_sets > 0 ? "warmup" : "working");
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editW, setEditW] = useState(0);
   const [editR, setEditR] = useState(0);
+
+  /** Progressive-overload suggestion for this exercise, freshly derived from history. */
+  const suggestion = useMemo(
+    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps),
+    [workouts, planned.exercise_id, planned.target_reps],
+  );
 
   useEffect(() => {
     if (warmupsLogged >= planned.warmup_sets) setSetType((t) => (t === "warmup" ? "working" : t));
@@ -779,14 +848,14 @@ function ExerciseBlock({
   }, [logged.length]);
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
-  const prefillWeight = lastLogged?.weight ?? previous?.weight ?? 0;
+  const prefillWeight = lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
   const prefillReps = bestReps || targetTopReps;
 
   if (!exercise) return null;
 
   const step = plateStep(exercise, profile);
 
-  const submitSet = (w: number, r: number) => {
+  const submitSet = (w: number, r: number, rpeValue?: number) => {
     unlockAudio();
     haptic([25, 30]);
     logSet({
@@ -797,18 +866,21 @@ function ExerciseBlock({
       reps: r,
       completed_at: new Date().toISOString(),
       ...(round === undefined ? {} : { round }),
+      ...(setType === "working" && rpeValue != null ? { rpe: rpeValue } : {}),
     });
     setWeight("");
     setReps("");
+    setRpe(null);
     onLogged(setType);
   };
   const logCurrent = () =>
     submitSet(
       Number(weight === "" ? prefillWeight : weight),
       Number(reps === "" ? prefillReps : reps),
+      rpe ?? undefined,
     );
   const repeatLast = () =>
-    lastLogged ? submitSet(lastLogged.weight, lastLogged.reps) : logCurrent();
+    lastLogged ? submitSet(lastLogged.weight, lastLogged.reps, rpe ?? undefined) : logCurrent();
 
   const bumpWeight = (dir: 1 | -1) => {
     haptic(10);
@@ -959,7 +1031,10 @@ function ExerciseBlock({
                 {previousSets[i] ? `${previousSets[i]!.weight} × ${previousSets[i]!.reps}` : "—"}
               </span>
               <span className="tabular text-center text-[16px] font-semibold">{s.weight}</span>
-              <span className="tabular text-center text-[16px] font-semibold">{s.reps}</span>
+              <span className="tabular text-center text-[16px] font-semibold">
+                {s.reps}
+                {s.rpe ? <span className="ml-1 text-[11px] text-primary">@{s.rpe}</span> : null}
+              </span>
             </button>
           );
         })}
@@ -990,6 +1065,13 @@ function ExerciseBlock({
                 : "First time on this one"}
             </span>
           </div>
+
+          {!lastLogged && suggestion?.bumped ? (
+            <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary">
+              <TrendingUp className="size-4 shrink-0" /> Suggested {suggestion.weight}kg —{" "}
+              {suggestion.reason}
+            </p>
+          ) : null}
 
           <div className="flex items-center gap-1.5">
             <button
@@ -1052,6 +1134,34 @@ function ExerciseBlock({
               <Plus className="size-4" />
             </button>
           </div>
+
+          {setType === "working" ? (
+            <div className="flex items-center gap-2">
+              <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                RPE
+              </span>
+              <div className="flex flex-1 gap-1">
+                {[6, 7, 8, 9, 10].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => {
+                      haptic(8);
+                      setRpe((cur) => (cur === n ? null : n));
+                    }}
+                    aria-pressed={rpe === n}
+                    aria-label={`Rate of perceived exertion ${n}`}
+                    className={`h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
+                      rpe === n
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <PlateHint
             exerciseId={exercise.id}

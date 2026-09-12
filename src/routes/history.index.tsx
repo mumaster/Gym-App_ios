@@ -1,9 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ChevronRight, Trophy } from "lucide-react";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { ChevronRight, Flame, Trophy } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { exerciseById } from "../lib/gym/data";
+import { e1rmTrend, personalRecords } from "../lib/gym/progress";
+import { bestStreak, currentStreak, recentCalendar } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
 import type { Muscle } from "../lib/gym/types";
 
@@ -43,19 +56,23 @@ function HistoryScreen() {
       .sort((a, b) => b.volume - a.volume);
   }, [workouts]);
 
-  const prs = useMemo(() => {
-    const best = new Map<string, number>();
-    for (const w of workouts) {
-      for (const s of w.completed_sets) {
-        if (s.set_type === "warmup") continue;
-        best.set(s.exercise_id, Math.max(best.get(s.exercise_id) ?? 0, s.weight));
-      }
-    }
-    return [...best.entries()]
-      .map(([id, weight]) => ({ name: exerciseById(id)?.name ?? id, weight }))
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, 6);
-  }, [workouts]);
+  const prs = useMemo(() => personalRecords(workouts).slice(0, 6), [workouts]);
+
+  const streak = useMemo(() => currentStreak(workouts), [workouts]);
+  const longestStreak = useMemo(() => bestStreak(workouts), [workouts]);
+  const calendarColumns = useMemo(() => recentCalendar(workouts, 12), [workouts]);
+
+  /** Session-by-session estimated-1RM trend for your top lift, when there's enough data. */
+  const topLiftTrend = useMemo(() => {
+    const top = prs[0];
+    if (!top) return null;
+    const points = e1rmTrend(top.exercise_id, workouts);
+    if (points.length < 2) return null;
+    return {
+      name: top.name,
+      points: points.map((p, i) => ({ session: i + 1, e1rm: p.e1rm })),
+    };
+  }, [prs, workouts]);
 
   if (!hydrated) return <Screen title="History">{null}</Screen>;
 
@@ -68,6 +85,35 @@ function HistoryScreen() {
             Finish your first workout and it will show up here with PRs and volume charts.
           </p>
         </Card>
+      ) : null}
+
+      {workouts.length > 0 ? (
+        <>
+          <SectionLabel>Streak</SectionLabel>
+          <Card className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <Flame
+                  className={`size-6 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`}
+                />
+                <div>
+                  <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
+                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Day streak
+                  </p>
+                </div>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div>
+                <p className="tabular text-[20px] font-bold leading-none">{longestStreak}</p>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Best</p>
+              </div>
+            </div>
+            <div className="mt-3">
+              <StreakCalendar columns={calendarColumns} />
+            </div>
+          </Card>
+        </>
       ) : null}
 
       {volumeByMuscle.length ? (
@@ -104,16 +150,63 @@ function HistoryScreen() {
         </>
       ) : null}
 
+      {topLiftTrend ? (
+        <>
+          <SectionLabel>Progress · {topLiftTrend.name}</SectionLabel>
+          <Card className="p-4">
+            <p className="mb-2 text-[12px] text-muted-foreground">
+              Estimated 1-rep max per session (Epley formula)
+            </p>
+            <div className="h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={topLiftTrend.points}>
+                  <XAxis dataKey="session" hide />
+                  <YAxis
+                    domain={["dataMin - 5", "dataMax + 5"]}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    width={32}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value} kg`, "Est. 1RM"]}
+                    labelFormatter={(label) => `Session ${label}`}
+                    contentStyle={{
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      color: "var(--foreground)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="e1rm"
+                    stroke="var(--primary)"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "var(--primary)" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </>
+      ) : null}
+
       {prs.length ? (
         <>
-          <SectionLabel>Personal records</SectionLabel>
+          <SectionLabel>Personal records · est. 1RM</SectionLabel>
           <div className="space-y-2">
             {prs.map((p) => (
-              <Card key={p.name} className="flex items-center justify-between p-4">
-                <span className="text-[16px] font-semibold">{p.name}</span>
+              <Card key={p.exercise_id} className="flex items-center justify-between p-4">
+                <div>
+                  <span className="text-[16px] font-semibold">{p.name}</span>
+                  <p className="text-[12px] text-muted-foreground">
+                    {p.weight}kg × {p.reps}
+                  </p>
+                </div>
                 <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary">
                   <Trophy className="size-4" />
-                  {p.weight} kg
+                  {p.e1rm} kg
                 </span>
               </Card>
             ))}
@@ -154,7 +247,6 @@ function HistoryScreen() {
           );
         })}
       </div>
-
     </Screen>
   );
 }

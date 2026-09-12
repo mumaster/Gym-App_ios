@@ -70,6 +70,8 @@ export interface LoggedSet {
   completed_at: string;
   /** Superset round this set belonged to (1-based). */
   round?: number;
+  /** Perceived effort, 6-10 (RPE scale), logged optionally per working set. */
+  rpe?: number;
 }
 
 export interface PlannedExercise {
@@ -85,6 +87,8 @@ export interface PlannedExercise {
   /** Exercises sharing a group id are performed back-to-back as a superset. */
   superset_group?: number;
   superset_slot?: "A" | "B";
+  /** Progressive-overload suggestion from history, in kg — see lib/gym/progression.ts. */
+  suggested_weight?: number;
 }
 
 export interface Workout {

@@ -143,7 +143,7 @@ function SessionDetailScreen() {
                   </span>
                   <span className="tabular text-[15px] font-semibold">{s.weight} kg</span>
                   <span className="tabular text-right text-[15px] font-semibold">
-                    {s.reps} reps
+                    {s.reps} reps{s.rpe ? <span className="text-primary"> @{s.rpe}</span> : null}
                   </span>
                 </div>
               ))}

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  CalendarClock,
   ChevronRight,
   Heart,
   Play,
@@ -12,6 +13,7 @@ import {
   Repeat,
   Sparkles,
   Timer,
+  TrendingUp,
   X,
   Zap,
 } from "lucide-react";
@@ -29,6 +31,8 @@ import {
   targetsFromRegions,
   type RegionId,
 } from "../lib/gym/anatomy";
+import { recommendedMuscles } from "../lib/gym/recommendations";
+import { suggestWeight } from "../lib/gym/progression";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 
@@ -139,6 +143,7 @@ function WorkoutHome() {
         variation: nextVariation,
         supersets: supersetsEnabled,
         loved: lovedExerciseIds,
+        history: workouts,
       }),
     );
   };
@@ -161,6 +166,15 @@ function WorkoutHome() {
   };
 
   const proposalPair = proposal ? PAIRINGS[proposal] : undefined;
+
+  // Muscles that have gone longest without a logged working set — nudges toward
+  // a sane weekly split instead of always training the same favourites.
+  const recommended = recommendedMuscles(MUSCLES, workouts);
+  const applyRecommendation = () => {
+    haptic([20, 30]);
+    setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
+    setProposal(null);
+  };
 
   const start = () => {
     if (!plan) return;
@@ -355,6 +369,37 @@ function WorkoutHome() {
         </p>
       </Card>
 
+      {hydrated && workouts.length > 0 && regions.length === 0 ? (
+        <Card className="mb-4 p-4">
+          <div className="flex items-start gap-3">
+            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+                Recommended today
+              </p>
+              <p className="mt-1 text-[15px] leading-snug">
+                {recommended
+                  .map((r) =>
+                    r.daysSince === null
+                      ? `${r.muscle} (never trained)`
+                      : `${r.muscle} (${r.daysSince}d ago)`,
+                  )
+                  .join(" · ")}
+              </p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                These groups have gone longest without a working set.
+              </p>
+            </div>
+            <button
+              onClick={applyRecommendation}
+              className="min-h-[36px] shrink-0 rounded-full bg-primary px-3.5 text-[13px] font-bold text-primary-foreground active:scale-95"
+            >
+              Use
+            </button>
+          </div>
+        </Card>
+      ) : null}
+
       <SectionLabel>Muscle map</SectionLabel>
 
       {proposalPair ? (
@@ -546,6 +591,11 @@ function WorkoutHome() {
                         · {p.rest_seconds ? `${p.rest_seconds}s rest · ` : ""}
                         {ex.muscle_targets[0] ?? ex.primary_muscle}
                       </p>
+                      {p.suggested_weight ? (
+                        <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary">
+                          <TrendingUp className="size-3.5" /> Suggested {p.suggested_weight}kg
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex gap-1">
                       <button
@@ -599,7 +649,18 @@ function WorkoutHome() {
         onClose={() => setSwapIndex(null)}
         onPick={(ex) => {
           setPlan((cur) =>
-            cur ? cur.map((p, i) => (i === swapIndex ? { ...p, exercise_id: ex.id } : p)) : cur,
+            cur
+              ? cur.map((p, i) => {
+                  if (i !== swapIndex) return p;
+                  const { suggested_weight: _dropped, ...rest } = p;
+                  const suggestion = suggestWeight(ex.id, workouts, p.target_reps);
+                  return {
+                    ...rest,
+                    exercise_id: ex.id,
+                    ...(suggestion ? { suggested_weight: suggestion.weight } : {}),
+                  };
+                })
+              : cur,
           );
           setSwapIndex(null);
           haptic(20);

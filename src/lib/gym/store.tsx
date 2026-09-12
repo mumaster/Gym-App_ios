@@ -28,6 +28,8 @@ interface GymState {
   soundEnabled: boolean;
   /** When set, overrides every exercise's suggested rest for the active session. */
   restOverride: number | null;
+  /** Fire a system Notification when rest ends and the tab isn't focused. */
+  notifyEnabled: boolean;
 }
 
 const initialState: GymState = {
@@ -44,6 +46,7 @@ const initialState: GymState = {
   lovedExerciseIds: [],
   soundEnabled: true,
   restOverride: null,
+  notifyEnabled: false,
 };
 
 const KEY = "forge.gym.state.v2";
@@ -87,6 +90,7 @@ function migrate(raw: Partial<GymState>): GymState {
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
     soundEnabled: raw.soundEnabled ?? true,
     restOverride: raw.restOverride ?? null,
+    notifyEnabled: raw.notifyEnabled ?? false,
     profiles,
     activeProfileId:
       profiles.find((p) => p.id === raw.activeProfileId)?.id ?? profiles[0]?.id ?? "full-gym",
@@ -230,9 +234,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
       swapActiveExercise: (index, nextExerciseId) =>
         setState((s) => {
           if (!s.activeWorkout) return s;
-          const plan = s.activeWorkout.plan.map((p, i) =>
-            i === index ? { ...p, exercise_id: nextExerciseId } : p,
-          );
+          const plan = s.activeWorkout.plan.map((p, i) => {
+            if (i !== index) return p;
+            const { suggested_weight: _dropped, ...rest } = p;
+            return { ...rest, exercise_id: nextExerciseId };
+          });
           return withPlan(s, plan);
         }),
       appendBonusExercise: (exerciseId) =>

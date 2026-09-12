@@ -1,6 +1,7 @@
 import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
-import type { EquipmentId, Exercise, PlannedExercise, TargetMuscle } from "./types";
+import { suggestWeight } from "./progression";
+import type { EquipmentId, Exercise, PlannedExercise, TargetMuscle, Workout } from "./types";
 
 export const availableExercises = (equipment: EquipmentId[]): Exercise[] =>
   EXERCISES.filter((e) => e.equipment_required.every((r) => equipment.includes(r)));
@@ -141,6 +142,8 @@ interface GenerateArgs {
   supersets?: boolean;
   /** Exercise ids the user "loved" — forced into the plan regardless of targets. */
   loved?: string[];
+  /** Finished workout history — used to attach progressive-overload weight suggestions. */
+  history?: Workout[];
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -267,6 +270,7 @@ export function generateWorkout({
   variation = 0,
   supersets = false,
   loved = [],
+  history = [],
 }: GenerateArgs): PlannedExercise[] {
   const pool = availableExercises(equipment);
   const shape = shapeFor(duration);
@@ -276,13 +280,18 @@ export function generateWorkout({
   const used = new Set<string>();
   const compoundQuota = Math.max(1, Math.round(shape.maxExercises * shape.compoundShare));
 
-  const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => ({
-    exercise_id: choice.id,
-    target_sets: compound ? shape.compoundSets : shape.accessorySets,
-    warmup_sets: compound ? shape.compoundWarmups : 0,
-    target_reps: compound ? shape.compoundReps : shape.accessoryReps,
-    rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
-  });
+  const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
+    const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
+    const suggestion = history.length ? suggestWeight(choice.id, history, target_reps) : null;
+    return {
+      exercise_id: choice.id,
+      target_sets: compound ? shape.compoundSets : shape.accessorySets,
+      warmup_sets: compound ? shape.compoundWarmups : 0,
+      target_reps,
+      rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
+      ...(suggestion ? { suggested_weight: suggestion.weight } : {}),
+    };
+  };
 
   // Loved exercises are pinned into the plan first (equipment permitting) and are
   // never dropped by the budget trims below.
