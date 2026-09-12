@@ -1,11 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Dumbbell, CalendarDays, LayoutGrid, Search } from "lucide-react";
+import { Apple, Dumbbell, CalendarDays, LayoutGrid, Search } from "lucide-react";
 
 const TABS = [
   { to: "/", label: "Workout", icon: Dumbbell },
   { to: "/equipment", label: "Equipment", icon: LayoutGrid },
   { to: "/history", label: "History", icon: CalendarDays },
   { to: "/exercises", label: "Exercises", icon: Search },
+  { to: "/nutrition", label: "Nutrition", icon: Apple },
 ] as const;
 
 export function TabBar() {

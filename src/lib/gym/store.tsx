@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
+import type { FoodEntry } from "./nutrition";
 import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
@@ -33,6 +34,8 @@ interface GymState {
   notifyEnabled: boolean;
   /** The user's chosen weekly split, if they've set one up. */
   weeklyScheme: WeeklyScheme | null;
+  /** Logged food, newest first. */
+  foodEntries: FoodEntry[];
 }
 
 const initialState: GymState = {
@@ -51,6 +54,7 @@ const initialState: GymState = {
   restOverride: null,
   notifyEnabled: false,
   weeklyScheme: null,
+  foodEntries: [],
 };
 
 const KEY = "forge.gym.state.v2";
@@ -96,6 +100,7 @@ function migrate(raw: Partial<GymState>): GymState {
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
+    foodEntries: raw.foodEntries ?? [],
     profiles,
     activeProfileId:
       profiles.find((p) => p.id === raw.activeProfileId)?.id ?? profiles[0]?.id ?? "full-gym",
@@ -125,6 +130,8 @@ interface Ctx extends GymState {
   setWeeklyScheme: (scheme: WeeklyScheme) => void;
   updateScheduleSlotDow: (index: number, dow: number) => void;
   clearWeeklyScheme: () => void;
+  addFoodEntry: (entry: FoodEntry) => void;
+  removeFoodEntry: (id: string) => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -295,6 +302,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, weeklyScheme: { ...s.weeklyScheme, schedule } };
         }),
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
+
+      addFoodEntry: (entry) => setState((s) => ({ ...s, foodEntries: [entry, ...s.foodEntries] })),
+      removeFoodEntry: (id) =>
+        setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
     };
   }, [state, hydrated]);
 
