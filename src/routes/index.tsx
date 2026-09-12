@@ -11,6 +11,7 @@ import {
   Plus,
   RefreshCw,
   Repeat,
+  Settings2,
   Sparkles,
   Timer,
   TrendingUp,
@@ -20,6 +21,7 @@ import {
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
+import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
 import {
@@ -33,6 +35,7 @@ import {
 } from "../lib/gym/anatomy";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
+import { DOW_LABELS, musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 
@@ -70,6 +73,7 @@ function WorkoutHome() {
     supersetsEnabled,
     lovedExerciseIds,
     toggleLovedExercise,
+    weeklyScheme,
   } = useGym();
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
@@ -79,6 +83,7 @@ function WorkoutHome() {
   const [plan, setPlan] = useState<PlannedExercise[] | null>(null);
   const [variation, setVariation] = useState(0);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  const [planSheetOpen, setPlanSheetOpen] = useState(false);
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const muscles = musclesFromRegions(regions);
@@ -173,6 +178,20 @@ function WorkoutHome() {
   const applyRecommendation = () => {
     haptic([20, 30]);
     setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
+    setProposal(null);
+  };
+
+  const scheduledSlot = weeklyScheme?.schedule[weeklyScheme.cyclePosition];
+  const scheduledDayLabel =
+    weeklyScheme && scheduledSlot
+      ? splitDayLabel(weeklyScheme.templateId, scheduledSlot.dayId)
+      : "";
+
+  const startScheduledDay = () => {
+    if (!weeklyScheme || !scheduledSlot) return;
+    haptic([20, 30]);
+    const targetMuscles = musclesForSlot(weeklyScheme, scheduledSlot, workouts);
+    setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
   };
 
@@ -369,7 +388,81 @@ function WorkoutHome() {
         </p>
       </Card>
 
-      {hydrated && workouts.length > 0 && regions.length === 0 ? (
+      <SectionLabel>This week</SectionLabel>
+      <Card className="mb-4 p-4">
+        {weeklyScheme ? (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+                  {splitTemplateById(weeklyScheme.templateId).label}
+                </p>
+                <p className="mt-1 truncate text-[18px] font-bold">Next: {scheduledDayLabel}</p>
+                {scheduledSlot ? (
+                  <p className="text-[13px] text-muted-foreground">
+                    Suggested {DOW_LABELS[scheduledSlot.dow]}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                onClick={() => setPlanSheetOpen(true)}
+                aria-label="Edit weekly plan"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+              >
+                <Settings2 className="size-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 flex justify-between gap-1">
+              {weeklyScheme.schedule.map((slot, i) => {
+                const isNext = i === weeklyScheme.cyclePosition;
+                const label = splitDayLabel(weeklyScheme.templateId, slot.dayId);
+                return (
+                  <div
+                    key={i}
+                    className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
+                      isNext ? "bg-primary/20" : "bg-muted"
+                    }`}
+                  >
+                    <p
+                      className={`text-[10px] font-bold uppercase tracking-wide ${
+                        isNext ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {DOW_LABELS[slot.dow]}
+                    </p>
+                    <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={startScheduledDay}
+              className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+            >
+              <Zap className="size-4" /> Start {scheduledDayLabel} day
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[16px] font-semibold">Plan your training week</p>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
+                Pick a split and Forge proposes which days to train it.
+              </p>
+            </div>
+            <button
+              onClick={() => setPlanSheetOpen(true)}
+              className="min-h-[40px] shrink-0 rounded-full bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
+            >
+              Set up
+            </button>
+          </div>
+        )}
+      </Card>
+
+      {hydrated && !weeklyScheme && workouts.length > 0 && regions.length === 0 ? (
         <Card className="mb-4 p-4">
           <div className="flex items-start gap-3">
             <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
@@ -666,6 +759,8 @@ function WorkoutHome() {
           haptic(20);
         }}
       />
+
+      <WeeklyPlanSheet open={planSheetOpen} onClose={() => setPlanSheetOpen(false)} />
     </Screen>
   );
 }

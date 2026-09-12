@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
+import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
   EquipmentProfile,
@@ -30,6 +31,8 @@ interface GymState {
   restOverride: number | null;
   /** Fire a system Notification when rest ends and the tab isn't focused. */
   notifyEnabled: boolean;
+  /** The user's chosen weekly split, if they've set one up. */
+  weeklyScheme: WeeklyScheme | null;
 }
 
 const initialState: GymState = {
@@ -47,6 +50,7 @@ const initialState: GymState = {
   soundEnabled: true,
   restOverride: null,
   notifyEnabled: false,
+  weeklyScheme: null,
 };
 
 const KEY = "forge.gym.state.v2";
@@ -91,6 +95,7 @@ function migrate(raw: Partial<GymState>): GymState {
     soundEnabled: raw.soundEnabled ?? true,
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
+    weeklyScheme: raw.weeklyScheme ?? null,
     profiles,
     activeProfileId:
       profiles.find((p) => p.id === raw.activeProfileId)?.id ?? profiles[0]?.id ?? "full-gym",
@@ -117,6 +122,9 @@ interface Ctx extends GymState {
   toggleLovedExercise: (exerciseId: string) => void;
   lastPerformance: (exerciseId: string) => LoggedSet | undefined;
   bestSet: (exerciseId: string) => LoggedSet | undefined;
+  setWeeklyScheme: (scheme: WeeklyScheme) => void;
+  updateScheduleSlotDow: (index: number, dow: number) => void;
+  clearWeeklyScheme: () => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -218,6 +226,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
                 ...s,
                 workouts: [{ ...s.activeWorkout, finished: true }, ...s.workouts],
                 activeWorkout: null,
+                weeklyScheme: s.weeklyScheme
+                  ? {
+                      ...s.weeklyScheme,
+                      cyclePosition:
+                        (s.weeklyScheme.cyclePosition + 1) % s.weeklyScheme.schedule.length,
+                    }
+                  : s.weeklyScheme,
               }
             : s,
         ),
@@ -269,6 +284,17 @@ export function GymProvider({ children }: { children: ReactNode }) {
       lastPerformance: (exerciseId) => allSets(exerciseId).slice(-1)[0],
       bestSet: (exerciseId) =>
         allSets(exerciseId).sort((a, b) => b.weight * b.reps - a.weight * a.reps)[0],
+
+      setWeeklyScheme: (scheme) => setState((s) => ({ ...s, weeklyScheme: scheme })),
+      updateScheduleSlotDow: (index, dow) =>
+        setState((s) => {
+          if (!s.weeklyScheme) return s;
+          const schedule = s.weeklyScheme.schedule.map((slot, i) =>
+            i === index ? { ...slot, dow } : slot,
+          );
+          return { ...s, weeklyScheme: { ...s.weeklyScheme, schedule } };
+        }),
+      clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
     };
   }, [state, hydrated]);
 
