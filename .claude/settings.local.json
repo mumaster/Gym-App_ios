@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)",
+      "Bash(npx vite *)",
+      "Bash(pkill -f \"vite dev\")",
+      "Bash(pkill -f \"npm run dev\")"
+    ]
+  }
+}
