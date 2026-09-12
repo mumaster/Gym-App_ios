@@ -21,7 +21,7 @@ export function TabBar() {
             <Link
               key={to}
               to={to}
-              className={`flex min-h-[54px] min-w-[44px] flex-1 flex-col active:scale-95 items-center justify-center gap-1 rounded-[1.25rem] text-[11px] font-medium transition-colors ${
+              className={`flex min-h-[54px] min-w-[44px] flex-1 flex-col active:scale-95 items-center justify-center gap-1 rounded-[1.875rem] text-[11px] font-medium transition-colors ${
                 active ? "bg-primary/15 text-primary" : "text-muted-foreground"
               }`}
             >
