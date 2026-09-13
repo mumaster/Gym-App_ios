@@ -104,16 +104,6 @@ The app helps users build, customize, and log workouts based on three key dynami
 
 Include a starter library of at least 25 common gym exercises across Barbells, Dumbbells, Cables, Bodyweight, and Machines covering all major muscle groups with assigned movement patterns for the swap logic.
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/6384462b-8aad-4be8-bc1a-48cd73cb12ec).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
