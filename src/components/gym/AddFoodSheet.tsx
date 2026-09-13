@@ -6,13 +6,15 @@ import { MEAL_LABELS, MEAL_ORDER, mealForTime, type MealType } from "../../lib/g
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
-type MacroKey = "calories" | "protein" | "carbs" | "fat";
+type MacroKey = "calories" | "protein" | "carbs" | "fat" | "fiber" | "salt";
 
 const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = [
   { key: "calories", label: "Calories", unit: "kcal" },
   { key: "protein", label: "Protein", unit: "g" },
   { key: "carbs", label: "Carbs", unit: "g" },
   { key: "fat", label: "Fat", unit: "g" },
+  { key: "fiber", label: "Fiber", unit: "g" },
+  { key: "salt", label: "Salt", unit: "g" },
 ];
 
 const emptyPer100: Record<MacroKey, string> = {
@@ -20,6 +22,8 @@ const emptyPer100: Record<MacroKey, string> = {
   protein: "",
   carbs: "",
   fat: "",
+  fiber: "",
+  salt: "",
 };
 
 export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -110,6 +114,8 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
     protein: Number(((Number(per100.protein) || 0) * factor).toFixed(1)),
     carbs: Number(((Number(per100.carbs) || 0) * factor).toFixed(1)),
     fat: Number(((Number(per100.fat) || 0) * factor).toFixed(1)),
+    fiber: Number(((Number(per100.fiber) || 0) * factor).toFixed(1)),
+    salt: Number(((Number(per100.salt) || 0) * factor).toFixed(2)),
   };
 
   const canSave = name.trim().length > 0 && gramsNum > 0;
@@ -128,6 +134,8 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
         protein: Number(per100.protein) || 0,
         carbs: Number(per100.carbs) || 0,
         fat: Number(per100.fat) || 0,
+        fiber: Number(per100.fiber) || 0,
+        salt: Number(per100.salt) || 0,
       },
     });
     close();
@@ -289,7 +297,7 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
             </p>
             <p className="tabular mt-1 text-[15px] font-semibold">
               {preview.calories} kcal · {preview.protein}g protein · {preview.carbs}g carbs ·{" "}
-              {preview.fat}g fat
+              {preview.fat}g fat · {preview.fiber}g fiber · {preview.salt}g salt
             </p>
           </div>
 

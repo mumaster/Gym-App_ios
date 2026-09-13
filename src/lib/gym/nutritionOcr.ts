@@ -18,6 +18,8 @@ export interface ParsedNutrition {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  fiber: number | null;
+  salt: number | null;
 }
 
 function firstNumber(text: string): number | null {
@@ -84,6 +86,8 @@ export function parseNutritionText(rawText: string): ParsedNutrition {
       "saturees",
     ],
   );
+  const fiber = findValue(lines, ["fiber", "fibre", "fibres", "vezels", "vezel", "ballaststoffe"]);
+  const salt = findValue(lines, ["salt", "zout", "salz", "sel"]);
 
-  return { calories, protein, carbs, fat };
+  return { calories, protein, carbs, fat, fiber, salt };
 }

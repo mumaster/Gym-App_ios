@@ -113,6 +113,11 @@ function migrate(raw: Partial<GymState>): GymState {
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
+      per100: {
+        ...e.per100,
+        fiber: e.per100.fiber ?? 0,
+        salt: e.per100.salt ?? 0,
+      },
     })),
     profiles,
     activeProfileId:

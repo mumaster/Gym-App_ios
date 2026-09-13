@@ -51,12 +51,14 @@ function NutritionScreen() {
         month: "long",
       })}
     >
-      <Card className="grid grid-cols-4 gap-2 p-4 text-center">
+      <Card className="grid grid-cols-3 gap-y-3 gap-x-2 p-4 text-center">
         {[
           ["Calories", `${totals.calories}`],
           ["Protein", `${totals.protein}g`],
           ["Carbs", `${totals.carbs}g`],
           ["Fat", `${totals.fat}g`],
+          ["Fiber", `${totals.fiber}g`],
+          ["Salt", `${totals.salt}g`],
         ].map(([label, value]) => (
           <div key={label}>
             <p className="tabular text-[18px] font-bold">{value}</p>
@@ -105,7 +107,7 @@ function NutritionScreen() {
                           <p className="truncate text-[16px] font-semibold">{entry.name}</p>
                           <p className="tabular text-[13px] text-muted-foreground">
                             {entry.grams}g · {m.calories} kcal · {m.protein}g P · {m.carbs}g C ·{" "}
-                            {m.fat}g F
+                            {m.fat}g F · {m.fiber}g Fib · {m.salt}g Salt
                           </p>
                         </div>
                         <button

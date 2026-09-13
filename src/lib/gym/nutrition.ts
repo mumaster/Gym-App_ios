@@ -38,6 +38,8 @@ export interface FoodEntry {
     protein: number;
     carbs: number;
     fat: number;
+    fiber: number;
+    salt: number;
   };
 }
 
@@ -46,6 +48,8 @@ export interface Macros {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
+  salt: number;
 }
 
 /** Scales a food entry's per-100g label values by the grams actually eaten. */
@@ -56,6 +60,8 @@ export function scaledMacros(entry: FoodEntry): Macros {
     protein: Number((entry.per100.protein * factor).toFixed(1)),
     carbs: Number((entry.per100.carbs * factor).toFixed(1)),
     fat: Number((entry.per100.fat * factor).toFixed(1)),
+    fiber: Number((entry.per100.fiber * factor).toFixed(1)),
+    salt: Number((entry.per100.salt * factor).toFixed(2)),
   };
 }
 
@@ -72,8 +78,10 @@ export function dailyTotals(entries: FoodEntry[]): Macros {
         protein: Number((acc.protein + m.protein).toFixed(1)),
         carbs: Number((acc.carbs + m.carbs).toFixed(1)),
         fat: Number((acc.fat + m.fat).toFixed(1)),
+        fiber: Number((acc.fiber + m.fiber).toFixed(1)),
+        salt: Number((acc.salt + m.salt).toFixed(2)),
       };
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, salt: 0 },
   );
 }
