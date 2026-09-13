@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { GymProvider } from "../lib/gym/store";
 import { loadCachedCatalog, refreshCatalog } from "../lib/gym/catalog";
+import { registerServiceWorker } from "../pwa";
 import { TabBar } from "../components/gym/TabBar";
 
 function NotFoundComponent() {
@@ -85,6 +86,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Forge" },
       { name: "theme-color", content: "#000000" },
       { title: "Forge — Smart Workout Generator & Tracker" },
       {
@@ -103,6 +105,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/pwa/icon-180.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -131,6 +135,7 @@ function RootComponent() {
   useEffect(() => {
     loadCachedCatalog();
     void refreshCatalog();
+    registerServiceWorker();
   }, []);
 
   return (
