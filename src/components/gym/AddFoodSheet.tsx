@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
-import { parseNutritionText } from "../../lib/gym/nutritionOcr";
+import { OCR_LANGUAGES, parseNutritionText } from "../../lib/gym/nutritionOcr";
 import { MEAL_LABELS, MEAL_ORDER, mealForTime, type MealType } from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
 
@@ -69,8 +69,10 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
       const { createWorker } = await import("tesseract.js");
       // Self-hosted (see scripts/setup-ocr-assets.mjs) rather than the
       // library's default jsdelivr CDN, which corporate proxies, ad
-      // blockers and some networks block outright.
-      const worker = await createWorker("eng", undefined, {
+      // blockers and some networks block outright. All OCR_LANGUAGES load
+      // together so one scan reads labels in any of them without asking the
+      // user to pick a language up front.
+      const worker = await createWorker(OCR_LANGUAGES.join("+"), undefined, {
         workerPath: "/tesseract/worker.min.js",
         corePath: "/tesseract/core",
         langPath: "/tesseract",

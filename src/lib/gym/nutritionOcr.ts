@@ -1,4 +1,12 @@
 /**
+ * Tesseract language codes to load for label scanning, joined with "+" so a
+ * single recognize() pass reads all of them at once. Keep in sync with the
+ * @tesseract.js-data/<lang> deps in package.json and the copy loop in
+ * scripts/setup-ocr-assets.mjs.
+ */
+export const OCR_LANGUAGES = ["eng", "nld", "deu", "fra"] as const;
+
+/**
  * Best-effort parser for nutrition-label OCR text. Labels vary wildly in
  * layout (EU "per 100g" tables, US "Nutrition Facts" panels, kJ vs kcal,
  * comma vs period decimals), so this is deliberately a heuristic, not a
@@ -43,17 +51,38 @@ export function parseNutritionText(rawText: string): ParsedNutrition {
     .filter(Boolean);
 
   const calories =
-    findValue(lines, ["kcal"], ["kj"]) ?? findValue(lines, ["calories", "energie", "energy"]);
-  const protein = findValue(lines, ["protein", "eiwit", "protéines"]);
+    findValue(lines, ["kcal"], ["kj"]) ??
+    findValue(lines, ["calories", "energie", "énergie", "energy", "kalorien"]);
+  const protein = findValue(lines, [
+    "protein",
+    "eiwit",
+    "protéines",
+    "protéine",
+    "eiweiß",
+    "eiweiss",
+  ]);
   const carbs = findValue(
     lines,
-    ["total carbohydrate", "carbohydrate", "koolhydraten", "glucides", "carbs"],
-    ["of which", "sugars", "waarvan", "suikers"],
+    ["total carbohydrate", "carbohydrate", "koolhydraten", "glucides", "carbs", "kohlenhydrate"],
+    ["of which", "sugars", "waarvan", "suikers", "davon", "zucker", "dont", "sucres"],
   );
   const fat = findValue(
     lines,
-    ["total fat", "fat", "vet", "lipides"],
-    ["saturated", "saturates", "of which", "waarvan", "verzadigd", "trans"],
+    ["total fat", "fat", "vet", "lipides", "fett"],
+    [
+      "saturated",
+      "saturates",
+      "of which",
+      "waarvan",
+      "verzadigd",
+      "trans",
+      "davon",
+      "gesättigt",
+      "gesattigt",
+      "dont",
+      "saturées",
+      "saturees",
+    ],
   );
 
   return { calories, protein, carbs, fat };

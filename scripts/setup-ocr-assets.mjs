@@ -1,8 +1,11 @@
-// Copies the tesseract.js worker, WASM core and English language data out of
+// Copies the tesseract.js worker, WASM core and language data out of
 // node_modules into public/tesseract/ so the nutrition-label scanner runs
 // fully self-hosted — no runtime dependency on jsdelivr/unpkg, which some
 // networks (corporate proxies, ad-blockers, this repo's own CI sandbox) block
 // outright. Runs automatically after `npm install` (see package.json).
+//
+// Languages: keep this in sync with OCR_LANGUAGES in nutritionOcr.ts and the
+// @tesseract.js-data/<lang> dependencies in package.json.
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,10 +24,7 @@ function copy(from, to) {
   copyFileSync(from, to);
 }
 
-copy(
-  join(root, "node_modules/tesseract.js/dist/worker.min.js"),
-  join(publicDir, "worker.min.js"),
-);
+copy(join(root, "node_modules/tesseract.js/dist/worker.min.js"), join(publicDir, "worker.min.js"));
 
 // Only the LSTM-only core variants are needed — that's the engine mode the
 // app requests (see nutritionOcr worker setup).
@@ -39,9 +39,13 @@ for (const name of [
   copy(join(root, "node_modules/tesseract.js-core", name), join(coreDir, name));
 }
 
-copy(
-  join(root, "node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz"),
-  join(publicDir, "eng.traineddata.gz"),
-);
+// eng, nld (Dutch), deu (German), fra (French) — see OCR_LANGUAGES in
+// nutritionOcr.ts, which is what actually drives which of these get loaded.
+for (const lang of ["eng", "nld", "deu", "fra"]) {
+  copy(
+    join(root, `node_modules/@tesseract.js-data/${lang}/4.0.0_best_int/${lang}.traineddata.gz`),
+    join(publicDir, `${lang}.traineddata.gz`),
+  );
+}
 
 console.log("[setup-ocr-assets] tesseract assets copied to public/tesseract/");
