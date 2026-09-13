@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { Download, Heart, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
+import { Download, Heart, Pencil, Plus, Search, ShieldOff, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Card, Screen } from "../components/gym/Screen";
@@ -64,7 +64,14 @@ export const Route = createFileRoute("/exercises")({
 });
 
 function ExercisesScreen() {
-  const { profiles, activeProfileId, lovedExerciseIds, toggleLovedExercise } = useGym();
+  const {
+    profiles,
+    activeProfileId,
+    lovedExerciseIds,
+    toggleLovedExercise,
+    avoidedExerciseIds,
+    toggleAvoidedExercise,
+  } = useGym();
   const exercises = useExerciseCatalog();
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const [query, setQuery] = useState("");
@@ -227,6 +234,7 @@ function ExercisesScreen() {
       <div className="mt-4 space-y-2">
         {results.map((e) => {
           const loved = lovedExerciseIds.includes(e.id);
+          const avoided = avoidedExerciseIds.includes(e.id);
           return (
             <Card key={e.id} className="flex items-center gap-3 p-4">
               <button className="min-w-0 flex-1 text-left" onClick={() => setDetail(e)}>
@@ -240,6 +248,19 @@ function ExercisesScreen() {
                     .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)
                     .join(", ") || "No equipment"}
                 </p>
+              </button>
+              <button
+                aria-label={avoided ? `Stop avoiding ${e.name}` : `Avoid ${e.name}`}
+                aria-pressed={avoided}
+                onClick={() => {
+                  haptic(12);
+                  toggleAvoidedExercise(e.id);
+                }}
+                className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+                  avoided ? "bg-destructive/15 text-destructive" : "glass text-secondary-foreground"
+                }`}
+              >
+                <ShieldOff className="size-4" />
               </button>
               <button
                 aria-label={loved ? `Unlove ${e.name}` : `Love ${e.name}`}
@@ -269,24 +290,38 @@ function ExercisesScreen() {
       <BottomSheet open={!!detail} onClose={() => setDetail(null)} title={detail?.name ?? ""}>
         {detail ? (
           <div className="space-y-3">
-            <button
-              onClick={() => {
-                haptic(12);
-                toggleLovedExercise(detail.id);
-              }}
-              className={`flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
-                lovedExerciseIds.includes(detail.id)
-                  ? "bg-primary text-primary-foreground"
-                  : "glass text-secondary-foreground"
-              }`}
-            >
-              <Heart
-                className={`size-4 ${lovedExerciseIds.includes(detail.id) ? "fill-current" : ""}`}
-              />
-              {lovedExerciseIds.includes(detail.id)
-                ? "Loved — always in your plan"
-                : "Love this exercise"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  haptic(12);
+                  toggleLovedExercise(detail.id);
+                }}
+                className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
+                  lovedExerciseIds.includes(detail.id)
+                    ? "bg-primary text-primary-foreground"
+                    : "glass text-secondary-foreground"
+                }`}
+              >
+                <Heart
+                  className={`size-4 ${lovedExerciseIds.includes(detail.id) ? "fill-current" : ""}`}
+                />
+                {lovedExerciseIds.includes(detail.id) ? "Loved" : "Love this"}
+              </button>
+              <button
+                onClick={() => {
+                  haptic(12);
+                  toggleAvoidedExercise(detail.id);
+                }}
+                className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
+                  avoidedExerciseIds.includes(detail.id)
+                    ? "bg-destructive text-destructive-foreground"
+                    : "glass text-secondary-foreground"
+                }`}
+              >
+                <ShieldOff className="size-4" />
+                {avoidedExerciseIds.includes(detail.id) ? "Avoided" : "Avoid this"}
+              </button>
+            </div>
             <p className="text-[15px] text-muted-foreground">{detail.instructions}</p>
             <div>
               <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">

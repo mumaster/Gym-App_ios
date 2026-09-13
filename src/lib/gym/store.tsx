@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
 import type { FoodEntry } from "./nutrition";
+import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
+import { dayKey } from "./date";
 import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
@@ -26,6 +28,10 @@ interface GymState {
   supersetRounds: number;
   /** Exercise ids the user "loved" — always forced into a generated plan. */
   lovedExerciseIds: string[];
+  /** Exercise ids the user is avoiding (injury, pain, dislike) — never generated or offered. */
+  avoidedExerciseIds: string[];
+  /** How-are-you-feeling check-ins, one per day, used to scale suggested weight. */
+  readinessLog: ReadinessCheckIn[];
   /** Rest-end audio cue during a session. */
   soundEnabled: boolean;
   /** When set, overrides every exercise's suggested rest for the active session. */
@@ -50,6 +56,8 @@ const initialState: GymState = {
   supersetsEnabled: false,
   supersetRounds: 3,
   lovedExerciseIds: [],
+  avoidedExerciseIds: [],
+  readinessLog: [],
   soundEnabled: true,
   restOverride: null,
   notifyEnabled: false,
@@ -96,6 +104,8 @@ function migrate(raw: Partial<GymState>): GymState {
     supersetsEnabled: raw.supersetsEnabled ?? false,
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
+    avoidedExerciseIds: raw.avoidedExerciseIds ?? [],
+    readinessLog: raw.readinessLog ?? [],
     soundEnabled: raw.soundEnabled ?? true,
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
@@ -125,6 +135,8 @@ interface Ctx extends GymState {
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
   appendBonusExercise: (exerciseId: string) => void;
   toggleLovedExercise: (exerciseId: string) => void;
+  toggleAvoidedExercise: (exerciseId: string) => void;
+  setTodayReadiness: (score: ReadinessScore) => void;
   lastPerformance: (exerciseId: string) => LoggedSet | undefined;
   bestSet: (exerciseId: string) => LoggedSet | undefined;
   setWeeklyScheme: (scheme: WeeklyScheme) => void;
@@ -286,7 +298,25 @@ export function GymProvider({ children }: { children: ReactNode }) {
           lovedExerciseIds: s.lovedExerciseIds.includes(exerciseId)
             ? s.lovedExerciseIds.filter((id) => id !== exerciseId)
             : [...s.lovedExerciseIds, exerciseId],
+          avoidedExerciseIds: s.avoidedExerciseIds.filter((id) => id !== exerciseId),
         })),
+
+      toggleAvoidedExercise: (exerciseId) =>
+        setState((s) => ({
+          ...s,
+          avoidedExerciseIds: s.avoidedExerciseIds.includes(exerciseId)
+            ? s.avoidedExerciseIds.filter((id) => id !== exerciseId)
+            : [...s.avoidedExerciseIds, exerciseId],
+          lovedExerciseIds: s.lovedExerciseIds.filter((id) => id !== exerciseId),
+        })),
+
+      setTodayReadiness: (score) =>
+        setState((s) => {
+          const key = dayKey(new Date().toISOString());
+          const entry: ReadinessCheckIn = { date: new Date().toISOString(), score };
+          const withoutToday = s.readinessLog.filter((c) => dayKey(c.date) !== key);
+          return { ...s, readinessLog: [entry, ...withoutToday] };
+        }),
 
       lastPerformance: (exerciseId) => allSets(exerciseId).slice(-1)[0],
       bestSet: (exerciseId) =>

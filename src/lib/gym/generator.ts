@@ -1,13 +1,20 @@
 import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { suggestWeight } from "./progression";
+import type { ReadinessScore } from "./readiness";
 import type { EquipmentId, Exercise, PlannedExercise, TargetMuscle, Workout } from "./types";
 
-export const availableExercises = (equipment: EquipmentId[]): Exercise[] =>
-  EXERCISES.filter((e) => e.equipment_required.every((r) => equipment.includes(r)));
+export const availableExercises = (equipment: EquipmentId[], avoided: string[] = []): Exercise[] =>
+  EXERCISES.filter(
+    (e) => e.equipment_required.every((r) => equipment.includes(r)) && !avoided.includes(e.id),
+  );
 
-export const alternativesFor = (exercise: Exercise, equipment: EquipmentId[]): Exercise[] =>
-  availableExercises(equipment).filter(
+export const alternativesFor = (
+  exercise: Exercise,
+  equipment: EquipmentId[],
+  avoided: string[] = [],
+): Exercise[] =>
+  availableExercises(equipment, avoided).filter(
     (e) => e.id !== exercise.id && e.primary_muscle === exercise.primary_muscle,
   );
 
@@ -142,8 +149,12 @@ interface GenerateArgs {
   supersets?: boolean;
   /** Exercise ids the user "loved" — forced into the plan regardless of targets. */
   loved?: string[];
+  /** Exercise ids the user is avoiding (injury, pain, dislike) — never selected. */
+  avoided?: string[];
   /** Finished workout history — used to attach progressive-overload weight suggestions. */
   history?: Workout[];
+  /** Today's readiness check-in — scales suggested weight up or down. */
+  readinessScore?: ReadinessScore;
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -270,9 +281,11 @@ export function generateWorkout({
   variation = 0,
   supersets = false,
   loved = [],
+  avoided = [],
   history = [],
+  readinessScore,
 }: GenerateArgs): PlannedExercise[] {
-  const pool = availableExercises(equipment);
+  const pool = availableExercises(equipment, avoided);
   const shape = shapeFor(duration);
   const budget = duration * 60;
 
@@ -282,7 +295,9 @@ export function generateWorkout({
 
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
-    const suggestion = history.length ? suggestWeight(choice.id, history, target_reps) : null;
+    const suggestion = history.length
+      ? suggestWeight(choice.id, history, target_reps, readinessScore)
+      : null;
     return {
       exercise_id: choice.id,
       target_sets: compound ? shape.compoundSets : shape.accessorySets,

@@ -1,3 +1,7 @@
+import { dayKey } from "./date";
+
+export { dayKey };
+
 export interface FoodEntry {
   id: string;
   name: string;
@@ -30,12 +34,6 @@ export function scaledMacros(entry: FoodEntry): Macros {
     carbs: Number((entry.per100.carbs * factor).toFixed(1)),
     fat: Number((entry.per100.fat * factor).toFixed(1)),
   };
-}
-
-/** Local calendar-day key (not UTC), so a food logged at 11pm stays on that day. */
-export function dayKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function entriesForDay(entries: FoodEntry[], key: string): FoodEntry[] {

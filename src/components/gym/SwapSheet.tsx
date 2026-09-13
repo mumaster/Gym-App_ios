@@ -3,11 +3,7 @@ import { AlertTriangle, Repeat } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { EQUIPMENT, exerciseById } from "../../lib/gym/data";
 import { alternativesFor, availableExercises } from "../../lib/gym/generator";
-import {
-  antagonistAlternatives,
-  isAntagonistPair,
-  opposingLabel,
-} from "../../lib/gym/antagonist";
+import { antagonistAlternatives, isAntagonistPair, opposingLabel } from "../../lib/gym/antagonist";
 import { useGym } from "../../lib/gym/store";
 import type { Exercise } from "../../lib/gym/types";
 
@@ -40,18 +36,20 @@ export function SwapSheet({
   onClose: () => void;
   onPick: (e: Exercise) => void;
 }) {
-  const { profiles, activeProfileId } = useGym();
+  const { profiles, activeProfileId, avoidedExerciseIds } = useGym();
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const current = exerciseId ? exerciseById(exerciseId) : undefined;
   const partner = partnerExerciseId ? exerciseById(partnerExerciseId) : undefined;
-  const pool = availableExercises(profile.active_equipment_ids);
+  const pool = availableExercises(profile.active_equipment_ids, avoidedExerciseIds);
 
   const [pending, setPending] = useState<Exercise | null>(null);
   useEffect(() => {
     if (!exerciseId) setPending(null);
   }, [exerciseId]);
 
-  const sameMuscle = current ? alternativesFor(current, profile.active_equipment_ids) : [];
+  const sameMuscle = current
+    ? alternativesFor(current, profile.active_equipment_ids, avoidedExerciseIds)
+    : [];
   const recommended = partner ? antagonistAlternatives(partner, pool) : [];
   const recommendedIds = new Set(recommended.map((e) => e.id));
   const others = (partner ? pool : sameMuscle).filter(
@@ -128,9 +126,8 @@ export function SwapSheet({
           {partner ? (
             <>
               <p className="mb-1 text-[13px] text-muted-foreground">
-                Paired with{" "}
-                <span className="font-semibold text-foreground">{partner.name}</span> — keep the
-                push/pull balance.
+                Paired with <span className="font-semibold text-foreground">{partner.name}</span> —
+                keep the push/pull balance.
               </p>
               <p className="pt-1 text-[12px] font-bold uppercase tracking-widest text-primary">
                 Recommended antagonist alternatives

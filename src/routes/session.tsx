@@ -15,6 +15,7 @@ import {
   PartyPopper,
   Plus,
   Repeat,
+  TrendingDown,
   TrendingUp,
   Trophy,
   Youtube,
@@ -29,6 +30,7 @@ import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
 import { plateStep } from "../lib/gym/plates";
 import { suggestWeight } from "../lib/gym/progression";
+import { todaysCheckIn } from "../lib/gym/readiness";
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
@@ -91,6 +93,7 @@ function SessionScreen() {
     appendBonusExercise,
     profiles,
     activeProfileId,
+    avoidedExerciseIds,
   } = useGym();
 
   const [pos, setPos] = useState({ block: 0, slot: 0, round: 1 });
@@ -250,7 +253,7 @@ function SessionScreen() {
   const totalVolume = activeWorkout.completed_sets.reduce((v, s) => v + s.weight * s.reps, 0);
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const planIds = new Set(plan.map((p) => p.exercise_id));
-  const bonusOptions = availableExercises(profile.active_equipment_ids).filter(
+  const bonusOptions = availableExercises(profile.active_equipment_ids, avoidedExerciseIds).filter(
     (e) => !planIds.has(e.id),
   );
 
@@ -786,8 +789,10 @@ function ExerciseBlock({
     bestSet,
     profiles,
     activeProfileId,
+    readinessLog,
   } = useGym();
   const exercise = exerciseById(planned.exercise_id);
+  const todayReadiness = todaysCheckIn(readinessLog)?.score;
 
   const logged = useMemo(
     () =>
@@ -834,8 +839,8 @@ function ExerciseBlock({
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
-    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps),
-    [workouts, planned.exercise_id, planned.target_reps],
+    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, todayReadiness),
+    [workouts, planned.exercise_id, planned.target_reps, todayReadiness],
   );
 
   useEffect(() => {
@@ -1066,10 +1071,14 @@ function ExerciseBlock({
             </span>
           </div>
 
-          {!lastLogged && suggestion?.bumped ? (
+          {!lastLogged && suggestion && suggestion.direction !== "same" ? (
             <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary">
-              <TrendingUp className="size-4 shrink-0" /> Suggested {suggestion.weight}kg —{" "}
-              {suggestion.reason}
+              {suggestion.direction === "up" ? (
+                <TrendingUp className="size-4 shrink-0" />
+              ) : (
+                <TrendingDown className="size-4 shrink-0" />
+              )}{" "}
+              Suggested {suggestion.weight}kg — {suggestion.reason}
             </p>
           ) : null}
 

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, Minus, Plus, Trash2 } from "lucide-react";
+import { Check, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { ThemePicker } from "../components/gym/ThemePicker";
-import { EQUIPMENT } from "../lib/gym/data";
+import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
 import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/equipment")({
 });
 
 function EquipmentScreen() {
-  const { profiles, activeProfileId, update } = useGym();
+  const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise } = useGym();
   const [editingId, setEditingId] = useState(activeProfileId);
   const editing = profiles.find((p) => p.id === editingId) ?? profiles[0]!;
 
@@ -144,10 +144,40 @@ function EquipmentScreen() {
       </Card>
 
       <p className="mt-3 px-1 text-[13px] text-muted-foreground">
-        {availableExercises(editing.active_equipment_ids).length} exercises unlocked with this
-        profile.
+        {availableExercises(editing.active_equipment_ids, avoidedExerciseIds).length} exercises
+        unlocked with this profile.
       </p>
 
+      <SectionLabel>Avoided exercises</SectionLabel>
+      <Card className="p-4">
+        <p className="text-[13px] text-muted-foreground">
+          Marked exercises are never generated or offered as swaps — use this for an injury, pain
+          spot, or anything you'd rather skip. Mark one from its card in Exercises.
+        </p>
+        {avoidedExerciseIds.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {avoidedExerciseIds.map((id) => {
+              const ex = exerciseById(id);
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    haptic(12);
+                    toggleAvoidedExercise(id);
+                  }}
+                  className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-destructive/15 px-3 text-[14px] font-semibold text-destructive"
+                >
+                  <ShieldOff className="size-3.5" />
+                  {ex?.name ?? id}
+                  <X className="size-3.5" />
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-2 text-[13px] text-muted-foreground/70">None yet.</p>
+        )}
+      </Card>
 
       <SectionLabel>Bar weights</SectionLabel>
       <Card className="divide-y divide-border p-0">
@@ -170,7 +200,6 @@ function EquipmentScreen() {
           </div>
         ))}
       </Card>
-
 
       <SectionLabel>Plates you own (pairs)</SectionLabel>
       <Card className="divide-y divide-border p-0">
