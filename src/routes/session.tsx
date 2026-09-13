@@ -943,7 +943,7 @@ function ExerciseBlock({
             <Repeat className="size-4" />
           </button>
           <a
-            href={`https://www.youtube.com/@DeltaBolic/search?query=${encodeURIComponent(exercise.name)}`}
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`DeltaBolic ${exercise.name}`)}`}
             target="_blank"
             rel="noreferrer noopener"
             aria-label="Watch demo"
