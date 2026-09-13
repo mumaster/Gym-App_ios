@@ -3,7 +3,14 @@ import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
-import { dailyTotals, dayKey, entriesForDay, scaledMacros } from "../lib/gym/nutrition";
+import {
+  dailyTotals,
+  dayKey,
+  entriesForDay,
+  MEAL_LABELS,
+  MEAL_ORDER,
+  scaledMacros,
+} from "../lib/gym/nutrition";
 import { haptic, useGym } from "../lib/gym/store";
 
 export const Route = createFileRoute("/nutrition")({
@@ -74,28 +81,48 @@ function NutritionScreen() {
           Nothing logged yet today.
         </Card>
       ) : (
-        <div className="space-y-2">
-          {todaysEntries.map((entry) => {
-            const m = scaledMacros(entry);
+        <div className="space-y-4">
+          {MEAL_ORDER.map((meal) => {
+            const mealEntries = todaysEntries.filter((e) => e.meal === meal);
+            if (!mealEntries.length) return null;
+            const mealTotals = dailyTotals(mealEntries);
             return (
-              <Card key={entry.id} className="flex items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <p className="truncate text-[16px] font-semibold">{entry.name}</p>
+              <div key={meal}>
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <p className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {MEAL_LABELS[meal]}
+                  </p>
                   <p className="tabular text-[13px] text-muted-foreground">
-                    {entry.grams}g · {m.calories} kcal · {m.protein}g P · {m.carbs}g C · {m.fat}g F
+                    {mealTotals.calories} kcal
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    haptic(15);
-                    removeFoodEntry(entry.id);
-                  }}
-                  aria-label={`Remove ${entry.name}`}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </Card>
+                <div className="space-y-2">
+                  {mealEntries.map((entry) => {
+                    const m = scaledMacros(entry);
+                    return (
+                      <Card key={entry.id} className="flex items-center justify-between gap-3 p-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-[16px] font-semibold">{entry.name}</p>
+                          <p className="tabular text-[13px] text-muted-foreground">
+                            {entry.grams}g · {m.calories} kcal · {m.protein}g P · {m.carbs}g C ·{" "}
+                            {m.fat}g F
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            haptic(15);
+                            removeFoodEntry(entry.id);
+                          }}
+                          aria-label={`Remove ${entry.name}`}
+                          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

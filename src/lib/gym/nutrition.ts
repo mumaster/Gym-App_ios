@@ -2,11 +2,34 @@ import { dayKey } from "./date";
 
 export { dayKey };
 
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+/** Display order for grouping a day's log by meal. */
+export const MEAL_ORDER: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+export const MEAL_LABELS: Record<MealType, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+/** Sensible default meal for a timestamp, based on local time of day. */
+export function mealForTime(iso: string): MealType {
+  const hour = new Date(iso).getHours();
+  if (hour >= 4 && hour < 11) return "breakfast";
+  if (hour >= 11 && hour < 15) return "lunch";
+  if (hour >= 18 && hour < 23) return "dinner";
+  return "snack";
+}
+
 export interface FoodEntry {
   id: string;
   name: string;
   /** ISO timestamp when logged. */
   logged_at: string;
+  /** Which meal this was logged under — set by the user when adding food. */
+  meal: MealType;
   /** Grams actually eaten. */
   grams: number;
   /** Macros as labeled per 100g — the source-of-truth a scanned or entered label gives us. */

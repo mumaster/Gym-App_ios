@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { parseNutritionText } from "../../lib/gym/nutritionOcr";
+import { MEAL_LABELS, MEAL_ORDER, mealForTime, type MealType } from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
@@ -28,6 +29,7 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [step, setStep] = useState<Step>("start");
   const [scanError, setScanError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [meal, setMeal] = useState<MealType>(() => mealForTime(new Date().toISOString()));
   const [grams, setGrams] = useState("100");
   const [per100, setPer100] = useState<Record<MacroKey, string>>(emptyPer100);
   const [unmatched, setUnmatched] = useState<Set<MacroKey>>(new Set());
@@ -36,6 +38,7 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
     setStep("start");
     setScanError(null);
     setName("");
+    setMeal(mealForTime(new Date().toISOString()));
     setGrams("100");
     setPer100(emptyPer100);
     setUnmatched(new Set());
@@ -116,6 +119,7 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
       id: crypto.randomUUID(),
       name: name.trim(),
       logged_at: new Date().toISOString(),
+      meal,
       grams: gramsNum,
       per100: {
         calories: Number(per100.calories) || 0,
@@ -201,6 +205,30 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
               className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />
           </label>
+
+          <div>
+            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Meal</p>
+            <div className="flex gap-2">
+              {MEAL_ORDER.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    haptic(10);
+                    setMeal(m);
+                  }}
+                  aria-pressed={meal === m}
+                  className={`min-h-[40px] flex-1 rounded-2xl text-[14px] font-semibold ${
+                    meal === m
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-secondary-foreground"
+                  }`}
+                >
+                  {MEAL_LABELS[m]}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div>
             <p className="mb-2 text-[13px] font-semibold text-muted-foreground">

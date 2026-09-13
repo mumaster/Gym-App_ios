@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
-import type { FoodEntry } from "./nutrition";
+import { mealForTime, type FoodEntry } from "./nutrition";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import type { WeeklyScheme } from "./splits";
@@ -110,7 +110,10 @@ function migrate(raw: Partial<GymState>): GymState {
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
-    foodEntries: raw.foodEntries ?? [],
+    foodEntries: (raw.foodEntries ?? []).map((e) => ({
+      ...e,
+      meal: e.meal ?? mealForTime(e.logged_at),
+    })),
     profiles,
     activeProfileId:
       profiles.find((p) => p.id === raw.activeProfileId)?.id ?? profiles[0]?.id ?? "full-gym",
