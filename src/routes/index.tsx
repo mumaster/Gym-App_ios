@@ -90,6 +90,15 @@ function WorkoutHome() {
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [readinessEditing, setReadinessEditing] = useState(false);
+  /**
+   * True when the current muscle selection came straight from a PT-designed
+   * flow (a recommended-muscles nudge or a scheduled split day) rather than
+   * free manual tapping. Those combos are deliberately >2 groups (a Push day
+   * is Chest+Shoulders+Triceps, a Legs day is 4 groups) so the "too many
+   * muscle groups" warning below only applies to the manual case it was
+   * actually meant for — any manual tap reverts to that case.
+   */
+  const [curatedSelection, setCuratedSelection] = useState(false);
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const muscles = musclesFromRegions(regions);
@@ -116,6 +125,7 @@ function WorkoutHome() {
   /** Selecting a single region triggers the trainer pairing proposal. */
   const toggleRegion = (id: RegionId) => {
     haptic(12);
+    setCuratedSelection(false);
     setRegions((cur) => {
       const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
       if (next.length === 1 && next[0] === id && PAIRINGS[id]) setProposal(id);
@@ -128,6 +138,7 @@ function WorkoutHome() {
     const owned = REGIONS.filter((r) => r.muscle === m).map((r) => r.id);
     if (owned.some((id) => regions.includes(id))) {
       haptic(12);
+      setCuratedSelection(false);
       setRegions((cur) => cur.filter((id) => !owned.includes(id)));
       setProposal(null);
       return;
@@ -188,6 +199,7 @@ function WorkoutHome() {
   const recommended = recommendedMuscles(MUSCLES, workouts);
   const applyRecommendation = () => {
     haptic([20, 30]);
+    setCuratedSelection(true);
     setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
     setProposal(null);
   };
@@ -201,6 +213,7 @@ function WorkoutHome() {
   const startScheduledDay = () => {
     if (!weeklyScheme || !scheduledSlot) return;
     haptic([20, 30]);
+    setCuratedSelection(true);
     const targetMuscles = musclesForSlot(weeklyScheme, scheduledSlot, workouts);
     setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
@@ -666,7 +679,7 @@ function WorkoutHome() {
         </div>
       ) : null}
 
-      {muscles.length > 2 ? (
+      {muscles.length > 2 && !curatedSelection ? (
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
           <p className="text-[14px] leading-snug text-foreground">
