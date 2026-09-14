@@ -29,7 +29,13 @@ export function isAntagonistPair(a: Exercise, b: Exercise): boolean {
     return (isPush(a) && isPull(b)) || (isPull(a) && isPush(b));
   }
   if (ma === mb) return false;
-  return ANTAGONIST_MUSCLES[ma]?.includes(mb) ?? false;
+  // Checked both ways: ANTAGONIST_MUSCLES isn't a symmetric table (e.g. Core
+  // lists Back but Back doesn't list Core back), so relying on only a's entry
+  // made pairing/swap results depend on which exercise happened to be "a".
+  return (
+    (ANTAGONIST_MUSCLES[ma]?.includes(mb) ?? false) ||
+    (ANTAGONIST_MUSCLES[mb]?.includes(ma) ?? false)
+  );
 }
 
 /** Muscles that oppose this exercise, for user-facing copy. */

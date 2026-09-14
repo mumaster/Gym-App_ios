@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
 import { mealForTime, type FoodEntry, type NutritionGoals } from "./nutrition";
+import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import type { WeeklyScheme } from "./splits";
@@ -134,7 +135,9 @@ function migrate(raw: Partial<GymState>): GymState {
 interface Ctx extends GymState {
   hydrated: boolean;
   update: (patch: Partial<GymState>) => void;
-  startWorkout: (input: Pick<Workout, "plan" | "duration_minutes" | "target_muscles">) => void;
+  startWorkout: (
+    input: Pick<Workout, "plan" | "duration_minutes" | "target_muscles" | "fromScheduledDay">,
+  ) => void;
   logSet: (set: LoggedSet) => void;
   updateSet: (
     index: number,
@@ -155,6 +158,10 @@ interface Ctx extends GymState {
   updateScheduleSlotDow: (index: number, dow: number) => void;
   clearWeeklyScheme: () => void;
   addFoodEntry: (entry: FoodEntry) => void;
+  updateFoodEntry: (
+    id: string,
+    patch: Partial<Pick<FoodEntry, "name" | "meal" | "grams" | "per100">>,
+  ) => void;
   removeFoodEntry: (id: string) => void;
   setNutritionGoals: (goals: NutritionGoals) => void;
 }
@@ -217,6 +224,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             completed_sets: [],
             finished: false,
             unit: "kg",
+            fromScheduledDay: input.fromScheduledDay ?? false,
           },
         })),
       logSet: (set) =>
@@ -258,13 +266,17 @@ export function GymProvider({ children }: { children: ReactNode }) {
                 ...s,
                 workouts: [{ ...s.activeWorkout, finished: true }, ...s.workouts],
                 activeWorkout: null,
-                weeklyScheme: s.weeklyScheme
-                  ? {
-                      ...s.weeklyScheme,
-                      cyclePosition:
-                        (s.weeklyScheme.cyclePosition + 1) % s.weeklyScheme.schedule.length,
-                    }
-                  : s.weeklyScheme,
+                // Only advance the split's rotation for the session it actually
+                // scheduled — an off-schedule or repeated session shouldn't
+                // silently skip the day that was really next.
+                weeklyScheme:
+                  s.weeklyScheme && s.activeWorkout.fromScheduledDay
+                    ? {
+                        ...s.weeklyScheme,
+                        cyclePosition:
+                          (s.weeklyScheme.cyclePosition + 1) % s.weeklyScheme.schedule.length,
+                      }
+                    : s.weeklyScheme,
               }
             : s,
         ),
@@ -332,8 +344,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
         }),
 
       lastPerformance: (exerciseId) => allSets(exerciseId).slice(-1)[0],
+      // Ranked by estimated 1RM (Epley) so "best set" agrees with the PR
+      // definition used everywhere else (progress.ts, history) — it used to
+      // rank by raw weight*reps, a third, different notion of "best".
       bestSet: (exerciseId) =>
-        allSets(exerciseId).sort((a, b) => b.weight * b.reps - a.weight * a.reps)[0],
+        allSets(exerciseId).sort((a, b) => estimated1RM(b) - estimated1RM(a))[0],
 
       setWeeklyScheme: (scheme) => setState((s) => ({ ...s, weeklyScheme: scheme })),
       updateScheduleSlotDow: (index, dow) =>
@@ -347,6 +362,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
 
       addFoodEntry: (entry) => setState((s) => ({ ...s, foodEntries: [entry, ...s.foodEntries] })),
+      updateFoodEntry: (id, patch) =>
+        setState((s) => ({
+          ...s,
+          foodEntries: s.foodEntries.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+        })),
       removeFoodEntry: (id) =>
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),

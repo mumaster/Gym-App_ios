@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, Keyboard, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Camera, Check, Keyboard, Loader2, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { OCR_LANGUAGES, parseNutritionText } from "../../lib/gym/nutritionOcr";
 import {
@@ -9,6 +9,8 @@ import {
   NUTRIENT_LABELS,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
+  scaledMacros,
+  type FoodEntry,
   type MealType,
   type NutrientKey,
 } from "../../lib/gym/nutrition";
@@ -26,8 +28,26 @@ const emptyPer100 = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) a
   string
 >;
 
-export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addFoodEntry } = useGym();
+const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
+  Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, String(per100[key])])) as Record<
+    MacroKey,
+    string
+  >;
+
+/** Max distinct recent foods offered for one-tap re-logging on the start step. */
+const RECENT_LIMIT = 5;
+
+export function AddFoodSheet({
+  open,
+  onClose,
+  editEntry = null,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** When set, the sheet opens straight into editing this entry instead of adding a new one. */
+  editEntry?: FoodEntry | null;
+}) {
+  const { addFoodEntry, updateFoodEntry, foodEntries } = useGym();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>("start");
@@ -53,10 +73,47 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
     onClose();
   };
 
+  // Editing an existing entry skips straight to the review step, pre-filled.
+  useEffect(() => {
+    if (!open || !editEntry) return;
+    setStep("review");
+    setScanError(null);
+    setName(editEntry.name);
+    setMeal(editEntry.meal);
+    setGrams(String(editEntry.grams));
+    setPer100(per100ToDraft(editEntry.per100));
+    setUnmatched(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editEntry?.id]);
+
+  /** Most recently logged distinct foods, newest first, for one-tap re-add. */
+  const recentFoods = useMemo(() => {
+    const seen = new Set<string>();
+    const list: FoodEntry[] = [];
+    for (const entry of foodEntries) {
+      const key = entry.name.trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      list.push(entry);
+      if (list.length >= RECENT_LIMIT) break;
+    }
+    return list;
+  }, [foodEntries]);
+
   const startManual = () => {
     haptic(15);
     setName("");
     setPer100(emptyPer100);
+    setUnmatched(new Set());
+    setStep("review");
+  };
+
+  const startFromRecent = (entry: FoodEntry) => {
+    haptic(15);
+    setName(entry.name);
+    setMeal(mealForTime(new Date().toISOString()));
+    setGrams(String(entry.grams));
+    setPer100(per100ToDraft(entry.per100));
     setUnmatched(new Set());
     setStep("review");
   };
@@ -123,26 +180,36 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
   const save = () => {
     if (!canSave) return;
     haptic([20, 30]);
-    addFoodEntry({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      logged_at: new Date().toISOString(),
-      meal,
-      grams: gramsNum,
-      per100: {
-        calories: Number(per100.calories) || 0,
-        protein: Number(per100.protein) || 0,
-        carbs: Number(per100.carbs) || 0,
-        fat: Number(per100.fat) || 0,
-        fiber: Number(per100.fiber) || 0,
-        salt: Number(per100.salt) || 0,
-      },
-    });
+    const per100Value = {
+      calories: Number(per100.calories) || 0,
+      protein: Number(per100.protein) || 0,
+      carbs: Number(per100.carbs) || 0,
+      fat: Number(per100.fat) || 0,
+      fiber: Number(per100.fiber) || 0,
+      salt: Number(per100.salt) || 0,
+    };
+    if (editEntry) {
+      updateFoodEntry(editEntry.id, {
+        name: name.trim(),
+        meal,
+        grams: gramsNum,
+        per100: per100Value,
+      });
+    } else {
+      addFoodEntry({
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        logged_at: new Date().toISOString(),
+        meal,
+        grams: gramsNum,
+        per100: per100Value,
+      });
+    }
     close();
   };
 
   return (
-    <BottomSheet open={open} onClose={close} title="Add food">
+    <BottomSheet open={open} onClose={close} title={editEntry ? "Edit food" : "Add food"}>
       <input
         ref={fileInputRef}
         type="file"
@@ -183,6 +250,32 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
               <p className="text-[13px] text-muted-foreground">Type in the values yourself</p>
             </div>
           </button>
+
+          {recentFoods.length ? (
+            <div className="pt-1">
+              <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Recent</p>
+              <div className="space-y-2">
+                {recentFoods.map((entry) => {
+                  const m = scaledMacros(entry);
+                  return (
+                    <button
+                      key={entry.id}
+                      onClick={() => startFromRecent(entry)}
+                      className="glass flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left active:scale-[0.985]"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold">{entry.name}</p>
+                        <p className="tabular text-[12px] text-muted-foreground">
+                          {entry.grams}g · {m.calories} kcal
+                        </p>
+                      </div>
+                      <Plus className="size-4 shrink-0 text-primary" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -306,7 +399,7 @@ export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => 
             disabled={!canSave}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> Add to log
+            <Check className="size-5" /> {editEntry ? "Save changes" : "Add to log"}
           </button>
         </div>
       ) : null}

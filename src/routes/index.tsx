@@ -99,6 +99,13 @@ function WorkoutHome() {
    * actually meant for — any manual tap reverts to that case.
    */
   const [curatedSelection, setCuratedSelection] = useState(false);
+  /**
+   * True only when the current selection is exactly today's scheduled split
+   * day, untouched — distinct from `curatedSelection` above, since applying
+   * the "Recommended today" nudge is curated but isn't "the schedule". Only
+   * sessions started with this true advance the weekly scheme's rotation.
+   */
+  const [followingSchedule, setFollowingSchedule] = useState(false);
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const muscles = musclesFromRegions(regions);
@@ -126,6 +133,7 @@ function WorkoutHome() {
   const toggleRegion = (id: RegionId) => {
     haptic(12);
     setCuratedSelection(false);
+    setFollowingSchedule(false);
     setRegions((cur) => {
       const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
       if (next.length === 1 && next[0] === id && PAIRINGS[id]) setProposal(id);
@@ -139,6 +147,7 @@ function WorkoutHome() {
     if (owned.some((id) => regions.includes(id))) {
       haptic(12);
       setCuratedSelection(false);
+      setFollowingSchedule(false);
       setRegions((cur) => cur.filter((id) => !owned.includes(id)));
       setProposal(null);
       return;
@@ -150,6 +159,7 @@ function WorkoutHome() {
     if (!proposal) return;
     const pair = PAIRINGS[proposal]!;
     haptic([20, 30]);
+    setFollowingSchedule(false);
     setRegions((cur) => (cur.includes(pair.with) ? cur : [...cur, pair.with]));
     setProposal(null);
   };
@@ -200,6 +210,7 @@ function WorkoutHome() {
   const applyRecommendation = () => {
     haptic([20, 30]);
     setCuratedSelection(true);
+    setFollowingSchedule(false);
     setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
     setProposal(null);
   };
@@ -214,6 +225,7 @@ function WorkoutHome() {
     if (!weeklyScheme || !scheduledSlot) return;
     haptic([20, 30]);
     setCuratedSelection(true);
+    setFollowingSchedule(true);
     const targetMuscles = musclesForSlot(weeklyScheme, scheduledSlot, workouts);
     setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
@@ -222,7 +234,12 @@ function WorkoutHome() {
   const start = () => {
     if (!plan) return;
     haptic([20, 40, 20]);
-    startWorkout({ plan, duration_minutes: duration, target_muscles: muscles });
+    startWorkout({
+      plan,
+      duration_minutes: duration,
+      target_muscles: muscles,
+      fromScheduledDay: followingSchedule,
+    });
     navigate({ to: "/session" });
   };
 

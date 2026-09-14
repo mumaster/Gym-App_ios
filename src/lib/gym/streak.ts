@@ -7,6 +7,11 @@ function dayIndex(iso: string): number {
   return Math.round(local.getTime() / 86_400_000);
 }
 
+/** Inverse of dayIndex — for rendering a calendar cell's actual date (e.g. an aria-label). */
+export function dayIndexToDate(index: number): Date {
+  return new Date(index * 86_400_000);
+}
+
 export function trainingDayIndices(workouts: Workout[]): Set<number> {
   return new Set(workouts.map((w) => dayIndex(w.date)));
 }

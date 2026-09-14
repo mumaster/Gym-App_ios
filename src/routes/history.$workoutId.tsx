@@ -2,7 +2,9 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { exerciseById } from "../lib/gym/data";
+import { estimated1RM } from "../lib/gym/progress";
 import { useGym } from "../lib/gym/store";
+import type { LoggedSet } from "../lib/gym/types";
 
 export const Route = createFileRoute("/history/$workoutId")({
   head: () => ({
@@ -47,29 +49,36 @@ function SessionDetailScreen() {
   const working = sets.filter((s) => s.set_type === "working");
   const volume = sets.reduce((v, s) => v + s.weight * s.reps, 0);
 
-  // Best weight per exercise across all *other* sessions, to flag PRs set here.
-  const priorBest = new Map<string, number>();
+  // Best estimated-1RM per exercise across all *other* sessions, to flag PRs
+  // set here — the same definition progress.ts and the History tab use, so a
+  // set badged "PR" here always agrees with the PR list there.
+  const priorBestE1rm = new Map<string, number>();
   for (const w of workouts) {
     if (w.id === workout.id) continue;
     for (const s of w.completed_sets) {
       if (s.set_type === "warmup") continue;
-      priorBest.set(s.exercise_id, Math.max(priorBest.get(s.exercise_id) ?? 0, s.weight));
+      const e1rm = estimated1RM(s);
+      priorBestE1rm.set(s.exercise_id, Math.max(priorBestE1rm.get(s.exercise_id) ?? 0, e1rm));
     }
   }
 
   const byExercise = [...new Set(sets.map((s) => s.exercise_id))].map((id) => {
     const rows = sets.filter((s) => s.exercise_id === id);
-    const heaviest = Math.max(
-      ...rows.filter((s) => s.set_type === "working").map((s) => s.weight),
-      0,
-    );
+    const bestSet = rows
+      .filter((s) => s.set_type === "working")
+      .reduce<LoggedSet | null>(
+        (best, s) => (!best || estimated1RM(s) > estimated1RM(best) ? s : best),
+        null,
+      );
+    const bestE1rm = bestSet ? estimated1RM(bestSet) : 0;
     return {
       id,
       name: exerciseById(id)?.name ?? id,
       muscle: exerciseById(id)?.primary_muscle ?? "",
       rows,
-      isPR: heaviest > 0 && heaviest > (priorBest.get(id) ?? 0),
-      heaviest,
+      isPR: bestE1rm > 0 && bestE1rm > (priorBestE1rm.get(id) ?? 0),
+      bestSet,
+      bestE1rm,
     };
   });
 
@@ -127,7 +136,7 @@ function SessionDetailScreen() {
               </div>
               {ex.isPR ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary">
-                  <Trophy className="size-4" /> PR {ex.heaviest} kg
+                  <Trophy className="size-4" /> PR {ex.bestE1rm} kg
                 </span>
               ) : null}
             </div>

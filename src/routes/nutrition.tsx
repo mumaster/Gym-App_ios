@@ -15,6 +15,7 @@ import {
   NUTRIENT_UNITS,
   nutrientStatus,
   scaledMacros,
+  type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
 import { haptic, useGym } from "../lib/gym/store";
@@ -40,7 +41,8 @@ export const Route = createFileRoute("/nutrition")({
 
 function NutritionScreen() {
   const { foodEntries, nutritionGoals, hydrated, removeFoodEntry } = useGym();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  /** null = closed, "add" = fresh entry, an entry = editing that one. */
+  const [foodSheet, setFoodSheet] = useState<"add" | FoodEntry | null>(null);
   const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
 
   const today = useMemo(() => dayKey(new Date().toISOString()), []);
@@ -99,7 +101,7 @@ function NutritionScreen() {
       <button
         onClick={() => {
           haptic(20);
-          setSheetOpen(true);
+          setFoodSheet("add");
         }}
         className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
       >
@@ -132,13 +134,20 @@ function NutritionScreen() {
                     const m = scaledMacros(entry);
                     return (
                       <Card key={entry.id} className="flex items-center justify-between gap-3 p-4">
-                        <div className="min-w-0">
+                        <button
+                          onClick={() => {
+                            haptic(12);
+                            setFoodSheet(entry);
+                          }}
+                          aria-label={`Edit ${entry.name}`}
+                          className="min-w-0 flex-1 text-left"
+                        >
                           <p className="truncate text-[16px] font-semibold">{entry.name}</p>
                           <p className="tabular text-[13px] text-muted-foreground">
                             {entry.grams}g · {m.calories} kcal · {m.protein}g P · {m.carbs}g C ·{" "}
                             {m.fat}g F · {m.fiber}g Fib · {m.salt}g Salt
                           </p>
-                        </div>
+                        </button>
                         <button
                           onClick={() => {
                             haptic(15);
@@ -159,7 +168,11 @@ function NutritionScreen() {
         </div>
       )}
 
-      <AddFoodSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <AddFoodSheet
+        open={foodSheet !== null}
+        editEntry={typeof foodSheet === "object" ? foodSheet : null}
+        onClose={() => setFoodSheet(null)}
+      />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
     </Screen>
   );

@@ -102,6 +102,9 @@ export interface Workout {
   unit: Unit;
   /** Rounds per superset pair when the session was generated with supersets. */
   superset_rounds?: number;
+  /** True when started via "Start {day} day" for the active weekly scheme's
+   * next slot — only sessions like this advance the split's cyclePosition. */
+  fromScheduledDay?: boolean;
 }
 
 export interface EquipmentProfile {

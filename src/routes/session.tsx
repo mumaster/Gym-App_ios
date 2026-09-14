@@ -29,6 +29,7 @@ import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
 import { plateStep } from "../lib/gym/plates";
+import { estimated1RM } from "../lib/gym/progress";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
@@ -905,7 +906,16 @@ function ExerciseBlock({
     setEditR(s.reps);
   };
 
-  const isPR = best && Number(weight || prefillWeight) > best.weight;
+  // e1RM-based so this agrees with the PR definition used everywhere else
+  // (progress.ts, History) — comparing raw weight alone ignored reps and
+  // could flag/miss a PR differently than the History tab would.
+  const currentWeight = Number(weight || prefillWeight);
+  const currentReps = Number(reps || prefillReps);
+  const isPR =
+    !!best &&
+    currentWeight > 0 &&
+    currentReps > 0 &&
+    estimated1RM({ weight: currentWeight, reps: currentReps }) > estimated1RM(best);
   const nextPrevious = previousSets[logged.filter((s) => s.set_type === "working").length];
 
   const GRID = "grid grid-cols-[2rem_2.75rem_1fr_minmax(3.5rem,1fr)] items-center gap-1.5";
@@ -1212,7 +1222,7 @@ function ExerciseBlock({
 
       {isPR ? (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary">
-          <Trophy className="size-4" /> PR pace — above your best of {best?.weight}kg
+          <Trophy className="size-4" /> PR pace — above your best of {best?.weight}kg × {best?.reps}
         </p>
       ) : null}
 
