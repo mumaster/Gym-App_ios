@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Settings2, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
+import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import {
   dailyTotals,
@@ -9,7 +10,12 @@ import {
   entriesForDay,
   MEAL_LABELS,
   MEAL_ORDER,
+  NUTRIENT_LABELS,
+  NUTRIENT_ORDER,
+  NUTRIENT_UNITS,
+  nutrientStatus,
   scaledMacros,
+  type NutrientKey,
 } from "../lib/gym/nutrition";
 import { haptic, useGym } from "../lib/gym/store";
 
@@ -33,12 +39,14 @@ export const Route = createFileRoute("/nutrition")({
 });
 
 function NutritionScreen() {
-  const { foodEntries, hydrated, removeFoodEntry } = useGym();
+  const { foodEntries, nutritionGoals, hydrated, removeFoodEntry } = useGym();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
 
   const today = useMemo(() => dayKey(new Date().toISOString()), []);
   const todaysEntries = useMemo(() => entriesForDay(foodEntries, today), [foodEntries, today]);
   const totals = useMemo(() => dailyTotals(todaysEntries), [todaysEntries]);
+  const hasGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
 
   if (!hydrated) return <Screen title="Nutrition">{null}</Screen>;
 
@@ -51,20 +59,41 @@ function NutritionScreen() {
         month: "long",
       })}
     >
-      <Card className="grid grid-cols-3 gap-y-3 gap-x-2 p-4 text-center">
-        {[
-          ["Calories", `${totals.calories}`],
-          ["Protein", `${totals.protein}g`],
-          ["Carbs", `${totals.carbs}g`],
-          ["Fat", `${totals.fat}g`],
-          ["Fiber", `${totals.fiber}g`],
-          ["Salt", `${totals.salt}g`],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <p className="tabular text-[18px] font-bold">{value}</p>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
-          </div>
+      <div className="mb-1.5 mt-4 flex items-center justify-between px-1">
+        <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Today's overview
+        </p>
+        <button
+          onClick={() => {
+            haptic(12);
+            setGoalsSheetOpen(true);
+          }}
+          aria-label="Set daily nutrition limits"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+        >
+          <Settings2 className="size-4" />
+        </button>
+      </div>
+      <Card className="space-y-4 p-4">
+        {NUTRIENT_ORDER.map((key) => (
+          <NutrientMeter
+            key={key}
+            nutrientKey={key}
+            consumed={totals[key]}
+            limit={nutritionGoals[key]}
+          />
         ))}
+        {!hasGoals ? (
+          <button
+            onClick={() => {
+              haptic(12);
+              setGoalsSheetOpen(true);
+            }}
+            className="w-full text-center text-[13px] font-semibold text-primary"
+          >
+            Set daily limits to track progress
+          </button>
+        ) : null}
       </Card>
 
       <button
@@ -131,6 +160,54 @@ function NutritionScreen() {
       )}
 
       <AddFoodSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
     </Screen>
+  );
+}
+
+function NutrientMeter({
+  nutrientKey,
+  consumed,
+  limit,
+}: {
+  nutrientKey: NutrientKey;
+  consumed: number;
+  limit: number | undefined;
+}) {
+  const status = nutrientStatus(consumed, limit);
+  const unit = NUTRIENT_UNITS[nutrientKey];
+  const pct = limit ? Math.min(100, (consumed / limit) * 100) : 0;
+  const remaining = limit != null ? Math.round((limit - consumed) * 100) / 100 : null;
+  const fillClass =
+    status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[14px] font-semibold">{NUTRIENT_LABELS[nutrientKey]}</span>
+        <span className="tabular text-[13px] text-muted-foreground">
+          {limit != null ? `${consumed} / ${limit} ${unit}` : `${consumed} ${unit}`}
+        </span>
+      </div>
+      {limit != null ? (
+        <>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full transition-all ${fillClass}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          {status === "over" ? (
+            <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-destructive">
+              <AlertTriangle className="size-3.5" /> {Math.abs(remaining!)} {unit} over
+            </p>
+          ) : (
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {remaining} {unit} left
+            </p>
+          )}
+        </>
+      ) : null}
+    </div>
   );
 }

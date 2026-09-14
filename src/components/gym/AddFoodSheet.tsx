@@ -2,29 +2,29 @@ import { useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { OCR_LANGUAGES, parseNutritionText } from "../../lib/gym/nutritionOcr";
-import { MEAL_LABELS, MEAL_ORDER, mealForTime, type MealType } from "../../lib/gym/nutrition";
+import {
+  MEAL_LABELS,
+  MEAL_ORDER,
+  mealForTime,
+  NUTRIENT_LABELS,
+  NUTRIENT_ORDER,
+  NUTRIENT_UNITS,
+  type MealType,
+  type NutrientKey,
+} from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
-type MacroKey = "calories" | "protein" | "carbs" | "fat" | "fiber" | "salt";
+type MacroKey = NutrientKey;
 
-const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = [
-  { key: "calories", label: "Calories", unit: "kcal" },
-  { key: "protein", label: "Protein", unit: "g" },
-  { key: "carbs", label: "Carbs", unit: "g" },
-  { key: "fat", label: "Fat", unit: "g" },
-  { key: "fiber", label: "Fiber", unit: "g" },
-  { key: "salt", label: "Salt", unit: "g" },
-];
+const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
+  (key) => ({ key, label: NUTRIENT_LABELS[key], unit: NUTRIENT_UNITS[key] }),
+);
 
-const emptyPer100: Record<MacroKey, string> = {
-  calories: "",
-  protein: "",
-  carbs: "",
-  fat: "",
-  fiber: "",
-  salt: "",
-};
+const emptyPer100 = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
+  MacroKey,
+  string
+>;
 
 export function AddFoodSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { addFoodEntry } = useGym();

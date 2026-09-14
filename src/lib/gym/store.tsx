@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
-import { mealForTime, type FoodEntry } from "./nutrition";
+import { mealForTime, type FoodEntry, type NutritionGoals } from "./nutrition";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import type { WeeklyScheme } from "./splits";
@@ -42,6 +42,8 @@ interface GymState {
   weeklyScheme: WeeklyScheme | null;
   /** Logged food, newest first. */
   foodEntries: FoodEntry[];
+  /** Daily nutrition limits the user set for themselves — see NutritionGoalsSheet. */
+  nutritionGoals: NutritionGoals;
 }
 
 const initialState: GymState = {
@@ -63,6 +65,7 @@ const initialState: GymState = {
   notifyEnabled: false,
   weeklyScheme: null,
   foodEntries: [],
+  nutritionGoals: {},
 };
 
 const KEY = "forge.gym.state.v2";
@@ -110,6 +113,7 @@ function migrate(raw: Partial<GymState>): GymState {
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
+    nutritionGoals: raw.nutritionGoals ?? {},
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -152,6 +156,7 @@ interface Ctx extends GymState {
   clearWeeklyScheme: () => void;
   addFoodEntry: (entry: FoodEntry) => void;
   removeFoodEntry: (id: string) => void;
+  setNutritionGoals: (goals: NutritionGoals) => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -344,6 +349,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
       addFoodEntry: (entry) => setState((s) => ({ ...s, foodEntries: [entry, ...s.foodEntries] })),
       removeFoodEntry: (id) =>
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
+      setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
     };
   }, [state, hydrated]);
 

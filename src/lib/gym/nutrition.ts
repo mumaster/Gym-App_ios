@@ -52,6 +52,54 @@ export interface Macros {
   salt: number;
 }
 
+export type NutrientKey = keyof Macros;
+
+/** Display order used everywhere a nutrient list is shown. */
+export const NUTRIENT_ORDER: NutrientKey[] = [
+  "calories",
+  "protein",
+  "carbs",
+  "fat",
+  "fiber",
+  "salt",
+];
+
+export const NUTRIENT_LABELS: Record<NutrientKey, string> = {
+  calories: "Calories",
+  protein: "Protein",
+  carbs: "Carbs",
+  fat: "Fat",
+  fiber: "Fiber",
+  salt: "Salt",
+};
+
+export const NUTRIENT_UNITS: Record<NutrientKey, string> = {
+  calories: "kcal",
+  protein: "g",
+  carbs: "g",
+  fat: "g",
+  fiber: "g",
+  salt: "g",
+};
+
+/**
+ * Daily limits the user sets for themselves — every field optional, since not
+ * everyone wants to cap every nutrient. A future version will suggest these
+ * from a short questionnaire instead of asking for raw numbers; for now
+ * they're entered directly (see NutritionGoalsSheet).
+ */
+export type NutritionGoals = Partial<Record<NutrientKey, number>>;
+
+export type NutrientStatus = "none" | "ok" | "near" | "over";
+
+/** How close `consumed` is to `limit` — drives the overview meter's color/copy. */
+export function nutrientStatus(consumed: number, limit: number | undefined): NutrientStatus {
+  if (limit == null || limit <= 0) return "none";
+  if (consumed > limit) return "over";
+  if (consumed >= limit * 0.85) return "near";
+  return "ok";
+}
+
 /** Scales a food entry's per-100g label values by the grams actually eaten. */
 export function scaledMacros(entry: FoodEntry): Macros {
   const factor = entry.grams / 100;
