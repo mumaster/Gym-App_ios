@@ -435,36 +435,6 @@ function WorkoutHome() {
         </p>
       </Card>
 
-      <SectionLabel>Supersets</SectionLabel>
-      <Card className="p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[16px] font-semibold">Enable supersets</p>
-            <p className="text-[13px] text-muted-foreground">
-              Paired back-to-back, with rounds set automatically by exercise intensity
-            </p>
-          </div>
-          <button
-            role="switch"
-            aria-checked={supersetsEnabled}
-            aria-label="Enable supersets"
-            onClick={() => {
-              haptic(12);
-              update({ supersetsEnabled: !supersetsEnabled });
-            }}
-            className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
-              supersetsEnabled ? "bg-primary" : "bg-secondary"
-            }`}
-          >
-            <span
-              className={`absolute top-[2px] size-[27px] rounded-full bg-foreground transition-all ${
-                supersetsEnabled ? "left-[22px]" : "left-[2px]"
-              }`}
-            />
-          </button>
-        </div>
-      </Card>
-
       <SectionLabel>Equipment profile</SectionLabel>
       <Card className="p-4">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
@@ -733,9 +703,36 @@ function WorkoutHome() {
         </div>
       ) : null}
 
+      <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold">Supersets</p>
+          <p className="text-[12.5px] text-muted-foreground">
+            Pair exercises back-to-back, rounds set by intensity
+          </p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={supersetsEnabled}
+          aria-label="Enable supersets"
+          onClick={() => {
+            haptic(12);
+            update({ supersetsEnabled: !supersetsEnabled });
+          }}
+          className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
+            supersetsEnabled ? "bg-primary" : "bg-secondary"
+          }`}
+        >
+          <span
+            className={`absolute top-[2px] size-[27px] rounded-full bg-foreground transition-all ${
+              supersetsEnabled ? "left-[22px]" : "left-[2px]"
+            }`}
+          />
+        </button>
+      </div>
+
       <button
         onClick={generate}
-        className="glow mt-6 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985]"
+        className="glow mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985]"
       >
         <Zap className="size-5" />
         {plan ? "Regenerate workout" : "Generate workout"}
