@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
 import { mealForTime, type FoodEntry, type NutritionGoals } from "./nutrition";
@@ -14,6 +22,15 @@ import type {
   Unit,
   Workout,
 } from "./types";
+import {
+  onAuthStateChange,
+  pullCloudState,
+  pushCloudState,
+  signIn as authSignIn,
+  signOut as authSignOut,
+  signUp as authSignUp,
+  type Session,
+} from "./auth";
 
 interface GymState {
   profiles: EquipmentProfile[];
@@ -132,8 +149,16 @@ function migrate(raw: Partial<GymState>): GymState {
   };
 }
 
+export type SyncStatus = "offline" | "syncing" | "synced" | "error";
+
 interface Ctx extends GymState {
   hydrated: boolean;
+  /** Signed-in Supabase session, or null when using the app purely offline/local. */
+  session: Session | null;
+  syncStatus: SyncStatus;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   update: (patch: Partial<GymState>) => void;
   startWorkout: (
     input: Pick<Workout, "plan" | "duration_minutes" | "target_muscles" | "fromScheduledDay">,
@@ -171,6 +196,10 @@ const GymContext = createContext<Ctx | null>(null);
 export function GymProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GymState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("offline");
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressPush = useRef(false);
 
   useEffect(() => {
     try {
@@ -186,6 +215,62 @@ export function GymProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, hydrated]);
+
+  useEffect(() => onAuthStateChange(setSession), []);
+
+  useEffect(() => {
+    if (!session) setSyncStatus("offline");
+  }, [session]);
+
+  // On sign-in, reconcile this device against the cloud: an existing cloud
+  // copy (signing into an account already used elsewhere) wins and replaces
+  // local state; no cloud copy yet (first time this account syncs) means
+  // this device's current local state becomes the initial cloud copy.
+  useEffect(() => {
+    if (!session || !hydrated) return;
+    let cancelled = false;
+    setSyncStatus("syncing");
+    void (async () => {
+      try {
+        const cloud = await pullCloudState(session.user.id);
+        if (cancelled) return;
+        if (cloud) {
+          suppressPush.current = true;
+          setState(migrate(cloud as Partial<GymState>));
+        } else {
+          await pushCloudState(session.user.id, state);
+        }
+        if (!cancelled) setSyncStatus("synced");
+      } catch {
+        if (!cancelled) setSyncStatus("error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Reconcile only when the signed-in user changes, not on every edit —
+    // the debounced push effect below covers ongoing local edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id, hydrated]);
+
+  // Mirror local edits up to the cloud (debounced) while signed in.
+  useEffect(() => {
+    if (!session || !hydrated) return;
+    if (suppressPush.current) {
+      suppressPush.current = false;
+      return;
+    }
+    setSyncStatus("syncing");
+    if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(() => {
+      pushCloudState(session.user.id, state)
+        .then(() => setSyncStatus("synced"))
+        .catch(() => setSyncStatus("error"));
+    }, 1500);
+    return () => {
+      if (pushTimer.current) clearTimeout(pushTimer.current);
+    };
+  }, [state, session, hydrated]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -210,6 +295,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
     return {
       ...state,
       hydrated,
+      session,
+      syncStatus,
+      signIn: authSignIn,
+      signUp: authSignUp,
+      signOut: authSignOut,
       update: (patch) => setState((s) => ({ ...s, ...patch })),
       startWorkout: (input) =>
         setState((s) => ({
@@ -371,7 +461,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
     };
-  }, [state, hydrated]);
+  }, [state, hydrated, session, syncStatus]);
 
   return <GymContext.Provider value={value}>{children}</GymContext.Provider>;
 }
