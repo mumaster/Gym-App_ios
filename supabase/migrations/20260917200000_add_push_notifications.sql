@@ -60,13 +60,13 @@ CREATE POLICY "Anyone can cancel a rest notification" ON public.rest_timer_notif
 CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
--- One-time manual step (never commit the key itself): from the SQL editor,
--- run
---   ALTER DATABASE postgres SET app.settings.service_role_key = '<service-role-key>';
---   SELECT pg_reload_conf();
--- so this job can authenticate to the edge function. Until that's set,
--- `current_setting(..., true)` returns NULL and the job's requests just fail
--- (the `true` second argument means "don't error if unset").
+-- One-time manual step (never commit the key itself): the SQL editor's role
+-- isn't a superuser, so a plain `ALTER DATABASE ... SET` for a custom GUC
+-- like `app.settings.*` fails with "permission denied to set parameter" —
+-- Supabase Vault is the supported way to feed a secret into a cron job. From
+-- the SQL editor, run:
+--   SELECT vault.create_secret('<service-role-key>', 'service_role_key');
+-- (Vault is enabled by default on every Supabase project.)
 SELECT cron.schedule(
   'send-rest-notifications',
   '15 seconds',
@@ -75,7 +75,8 @@ SELECT cron.schedule(
     url := 'https://edezkhncpfuzrmxqkxkb.supabase.co/functions/v1/send-rest-notifications',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+      'Authorization',
+      'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
     ),
     body := '{}'::jsonb
   );
