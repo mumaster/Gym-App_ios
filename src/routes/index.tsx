@@ -25,6 +25,7 @@ import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
+import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
 import {
   DEFAULT_REGION,
   PAIRINGS,
@@ -404,21 +405,24 @@ function WorkoutHome() {
         <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
           <span className="text-[15px] font-semibold text-muted-foreground">Minutes</span>
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min={5}
-            max={180}
             value={customInput}
+            onFocus={placeCursorAtEnd}
             onChange={(e) => {
               const raw = e.target.value;
+              if (!DECIMAL_INPUT_RE.test(raw)) return;
               setCustomInput(raw);
-              const n = Math.round(Number(raw));
+              const n = Math.round(parseDecimal(raw));
               if (raw !== "" && Number.isFinite(n) && n > 0) {
                 setDuration(Math.min(180, n));
               }
             }}
             onBlur={() => {
-              const clamped = Math.max(5, Math.min(180, Math.round(Number(customInput) || 45)));
+              const clamped = Math.max(
+                5,
+                Math.min(180, Math.round(parseDecimal(customInput) || 45)),
+              );
               setDuration(clamped);
               setCustomInput(String(clamped));
             }}

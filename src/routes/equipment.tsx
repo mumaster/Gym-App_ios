@@ -6,6 +6,7 @@ import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { ThemePicker } from "../components/gym/ThemePicker";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
+import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
 import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
 import type { EquipmentId } from "../lib/gym/types";
@@ -354,11 +355,12 @@ function WeightField({
       type="text"
       aria-label={label}
       value={draft ?? String(value)}
+      onFocus={placeCursorAtEnd}
       onChange={(e) => {
         const next = e.target.value;
-        if (!/^\d*([.,]\d*)?$/.test(next)) return;
+        if (!DECIMAL_INPUT_RE.test(next)) return;
         setDraft(next);
-        const parsed = Number(next.replace(",", "."));
+        const parsed = parseDecimal(next);
         if (next !== "" && Number.isFinite(parsed)) onCommit(parsed);
       }}
       onBlur={() => setDraft(null)}

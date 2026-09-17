@@ -28,6 +28,7 @@ import { PlateHint } from "../components/gym/PlateHint";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
+import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { suggestWeight } from "../lib/gym/progression";
@@ -881,8 +882,8 @@ function ExerciseBlock({
   };
   const logCurrent = () =>
     submitSet(
-      Number(weight === "" ? prefillWeight : weight),
-      Number(reps === "" ? prefillReps : reps),
+      parseDecimal(weight === "" ? String(prefillWeight) : weight),
+      parseDecimal(reps === "" ? String(prefillReps) : reps),
       rpe ?? undefined,
     );
   const repeatLast = () =>
@@ -890,12 +891,12 @@ function ExerciseBlock({
 
   const bumpWeight = (dir: 1 | -1) => {
     haptic(10);
-    const cur = Number(weight === "" ? prefillWeight : weight);
+    const cur = parseDecimal(weight === "" ? String(prefillWeight) : weight);
     setWeight(String(Number(Math.max(0, cur + dir * step).toFixed(2))));
   };
   const bumpReps = (dir: 1 | -1) => {
     haptic(10);
-    const cur = Number(reps === "" ? prefillReps : reps);
+    const cur = parseDecimal(reps === "" ? String(prefillReps) : reps);
     setReps(String(Math.max(1, cur + dir)));
   };
 
@@ -909,8 +910,8 @@ function ExerciseBlock({
   // e1RM-based so this agrees with the PR definition used everywhere else
   // (progress.ts, History) — comparing raw weight alone ignored reps and
   // could flag/miss a PR differently than the History tab would.
-  const currentWeight = Number(weight || prefillWeight);
-  const currentReps = Number(reps || prefillReps);
+  const currentWeight = parseDecimal(weight || String(prefillWeight));
+  const currentReps = parseDecimal(reps || String(prefillReps));
   const isPR =
     !!best &&
     currentWeight > 0 &&
@@ -1103,11 +1104,15 @@ function ExerciseBlock({
             <div className="relative min-w-0 flex-1">
               <input
                 inputMode="decimal"
-                type="number"
+                type="text"
                 value={weight}
                 aria-label="Weight in kg"
                 placeholder={`${prefillWeight}`}
-                onChange={(e) => setWeight(e.target.value)}
+                onFocus={placeCursorAtEnd}
+                onChange={(e) => {
+                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  setWeight(e.target.value);
+                }}
                 className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
@@ -1134,11 +1139,15 @@ function ExerciseBlock({
             <div className="relative min-w-0 flex-1">
               <input
                 inputMode="numeric"
-                type="number"
+                type="text"
                 value={reps}
                 placeholder={`${prefillReps}`}
                 aria-label="Reps"
-                onChange={(e) => setReps(e.target.value)}
+                onFocus={placeCursorAtEnd}
+                onChange={(e) => {
+                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  setReps(e.target.value);
+                }}
                 className="tabular h-12 w-full rounded-xl bg-muted px-10 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
@@ -1184,7 +1193,7 @@ function ExerciseBlock({
 
           <PlateHint
             exerciseId={exercise.id}
-            target={Number(weight === "" ? prefillWeight : weight)}
+            target={parseDecimal(weight === "" ? String(prefillWeight) : weight)}
           />
 
           {lastLogged ? (
@@ -1275,10 +1284,14 @@ function Stepper({
       </button>
       <input
         inputMode="decimal"
-        type="number"
+        type="text"
         value={Number.isFinite(value) ? value : ""}
         aria-label={ariaLabel}
-        onChange={(e) => onChange(e.target.value === "" ? min : Number(e.target.value))}
+        onFocus={placeCursorAtEnd}
+        onChange={(e) => {
+          if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+          onChange(e.target.value === "" ? min : parseDecimal(e.target.value));
+        }}
         className="tabular h-12 w-full min-w-0 flex-1 rounded-xl bg-muted px-1 text-center text-base font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
       />
       <button

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { scanNutritionLabel } from "../../lib/gym/labelScan";
@@ -15,6 +15,7 @@ import {
   type MealType,
   type NutrientKey,
 } from "../../lib/gym/nutrition";
+import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
@@ -37,25 +38,6 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
-
-/**
- * type="number" inputs don't support setSelectionRange in any major browser
- * (throws), so these fields use type="text" + inputMode instead — this
- * places the cursor at the end on focus rather than the browser default of
- * the start, so backspace immediately deletes the last digit.
- */
-function placeCursorAtEnd(e: FocusEvent<HTMLInputElement>) {
-  const len = e.target.value.length;
-  e.target.setSelectionRange(len, len);
-}
-
-/** Only digits and a single decimal separator (comma or period) — same guard as equipment.tsx's WeightField. */
-const DECIMAL_INPUT_RE = /^\d*([.,]\d*)?$/;
-
-/** Parses a DECIMAL_INPUT_RE-guarded string, comma or period alike. */
-function parseDecimal(s: string): number {
-  return Number(s.replace(",", "."));
-}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

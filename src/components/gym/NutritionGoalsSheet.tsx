@@ -7,6 +7,7 @@ import {
   NUTRIENT_UNITS,
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
+import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 const emptyDraft = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
@@ -35,7 +36,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     haptic([20, 30]);
     const goals: NutritionGoals = {};
     for (const key of NUTRIENT_ORDER) {
-      const n = Number(draft[key]);
+      const n = parseDecimal(draft[key]);
       if (draft[key].trim() !== "" && Number.isFinite(n) && n > 0) goals[key] = n;
     }
     setNutritionGoals(goals);
@@ -73,9 +74,13 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
               </span>
               <input
                 inputMode="decimal"
-                type="number"
+                type="text"
                 value={draft[key]}
-                onChange={(e) => setDraft((cur) => ({ ...cur, [key]: e.target.value }))}
+                onFocus={placeCursorAtEnd}
+                onChange={(e) => {
+                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  setDraft((cur) => ({ ...cur, [key]: e.target.value }));
+                }}
                 placeholder="No limit"
                 className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
               />
