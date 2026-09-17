@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 /** Free-tier Gemini model — strong at structured document/label OCR. */
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 const PROMPT = `You are reading a photo of a food nutrition label. Extract these values
 normalized to PER 100g / PER 100ml, exactly as they'd appear in the label's "per 100g" column.
