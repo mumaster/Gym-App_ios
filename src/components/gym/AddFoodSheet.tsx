@@ -11,6 +11,7 @@ import {
   NUTRIENT_UNITS,
   scaledMacros,
   type FoodEntry,
+  type MealIngredient,
   type MealType,
   type NutrientKey,
 } from "../../lib/gym/nutrition";
@@ -53,11 +54,19 @@ export function AddFoodSheet({
   open,
   onClose,
   editEntry = null,
+  onIngredientCaptured,
 }: {
   open: boolean;
   onClose: () => void;
   /** When set, the sheet opens straight into editing this entry instead of adding a new one. */
   editEntry?: FoodEntry | null;
+  /**
+   * When set, capture {name, grams, per100} to this callback instead of
+   * writing to the food log — used by the meal builder to add one
+   * ingredient to a meal in progress. Hides the meal picker (irrelevant
+   * for a standalone ingredient).
+   */
+  onIngredientCaptured?: (ingredient: MealIngredient) => void;
 }) {
   const { addFoodEntry, updateFoodEntry, foodEntries } = useGym();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -202,6 +211,10 @@ export function AddFoodSheet({
       fiber: Number(per100.fiber) || 0,
       salt: Number(per100.salt) || 0,
     };
+    if (onIngredientCaptured) {
+      onIngredientCaptured({ name: name.trim(), grams: gramsNum, per100: per100Value });
+      return true;
+    }
     if (editEntry) {
       updateFoodEntry(editEntry.id, {
         name: name.trim(),
@@ -229,7 +242,11 @@ export function AddFoodSheet({
   };
 
   return (
-    <BottomSheet open={open} onClose={close} title={editEntry ? "Edit food" : "Add food"}>
+    <BottomSheet
+      open={open}
+      onClose={close}
+      title={onIngredientCaptured ? "Add ingredient" : editEntry ? "Edit food" : "Add food"}
+    >
       <input
         ref={fileInputRef}
         type="file"
@@ -329,29 +346,31 @@ export function AddFoodSheet({
             />
           </label>
 
-          <div>
-            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Meal</p>
-            <div className="flex gap-2">
-              {MEAL_ORDER.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    haptic(10);
-                    setMeal(m);
-                  }}
-                  aria-pressed={meal === m}
-                  className={`min-h-[40px] flex-1 rounded-2xl text-[14px] font-semibold ${
-                    meal === m
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-secondary-foreground"
-                  }`}
-                >
-                  {MEAL_LABELS[m]}
-                </button>
-              ))}
+          {onIngredientCaptured ? null : (
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Meal</p>
+              <div className="flex gap-2">
+                {MEAL_ORDER.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      haptic(10);
+                      setMeal(m);
+                    }}
+                    aria-pressed={meal === m}
+                    className={`min-h-[40px] flex-1 rounded-2xl text-[14px] font-semibold ${
+                      meal === m
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-secondary-foreground"
+                    }`}
+                  >
+                    {MEAL_LABELS[m]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
@@ -411,7 +430,7 @@ export function AddFoodSheet({
 
           <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
             <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
-              Grams eaten
+              {onIngredientCaptured ? "Grams in this meal" : "Grams eaten"}
             </span>
             <input
               inputMode="numeric"
@@ -427,7 +446,7 @@ export function AddFoodSheet({
 
           <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
             <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
-              This portion
+              {onIngredientCaptured ? "This ingredient" : "This portion"}
             </p>
             <p className="tabular mt-1 text-[15px] font-semibold">
               {preview.calories} kcal · {preview.protein}g protein · {preview.carbs}g carbs ·{" "}
@@ -440,7 +459,8 @@ export function AddFoodSheet({
             disabled={!canSave}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> {editEntry ? "Save changes" : "Add to log"}
+            <Check className="size-5" />{" "}
+            {onIngredientCaptured ? "Add ingredient" : editEntry ? "Save changes" : "Add to log"}
           </button>
         </div>
       ) : null}

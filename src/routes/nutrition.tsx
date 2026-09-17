@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Plus, Settings2, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Settings2, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
+import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import {
+  addDays,
   dailyTotals,
-  dayKey,
+  dayKeyFromDate,
   entriesForDay,
   MEAL_LABELS,
   MEAL_ORDER,
+  mealForTime,
   NUTRIENT_LABELS,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
@@ -40,30 +43,66 @@ export const Route = createFileRoute("/nutrition")({
 });
 
 function NutritionScreen() {
-  const { foodEntries, nutritionGoals, hydrated, removeFoodEntry } = useGym();
+  const { foodEntries, nutritionGoals, mealTemplates, hydrated, removeFoodEntry, logMealTemplate } =
+    useGym();
   /** null = closed, "add" = fresh entry, an entry = editing that one. */
   const [foodSheet, setFoodSheet] = useState<"add" | FoodEntry | null>(null);
   const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
+  const [createMealOpen, setCreateMealOpen] = useState(false);
+  /** 0 = today, -1 = yesterday, etc. Only today allows adding/logging. */
+  const [dayOffset, setDayOffset] = useState(0);
 
-  const today = useMemo(() => dayKey(new Date().toISOString()), []);
-  const todaysEntries = useMemo(() => entriesForDay(foodEntries, today), [foodEntries, today]);
-  const totals = useMemo(() => dailyTotals(todaysEntries), [todaysEntries]);
+  const selectedDate = useMemo(() => addDays(new Date(), dayOffset), [dayOffset]);
+  const selectedKey = useMemo(() => dayKeyFromDate(selectedDate), [selectedDate]);
+  const selectedEntries = useMemo(
+    () => entriesForDay(foodEntries, selectedKey),
+    [foodEntries, selectedKey],
+  );
+  const totals = useMemo(() => dailyTotals(selectedEntries), [selectedEntries]);
   const hasGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
+  const isToday = dayOffset === 0;
+  const dayLabel = isToday
+    ? "Today"
+    : dayOffset === -1
+      ? "Yesterday"
+      : selectedDate.toLocaleDateString(undefined, {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        });
 
   if (!hydrated) return <Screen title="Nutrition">{null}</Screen>;
 
   return (
-    <Screen
-      title="Nutrition"
-      subtitle={new Date().toLocaleDateString(undefined, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      })}
-    >
+    <Screen title="Nutrition">
+      <div className="mt-1 flex items-center justify-between px-1">
+        <button
+          onClick={() => {
+            haptic(10);
+            setDayOffset((d) => d - 1);
+          }}
+          aria-label="Previous day"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+        >
+          <ChevronLeft className="size-4" />
+        </button>
+        <p className="text-[15px] font-semibold">{dayLabel}</p>
+        <button
+          onClick={() => {
+            haptic(10);
+            setDayOffset((d) => Math.min(0, d + 1));
+          }}
+          aria-label="Next day"
+          disabled={isToday}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      </div>
+
       <div className="mb-1.5 mt-4 flex items-center justify-between px-1">
         <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Today's overview
+          {isToday ? "Today's" : "That day's"} overview
         </p>
         <button
           onClick={() => {
@@ -98,25 +137,74 @@ function NutritionScreen() {
         ) : null}
       </Card>
 
-      <button
-        onClick={() => {
-          haptic(20);
-          setFoodSheet("add");
-        }}
-        className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-      >
-        <Plus className="size-5" /> Add food
-      </button>
+      {isToday ? (
+        <>
+          <button
+            onClick={() => {
+              haptic(20);
+              setFoodSheet("add");
+            }}
+            className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
+          >
+            <Plus className="size-5" /> Add food
+          </button>
 
-      <SectionLabel>Today</SectionLabel>
-      {todaysEntries.length === 0 ? (
+          <SectionLabel>Meals</SectionLabel>
+          {mealTemplates.length === 0 ? (
+            <Card className="p-4 text-[13px] text-muted-foreground">
+              Save a combo of ingredients — like "Banana oatmeal" — to add it all in one tap next
+              time.
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {mealTemplates.map((template) => {
+                const templateTotals = dailyTotals(template.ingredients);
+                return (
+                  <Card key={template.id} className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold">{template.name}</p>
+                      <p className="tabular text-[12px] text-muted-foreground">
+                        {template.ingredients.length} ingredient
+                        {template.ingredients.length === 1 ? "" : "s"} · {templateTotals.calories}{" "}
+                        kcal
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        haptic([20, 30]);
+                        logMealTemplate(template.id, mealForTime(new Date().toISOString()));
+                      }}
+                      aria-label={`Log ${template.name}`}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          <button
+            onClick={() => {
+              haptic(15);
+              setCreateMealOpen(true);
+            }}
+            className="glass mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
+          >
+            <Plus className="size-4" /> New meal
+          </button>
+        </>
+      ) : null}
+
+      <SectionLabel>Log</SectionLabel>
+      {selectedEntries.length === 0 ? (
         <Card className="p-6 text-center text-[15px] text-muted-foreground">
-          Nothing logged yet today.
+          {isToday ? "Nothing logged yet today." : "Nothing logged that day."}
         </Card>
       ) : (
         <div className="space-y-4">
           {MEAL_ORDER.map((meal) => {
-            const mealEntries = todaysEntries.filter((e) => e.meal === meal);
+            const mealEntries = selectedEntries.filter((e) => e.meal === meal);
             if (!mealEntries.length) return null;
             const mealTotals = dailyTotals(mealEntries);
             return (
@@ -174,6 +262,7 @@ function NutritionScreen() {
         onClose={() => setFoodSheet(null)}
       />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
+      <CreateMealSheet open={createMealOpen} onClose={() => setCreateMealOpen(false)} />
     </Screen>
   );
 }

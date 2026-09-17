@@ -9,7 +9,14 @@ import {
 } from "react";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
-import { mealForTime, type FoodEntry, type NutritionGoals } from "./nutrition";
+import {
+  mealForTime,
+  type FoodEntry,
+  type MealIngredient,
+  type MealTemplate,
+  type MealType,
+  type NutritionGoals,
+} from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
@@ -62,6 +69,8 @@ interface GymState {
   foodEntries: FoodEntry[];
   /** Daily nutrition limits the user set for themselves — see NutritionGoalsSheet. */
   nutritionGoals: NutritionGoals;
+  /** Saved ingredient combos (e.g. "Banana oatmeal") the user can log in one tap. */
+  mealTemplates: MealTemplate[];
 }
 
 const initialState: GymState = {
@@ -84,6 +93,7 @@ const initialState: GymState = {
   weeklyScheme: null,
   foodEntries: [],
   nutritionGoals: {},
+  mealTemplates: [],
 };
 
 const KEY = "forge.gym.state.v2";
@@ -132,6 +142,7 @@ function migrate(raw: Partial<GymState>): GymState {
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
     nutritionGoals: raw.nutritionGoals ?? {},
+    mealTemplates: raw.mealTemplates ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -189,6 +200,10 @@ interface Ctx extends GymState {
   ) => void;
   removeFoodEntry: (id: string) => void;
   setNutritionGoals: (goals: NutritionGoals) => void;
+  saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
+  deleteMealTemplate: (id: string) => void;
+  /** Logs every ingredient of a saved meal as its own food entry, all at once. */
+  logMealTemplate: (id: string, meal: MealType) => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -460,6 +475,32 @@ export function GymProvider({ children }: { children: ReactNode }) {
       removeFoodEntry: (id) =>
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
+
+      saveMealTemplate: (name, ingredients) =>
+        setState((s) => ({
+          ...s,
+          mealTemplates: [{ id: crypto.randomUUID(), name, ingredients }, ...s.mealTemplates],
+        })),
+      deleteMealTemplate: (id) =>
+        setState((s) => ({
+          ...s,
+          mealTemplates: s.mealTemplates.filter((t) => t.id !== id),
+        })),
+      logMealTemplate: (id, meal) =>
+        setState((s) => {
+          const template = s.mealTemplates.find((t) => t.id === id);
+          if (!template) return s;
+          const now = new Date().toISOString();
+          const entries: FoodEntry[] = template.ingredients.map((ing) => ({
+            id: crypto.randomUUID(),
+            name: ing.name,
+            logged_at: now,
+            meal,
+            grams: ing.grams,
+            per100: ing.per100,
+          }));
+          return { ...s, foodEntries: [...entries, ...s.foodEntries] };
+        }),
     };
   }, [state, hydrated, session, syncStatus]);
 

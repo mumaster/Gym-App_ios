@@ -1,6 +1,6 @@
-import { dayKey } from "./date";
+import { addDays, dayKey, dayKeyFromDate } from "./date";
 
-export { dayKey };
+export { addDays, dayKey, dayKeyFromDate };
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
@@ -54,6 +54,20 @@ export interface Macros {
 
 export type NutrientKey = keyof Macros;
 
+/** One ingredient within a saved MealTemplate — same shape a food entry uses. */
+export interface MealIngredient {
+  name: string;
+  grams: number;
+  per100: Macros;
+}
+
+/** A named, reusable combo of ingredients (e.g. "Banana oatmeal") the user can log in one tap. */
+export interface MealTemplate {
+  id: string;
+  name: string;
+  ingredients: MealIngredient[];
+}
+
 /** Display order used everywhere a nutrient list is shown. */
 export const NUTRIENT_ORDER: NutrientKey[] = [
   "calories",
@@ -100,8 +114,8 @@ export function nutrientStatus(consumed: number, limit: number | undefined): Nut
   return "ok";
 }
 
-/** Scales a food entry's per-100g label values by the grams actually eaten. */
-export function scaledMacros(entry: FoodEntry): Macros {
+/** Scales per-100g label values by grams — works for a FoodEntry or a MealIngredient alike. */
+export function scaledMacros(entry: { grams: number; per100: Macros }): Macros {
   const factor = entry.grams / 100;
   return {
     calories: Math.round(entry.per100.calories * factor),
@@ -117,7 +131,7 @@ export function entriesForDay(entries: FoodEntry[], key: string): FoodEntry[] {
   return entries.filter((e) => dayKey(e.logged_at) === key);
 }
 
-export function dailyTotals(entries: FoodEntry[]): Macros {
+export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macros {
   return entries.reduce<Macros>(
     (acc, e) => {
       const m = scaledMacros(e);
