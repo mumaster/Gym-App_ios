@@ -14,7 +14,7 @@ export function TabBar() {
   if (pathname.startsWith("/session")) return null;
 
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
+    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
       <div className="glass-strong mx-auto flex max-w-md items-stretch justify-between gap-1 rounded-3xl p-1.5 shadow-[var(--shadow-float)]">
         {TABS.map(({ to, label, icon: Icon }) => {
           const active = to === "/" ? pathname === "/" : pathname.startsWith(to);

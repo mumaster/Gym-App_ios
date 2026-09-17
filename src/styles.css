@@ -203,6 +203,12 @@
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
+@utility safe-bottom-tab {
+  /* Floating tab bar: only needs a fraction of the full home-indicator
+     clearance, so it can sit closer to the bottom edge than a sheet does. */
+  padding-bottom: max(calc(env(safe-area-inset-bottom) * 0.5), 0.5rem);
+}
+
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
