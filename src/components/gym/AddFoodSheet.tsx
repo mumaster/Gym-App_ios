@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { scanNutritionLabel } from "../../lib/gym/labelScan";
@@ -37,6 +37,25 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
+
+/**
+ * type="number" inputs don't support setSelectionRange in any major browser
+ * (throws), so these fields use type="text" + inputMode instead — this
+ * places the cursor at the end on focus rather than the browser default of
+ * the start, so backspace immediately deletes the last digit.
+ */
+function placeCursorAtEnd(e: FocusEvent<HTMLInputElement>) {
+  const len = e.target.value.length;
+  e.target.setSelectionRange(len, len);
+}
+
+/** Only digits and a single decimal separator (comma or period) — same guard as equipment.tsx's WeightField. */
+const DECIMAL_INPUT_RE = /^\d*([.,]\d*)?$/;
+
+/** Parses a DECIMAL_INPUT_RE-guarded string, comma or period alike. */
+function parseDecimal(s: string): number {
+  return Number(s.replace(",", "."));
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -187,15 +206,15 @@ export function AddFoodSheet({
     }
   };
 
-  const gramsNum = Number(grams) || 0;
+  const gramsNum = parseDecimal(grams) || 0;
   const factor = gramsNum / 100;
   const preview = {
-    calories: Math.round((Number(per100.calories) || 0) * factor),
-    protein: Number(((Number(per100.protein) || 0) * factor).toFixed(1)),
-    carbs: Number(((Number(per100.carbs) || 0) * factor).toFixed(1)),
-    fat: Number(((Number(per100.fat) || 0) * factor).toFixed(1)),
-    fiber: Number(((Number(per100.fiber) || 0) * factor).toFixed(1)),
-    salt: Number(((Number(per100.salt) || 0) * factor).toFixed(2)),
+    calories: Math.round((parseDecimal(per100.calories) || 0) * factor),
+    protein: Number(((parseDecimal(per100.protein) || 0) * factor).toFixed(1)),
+    carbs: Number(((parseDecimal(per100.carbs) || 0) * factor).toFixed(1)),
+    fat: Number(((parseDecimal(per100.fat) || 0) * factor).toFixed(1)),
+    fiber: Number(((parseDecimal(per100.fiber) || 0) * factor).toFixed(1)),
+    salt: Number(((parseDecimal(per100.salt) || 0) * factor).toFixed(2)),
   };
 
   const canSave = name.trim().length > 0 && gramsNum > 0;
@@ -204,12 +223,12 @@ export function AddFoodSheet({
   const persistEdits = () => {
     if (!canSave) return false;
     const per100Value = {
-      calories: Number(per100.calories) || 0,
-      protein: Number(per100.protein) || 0,
-      carbs: Number(per100.carbs) || 0,
-      fat: Number(per100.fat) || 0,
-      fiber: Number(per100.fiber) || 0,
-      salt: Number(per100.salt) || 0,
+      calories: parseDecimal(per100.calories) || 0,
+      protein: parseDecimal(per100.protein) || 0,
+      carbs: parseDecimal(per100.carbs) || 0,
+      fat: parseDecimal(per100.fat) || 0,
+      fiber: parseDecimal(per100.fiber) || 0,
+      salt: parseDecimal(per100.salt) || 0,
     };
     if (onIngredientCaptured) {
       onIngredientCaptured({ name: name.trim(), grams: gramsNum, per100: per100Value });
@@ -390,9 +409,11 @@ export function AddFoodSheet({
                   <div className="flex items-baseline gap-1">
                     <input
                       inputMode="decimal"
-                      type="number"
+                      type="text"
                       value={per100[key]}
+                      onFocus={placeCursorAtEnd}
                       onChange={(e) => {
+                        if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                         setPer100((cur) => ({ ...cur, [key]: e.target.value }));
                         setUnmatched((cur) => {
                           const next = new Set(cur);
@@ -433,10 +454,12 @@ export function AddFoodSheet({
               {onIngredientCaptured ? "Grams in this meal" : "Grams eaten"}
             </span>
             <input
-              inputMode="numeric"
-              type="number"
+              inputMode="decimal"
+              type="text"
               value={grams}
+              onFocus={placeCursorAtEnd}
               onChange={(e) => {
+                if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                 setGrams(e.target.value);
                 setGramsTouched(true);
               }}
@@ -454,14 +477,18 @@ export function AddFoodSheet({
             </p>
           </div>
 
-          <button
-            onClick={save}
-            disabled={!canSave}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
-          >
-            <Check className="size-5" />{" "}
-            {onIngredientCaptured ? "Add ingredient" : editEntry ? "Save changes" : "Add to log"}
-          </button>
+          {/* Editing an existing entry already saves on Done/backdrop close
+              (see `close` above) — a separate button here would just be a
+              second, redundant way to do the same thing. */}
+          {editEntry && !onIngredientCaptured ? null : (
+            <button
+              onClick={save}
+              disabled={!canSave}
+              className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
+            >
+              <Check className="size-5" /> {onIngredientCaptured ? "Add ingredient" : "Add to log"}
+            </button>
+          )}
         </div>
       ) : null}
     </BottomSheet>
