@@ -49,6 +49,9 @@
 
 :root {
   --radius: 1rem;
+  /* Floating tab bar only needs a fraction of the full home-indicator
+     clearance a bottom sheet gets, so it can sit closer to the edge. */
+  --tab-bar-clearance: max(calc(env(safe-area-inset-bottom) * 0.5), 0.5rem);
   --font-ios:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui,
     sans-serif;
@@ -204,9 +207,7 @@
 }
 
 @utility safe-bottom-tab {
-  /* Floating tab bar: only needs a fraction of the full home-indicator
-     clearance, so it can sit closer to the bottom edge than a sheet does. */
-  padding-bottom: max(calc(env(safe-area-inset-bottom) * 0.5), 0.5rem);
+  padding-bottom: var(--tab-bar-clearance);
 }
 
 @utility tabular {
