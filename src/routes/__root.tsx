@@ -81,7 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      // "black-translucent" makes iOS overlay the status bar transparently on
+      // top of page content and blur/dim whatever's underneath for legibility
+      // — that's the header-text blur users were seeing, not app CSS. "black"
+      // gives a plain opaque status bar instead; since the app's own
+      // background is already solid black (see theme-color below), it reads
+      // identically without the blur artifact.
+      { name: "apple-mobile-web-app-status-bar-style", content: "black" },
       { name: "apple-mobile-web-app-title", content: "Forge" },
       { name: "theme-color", content: "#000000" },
       { title: "Forge — Smart Workout Generator & Tracker" },
