@@ -4,6 +4,7 @@ import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
 import { dailyTotals, scaledMacros, type MealIngredient } from "../../lib/gym/nutrition";
+import { placeCursorAtEnd } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -45,6 +46,7 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onFocus={placeCursorAtEnd}
               placeholder="e.g. Banana oatmeal"
               className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />

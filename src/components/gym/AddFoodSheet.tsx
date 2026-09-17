@@ -342,6 +342,7 @@ export function AddFoodSheet({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onFocus={placeCursorAtEnd}
               placeholder="e.g. Greek yogurt"
               className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />
