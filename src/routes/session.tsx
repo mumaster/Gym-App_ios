@@ -350,11 +350,13 @@ function SessionScreen() {
       Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
     if (permission === "granted") {
       update({ notifyEnabled: true });
-      // Best-effort: backs the in-app timer with a server-sent push so rest
-      // completion still notifies with the screen locked. Silently no-ops
-      // where Web Push isn't available (e.g. Safari tabs not added to the
-      // Home Screen) — the in-app cues above still work either way.
-      void ensurePushSubscription();
+      // Backs the in-app timer with a server-sent push so rest completion
+      // still notifies with the screen locked. Not fatal if this fails (e.g.
+      // Web Push isn't available outside a Home-Screen-installed PWA) — the
+      // in-app cues still work either way — but surface why, since a silent
+      // failure here is otherwise impossible to diagnose from outside.
+      const result = await ensurePushSubscription();
+      if (!result.ok) setToast(`Notify on, but background push setup failed: ${result.reason}`);
     } else setToast("Notifications weren't allowed.");
   };
 

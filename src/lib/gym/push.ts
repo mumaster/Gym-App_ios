@@ -22,16 +22,20 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
+export type PushSubscribeResult = { ok: true } | { ok: false; reason: string };
+
 /**
  * Subscribes this device for Web Push (if not already) and upserts the
  * subscription to Supabase, so the server can notify it even while the
- * screen is off. No-ops quietly on any unsupported browser/step — push is a
- * best-effort enhancement on top of the in-app rest timer, not a requirement
- * (e.g. it only actually works on iOS for a PWA added to the Home Screen).
+ * screen is off. Push is a best-effort enhancement on top of the in-app rest
+ * timer, not a requirement (e.g. it only actually works on iOS for a PWA
+ * added to the Home Screen) — callers can ignore a failure result, but it's
+ * returned rather than swallowed so the caller can surface it if useful.
  */
-export async function ensurePushSubscription(): Promise<void> {
-  if (typeof window === "undefined") return;
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
+  if (typeof window === "undefined") return { ok: false, reason: "no window" };
+  if (!("serviceWorker" in navigator)) return { ok: false, reason: "no service worker support" };
+  if (!("PushManager" in window)) return { ok: false, reason: "no Push API support" };
   try {
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
@@ -42,36 +46,45 @@ export async function ensurePushSubscription(): Promise<void> {
       });
     }
     const json = subscription.toJSON();
-    if (!json.endpoint || !json.keys?.["p256dh"] || !json.keys?.["auth"]) return;
-    await supabase.from("push_subscriptions").upsert({
+    if (!json.endpoint || !json.keys?.["p256dh"] || !json.keys?.["auth"]) {
+      return { ok: false, reason: "subscription missing endpoint/keys" };
+    }
+    const { error } = await supabase.from("push_subscriptions").upsert({
       device_id: getDeviceId(),
       endpoint: json.endpoint,
       p256dh: json.keys["p256dh"],
       auth: json.keys["auth"],
       updated_at: new Date().toISOString(),
     });
-  } catch {
-    /* push isn't available/permitted here — the in-app timer still works */
+    if (error) return { ok: false, reason: `Supabase: ${error.message}` };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }
 }
 
 /** Schedules a server-sent push for when the current rest period ends. */
 export async function scheduleRestNotification(secondsFromNow: number): Promise<void> {
   try {
-    await supabase.from("rest_timer_notifications").upsert({
+    const { error } = await supabase.from("rest_timer_notifications").upsert({
       device_id: getDeviceId(),
       fire_at: new Date(Date.now() + secondsFromNow * 1000).toISOString(),
     });
-  } catch {
-    /* best-effort — the in-app cues still fire if the tab is alive */
+    if (error) console.error("scheduleRestNotification:", error.message);
+  } catch (err) {
+    console.error("scheduleRestNotification:", err);
   }
 }
 
 /** Cancels this device's pending rest notification, if any (rest ended, was skipped, or workout stopped). */
 export async function cancelRestNotification(): Promise<void> {
   try {
-    await supabase.from("rest_timer_notifications").delete().eq("device_id", getDeviceId());
-  } catch {
-    /* best-effort */
+    const { error } = await supabase
+      .from("rest_timer_notifications")
+      .delete()
+      .eq("device_id", getDeviceId());
+    if (error) console.error("cancelRestNotification:", error.message);
+  } catch (err) {
+    console.error("cancelRestNotification:", err);
   }
 }
