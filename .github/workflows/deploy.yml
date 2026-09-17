@@ -1,0 +1,32 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - claude/app-feature-improvements-6rr2ur
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Deploy
+        run: npx nitro deploy --prebuilt
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
