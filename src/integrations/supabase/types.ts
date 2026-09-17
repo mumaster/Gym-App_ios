@@ -71,6 +71,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          auth: string;
+          device_id: string;
+          endpoint: string;
+          p256dh: string;
+          updated_at: string;
+        };
+        Insert: {
+          auth: string;
+          device_id: string;
+          endpoint: string;
+          p256dh: string;
+          updated_at?: string;
+        };
+        Update: {
+          auth?: string;
+          device_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      rest_timer_notifications: {
+        Row: {
+          body: string;
+          created_at: string;
+          device_id: string;
+          fire_at: string;
+          title: string;
+        };
+        Insert: {
+          body?: string;
+          created_at?: string;
+          device_id: string;
+          fire_at: string;
+          title?: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          device_id?: string;
+          fire_at?: string;
+          title?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

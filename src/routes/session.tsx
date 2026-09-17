@@ -33,6 +33,11 @@ import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
+import {
+  cancelRestNotification,
+  ensurePushSubscription,
+  scheduleRestNotification,
+} from "../lib/gym/push";
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
@@ -147,6 +152,9 @@ function SessionScreen() {
       haptic([60, 60, 120]);
       if (soundEnabled) playRestEndBeep();
       flashActiveCard();
+      // The server-sent push (scheduled in startRest below) is now moot
+      // either way — it already fired, or rest ended before it was due.
+      void cancelRestNotification();
       if (
         notifyEnabled &&
         document.visibilityState !== "visible" &&
@@ -172,6 +180,21 @@ function SessionScreen() {
   /** Rest Mode: countdown running, before the "rest complete" phase. */
   const resting = rest.phase === "counting";
   const restDone = rest.phase === "done";
+
+  /** Starts the rest countdown and, if notifications are on, schedules the
+   *  server-sent push that backs it up while the screen is off. */
+  const startRest = useCallback(
+    (seconds: number) => {
+      rest.start(seconds);
+      if (notifyEnabled) void scheduleRestNotification(seconds);
+    },
+    [rest, notifyEnabled],
+  );
+
+  // Cancel any pending server-sent notification for this device whenever the
+  // session screen goes away (workout finished/cancelled/navigated off) —
+  // otherwise a push could still land for a rest that's no longer running.
+  useEffect(() => () => void cancelRestNotification(), []);
 
   const plan = useMemo(() => activeWorkout?.plan ?? [], [activeWorkout]);
   const blocks = useMemo(() => buildBlocks(plan), [plan]);
@@ -325,8 +348,14 @@ function SessionScreen() {
     }
     const permission =
       Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-    if (permission === "granted") update({ notifyEnabled: true });
-    else setToast("Notifications weren't allowed.");
+    if (permission === "granted") {
+      update({ notifyEnabled: true });
+      // Best-effort: backs the in-app timer with a server-sent push so rest
+      // completion still notifies with the screen locked. Silently no-ops
+      // where Web Push isn't available (e.g. Safari tabs not added to the
+      // Home Screen) — the in-app cues above still work either way.
+      void ensurePushSubscription();
+    } else setToast("Notifications weren't allowed.");
   };
 
   const confirmCancelWorkout = () => {
@@ -345,7 +374,7 @@ function SessionScreen() {
         willComplete && blockIndex < blocks.length - 1
           ? () => setPos({ block: blockIndex + 1, slot: 0, round: 1 })
           : null;
-      rest.start(restFor(planIndex));
+      startRest(restFor(planIndex));
       return;
     }
 
@@ -370,7 +399,7 @@ function SessionScreen() {
       else if (blockIndex < blocks.length - 1) setPos({ block: blockIndex + 1, slot: 0, round: 1 });
     };
     // The pair rest lives on slot B.
-    rest.start(restFor(block.indices[block.indices.length - 1]!));
+    startRest(restFor(block.indices[block.indices.length - 1]!));
   };
 
   return (

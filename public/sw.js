@@ -71,3 +71,33 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+// Rest-timer notifications sent by the send-rest-notifications edge function
+// (see supabase/functions/) while the page itself may be fully suspended —
+// this is what lets a rest-complete alert land with the screen locked.
+self.addEventListener("push", (event) => {
+  let payload = { title: "Rest complete", body: "Time to lift — back to Forge." };
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch {
+    /* fall back to the default copy above */
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      tag: "forge-rest",
+      icon: "/pwa/icon-192.png",
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((c) => "focus" in c);
+      if (existing) return existing.focus();
+      return self.clients.openWindow("/session");
+    }),
+  );
+});
