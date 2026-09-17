@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Cloud, CloudOff, LogOut } from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
+import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { ThemePicker } from "../components/gym/ThemePicker";
 import { haptic, useGym } from "../lib/gym/store";
@@ -71,6 +72,11 @@ function SettingsScreen() {
             </button>
           </div>
         )}
+      </Card>
+
+      <SectionLabel>Avatar</SectionLabel>
+      <Card className="p-0">
+        <AvatarPicker />
       </Card>
 
       <SectionLabel>Appearance</SectionLabel>

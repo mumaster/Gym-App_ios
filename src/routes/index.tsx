@@ -16,11 +16,11 @@ import {
   Sparkles,
   Timer,
   TrendingUp,
-  User,
   X,
   Zap,
 } from "lucide-react";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
+import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
@@ -81,6 +81,7 @@ function WorkoutHome() {
     weeklyScheme,
     readinessLog,
     setTodayReadiness,
+    avatarId,
   } = useGym();
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
@@ -267,9 +268,9 @@ function WorkoutHome() {
             navigate({ to: "/settings" });
           }}
           aria-label="Settings"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+          className="rounded-full"
         >
-          <User className="size-5" />
+          <ProfileAvatar avatarId={avatarId} size={40} />
         </button>
       }
     >

@@ -49,6 +49,10 @@ Nearly all app state (equipment profiles, workout history, the in-progress `acti
 
 The Nutrition screen isn't today-only: `dayOffset` state (0 = today, negative = back) drives `entriesForDay`/`dailyTotals` over whichever day is selected, and "Add food"/"Meals" are hidden on non-today days (editing/deleting a past entry is still allowed). `MealTemplate` (`lib/gym/nutrition.ts`) is a named, saved combo of `MealIngredient`s (each just `{name, grams, per100}`) — `store.tsx` holds them in `mealTemplates` and exposes `saveMealTemplate`/`deleteMealTemplate`/`logMealTemplate` (the last one writes one `FoodEntry` per ingredient in a single `setState`, all sharing one `logged_at`/`meal`). `CreateMealSheet.tsx` builds one by reusing `AddFoodSheet` itself for each ingredient — pass it an `onIngredientCaptured` callback and it captures `{name, grams, per100}` to that instead of writing to the food log (hiding the now-irrelevant meal-type picker). The two sheets are never both mounted-open at once (`CreateMealSheet`'s own `<BottomSheet open>` is `false` while `AddFoodSheet` is up) specifically to avoid stacking two `fixed inset-0 z-50` overlays.
 
+### Profile avatars
+
+`src/lib/gym/avatars.ts` defines a fixed list of 6 `AvatarOption`s (id, label, a `lucide-react` icon, and an `oklch()` circle background — same color formula `ThemePicker.tsx` uses for accent swatches). The chosen `avatarId` lives on `GymState` (default `"bot"`, migrated with `raw.avatarId ?? DEFAULT_AVATAR_ID`) and is set via the store's generic `update({ avatarId })` — there's no dedicated action. `AvatarPicker.tsx` (in Settings, between Account and Appearance) renders the selectable grid; `ProfileAvatar.tsx` renders the chosen one anywhere it needs to be displayed, currently the profile/settings button in the `index` route's header.
+
 ### Workout generation & domain logic
 
 - `lib/gym/generator.ts` — the core generation engine: picks a `Shape` (set/rest/rep scheme) based on requested duration, then fills it from `availableExercises()` (filtered by equipment) with compound-first, accessory-second logic; also estimates session duration.

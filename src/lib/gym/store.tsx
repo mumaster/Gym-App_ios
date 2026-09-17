@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { DEFAULT_AVATAR_ID, type AvatarId } from "./avatars";
 import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
 import {
@@ -49,6 +50,8 @@ interface GymState {
   accent: AccentId;
   /** Hex color used when accent === "custom". */
   customAccent: string;
+  /** Which character represents the user in the profile/settings icon. */
+  avatarId: AvatarId;
   supersetsEnabled: boolean;
   supersetRounds: number;
   /** Exercise ids the user "loved" — always forced into a generated plan. */
@@ -82,6 +85,7 @@ const initialState: GymState = {
   restSeconds: 90,
   accent: "green",
   customAccent: "#34d399",
+  avatarId: DEFAULT_AVATAR_ID,
   supersetsEnabled: false,
   supersetRounds: 3,
   lovedExerciseIds: [],
@@ -132,6 +136,7 @@ function migrate(raw: Partial<GymState>): GymState {
     unit: "kg",
     accent: raw.accent ?? "green",
     customAccent: raw.customAccent ?? "#34d399",
+    avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     supersetsEnabled: raw.supersetsEnabled ?? false,
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
