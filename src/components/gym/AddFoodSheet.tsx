@@ -85,6 +85,10 @@ export function AddFoodSheet({
   };
 
   const close = () => {
+    // Closing (Done, or tapping the backdrop) while editing an existing
+    // entry should keep whatever was changed, not silently discard it —
+    // there's no separate "Save" action to remind the user to hit first.
+    if (editEntry && step === "review") persistEdits();
     reset();
     onClose();
   };
@@ -187,9 +191,9 @@ export function AddFoodSheet({
 
   const canSave = name.trim().length > 0 && gramsNum > 0;
 
-  const save = () => {
-    if (!canSave) return;
-    haptic([20, 30]);
+  /** Writes the current form to the store. Returns whether it actually saved. */
+  const persistEdits = () => {
+    if (!canSave) return false;
     const per100Value = {
       calories: Number(per100.calories) || 0,
       protein: Number(per100.protein) || 0,
@@ -215,6 +219,12 @@ export function AddFoodSheet({
         per100: per100Value,
       });
     }
+    return true;
+  };
+
+  const save = () => {
+    if (!persistEdits()) return;
+    haptic([20, 30]);
     close();
   };
 

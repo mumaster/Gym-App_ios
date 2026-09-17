@@ -16,10 +16,13 @@ Return protein, carbs, fat, fiber in grams. Return salt in grams (if only sodium
 convert: salt_g = sodium_mg * 2.5 / 1000).
 
 Also read the serving/portion size the label itself suggests (e.g. "Serving size: 30g",
-"1 portion (45g)") and return it in grams as servingSizeGrams. Only return a number if the label
-states it directly in grams/ml or gives an equivalent you can convert (e.g. "30g (1 bar)" ->
-30). If the label only gives a non-mass unit with no gram equivalent (e.g. "1 bar", "2 cookies"),
-or states no serving size at all, return null — do not guess a weight.`;
+"1 portion (45g)", "Per bar: 35g") and return it in grams as servingSizeGrams. This must be a
+distinct, explicitly stated serving/portion line — NOT the "per 100g" / "per 100ml" heading that
+the macro table itself is normalized to, which is a reference basis, not a suggested amount to
+eat. Only return a number if the label separately states a serving size directly in grams/ml, or
+gives an equivalent you can convert (e.g. "30g (1 bar)" -> 30). If the label only gives a
+non-mass unit with no gram equivalent (e.g. "1 bar", "2 cookies"), or states no serving size at
+all beyond the per-100g/per-100ml table, return null — do not guess a weight.`;
 
 const RESPONSE_SCHEMA = {
   type: "object",
