@@ -67,9 +67,13 @@ CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 -- the SQL editor, run:
 --   SELECT vault.create_secret('<service-role-key>', 'service_role_key');
 -- (Vault is enabled by default on every Supabase project.)
+-- 6s keeps monthly edge function invocations (~432k) under the free plan's
+-- 500k/month allowance while still cutting worst-case delay well below the
+-- default's 15s; tighten further only if you don't mind crossing into paid
+-- overage (trivial at $2/million, but not zero).
 SELECT cron.schedule(
   'send-rest-notifications',
-  '15 seconds',
+  '6 seconds',
   $$
   SELECT net.http_post(
     url := 'https://edezkhncpfuzrmxqkxkb.supabase.co/functions/v1/send-rest-notifications',
