@@ -15,8 +15,12 @@ export function Screen({
 }) {
   return (
     <div className="min-h-[100dvh] bg-background">
-      <header className="safe-top sticky top-0 z-30 glass-strong border-x-0 border-t-0 pb-2">
-        <div className="mx-auto grid w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-end gap-3 px-4">
+      <header className="safe-top sticky top-0 z-30 pb-2">
+        {/* Separate layer for the blur: WebKit can bleed backdrop-filter
+            onto an element's own text when applied directly to the element
+            that contains it, instead of confining it to what's behind. */}
+        <div className="glass-strong absolute inset-0 border-x-0 border-t-0" />
+        <div className="relative mx-auto grid w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-end gap-3 px-4">
           <div className="min-w-0">
             <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-foreground">
               {title}
