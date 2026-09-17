@@ -49,14 +49,30 @@ export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
     if (!json.endpoint || !json.keys?.["p256dh"] || !json.keys?.["auth"]) {
       return { ok: false, reason: "subscription missing endpoint/keys" };
     }
-    const { error } = await supabase.from("push_subscriptions").upsert({
-      device_id: getDeviceId(),
+    const deviceId = getDeviceId();
+    const row = {
       endpoint: json.endpoint,
       p256dh: json.keys["p256dh"],
       auth: json.keys["auth"],
       updated_at: new Date().toISOString(),
-    });
-    if (error) return { ok: false, reason: `Supabase: ${error.message}` };
+    };
+    // A plain UPDATE, falling back to INSERT when nothing matched, instead
+    // of `.upsert()`: its `ON CONFLICT DO UPDATE` needs a SELECT policy to
+    // check the conflicting row's visibility, which this table deliberately
+    // doesn't grant (that would let any client read every device's push
+    // endpoint/keys). UPDATE ... RETURNING needs no such policy.
+    const { data: updated, error: updateError } = await supabase
+      .from("push_subscriptions")
+      .update(row)
+      .eq("device_id", deviceId)
+      .select("device_id");
+    if (updateError) return { ok: false, reason: `Supabase: ${updateError.message}` };
+    if (!updated || updated.length === 0) {
+      const { error: insertError } = await supabase
+        .from("push_subscriptions")
+        .insert({ device_id: deviceId, ...row });
+      if (insertError) return { ok: false, reason: `Supabase: ${insertError.message}` };
+    }
     return { ok: true };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
@@ -66,11 +82,24 @@ export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
 /** Schedules a server-sent push for when the current rest period ends. */
 export async function scheduleRestNotification(secondsFromNow: number): Promise<void> {
   try {
-    const { error } = await supabase.from("rest_timer_notifications").upsert({
-      device_id: getDeviceId(),
-      fire_at: new Date(Date.now() + secondsFromNow * 1000).toISOString(),
-    });
-    if (error) console.error("scheduleRestNotification:", error.message);
+    const deviceId = getDeviceId();
+    const fire_at = new Date(Date.now() + secondsFromNow * 1000).toISOString();
+    // Same UPDATE-then-INSERT reasoning as ensurePushSubscription above.
+    const { data: updated, error: updateError } = await supabase
+      .from("rest_timer_notifications")
+      .update({ fire_at })
+      .eq("device_id", deviceId)
+      .select("device_id");
+    if (updateError) {
+      console.error("scheduleRestNotification:", updateError.message);
+      return;
+    }
+    if (!updated || updated.length === 0) {
+      const { error: insertError } = await supabase
+        .from("rest_timer_notifications")
+        .insert({ device_id: deviceId, fire_at });
+      if (insertError) console.error("scheduleRestNotification:", insertError.message);
+    }
   } catch (err) {
     console.error("scheduleRestNotification:", err);
   }
