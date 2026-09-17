@@ -40,7 +40,11 @@ export interface ScannedLabel {
 }
 
 interface GeminiResponse {
-  candidates?: { content?: { parts?: { text?: string }[] } }[];
+  candidates?: {
+    content?: { parts?: { text?: string }[] };
+    finishReason?: string;
+  }[];
+  promptFeedback?: { blockReason?: string };
 }
 
 export const scanNutritionLabel = createServerFn({ method: "POST" })
@@ -74,14 +78,21 @@ export const scanNutritionLabel = createServerFn({ method: "POST" })
     );
 
     if (!res.ok) {
-      throw new Error(`Label scan request failed (${res.status})`);
+      const body = await res.text().catch(() => "");
+      throw new Error(`Gemini request failed (${res.status}): ${body.slice(0, 300)}`);
     }
 
     const json = (await res.json()) as GeminiResponse;
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      throw new Error("The scanner didn't return a result.");
+      const reason =
+        json.promptFeedback?.blockReason ?? json.candidates?.[0]?.finishReason ?? "no result";
+      throw new Error(`Gemini didn't return usable text (${reason})`);
     }
 
-    return JSON.parse(text) as ScannedLabel;
+    try {
+      return JSON.parse(text) as ScannedLabel;
+    } catch {
+      throw new Error(`Gemini returned non-JSON output: ${text.slice(0, 200)}`);
+    }
   });

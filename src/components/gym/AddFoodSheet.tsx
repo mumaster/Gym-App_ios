@@ -155,9 +155,10 @@ export function AddFoodSheet({
       setUnmatched(missing);
       setName(result.name?.trim() || "Scanned food");
       setStep("review");
-    } catch {
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
       setScanError(
-        "Couldn't read that photo — try a clearer, well-lit shot, or enter it manually.",
+        `Couldn't read that photo — try a clearer, well-lit shot, or enter it manually. (${detail})`,
       );
       setStep("start");
     }
