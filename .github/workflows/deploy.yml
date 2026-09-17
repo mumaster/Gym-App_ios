@@ -30,3 +30,14 @@ jobs:
         run: npx nitro deploy --prebuilt
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # Keeps the Worker's GEMINI_API_KEY secret in sync on every deploy —
+      # a Cloudflare Worker secret is a separate store from GitHub Actions
+      # secrets, so this can't be set just by adding it above; re-running
+      # `secret put` with the same value is a harmless no-op.
+      - name: Sync Gemini secret
+        run: echo "$GEMINI_API_KEY" | npx wrangler secret put GEMINI_API_KEY
+        working-directory: .output/server
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
