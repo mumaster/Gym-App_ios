@@ -67,6 +67,8 @@ export function AddFoodSheet({
   const [name, setName] = useState("");
   const [meal, setMeal] = useState<MealType>(() => mealForTime(new Date().toISOString()));
   const [grams, setGrams] = useState("100");
+  const [gramsTouched, setGramsTouched] = useState(false);
+  const [suggestedGrams, setSuggestedGrams] = useState<number | null>(null);
   const [per100, setPer100] = useState<Record<MacroKey, string>>(emptyPer100);
   const [unmatched, setUnmatched] = useState<Set<MacroKey>>(new Set());
 
@@ -76,6 +78,8 @@ export function AddFoodSheet({
     setName("");
     setMeal(mealForTime(new Date().toISOString()));
     setGrams("100");
+    setGramsTouched(false);
+    setSuggestedGrams(null);
     setPer100(emptyPer100);
     setUnmatched(new Set());
   };
@@ -93,6 +97,8 @@ export function AddFoodSheet({
     setName(editEntry.name);
     setMeal(editEntry.meal);
     setGrams(String(editEntry.grams));
+    setGramsTouched(false);
+    setSuggestedGrams(null);
     setPer100(per100ToDraft(editEntry.per100));
     setUnmatched(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,6 +123,7 @@ export function AddFoodSheet({
     setName("");
     setPer100(emptyPer100);
     setUnmatched(new Set());
+    setSuggestedGrams(null);
     setStep("review");
   };
 
@@ -125,8 +132,10 @@ export function AddFoodSheet({
     setName(entry.name);
     setMeal(mealForTime(new Date().toISOString()));
     setGrams(String(entry.grams));
+    setGramsTouched(true);
     setPer100(per100ToDraft(entry.per100));
     setUnmatched(new Set());
+    setSuggestedGrams(null);
     setStep("review");
   };
 
@@ -154,6 +163,7 @@ export function AddFoodSheet({
       setPer100(next);
       setUnmatched(missing);
       setName(result.name?.trim() || "Scanned food");
+      setSuggestedGrams(!gramsTouched ? result.servingSizeGrams : null);
       setStep("review");
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
@@ -371,6 +381,24 @@ export function AddFoodSheet({
             </div>
           </div>
 
+          {suggestedGrams && !gramsTouched ? (
+            <button
+              type="button"
+              onClick={() => {
+                haptic(15);
+                setGrams(String(suggestedGrams));
+                setGramsTouched(true);
+                setSuggestedGrams(null);
+              }}
+              className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
+            >
+              <span className="text-[14px] font-semibold text-primary">
+                Use the label's serving size — {suggestedGrams}g?
+              </span>
+              <Check className="size-4 shrink-0 text-primary" />
+            </button>
+          ) : null}
+
           <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
             <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
               Grams eaten
@@ -379,7 +407,10 @@ export function AddFoodSheet({
               inputMode="numeric"
               type="number"
               value={grams}
-              onChange={(e) => setGrams(e.target.value)}
+              onChange={(e) => {
+                setGrams(e.target.value);
+                setGramsTouched(true);
+              }}
               className="tabular h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[17px] font-bold text-foreground outline-none"
             />
           </label>

@@ -13,7 +13,13 @@ Also try to read the product name printed on the packaging; if none is visible, 
 
 Return calories in kcal (convert from kJ if that's what's shown: kcal = kJ / 4.184).
 Return protein, carbs, fat, fiber in grams. Return salt in grams (if only sodium is listed,
-convert: salt_g = sodium_mg * 2.5 / 1000).`;
+convert: salt_g = sodium_mg * 2.5 / 1000).
+
+Also read the serving/portion size the label itself suggests (e.g. "Serving size: 30g",
+"1 portion (45g)") and return it in grams as servingSizeGrams. Only return a number if the label
+states it directly in grams/ml or gives an equivalent you can convert (e.g. "30g (1 bar)" ->
+30). If the label only gives a non-mass unit with no gram equivalent (e.g. "1 bar", "2 cookies"),
+or states no serving size at all, return null — do not guess a weight.`;
 
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -25,8 +31,9 @@ const RESPONSE_SCHEMA = {
     fat: { type: "number", nullable: true },
     fiber: { type: "number", nullable: true },
     salt: { type: "number", nullable: true },
+    servingSizeGrams: { type: "number", nullable: true },
   },
-  required: ["name", "calories", "protein", "carbs", "fat", "fiber", "salt"],
+  required: ["name", "calories", "protein", "carbs", "fat", "fiber", "salt", "servingSizeGrams"],
 };
 
 export interface ScannedLabel {
@@ -37,6 +44,8 @@ export interface ScannedLabel {
   fat: number | null;
   fiber: number | null;
   salt: number | null;
+  /** The label's own suggested portion size in grams, if it states one directly. */
+  servingSizeGrams: number | null;
 }
 
 interface GeminiResponse {
