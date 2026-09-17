@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import {
   NUTRIENT_LABELS,
@@ -32,7 +32,9 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     });
   }, [open, nutritionGoals]);
 
-  const save = () => {
+  // Done (and the backdrop) saves whatever's currently filled in — there's
+  // no separate save step to remember, same as editing an existing food.
+  const close = () => {
     haptic([20, 30]);
     const goals: NutritionGoals = {};
     for (const key of NUTRIENT_ORDER) {
@@ -49,7 +51,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Daily nutrition limits">
+    <BottomSheet open={open} onClose={close} title="Daily nutrition limits">
       <div className="space-y-4">
         <p className="text-[13px] text-muted-foreground">
           Set a daily limit for whichever nutrients you want to keep an eye on. Leave the rest blank
@@ -91,20 +93,12 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
           ))}
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={save}
-            className="flex min-h-[52px] flex-[2] items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
-          >
-            <Check className="size-5" /> Save limits
-          </button>
-          <button
-            onClick={clearAll}
-            className="glass flex min-h-[52px] flex-1 items-center justify-center rounded-2xl text-[15px] font-semibold text-muted-foreground active:scale-95"
-          >
-            Clear all
-          </button>
-        </div>
+        <button
+          onClick={clearAll}
+          className="glass flex min-h-[52px] w-full items-center justify-center rounded-2xl text-[15px] font-semibold text-muted-foreground active:scale-95"
+        >
+          Clear all
+        </button>
       </div>
     </BottomSheet>
   );
