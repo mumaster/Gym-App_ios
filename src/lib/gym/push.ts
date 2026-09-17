@@ -71,7 +71,18 @@ export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
       const { error: insertError } = await supabase
         .from("push_subscriptions")
         .insert({ device_id: deviceId, ...row });
-      if (insertError) return { ok: false, reason: `Supabase: ${insertError.message}` };
+      if (insertError) {
+        // Lost a race with a concurrent call that inserted first (e.g. the
+        // notify toggle fired twice) — the row exists now, so fall back to
+        // an update rather than erroring out on a spurious conflict.
+        if (insertError.code !== "23505")
+          return { ok: false, reason: `Supabase: ${insertError.message}` };
+        const { error: retryError } = await supabase
+          .from("push_subscriptions")
+          .update(row)
+          .eq("device_id", deviceId);
+        if (retryError) return { ok: false, reason: `Supabase: ${retryError.message}` };
+      }
     }
     return { ok: true };
   } catch (err) {
@@ -98,7 +109,17 @@ export async function scheduleRestNotification(secondsFromNow: number): Promise<
       const { error: insertError } = await supabase
         .from("rest_timer_notifications")
         .insert({ device_id: deviceId, fire_at });
-      if (insertError) console.error("scheduleRestNotification:", insertError.message);
+      if (insertError && insertError.code === "23505") {
+        // Same race as ensurePushSubscription: a concurrent call inserted
+        // first, so make sure this call's fire_at (the most recent one) wins.
+        const { error: retryError } = await supabase
+          .from("rest_timer_notifications")
+          .update({ fire_at })
+          .eq("device_id", deviceId);
+        if (retryError) console.error("scheduleRestNotification:", retryError.message);
+      } else if (insertError) {
+        console.error("scheduleRestNotification:", insertError.message);
+      }
     }
   } catch (err) {
     console.error("scheduleRestNotification:", err);
