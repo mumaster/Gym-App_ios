@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, Keyboard, Loader2, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
-import { OCR_LANGUAGES, parseNutritionText } from "../../lib/gym/nutritionOcr";
+import { scanNutritionLabel } from "../../lib/gym/labelScan";
 import {
   MEAL_LABELS,
   MEAL_ORDER,
@@ -36,6 +36,18 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.slice(result.indexOf(",") + 1));
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export function AddFoodSheet({
   open,
@@ -127,34 +139,21 @@ export function AddFoodSheet({
   const onFileSelected = async (file: File) => {
     setStep("scanning");
     try {
-      const { createWorker } = await import("tesseract.js");
-      // Self-hosted (see scripts/setup-ocr-assets.mjs) rather than the
-      // library's default jsdelivr CDN, which corporate proxies, ad
-      // blockers and some networks block outright. All OCR_LANGUAGES load
-      // together so one scan reads labels in any of them without asking the
-      // user to pick a language up front.
-      const worker = await createWorker(OCR_LANGUAGES.join("+"), undefined, {
-        workerPath: "/tesseract/worker.min.js",
-        corePath: "/tesseract/core",
-        langPath: "/tesseract",
-        gzip: true,
+      const imageBase64 = await fileToBase64(file);
+      const result = await scanNutritionLabel({
+        data: { imageBase64, mimeType: file.type || "image/jpeg" },
       });
-      const {
-        data: { text },
-      } = await worker.recognize(file);
-      await worker.terminate();
 
-      const parsed = parseNutritionText(text);
       const missing = new Set<MacroKey>();
       const next: Record<MacroKey, string> = { ...emptyPer100 };
       for (const { key } of MACRO_FIELDS) {
-        const v = parsed[key];
+        const v = result[key];
         if (v === null) missing.add(key);
         else next[key] = String(v);
       }
       setPer100(next);
       setUnmatched(missing);
-      setName((n) => n || "Scanned food");
+      setName(result.name?.trim() || "Scanned food");
       setStep("review");
     } catch {
       setScanError(
@@ -284,7 +283,7 @@ export function AddFoodSheet({
           <Loader2 className="size-8 animate-spin text-primary" />
           <p className="text-[15px] font-semibold">Reading the label…</p>
           <p className="text-[13px] text-muted-foreground">
-            This runs right on your device — no photo is uploaded anywhere.
+            Your photo is sent to Google's Gemini API to read the label, then discarded.
           </p>
         </div>
       ) : null}
