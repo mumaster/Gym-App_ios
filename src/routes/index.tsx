@@ -16,6 +16,7 @@ import {
   Sparkles,
   Timer,
   TrendingUp,
+  User,
   X,
   Zap,
 } from "lucide-react";
@@ -256,7 +257,22 @@ function WorkoutHome() {
   };
 
   return (
-    <Screen title="Workout" subtitle="Build a session around today's constraints">
+    <Screen
+      title="Workout"
+      subtitle="Build a session around today's constraints"
+      action={
+        <button
+          onClick={() => {
+            haptic(12);
+            navigate({ to: "/settings" });
+          }}
+          aria-label="Settings"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+        >
+          <User className="size-5" />
+        </button>
+      }
+    >
       {hydrated && activeWorkout ? (
         <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
           <div className="flex items-center justify-between">

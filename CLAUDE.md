@@ -27,7 +27,7 @@ There is no test suite configured (no test runner in devDependencies, no `test` 
 
 ### Routing
 
-File-based routing via `@tanstack/react-router`'s Vite plugin: files under `src/routes/` become routes, and `src/routeTree.gen.ts` is generated from them — never hand-edit it. `src/routes/__root.tsx` sets up the HTML shell, `QueryClientProvider`, the global `GymProvider`, and the floating `TabBar`. The four tabs/routes are `index` (workout generator/home), `session` (live in-workout tracker), `history` (+ `history.$workoutId`), `equipment`, and `exercises`.
+File-based routing via `@tanstack/react-router`'s Vite plugin: files under `src/routes/` become routes, and `src/routeTree.gen.ts` is generated from them — never hand-edit it (running `npm run dev` or `npm run build` regenerates it after adding/removing a route file). `src/routes/__root.tsx` sets up the HTML shell, `QueryClientProvider`, the global `GymProvider`, and the floating `TabBar`. The four tabs/routes are `index` (workout generator/home), `session` (live in-workout tracker), `history` (+ `history.$workoutId`), `equipment`, and `exercises`. `settings` (account/cloud-sync + appearance) is a fifth route reachable from the profile icon in the `index` route's header (`Screen`'s `action` slot) rather than from the `TabBar` — it's still globally reachable since `TabBar` renders on every route regardless.
 
 ### App state: one localStorage-backed context
 
