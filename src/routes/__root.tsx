@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { GymProvider } from "../lib/gym/store";
 import { loadCachedCatalog, refreshCatalog } from "../lib/gym/catalog";
 import { registerServiceWorker } from "../pwa";
+import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
 
 function NotFoundComponent() {
@@ -146,6 +147,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <TabBar />
+        <SplashScreen />
       </GymProvider>
     </QueryClientProvider>
   );
