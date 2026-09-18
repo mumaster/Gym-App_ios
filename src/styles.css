@@ -315,8 +315,10 @@
    name. Each spark rockets outward along its own --spark-dx/-dy (SVG user
    units, a good distance beyond the badge itself) before shrinking and
    fading, once, timed to fire exactly as dumbbell-assemble finishes for
-   that cluster. The overshoot-then-settle scale (1.3 at 10%) reads as a
-   sharp launch rather than a gentle drift. */
+   that cluster. The overshoot-then-settle state lands at 3% (~17ms) rather
+   than a slower fade-in — close enough to a single frame that the spark
+   reads as an instant pop the moment it fires, not a ramp-up trailing the
+   plate's landing. */
 @keyframes spark-fly {
   0% {
     /* fill-mode: both applies this during the animation-delay countdown
@@ -325,7 +327,7 @@
     transform: translate(0, 0) scale(0.5);
     opacity: 0;
   }
-  10% {
+  3% {
     transform: translate(calc(var(--spark-dx) * 0.18), calc(var(--spark-dy) * 0.18)) scale(1.3);
     opacity: 1;
   }
@@ -341,13 +343,15 @@
 
 /* SplashScreen: a bright white-hot flash at each impact point itself, under
    the spark streaks — sells the "strike" instant the sparks are flying out
-   of. Fires and fully decays well before the sparks finish traveling. */
+   of. Pops to full brightness at 4% (~13ms), same near-instant-pop reasoning
+   as spark-fly above, then fully decays well before the sparks finish
+   traveling. */
 @keyframes spark-flash {
   0% {
     transform: scale(0);
     opacity: 0;
   }
-  14% {
+  4% {
     transform: scale(1);
     opacity: 1;
   }
