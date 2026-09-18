@@ -98,11 +98,122 @@ export const NUTRIENT_UNITS: Record<NutrientKey, string> = {
 
 /**
  * Daily limits the user sets for themselves — every field optional, since not
- * everyone wants to cap every nutrient. A future version will suggest these
- * from a short questionnaire instead of asking for raw numbers; for now
- * they're entered directly (see NutritionGoalsSheet).
+ * everyone wants to cap every nutrient. Can be typed in directly, or
+ * pre-filled from a suggestion (see NutritionQuestionnaireSheet /
+ * suggestNutritionGoals below) and adjusted from there — either way the
+ * result is just plain numbers the user can always override.
  */
 export type NutritionGoals = Partial<Record<NutrientKey, number>>;
+
+export type Sex = "male" | "female";
+
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "very_active";
+
+export const ACTIVITY_LEVELS: {
+  id: ActivityLevel;
+  label: string;
+  description: string;
+  factor: number;
+}[] = [
+  {
+    id: "sedentary",
+    label: "Sedentary",
+    description: "Desk job, little to no exercise",
+    factor: 1.2,
+  },
+  {
+    id: "light",
+    label: "Lightly active",
+    description: "Light exercise 1–3 days/week",
+    factor: 1.375,
+  },
+  {
+    id: "moderate",
+    label: "Moderately active",
+    description: "Moderate exercise 3–5 days/week",
+    factor: 1.55,
+  },
+  {
+    id: "active",
+    label: "Active",
+    description: "Hard exercise 6–7 days/week",
+    factor: 1.725,
+  },
+  {
+    id: "very_active",
+    label: "Very active",
+    description: "Physical job or training twice a day",
+    factor: 1.9,
+  },
+];
+
+export type NutritionGoalType = "lose" | "maintain" | "gain";
+
+export type NutritionPace = "mild" | "moderate" | "aggressive";
+
+/** Calorie deficit/surplus applied to TDEE, as a fraction — smaller for a
+ *  surplus than a deficit at the same "aggressive" label, since a fast bulk
+ *  mostly adds fat rather than muscle. */
+const PACE_ADJUSTMENT: Record<NutritionGoalType, Record<NutritionPace, number>> = {
+  lose: { mild: -0.15, moderate: -0.2, aggressive: -0.25 },
+  maintain: { mild: 0, moderate: 0, aggressive: 0 },
+  gain: { mild: 0.08, moderate: 0.12, aggressive: 0.18 },
+};
+
+/** Protein target in g/kg bodyweight — higher on a cut to help preserve
+ *  muscle through the deficit. */
+const PROTEIN_PER_KG: Record<NutritionGoalType, number> = {
+  lose: 2.2,
+  maintain: 1.8,
+  gain: 1.8,
+};
+
+/** Never suggest below this, regardless of inputs — a floor for safety, not
+ *  a recommendation to eat this little. */
+const MIN_CALORIES = 1200;
+
+export interface NutritionProfile {
+  sex: Sex;
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: ActivityLevel;
+  goal: NutritionGoalType;
+  /** Ignored when goal is "maintain". */
+  pace: NutritionPace;
+}
+
+/** Mifflin-St Jeor resting energy expenditure, in kcal/day. */
+function basalMetabolicRate(p: NutritionProfile): number {
+  const base = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age;
+  return p.sex === "male" ? base + 5 : base - 161;
+}
+
+/**
+ * Suggests daily limits from a short profile — a starting point to review
+ * and adjust, not a prescription. Calories via Mifflin-St Jeor + activity
+ * multiplier + goal/pace adjustment; protein via g/kg bodyweight (goal
+ * dependent); fat as a fixed share of calories; carbs as the remainder;
+ * fiber/salt from general dietary guidelines (not goal dependent).
+ */
+export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
+  const bmr = basalMetabolicRate(p);
+  const activityFactor = ACTIVITY_LEVELS.find((a) => a.id === p.activityLevel)!.factor;
+  const tdee = bmr * activityFactor;
+  const adjustment = PACE_ADJUSTMENT[p.goal][p.pace];
+  const calories = Math.max(MIN_CALORIES, Math.round(tdee * (1 + adjustment)));
+
+  const protein = Math.round(PROTEIN_PER_KG[p.goal] * p.weightKg);
+  const fatCalories = calories * 0.28;
+  const fat = Math.round(fatCalories / 9);
+  const carbCalories = Math.max(0, calories - protein * 4 - fatCalories);
+  const carbs = Math.round(carbCalories / 4);
+
+  const fiber = Math.round((calories / 1000) * 14);
+  const salt = 6;
+
+  return { calories, protein, carbs, fat, fiber, salt };
+}
 
 export type NutrientStatus = "none" | "ok" | "near" | "over";
 

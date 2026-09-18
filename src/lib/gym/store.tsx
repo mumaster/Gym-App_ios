@@ -17,6 +17,7 @@ import {
   type MealTemplate,
   type MealType,
   type NutritionGoals,
+  type NutritionProfile,
 } from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
@@ -72,6 +73,11 @@ interface GymState {
   foodEntries: FoodEntry[];
   /** Daily nutrition limits the user set for themselves — see NutritionGoalsSheet. */
   nutritionGoals: NutritionGoals;
+  /** Last questionnaire answers used to suggest nutritionGoals, so reopening
+   *  the questionnaire prefills instead of starting blank. Not itself used
+   *  for anything besides that — editing nutritionGoals directly doesn't
+   *  touch this. */
+  nutritionProfile: NutritionProfile | null;
   /** Saved ingredient combos (e.g. "Banana oatmeal") the user can log in one tap. */
   mealTemplates: MealTemplate[];
 }
@@ -97,6 +103,7 @@ const initialState: GymState = {
   weeklyScheme: null,
   foodEntries: [],
   nutritionGoals: {},
+  nutritionProfile: null,
   mealTemplates: [],
 };
 
@@ -147,6 +154,7 @@ function migrate(raw: Partial<GymState>): GymState {
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
     nutritionGoals: raw.nutritionGoals ?? {},
+    nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
