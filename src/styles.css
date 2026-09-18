@@ -260,19 +260,28 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* DumbbellLoader: the weight-plate clusters fade out and back in in place,
-   looping — used instead of a plain spinner for loading scenes. */
+/* DumbbellLoader: the weight-plate clusters slide off along the bar's own
+   diagonal while fading out, and back, looping — used instead of a plain
+   spinner for loading scenes. The fade keeps pace with the slide (both hit
+   their extreme at the same keyframe) so a plate dissolves away before it
+   would visibly clip against the square viewBox, rather than sliding
+   through a hard edge. --dumbbell-slide-x/-y are a mirrored pair of signed
+   SVG user-unit offsets: the top-right cluster travels up-and-right
+   (+x, -y), the bottom-left cluster down-and-left by the same magnitude. */
 @keyframes dumbbell-plates {
   0%,
   100% {
+    transform: translate(0, 0);
     opacity: 1;
   }
   22%,
   45% {
+    transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
     opacity: 0;
   }
   70%,
   95% {
+    transform: translate(0, 0);
     opacity: 1;
   }
 }
