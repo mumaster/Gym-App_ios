@@ -4,14 +4,21 @@ import { useGym } from "../../lib/gym/store";
 
 /** Warm "hot metal" tones for the spark burst — deliberately not tied to
  *  the user's accent color (like Confetti's own fixed palette), since a
- *  forge spark reads as orange/gold regardless of theme. */
-const SPARK_COLORS = ["oklch(0.85 0.19 70)", "oklch(0.92 0.14 85)"];
+ *  forge spark reads as orange/gold/white-hot regardless of theme. */
+const SPARK_COLORS = ["oklch(0.85 0.19 70)", "oklch(0.92 0.14 85)", "oklch(0.97 0.05 90)"];
+/** The flash/ring at the impact point itself uses the brightest, most
+ *  white-hot tone — the sparks flying out of it are the cooling embers. */
+const FLASH_COLOR = "oklch(0.97 0.06 85)";
 
-/** A short burst of sparks flying outward from (x, y) — the point where a
- *  weight-plate cluster lands on the bar — along the given angles
- *  (degrees, SVG convention: 0 = +x, 90 = +y/down). Fires once, delayMs
- *  after mount, timed to land exactly as that cluster's own
- *  dumbbell-assemble animation finishes. */
+/** A forceful burst of sparks flying outward from (x, y) — the point where a
+ *  weight-plate cluster lands on the bar — along the given angles (degrees,
+ *  SVG convention: 0 = +x, 90 = +y/down), plus a bright flash and expanding
+ *  shockwave ring at the impact point itself. Fires once, delayMs after
+ *  mount, timed to land exactly as that cluster's own dumbbell-assemble
+ *  animation finishes. Per-spark reach/length/width vary with index using a
+ *  fixed formula (not Math.random(), which would mismatch between SSR and
+ *  hydration) so the burst reads as an organic scatter rather than a
+ *  uniform starburst. */
 function SparkBurst({
   x,
   y,
@@ -25,28 +32,45 @@ function SparkBurst({
 }) {
   return (
     <g transform={`translate(${x} ${y})`}>
+      <circle
+        r={2.4}
+        fill={FLASH_COLOR}
+        className="animate-spark-flash"
+        style={{ animationDelay: `${delayMs}ms`, filter: "blur(0.3px)" } as CSSProperties}
+      />
+      <circle
+        r={1.6}
+        fill="none"
+        stroke={FLASH_COLOR}
+        strokeWidth={0.6}
+        className="animate-spark-ring"
+        style={{ animationDelay: `${delayMs}ms` } as CSSProperties}
+      />
       {angles.map((angle, i) => {
         const rad = (angle * Math.PI) / 180;
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
         const color = SPARK_COLORS[i % SPARK_COLORS.length];
+        const reach = 10 + ((i * 5) % 8);
+        const length = 1.8 + ((i * 3) % 5) * 0.35;
+        const width = 1.2 + (i % 3) * 0.45;
         return (
           <line
             key={angle}
             x1={0}
             y1={0}
-            x2={cos * 1.7}
-            y2={sin * 1.7}
+            x2={cos * length}
+            y2={sin * length}
             stroke={color}
-            strokeWidth={1.4}
+            strokeWidth={width}
             strokeLinecap="round"
             className="animate-spark"
             style={
               {
-                "--spark-dx": `${cos * (4 + (i % 2) * 1.4)}px`,
-                "--spark-dy": `${sin * (4 + (i % 2) * 1.4)}px`,
-                animationDelay: `${delayMs + i * 12}ms`,
-                filter: `drop-shadow(0 0 2px ${color})`,
+                "--spark-dx": `${cos * reach}px`,
+                "--spark-dy": `${sin * reach}px`,
+                animationDelay: `${delayMs + i * 9}ms`,
+                filter: `drop-shadow(0 0 3px ${color})`,
               } as CSSProperties
             }
           />
@@ -60,13 +84,13 @@ function SparkBurst({
  *  this long — enough time for the full reveal choreography to play out
  *  and settle, so it reads as a deliberate brand moment rather than a
  *  flash cut short mid-animation. */
-const MIN_VISIBLE_MS = 2400;
+const MIN_VISIBLE_MS = 2500;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
-/** The last spark burst fires at 880ms and flies for 420ms (see the
+/** The last spark burst fires at 880ms and flies for 560ms (see the
  *  SparkBurst calls below) — the wordmark waits for that strike to finish
  *  landing before it appears, so it reads as forged by it. */
-const TEXT_DELAY_MS = 880 + 420;
+const TEXT_DELAY_MS = 880 + 560;
 
 /**
  * Full-screen brand splash shown once per cold app open (mounted at the
@@ -121,7 +145,7 @@ export function SplashScreen() {
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-primary"
+          className="overflow-visible text-primary"
           role="img"
           aria-label="Forge"
         >
@@ -157,9 +181,21 @@ export function SplashScreen() {
           </g>
 
           {/* Sparks fire the instant each cluster lands — 180ms/260ms delay
-              + the 620ms assemble animation above. */}
-          <SparkBurst x={14.4} y={9.6} angles={[-75, -45, -18, 8, 35]} delayMs={800} />
-          <SparkBurst x={9.6} y={14.4} angles={[105, 135, 162, 188, 215]} delayMs={880} />
+              + the 620ms assemble animation above. Wide 8-spark cones (each
+              pointing away from the icon's center) for a forceful,
+              full-blown strike rather than a light scatter. */}
+          <SparkBurst
+            x={14.4}
+            y={9.6}
+            angles={[-95, -74, -53, -32, -11, 10, 31, 50]}
+            delayMs={800}
+          />
+          <SparkBurst
+            x={9.6}
+            y={14.4}
+            angles={[85, 106, 127, 148, 169, 190, 211, 230]}
+            delayMs={880}
+          />
         </svg>
       </div>
 
