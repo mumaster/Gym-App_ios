@@ -91,7 +91,9 @@ export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
 }
 
 /** Schedules a server-sent push for when the current rest period ends. */
-export async function scheduleRestNotification(secondsFromNow: number): Promise<void> {
+export async function scheduleRestNotification(
+  secondsFromNow: number,
+): Promise<PushSubscribeResult> {
   try {
     const deviceId = getDeviceId();
     const fire_at = new Date(Date.now() + secondsFromNow * 1000).toISOString();
@@ -101,28 +103,26 @@ export async function scheduleRestNotification(secondsFromNow: number): Promise<
       .update({ fire_at })
       .eq("device_id", deviceId)
       .select("device_id");
-    if (updateError) {
-      console.error("scheduleRestNotification:", updateError.message);
-      return;
-    }
+    if (updateError) return { ok: false, reason: `Supabase: ${updateError.message}` };
     if (!updated || updated.length === 0) {
       const { error: insertError } = await supabase
         .from("rest_timer_notifications")
         .insert({ device_id: deviceId, fire_at });
-      if (insertError && insertError.code === "23505") {
+      if (insertError) {
+        if (insertError.code !== "23505")
+          return { ok: false, reason: `Supabase: ${insertError.message}` };
         // Same race as ensurePushSubscription: a concurrent call inserted
         // first, so make sure this call's fire_at (the most recent one) wins.
         const { error: retryError } = await supabase
           .from("rest_timer_notifications")
           .update({ fire_at })
           .eq("device_id", deviceId);
-        if (retryError) console.error("scheduleRestNotification:", retryError.message);
-      } else if (insertError) {
-        console.error("scheduleRestNotification:", insertError.message);
+        if (retryError) return { ok: false, reason: `Supabase: ${retryError.message}` };
       }
     }
+    return { ok: true };
   } catch (err) {
-    console.error("scheduleRestNotification:", err);
+    return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }
 }
 

@@ -186,7 +186,11 @@ function SessionScreen() {
   const startRest = useCallback(
     (seconds: number) => {
       rest.start(seconds);
-      if (notifyEnabled) void scheduleRestNotification(seconds);
+      if (notifyEnabled) {
+        void scheduleRestNotification(seconds).then((result) => {
+          if (!result.ok) setToast(`Background push not scheduled: ${result.reason}`);
+        });
+      }
     },
     [rest, notifyEnabled],
   );
