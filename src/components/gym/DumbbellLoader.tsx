@@ -1,12 +1,13 @@
 import type { CSSProperties } from "react";
 
 /**
- * Loading indicator: a dumbbell whose plates slide fully off the bar and
- * back on, looping — used in place of a plain spinner. Solid `currentColor`
- * shapes (set `text-*` on a wrapper, defaults to the accent color) rather
- * than a static asset, so it stays crisp at any size and follows whichever
- * accent the user has picked, the same way the tab bar's own Dumbbell icon
- * does. See the `dumbbell-plates` keyframes in styles.css.
+ * Loading indicator: the app icon's own Dumbbell glyph (lucide's exact path
+ * data — same stroke-only line art the tab bar's Workout icon uses, tilted
+ * on its native diagonal, not redrawn as flat rectangles), with its two
+ * weight-plate clusters sliding fully off the bar and back on along that
+ * same diagonal, looping. `currentColor` throughout (default `text-primary`
+ * below) so it follows whichever accent the user picked, like every other
+ * icon in the app. See the `dumbbell-plates` keyframes in styles.css.
  */
 export function DumbbellLoader({
   size = 56,
@@ -17,27 +18,35 @@ export function DumbbellLoader({
 }) {
   return (
     <svg
-      viewBox="0 0 140 60"
+      viewBox="0 0 24 24"
       width={size}
-      height={(size * 60) / 140}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={`text-primary ${className}`}
       role="img"
       aria-label="Loading"
     >
-      <rect x="55" y="27" width="30" height="6" rx="3" fill="currentColor" />
+      {/* The bar itself stays put. */}
+      <path d="m9.6 14.4 4.8-4.8" />
+
       <g
         className="animate-dumbbell-plates"
-        style={{ "--dumbbell-slide": "-90px" } as CSSProperties}
+        style={{ "--dumbbell-slide-x": "16px", "--dumbbell-slide-y": "-16px" } as CSSProperties}
       >
-        <rect x="37" y="10" width="10" height="40" rx="3" fill="currentColor" />
-        <rect x="47" y="15" width="8" height="30" rx="3" fill="currentColor" />
+        <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" />
+        <path d="m20.1 3.9 1.4-1.4" />
       </g>
+
       <g
         className="animate-dumbbell-plates"
-        style={{ "--dumbbell-slide": "90px" } as CSSProperties}
+        style={{ "--dumbbell-slide-x": "-16px", "--dumbbell-slide-y": "16px" } as CSSProperties}
       >
-        <rect x="85" y="15" width="8" height="30" rx="3" fill="currentColor" />
-        <rect x="93" y="10" width="10" height="40" rx="3" fill="currentColor" />
+        <path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" />
+        <path d="m2.5 21.5 1.4-1.4" />
       </g>
     </svg>
   );

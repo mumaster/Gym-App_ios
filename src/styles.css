@@ -261,21 +261,23 @@
 }
 
 /* DumbbellLoader: the plates slide fully off the bar and back on, looping —
-   used in place of a plain spinner for loading scenes. Mirrored pair, so
-   --dumbbell-slide is the signed travel distance in SVG user units (left
-   plates get a negative value, right plates the same magnitude positive). */
+   used in place of a plain spinner for loading scenes. Each weight cluster
+   travels along the bar's own diagonal (the icon is drawn tilted, not
+   horizontal), so --dumbbell-slide-x/-y are a mirrored pair of signed SVG
+   user-unit offsets: the top-right cluster slides up-and-right (+x, -y),
+   the bottom-left cluster slides down-and-left by the same magnitude. */
 @keyframes dumbbell-plates {
   0%,
   100% {
-    transform: translateX(0);
+    transform: translate(0, 0);
   }
   22%,
   45% {
-    transform: translateX(var(--dumbbell-slide));
+    transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
   }
   70%,
   95% {
-    transform: translateX(0);
+    transform: translate(0, 0);
   }
 }
 
