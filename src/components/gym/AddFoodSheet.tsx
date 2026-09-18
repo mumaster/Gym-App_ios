@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, Keyboard, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Camera, Check, Keyboard, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { DumbbellLoader } from "./DumbbellLoader";
 import { scanNutritionLabel } from "../../lib/gym/labelScan";
 import {
   MEAL_LABELS,
@@ -355,7 +356,7 @@ export function AddFoodSheet({
 
       {step === "scanning" ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <Loader2 className="size-8 animate-spin text-primary" />
+          <DumbbellLoader size={72} />
           <p className="text-[15px] font-semibold">Reading the label…</p>
           <p className="text-[13px] text-muted-foreground">
             Your photo is sent to Google's Gemini API to read the label, then discarded.

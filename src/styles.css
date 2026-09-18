@@ -259,3 +259,26 @@
   from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* DumbbellLoader: the plates slide fully off the bar and back on, looping —
+   used in place of a plain spinner for loading scenes. Mirrored pair, so
+   --dumbbell-slide is the signed travel distance in SVG user units (left
+   plates get a negative value, right plates the same magnitude positive). */
+@keyframes dumbbell-plates {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  22%,
+  45% {
+    transform: translateX(var(--dumbbell-slide));
+  }
+  70%,
+  95% {
+    transform: translateX(0);
+  }
+}
+
+@utility animate-dumbbell-plates {
+  animation: dumbbell-plates 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
