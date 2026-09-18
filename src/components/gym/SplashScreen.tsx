@@ -2,16 +2,71 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { useGym } from "../../lib/gym/store";
 
+/** Warm "hot metal" tones for the spark burst — deliberately not tied to
+ *  the user's accent color (like Confetti's own fixed palette), since a
+ *  forge spark reads as orange/gold regardless of theme. */
+const SPARK_COLORS = ["oklch(0.85 0.19 70)", "oklch(0.92 0.14 85)"];
+
+/** A short burst of sparks flying outward from (x, y) — the point where a
+ *  weight-plate cluster lands on the bar — along the given angles
+ *  (degrees, SVG convention: 0 = +x, 90 = +y/down). Fires once, delayMs
+ *  after mount, timed to land exactly as that cluster's own
+ *  dumbbell-assemble animation finishes. */
+function SparkBurst({
+  x,
+  y,
+  angles,
+  delayMs,
+}: {
+  x: number;
+  y: number;
+  angles: number[];
+  delayMs: number;
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {angles.map((angle, i) => {
+        const rad = (angle * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        const color = SPARK_COLORS[i % SPARK_COLORS.length];
+        return (
+          <line
+            key={angle}
+            x1={0}
+            y1={0}
+            x2={cos * 1.7}
+            y2={sin * 1.7}
+            stroke={color}
+            strokeWidth={1.4}
+            strokeLinecap="round"
+            className="animate-spark"
+            style={
+              {
+                "--spark-dx": `${cos * (4 + (i % 2) * 1.4)}px`,
+                "--spark-dy": `${sin * (4 + (i % 2) * 1.4)}px`,
+                animationDelay: `${delayMs + i * 12}ms`,
+                filter: `drop-shadow(0 0 2px ${color})`,
+              } as CSSProperties
+            }
+          />
+        );
+      })}
+    </g>
+  );
+}
+
 /** However fast hydration actually finishes, keep the splash up at least
  *  this long — enough time for the full reveal choreography to play out
  *  and settle, so it reads as a deliberate brand moment rather than a
  *  flash cut short mid-animation. */
-const MIN_VISIBLE_MS = 2000;
+const MIN_VISIBLE_MS = 2400;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
-/** When the weight-plate "assemble" animation (620ms, staggered up to
- *  260ms) has fully settled — the cue to reveal the wordmark, not before. */
-const TEXT_DELAY_MS = 720;
+/** The last spark burst fires at 880ms and flies for 420ms (see the
+ *  SparkBurst calls below) — the wordmark waits for that strike to finish
+ *  landing before it appears, so it reads as forged by it. */
+const TEXT_DELAY_MS = 880 + 420;
 
 /**
  * Full-screen brand splash shown once per cold app open (mounted at the
@@ -100,6 +155,11 @@ export function SplashScreen() {
             <path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" />
             <path d="m2.5 21.5 1.4-1.4" />
           </g>
+
+          {/* Sparks fire the instant each cluster lands — 180ms/260ms delay
+              + the 620ms assemble animation above. */}
+          <SparkBurst x={14.4} y={9.6} angles={[-75, -45, -18, 8, 35]} delayMs={800} />
+          <SparkBurst x={9.6} y={14.4} angles={[105, 135, 162, 188, 215]} delayMs={880} />
         </svg>
       </div>
 
