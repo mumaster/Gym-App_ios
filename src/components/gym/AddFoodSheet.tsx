@@ -374,6 +374,42 @@ export function AddFoodSheet({
             </div>
           )}
 
+          {suggestedGrams && !gramsTouched ? (
+            <button
+              type="button"
+              onClick={() => {
+                haptic(15);
+                setGrams(String(suggestedGrams));
+                setGramsTouched(true);
+                setSuggestedGrams(null);
+              }}
+              className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
+            >
+              <span className="text-[14px] font-semibold text-primary">
+                Use the label's serving size — {suggestedGrams}g?
+              </span>
+              <Check className="size-4 shrink-0 text-primary" />
+            </button>
+          ) : null}
+
+          <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
+            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
+              {onIngredientCaptured ? "Grams in this meal" : "Grams eaten"}
+            </span>
+            <input
+              inputMode="decimal"
+              type="text"
+              value={grams}
+              onFocus={placeCursorAtEnd}
+              onChange={(e) => {
+                if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                setGrams(e.target.value);
+                setGramsTouched(true);
+              }}
+              className="tabular h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[17px] font-bold text-foreground outline-none"
+            />
+          </label>
+
           <div>
             <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
               Per 100g — as printed on the label
@@ -413,42 +449,6 @@ export function AddFoodSheet({
               ))}
             </div>
           </div>
-
-          {suggestedGrams && !gramsTouched ? (
-            <button
-              type="button"
-              onClick={() => {
-                haptic(15);
-                setGrams(String(suggestedGrams));
-                setGramsTouched(true);
-                setSuggestedGrams(null);
-              }}
-              className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
-            >
-              <span className="text-[14px] font-semibold text-primary">
-                Use the label's serving size — {suggestedGrams}g?
-              </span>
-              <Check className="size-4 shrink-0 text-primary" />
-            </button>
-          ) : null}
-
-          <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
-              {onIngredientCaptured ? "Grams in this meal" : "Grams eaten"}
-            </span>
-            <input
-              inputMode="decimal"
-              type="text"
-              value={grams}
-              onFocus={placeCursorAtEnd}
-              onChange={(e) => {
-                if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-                setGrams(e.target.value);
-                setGramsTouched(true);
-              }}
-              className="tabular h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[17px] font-bold text-foreground outline-none"
-            />
-          </label>
 
           <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
             <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
