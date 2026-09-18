@@ -39,7 +39,7 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
 
-function fileToBase64(file: File): Promise<string> {
+function readAsBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -47,8 +47,44 @@ function fileToBase64(file: File): Promise<string> {
       resolve(result.slice(result.indexOf(",") + 1));
     };
     reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
   });
+}
+
+/** Longest edge a scanned label photo gets downscaled to before upload — a
+ *  label's fine print stays perfectly legible well below full camera
+ *  resolution, and a smaller image means less to upload and fewer tiles for
+ *  Gemini to process, so this is the main lever for a faster scan without
+ *  spending anything. */
+const MAX_SCAN_DIMENSION = 1280;
+
+/** Downscales + re-encodes as JPEG (phone camera photos are routinely
+ *  several MB at full resolution). Falls back to the original file untouched
+ *  if resizing fails for any reason — a slower scan beats a broken one. */
+async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_SCAN_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("2D canvas context unavailable");
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    if (!blob) throw new Error("Canvas failed to encode JPEG");
+
+    return { base64: await readAsBase64(blob), mimeType: "image/jpeg" };
+  } catch {
+    return { base64: await readAsBase64(file), mimeType: file.type || "image/jpeg" };
+  }
 }
 
 export function AddFoodSheet({
@@ -162,9 +198,9 @@ export function AddFoodSheet({
   const onFileSelected = async (file: File) => {
     setStep("scanning");
     try {
-      const imageBase64 = await fileToBase64(file);
+      const { base64: imageBase64, mimeType } = await fileToBase64(file);
       const result = await scanNutritionLabel({
-        data: { imageBase64, mimeType: file.type || "image/jpeg" },
+        data: { imageBase64, mimeType },
       });
 
       const missing = new Set<MacroKey>();
