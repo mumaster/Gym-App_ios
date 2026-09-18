@@ -63,7 +63,7 @@ The Nutrition screen isn't today-only: `dayOffset` state (0 = today, negative = 
 
 ### Loading indicator
 
-`components/gym/DumbbellLoader.tsx` is the app's loading indicator — a dumbbell whose plates slide fully off the bar and back on, looping — used instead of a generic spinner (e.g. `AddFoodSheet.tsx`'s label-scanning step). It's plain `currentColor` SVG shapes animated by the `dumbbell-plates` keyframes in `styles.css` (via the `animate-dumbbell-plates` utility, driven by a `--dumbbell-slide` CSS custom property each plate group sets to its own signed travel distance), not a static image — matches "never hardcode colors in components" and follows whichever accent the user picked, same as the tab bar's own `Dumbbell` icon (which is what the app icon itself also is — a flat lucide glyph, not a 3D render).
+`components/gym/DumbbellLoader.tsx` is the app's loading indicator — the app icon's own Dumbbell glyph (lucide's exact path data, tilted on its native diagonal — same as the tab bar's `Dumbbell` icon and the app icon itself, a flat lucide glyph, not a 3D render), its two weight-plate clusters fading out and back in in place, looping. Used instead of a generic spinner (e.g. `AddFoodSheet.tsx`'s label-scanning step). It's plain `currentColor` SVG shapes animated by the `dumbbell-plates` keyframes in `styles.css` (the `animate-dumbbell-plates` utility), not a static image — matches "never hardcode colors in components" and follows whichever accent the user picked.
 
 ### Workout generation & domain logic
 

@@ -260,24 +260,20 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* DumbbellLoader: the plates slide fully off the bar and back on, looping —
-   used in place of a plain spinner for loading scenes. Each weight cluster
-   travels along the bar's own diagonal (the icon is drawn tilted, not
-   horizontal), so --dumbbell-slide-x/-y are a mirrored pair of signed SVG
-   user-unit offsets: the top-right cluster slides up-and-right (+x, -y),
-   the bottom-left cluster slides down-and-left by the same magnitude. */
+/* DumbbellLoader: the weight-plate clusters fade out and back in in place,
+   looping — used instead of a plain spinner for loading scenes. */
 @keyframes dumbbell-plates {
   0%,
   100% {
-    transform: translate(0, 0);
+    opacity: 1;
   }
   22%,
   45% {
-    transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
+    opacity: 0;
   }
   70%,
   95% {
-    transform: translate(0, 0);
+    opacity: 1;
   }
 }
 
