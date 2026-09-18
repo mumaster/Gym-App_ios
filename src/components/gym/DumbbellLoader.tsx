@@ -5,9 +5,11 @@ import type { CSSProperties } from "react";
  * data — same stroke-only line art the tab bar's Workout icon uses, tilted
  * on its native diagonal, not redrawn as flat rectangles), with its two
  * weight-plate clusters sliding off along that diagonal while fading out,
- * then back, looping. `currentColor` throughout (default `text-primary`
- * below) so it follows whichever accent the user picked, like every other
- * icon in the app. See the `dumbbell-plates` keyframes in styles.css.
+ * then back, looping. Pure `currentColor`, no color baked in — it takes
+ * whatever `color` the context gives it (pass `text-primary` etc. via
+ * `className`, or just let it inherit, e.g. a button's own
+ * `text-primary-foreground`), same as any lucide icon. See the
+ * `dumbbell-plates` keyframes in styles.css.
  */
 export function DumbbellLoader({
   size = 48,
@@ -26,7 +28,7 @@ export function DumbbellLoader({
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`text-primary ${className}`}
+      className={className}
       role="img"
       aria-label="Loading"
     >

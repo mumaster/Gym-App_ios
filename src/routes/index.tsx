@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
+import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
@@ -188,8 +189,25 @@ function WorkoutHome() {
     );
   };
 
+  // Generation itself is instant — the delay here is purely to make the
+  // "Generate workout" button feel like it's actually building the session
+  // rather than just flipping content in place. Only that button gets this;
+  // Shuffle (regenerating an already-visible plan) stays immediate.
+  const [generating, setGenerating] = useState(false);
+  const generateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => clearTimeout(generateTimeoutRef.current ?? undefined), []);
+
   // first press builds; pressing "Regenerate" again advances to a fresh pick
-  const generate = () => build(plan ? variation + 1 : 0);
+  const generate = () => {
+    if (generating) return;
+    haptic(15);
+    setGenerating(true);
+    const nextVariation = plan ? variation + 1 : 0;
+    generateTimeoutRef.current = setTimeout(() => {
+      build(nextVariation);
+      setGenerating(false);
+    }, 1500);
+  };
   const shuffle = () => build(variation + 1);
 
   const move = (index: number, delta: number) => {
@@ -753,10 +771,20 @@ function WorkoutHome() {
 
       <button
         onClick={generate}
-        className="glow mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985]"
+        disabled={generating}
+        className="glow mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
       >
-        <Zap className="size-5" />
-        {plan ? "Regenerate workout" : "Generate workout"}
+        {generating ? (
+          <>
+            <DumbbellLoader size={26} className="text-primary-foreground" />
+            Building your session…
+          </>
+        ) : (
+          <>
+            <Zap className="size-5" />
+            {plan ? "Regenerate workout" : "Generate workout"}
+          </>
+        )}
       </button>
 
       {plan ? (

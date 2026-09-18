@@ -356,7 +356,7 @@ export function AddFoodSheet({
 
       {step === "scanning" ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <DumbbellLoader size={56} />
+          <DumbbellLoader size={56} className="text-primary" />
           <p className="text-[15px] font-semibold">Reading the label…</p>
           <p className="text-[13px] text-muted-foreground">
             Your photo is sent to Google's Gemini API to read the label, then discarded.
