@@ -292,23 +292,26 @@
 
 /* SplashScreen's entrance reveal: the reverse of dumbbell-plates above — the
    weight clusters snap onto the bar once (from the same off-axis, faded
-   start) instead of looping, and hold the assembled end state (fill-mode
-   both) rather than resetting.
+   start) instead of looping, and hold the assembled end state rather than
+   resetting.
 
-   Uses a "back" ease (cubic-bezier(0.34, 1.56, 0.64, 1), P1.y > 1) rather
-   than a plain ease-out: a plain ease-out front-loads almost all of its
-   travel into the first half of the duration, so the plate visually looks
-   landed well before the animation's declared end — a long, dead "tail"
-   with no visible motion, which is what made the spark burst (fired at that
-   declared end) read as late no matter how much the duration was shortened.
-   The back-ease overshoots slightly past the final position and eases back
-   into it, so the LAST ~20% of the duration is a small, continuous rebound
-   settle rather than nothing — motion (and thus the "still landing" read)
-   continues right up to the literal end, so anything tied to that end
-   (the spark burst) reads as simultaneous with impact. It also just looks
-   like a heavier, more physical "thud" than a flat snap, which fits an
-   anvil strike better anyway. */
-@keyframes dumbbell-assemble {
+   Split into two chained animations rather than one, because "the moment of
+   impact" and "the whole landing flourish" are NOT the same instant. A
+   single overshoot-and-settle animation (tried earlier) reaches the true
+   contact point around a third of the way through, then overshoots past it
+   and eases back — so anything synced to that animation's declared END
+   (its 100% keyframe) fires only after the overshoot AND the settle, well
+   after the metal actually touches the bar. That read as sparks arriving
+   for a "celebration" beat after the thud, not as part of it.
+
+   dumbbell-flight is the real travel — its 100% keyframe IS the contact
+   point, full stop, so anything hooked to its animationend (the spark
+   burst) fires at the exact instant of impact. dumbbell-recoil is a small,
+   purely cosmetic post-impact bounce chained right after (its own delay =
+   flight's duration, fill: forwards only — not "both" — so it doesn't
+   assert its resting transform during flight's own active phase and mask
+   the travel). Nothing waits on the recoil; it's flourish, not gating. */
+@keyframes dumbbell-flight {
   0% {
     transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
     opacity: 0;
@@ -319,8 +322,22 @@
   }
 }
 
+@keyframes dumbbell-recoil {
+  0% {
+    transform: translate(0, 0);
+  }
+  45% {
+    transform: translate(calc(var(--dumbbell-slide-x) * -0.09), calc(var(--dumbbell-slide-y) * -0.09));
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
 @utility animate-dumbbell-assemble {
-  animation: dumbbell-assemble 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation:
+    dumbbell-flight 140ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
+    dumbbell-recoil 160ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 140ms) forwards;
 }
 
 /* SplashScreen: a forceful burst of sparks at the instant each weight-plate

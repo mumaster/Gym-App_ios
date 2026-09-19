@@ -14,29 +14,52 @@ const FLASH_COLOR = "oklch(0.97 0.06 85)";
  *  than repeating the literal "560" at each call site) since the wordmark
  *  reveal needs it to know when the last burst has finished. */
 const SPARK_FLIGHT_MS = 560;
+/** dumbbell-flight's own declared duration in styles.css — the real travel,
+ *  ending exactly at contact (see the comment on it there). A cluster's
+ *  spark burst fires at its own --dumbbell-cluster-delay + this, which is
+ *  the true, exact impact instant (not an approximation of one) since
+ *  that's what dumbbell-flight's 100% keyframe IS by construction. This has
+ *  to be a plain CSS animation-delay rather than firing off the CSS
+ *  animation's own onAnimationEnd event: this splash paints from SSR'd
+ *  markup, so the CSS animation can (and often does) finish playing before
+ *  React finishes hydrating and attaching that listener, silently dropping
+ *  the event for whichever cluster lands first — a real, reproduced bug,
+ *  not a theoretical one. */
+const FLIGHT_MS = 140;
+const CLUSTER1_DELAY_MS = 180;
+const CLUSTER2_DELAY_MS = 260;
 
 /** A forceful burst of sparks flying outward from (x, y) — the point where a
  *  weight-plate cluster lands on the bar — along the given angles (degrees,
  *  SVG convention: 0 = +x, 90 = +y/down), plus a bright flash and expanding
- *  shockwave ring at the impact point itself. The caller only mounts this
- *  once the cluster's own dumbbell-assemble animation actually reports
- *  finishing (onAnimationEnd), not on a guessed delay — so there's no
- *  separate timing constant here that could drift out of sync with however
- *  long that animation ends up taking. Fires immediately on mount; the
- *  flash/spark keyframes themselves pop to full brightness within a couple
- *  of ms (see spark-flash/spark-fly in styles.css) rather than easing in, so
- *  there's no perceptible gap between "plate lands" and "spark is visible."
- *  Per-spark reach/length/width vary with index using a fixed formula (not
- *  Math.random(), which would mismatch between SSR and hydration) so the
- *  burst reads as an organic scatter rather than a uniform starburst. */
-function SparkBurst({ x, y, angles }: { x: number; y: number; angles: number[] }) {
+ *  shockwave ring at the impact point itself. Fires once, delayMs after
+ *  mount — see the FLIGHT_MS comment above for why this is a CSS delay
+ *  rather than a React-side animation-end listener. The flash/spark
+ *  keyframes themselves pop to full brightness within a couple of ms of
+ *  firing (see spark-flash/spark-fly in styles.css) rather than easing in,
+ *  so there's no perceptible gap between "plate lands" and "spark is
+ *  visible" on top of that sync. Per-spark reach/length/width vary with
+ *  index using a fixed formula (not Math.random(), which would mismatch
+ *  between SSR and hydration) so the burst reads as an organic scatter
+ *  rather than a uniform starburst. */
+function SparkBurst({
+  x,
+  y,
+  angles,
+  delayMs,
+}: {
+  x: number;
+  y: number;
+  angles: number[];
+  delayMs: number;
+}) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <circle
         r={2.4}
         fill={FLASH_COLOR}
         className="animate-spark-flash"
-        style={{ filter: "blur(0.3px)" } as CSSProperties}
+        style={{ animationDelay: `${delayMs}ms`, filter: "blur(0.3px)" } as CSSProperties}
       />
       <circle
         r={1.6}
@@ -44,6 +67,7 @@ function SparkBurst({ x, y, angles }: { x: number; y: number; angles: number[] }
         stroke={FLASH_COLOR}
         strokeWidth={0.6}
         className="animate-spark-ring"
+        style={{ animationDelay: `${delayMs}ms` } as CSSProperties}
       />
       {angles.map((angle, i) => {
         const rad = (angle * Math.PI) / 180;
@@ -68,7 +92,7 @@ function SparkBurst({ x, y, angles }: { x: number; y: number; angles: number[] }
               {
                 "--spark-dx": `${cos * reach}px`,
                 "--spark-dy": `${sin * reach}px`,
-                animationDelay: `${i * 9}ms`,
+                animationDelay: `${delayMs + i * 9}ms`,
                 filter: `drop-shadow(0 0 3px ${color})`,
               } as CSSProperties
             }
@@ -86,6 +110,10 @@ function SparkBurst({ x, y, angles }: { x: number; y: number; angles: number[] }
 const MIN_VISIBLE_MS = 2100;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
+/** The last spark burst fires at CLUSTER2_DELAY_MS+FLIGHT_MS and flies
+ *  for SPARK_FLIGHT_MS — the wordmark waits for that strike to finish
+ *  landing before it appears, so it reads as forged by it. */
+const TEXT_DELAY_MS = CLUSTER2_DELAY_MS + FLIGHT_MS + SPARK_FLIGHT_MS;
 
 /**
  * Full-screen brand splash shown once per cold app open (mounted at the
@@ -99,20 +127,14 @@ const EXIT_MS = 400;
 export function SplashScreen() {
   const { hydrated } = useGym();
   const [mountedAt] = useState(() => Date.now());
-  const [landed1, setLanded1] = useState(false);
-  const [landed2, setLanded2] = useState(false);
   const [textVisible, setTextVisible] = useState(false);
   const [dismissing, setDismissing] = useState(false);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    // landed2 (the second, later-firing cluster) is the real "the strike has
-    // landed" moment — wait for its spark burst to finish flying before the
-    // wordmark appears, so it reads as forged by the strike.
-    if (!landed2) return;
-    const t = setTimeout(() => setTextVisible(true), SPARK_FLIGHT_MS);
+    const t = setTimeout(() => setTextVisible(true), TEXT_DELAY_MS);
     return () => clearTimeout(t);
-  }, [landed2]);
+  }, []);
 
   useEffect(() => {
     if (!hydrated || dismissing) return;
@@ -160,10 +182,9 @@ export function SplashScreen() {
               {
                 "--dumbbell-slide-x": "9px",
                 "--dumbbell-slide-y": "-9px",
-                animationDelay: "180ms",
+                "--dumbbell-cluster-delay": `${CLUSTER1_DELAY_MS}ms`,
               } as CSSProperties
             }
-            onAnimationEnd={() => setLanded1(true)}
           >
             <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" />
             <path d="m20.1 3.9 1.4-1.4" />
@@ -174,27 +195,32 @@ export function SplashScreen() {
               {
                 "--dumbbell-slide-x": "-9px",
                 "--dumbbell-slide-y": "9px",
-                animationDelay: "260ms",
+                "--dumbbell-cluster-delay": `${CLUSTER2_DELAY_MS}ms`,
               } as CSSProperties
             }
-            onAnimationEnd={() => setLanded2(true)}
           >
             <path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" />
             <path d="m2.5 21.5 1.4-1.4" />
           </g>
 
-          {/* Each burst is only mounted once its cluster's own
-              dumbbell-assemble animation reports finishing above (not on a
-              guessed delay), so it always starts exactly when the plate
-              lands. Wide 8-spark cones (each pointing away from the icon's
-              center) for a forceful, full-blown strike rather than a light
-              scatter. */}
-          {landed1 && (
-            <SparkBurst x={14.4} y={9.6} angles={[-95, -74, -53, -32, -11, 10, 31, 50]} />
-          )}
-          {landed2 && (
-            <SparkBurst x={9.6} y={14.4} angles={[85, 106, 127, 148, 169, 190, 211, 230]} />
-          )}
+          {/* Each burst fires exactly at its cluster's own impact instant —
+              --dumbbell-cluster-delay + FLIGHT_MS (dumbbell-flight's real
+              travel time, whose 100% keyframe IS the contact point, not the
+              cosmetic recoil bounce that plays after it). Wide 8-spark
+              cones (each pointing away from the icon's center) for a
+              forceful, full-blown strike rather than a light scatter. */}
+          <SparkBurst
+            x={14.4}
+            y={9.6}
+            angles={[-95, -74, -53, -32, -11, 10, 31, 50]}
+            delayMs={CLUSTER1_DELAY_MS + FLIGHT_MS}
+          />
+          <SparkBurst
+            x={9.6}
+            y={14.4}
+            angles={[85, 106, 127, 148, 169, 190, 211, 230]}
+            delayMs={CLUSTER2_DELAY_MS + FLIGHT_MS}
+          />
         </svg>
       </div>
 
