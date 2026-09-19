@@ -13,7 +13,7 @@ const FLASH_COLOR = "oklch(0.97 0.06 85)";
  *  to finish flying once it starts. Kept as one named constant here (rather
  *  than repeating the literal value at each call site) since the wordmark
  *  reveal needs it to know when the last burst has finished. */
-const SPARK_FLIGHT_MS = 700;
+const SPARK_FLIGHT_MS = 550;
 /** dumbbell-flight's own declared duration in styles.css — the real travel,
  *  ending exactly at contact (see the comment on it there). A cluster's
  *  spark burst fires at its own --dumbbell-cluster-delay + this, which is
@@ -25,9 +25,15 @@ const SPARK_FLIGHT_MS = 700;
  *  React finishes hydrating and attaching that listener, silently dropping
  *  the event for whichever cluster lands first — a real, reproduced bug,
  *  not a theoretical one. */
-const FLIGHT_MS = 180;
-const CLUSTER1_DELAY_MS = 230;
-const CLUSTER2_DELAY_MS = 330;
+const FLIGHT_MS = 200;
+/** The badge (the glowing rounded square) finishes its own entrance at
+ *  BADGE_MS — the bar and weight clusters don't start moving until after
+ *  that, so the square reads as appearing on its own first, and the
+ *  barbell as a distinct second beat flying into it, rather than
+ *  everything arriving in one blur. */
+const BADGE_MS = 500;
+const CLUSTER1_DELAY_MS = BADGE_MS + 150;
+const CLUSTER2_DELAY_MS = CLUSTER1_DELAY_MS + 130;
 
 /** A forceful burst of sparks flying outward from (x, y) — the point where a
  *  weight-plate cluster lands on the bar — along the given angles (degrees,
@@ -103,17 +109,24 @@ function SparkBurst({
   );
 }
 
-/** However fast hydration actually finishes, keep the splash up at least
- *  this long — enough time for the full reveal choreography to play out
- *  and settle, so it reads as a deliberate brand moment rather than a
- *  flash cut short mid-animation. */
-const MIN_VISIBLE_MS = 2500;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
 /** The last spark burst fires at CLUSTER2_DELAY_MS+FLIGHT_MS and flies
  *  for SPARK_FLIGHT_MS — the wordmark waits for that strike to finish
  *  landing before it appears, so it reads as forged by it. */
 const TEXT_DELAY_MS = CLUSTER2_DELAY_MS + FLIGHT_MS + SPARK_FLIGHT_MS;
+/** Must match the wordmark's own transition-all duration below. */
+const TEXT_TRANSITION_MS = 550;
+/** A short beat after the wordmark finishes settling in before the splash
+ *  becomes eligible to dismiss — long enough to read as a deliberate pause,
+ *  not an abrupt cut. */
+const HOLD_MS = 70;
+/** However fast hydration actually finishes, keep the splash up at least
+ *  this long — derived, not hand-tuned, from the actual choreography above
+ *  (badge → barbell flies in and strikes → wordmark settles → a short hold)
+ *  so it can't quietly drift out of sync with those stages the way a
+ *  separately maintained constant did earlier. */
+const MIN_VISIBLE_MS = TEXT_DELAY_MS + TEXT_TRANSITION_MS + HOLD_MS;
 
 /**
  * Full-screen brand splash shown once per cold app open (mounted at the
@@ -158,7 +171,12 @@ export function SplashScreen() {
         dismissing ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >
-      <div className="glow animate-in zoom-in-90 fade-in flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-[650ms]">
+      {/* duration-[500ms] here must match BADGE_MS below — it's a literal
+          Tailwind class rather than an interpolated one, since Tailwind's
+          build-time scanner can't see through a template-literal-
+          interpolated arbitrary value and would silently emit no CSS for
+          one. */}
+      <div className="glow animate-in zoom-in-90 fade-in flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-[500ms]">
         <svg
           viewBox="0 0 24 24"
           width={60}
@@ -172,9 +190,17 @@ export function SplashScreen() {
           role="img"
           aria-label="Forge"
         >
+          {/* The bar doesn't start fading in until the badge (the empty
+              glowing square) has finished its own entrance — see BADGE_MS —
+              so the square reads as the first beat and the barbell flying
+              into it as a clearly separate second one. The delay is set via
+              inline style (not a Tailwind delay-[...] class, which can't be
+              interpolated from BADGE_MS — see the comment above) so this
+              stays tied to the actual constant instead of a copy of it. */}
           <path
             d="m9.6 14.4 4.8-4.8"
-            className="animate-in fade-in duration-[400ms] delay-200 fill-mode-both"
+            className="animate-in fade-in duration-[300ms] fill-mode-both"
+            style={{ animationDelay: `${BADGE_MS}ms` } as CSSProperties}
           />
           <g
             className="animate-dumbbell-assemble"
@@ -224,8 +250,11 @@ export function SplashScreen() {
         </svg>
       </div>
 
+      {/* duration-[550ms] here must match TEXT_TRANSITION_MS above (a
+          literal Tailwind class for the same reason noted on the badge's
+          duration-[500ms] above). */}
       <div
-        className={`flex flex-col items-center gap-1.5 transition-all duration-[650ms] ease-out ${
+        className={`flex flex-col items-center gap-1.5 transition-all duration-[550ms] ease-out ${
           textVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >

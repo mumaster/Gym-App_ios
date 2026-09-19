@@ -336,8 +336,8 @@
 
 @utility animate-dumbbell-assemble {
   animation:
-    dumbbell-flight 180ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
-    dumbbell-recoil 200ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 180ms) forwards;
+    dumbbell-flight 200ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
+    dumbbell-recoil 200ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 200ms) forwards;
 }
 
 /* SplashScreen: a forceful burst of sparks at the instant each weight-plate
@@ -371,7 +371,7 @@
 }
 
 @utility animate-spark {
-  animation: spark-fly 700ms cubic-bezier(0.13, 0.85, 0.3, 1) both;
+  animation: spark-fly 550ms cubic-bezier(0.13, 0.85, 0.3, 1) both;
 }
 
 /* SplashScreen: a bright white-hot flash at each impact point itself, under
@@ -395,7 +395,7 @@
 }
 
 @utility animate-spark-flash {
-  animation: spark-flash 400ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
+  animation: spark-flash 320ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
 }
 
 /* SplashScreen: a thin expanding shockwave ring at each impact point,
@@ -413,5 +413,5 @@
 }
 
 @utility animate-spark-ring {
-  animation: spark-ring 580ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
+  animation: spark-ring 460ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
 }
