@@ -91,6 +91,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "black" },
       { name: "apple-mobile-web-app-title", content: "Forge" },
       { name: "theme-color", content: "#000000" },
+      // Without this, WebKit's default color-scheme is "light" — which
+      // controls more than form/scrollbar theming: it's also the UA's
+      // default canvas color for the very first frame it paints, before
+      // ANY author CSS has taken effect (inline <style> included, since
+      // even that has to wait for the parser to reach <body> and for a
+      // style/layout pass to run). That's a separate, earlier gap than the
+      // one the inline <style> below closes, and a separate mechanism again
+      // from the native apple-touch-startup-image launch screen above — it
+      // only governs the launch IMAGE shown before WebKit starts painting
+      // the page at all, not this handoff moment once it does. On an
+      // installed iOS PWA this reads as: native launch image (now correctly
+      // black) → one frame of WebKit's own light-mode default canvas
+      // (white) → the page's actual black paint takes over — precisely the
+      // "black, then a brief white flash, then content" sequence reported
+      // even after the launch-image fixes above landed and survived a
+      // clean reinstall. Declaring dark here tells WebKit its own default
+      // canvas is dark too, closing that specific gap.
+      { name: "color-scheme", content: "dark" },
       { title: "Forge — Smart Workout Generator & Tracker" },
       {
         name: "description",
@@ -217,8 +235,15 @@ function RootShell({ children }: { children: ReactNode }) {
             request to wait on, so there's no white flash before SplashScreen
             (or its own background) ever gets a chance to paint. Kept in
             sync with --background in styles.css by being the same plain
-            black (oklch(0 0 0) === #000). */}
-        <style>{"html,body{background-color:#000}"}</style>
+            black (oklch(0 0 0) === #000).
+            color-scheme:dark here (mirroring the <meta name="color-scheme">
+            above, belt-and-suspenders since this applies synchronously with
+            zero dependency on HeadContent's own render order) closes a
+            separate, EARLIER gap than background-color does: it's WebKit's
+            default canvas color for the very first frame it paints, before
+            this rule (or any author CSS) has actually taken effect, which
+            otherwise defaults to light/white. */}
+        <style>{"html,body{background-color:#000}html{color-scheme:dark}"}</style>
         <HeadContent />
       </head>
       <body>
