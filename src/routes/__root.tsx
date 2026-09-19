@@ -282,15 +282,34 @@ function RootShell({ children }: { children: ReactNode }) {
             its proper start instead of jumping out of an unstyled state.
             It's added by script, not baked into the SSR'd HTML, precisely so
             that a JS-off client (which gets the <noscript> stylesheet below)
-            never ends up with permanently invisible content. */}
+            never ends up with permanently invisible content.
+            On the success path specifically, flipping `rel` to "stylesheet"
+            only STARTS the browser applying the CSS (parse/recalc/layout) —
+            it doesn't finish synchronously. Removing css-pending in that
+            same tick (as an earlier version of this did) raced that: content
+            could become visible via the default `visibility` a frame or two
+            before Tailwind's styles had actually painted, showing unstyled,
+            unpositioned content (a plain-bordered "outline" of the badge and
+            wordmark) for a flash before the real layout caught up — worse
+            than the flash this whole mechanism exists to prevent. A double
+            requestAnimationFrame defers the reveal until the browser has
+            completed a real style+layout+paint pass against the new
+            stylesheet (a single rAF can still land before layout for that
+            pass is finalized in some engines, hence double). The error and
+            timeout paths skip that wait deliberately: there's no valid CSS
+            arriving to paint against, so there's nothing to lose by
+            revealing immediately, and doing so keeps the unstyled-fallback
+            content appearing as promptly as possible. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
               "(function(){var d=document.documentElement;d.classList.add('css-pending');var h=" +
               JSON.stringify(appCss) +
               ";var l=document.createElement('link');l.rel='preload';l.as='style';l.href=h;" +
-              "function a(){if(l.rel!=='stylesheet')l.rel='stylesheet';d.classList.remove('css-pending')}" +
-              "l.onload=a;l.onerror=a;setTimeout(a,3000);document.head.appendChild(l)})()",
+              "function reveal(){d.classList.remove('css-pending')}" +
+              "function ok(){if(l.rel!=='stylesheet'){l.rel='stylesheet';requestAnimationFrame(function(){requestAnimationFrame(reveal)})}}" +
+              "function fail(){if(l.rel!=='stylesheet')l.rel='stylesheet';reveal()}" +
+              "l.onload=ok;l.onerror=fail;setTimeout(fail,3000);document.head.appendChild(l)})()",
           }}
         />
         <noscript>
