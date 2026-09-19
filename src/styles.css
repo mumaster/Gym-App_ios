@@ -336,21 +336,21 @@
 
 @utility animate-dumbbell-assemble {
   animation:
-    dumbbell-flight 140ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
-    dumbbell-recoil 160ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 140ms) forwards;
+    dumbbell-flight 180ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
+    dumbbell-recoil 200ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 180ms) forwards;
 }
 
 /* SplashScreen: a forceful burst of sparks at the instant each weight-plate
    cluster lands on the bar — an anvil-strike flourish playing on the app's
    name. Each spark rockets outward along its own --spark-dx/-dy (SVG user
    units, a good distance beyond the badge itself) before shrinking and
-   fading, once. SparkBurst (in SplashScreen.tsx) is only mounted once its
-   cluster's own dumbbell-assemble animation actually reports finishing (via
-   onAnimationEnd), not on a guessed delay, so this always starts exactly
-   when the plate lands with no separate timing constant that could drift
-   out of sync. The overshoot-then-settle state lands at 3% (~17ms) rather
-   than a slower fade-in — close enough to a single frame that the spark
-   reads as an instant pop the moment it mounts. */
+   fading, once. SparkBurst (in SplashScreen.tsx) fires on a CSS
+   animation-delay computed to land exactly on dumbbell-flight's real end
+   (not on dumbbell-flight's own animationend event — see the delayMs
+   comment on SparkBurst for why that's unreliable here). The
+   overshoot-then-settle state lands at 3% rather than a slower fade-in —
+   close enough to a single frame that the spark reads as an instant pop
+   the moment it fires. */
 @keyframes spark-fly {
   0% {
     /* fill-mode: both + the small per-spark animation-delay stagger (see
@@ -371,12 +371,12 @@
 }
 
 @utility animate-spark {
-  animation: spark-fly 560ms cubic-bezier(0.13, 0.85, 0.3, 1) both;
+  animation: spark-fly 700ms cubic-bezier(0.13, 0.85, 0.3, 1) both;
 }
 
 /* SplashScreen: a bright white-hot flash at each impact point itself, under
    the spark streaks — sells the "strike" instant the sparks are flying out
-   of. Pops to full brightness at 4% (~13ms), same near-instant-pop reasoning
+   of. Pops to full brightness at 4%, same near-instant-pop reasoning
    as spark-fly above, then fully decays well before the sparks finish
    traveling. */
 @keyframes spark-flash {
@@ -395,7 +395,7 @@
 }
 
 @utility animate-spark-flash {
-  animation: spark-flash 320ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
+  animation: spark-flash 400ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
 }
 
 /* SplashScreen: a thin expanding shockwave ring at each impact point,
@@ -413,5 +413,5 @@
 }
 
 @utility animate-spark-ring {
-  animation: spark-ring 460ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
+  animation: spark-ring 580ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
 }

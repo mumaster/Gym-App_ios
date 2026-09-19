@@ -11,9 +11,9 @@ const SPARK_COLORS = ["oklch(0.85 0.19 70)", "oklch(0.92 0.14 85)", "oklch(0.97 
 const FLASH_COLOR = "oklch(0.97 0.06 85)";
 /** spark-fly's own declared duration in styles.css — how long a burst takes
  *  to finish flying once it starts. Kept as one named constant here (rather
- *  than repeating the literal "560" at each call site) since the wordmark
+ *  than repeating the literal value at each call site) since the wordmark
  *  reveal needs it to know when the last burst has finished. */
-const SPARK_FLIGHT_MS = 560;
+const SPARK_FLIGHT_MS = 700;
 /** dumbbell-flight's own declared duration in styles.css — the real travel,
  *  ending exactly at contact (see the comment on it there). A cluster's
  *  spark burst fires at its own --dumbbell-cluster-delay + this, which is
@@ -25,9 +25,9 @@ const SPARK_FLIGHT_MS = 560;
  *  React finishes hydrating and attaching that listener, silently dropping
  *  the event for whichever cluster lands first — a real, reproduced bug,
  *  not a theoretical one. */
-const FLIGHT_MS = 140;
-const CLUSTER1_DELAY_MS = 180;
-const CLUSTER2_DELAY_MS = 260;
+const FLIGHT_MS = 180;
+const CLUSTER1_DELAY_MS = 230;
+const CLUSTER2_DELAY_MS = 330;
 
 /** A forceful burst of sparks flying outward from (x, y) — the point where a
  *  weight-plate cluster lands on the bar — along the given angles (degrees,
@@ -107,7 +107,7 @@ function SparkBurst({
  *  this long — enough time for the full reveal choreography to play out
  *  and settle, so it reads as a deliberate brand moment rather than a
  *  flash cut short mid-animation. */
-const MIN_VISIBLE_MS = 2100;
+const MIN_VISIBLE_MS = 2500;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
 /** The last spark burst fires at CLUSTER2_DELAY_MS+FLIGHT_MS and flies
@@ -158,7 +158,7 @@ export function SplashScreen() {
         dismissing ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >
-      <div className="glow animate-in zoom-in-90 fade-in flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-500">
+      <div className="glow animate-in zoom-in-90 fade-in flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-[650ms]">
         <svg
           viewBox="0 0 24 24"
           width={60}
@@ -174,7 +174,7 @@ export function SplashScreen() {
         >
           <path
             d="m9.6 14.4 4.8-4.8"
-            className="animate-in fade-in duration-300 delay-150 fill-mode-both"
+            className="animate-in fade-in duration-[400ms] delay-200 fill-mode-both"
           />
           <g
             className="animate-dumbbell-assemble"
@@ -225,7 +225,7 @@ export function SplashScreen() {
       </div>
 
       <div
-        className={`flex flex-col items-center gap-1.5 transition-all duration-500 ease-out ${
+        className={`flex flex-col items-center gap-1.5 transition-all duration-[650ms] ease-out ${
           textVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
