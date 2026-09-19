@@ -123,6 +123,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // device via its media query, so iOS shows black immediately rather
       // than defaulting to white while the page loads. Portrait only, since
       // the app doesn't support landscape.
+      //
+      // These media queries match on EXACT device-width/device-height/
+      // pixel-ratio — a real, ongoing gap, not a one-time list to finish:
+      // any device released after this list was written (or any model
+      // just not covered) matches none of them and gets iOS's white
+      // default regardless of this fix being in place. The catch-all
+      // entry at the end, with no media query at all, is what actually
+      // closes that gap — Safari falls back to it when nothing more
+      // specific matches, so an uncovered/newer device still gets solid
+      // black instead of white. Reuses the largest existing image (any
+      // solid black PNG works as a fallback; exact fit doesn't matter for
+      // a flat color) rather than shipping another asset for it.
       {
         rel: "apple-touch-startup-image",
         href: "/pwa/splash/x-xsmax11pro-splash.png",
@@ -176,6 +188,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "/pwa/splash/16promax-splash.png",
         media:
           "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      // Catch-all fallback — no media query, so Safari uses it for any
+      // device none of the entries above matched. Must stay last: a
+      // device this list DOES cover should still get its own exact-size
+      // image above, not this one.
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/16promax-splash.png",
       },
     ],
   }),
