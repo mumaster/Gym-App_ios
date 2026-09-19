@@ -58,16 +58,45 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // App shell navigations: network-first, falling back to the last cached
-  // response for that URL when the network is unavailable.
+  // App shell navigations: stale-while-revalidate, not network-first. A cold
+  // launch of the installed PWA gates its very first paint on this request —
+  // network-first meant that paint waited on a real round-trip every time
+  // (DNS, TLS, Cloudflare's own cold start, whatever the radio's signal was
+  // that moment), whose latency varies launch to launch. Until that response
+  // starts arriving, nothing on the page — not the inline background style,
+  // not color-scheme, nothing — has reached WebKit yet, so the launch image
+  // was getting dismissed into a blank default canvas for a networkdependent
+  // stretch of time: a white flash present on nearly every cold launch, but
+  // with the exact timing/intensity of the flash tracking that request's
+  // latency, matching reports of it varying launch to launch. Serving the
+  // cached shell immediately (near-zero latency, so there's almost nothing
+  // left for the launch image to hand off into) while still fetching a fresh
+  // copy in the background keeps this fast on every subsequent cold launch
+  // without ever going stale for more than one extra launch — the app's own
+  // markup doesn't embed per-request server data (everything's hydrated from
+  // localStorage client-side), so a cached shell is functionally identical
+  // to a fresh one even across a deploy.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          caches.open(PAGES_CACHE).then((cache) => cache.put(request, response.clone()));
-          return response;
-        })
-        .catch(() => caches.match(request)),
+      caches.open(PAGES_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        const network = fetch(request)
+          .then((response) => {
+            if (response.ok) cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() => undefined);
+        // When serving from cache, the revalidation fetch above is handed
+        // to waitUntil instead of being awaited — otherwise, once this
+        // handler already returned the cached response, the SW would be
+        // free to terminate before that fetch/cache.put finished, and the
+        // cache would silently stop refreshing.
+        if (cached) {
+          event.waitUntil(network);
+          return cached;
+        }
+        return (await network) ?? Response.error();
+      }),
     );
   }
 });
