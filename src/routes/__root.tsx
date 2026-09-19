@@ -124,7 +124,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "stylesheet", href: appCss },
+      // styles.css is deliberately NOT listed here as a plain
+      // rel="stylesheet" — that makes it render-blocking, which gates the
+      // ENTIRE first paint (the inline <style> in RootShell included) on a
+      // ~94KB network fetch. RootShell loads it non-blockingly instead; see
+      // the comment there for the full reasoning.
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa/icon-180.png" },
@@ -227,24 +231,71 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
-        {/* The app's black background otherwise comes entirely from the
-            external styles.css stylesheet linked below — until that
-            finishes its network round-trip, html/body have no background
-            set at all, so the browser paints its default white in the gap.
-            This inline rule applies the instant the HTML parses, with no
-            request to wait on, so there's no white flash before SplashScreen
-            (or its own background) ever gets a chance to paint. Kept in
-            sync with --background in styles.css by being the same plain
-            black (oklch(0 0 0) === #000).
-            color-scheme:dark here (mirroring the <meta name="color-scheme">
-            above, belt-and-suspenders since this applies synchronously with
-            zero dependency on HeadContent's own render order) closes a
-            separate, EARLIER gap than background-color does: it's WebKit's
-            default canvas color for the very first frame it paints, before
-            this rule (or any author CSS) has actually taken effect, which
-            otherwise defaults to light/white. */}
-        <style>{"html,body{background-color:#000}html{color-scheme:dark}"}</style>
+        {/* Critical CSS: everything needed for the first paint to be a
+            solid black screen, with zero network dependency. #forge-boot is
+            SplashScreen's own root — covering the viewport in black from
+            this rule (rather than only from Tailwind's `fixed inset-0
+            bg-background`) means the first paint is correct even before
+            styles.css has applied, which also hides the otherwise unstyled
+            TabBar buttons underneath (UA-default buttons render light grey).
+            ID specificity beats Tailwind's classes, but both resolve to the
+            same plain black (--background is oklch(0 0 0) === #000), and
+            opacity/pointer-events are left alone so the dismiss transition
+            still works.
+            color-scheme:dark mirrors the <meta name="color-scheme"> above
+            (belt-and-suspenders, since this applies with zero dependency on
+            HeadContent's own render order) and covers an even earlier gap:
+            WebKit's default canvas color for the very first frame, before
+            any author CSS has taken effect at all. */}
+        <style>
+          {"html,body{background-color:#000}html{color-scheme:dark}" +
+            "#forge-boot{position:fixed;inset:0;z-index:100;background-color:#000}" +
+            "html.css-pending #forge-boot *{visibility:hidden}"}
+        </style>
         <HeadContent />
+        {/* styles.css is loaded via preload+swap rather than a plain
+            rel="stylesheet", because a render-blocking stylesheet gates the
+            entire first paint — including the inline rule above — on that
+            ~94KB file arriving. On a cold launch of the installed PWA with
+            an evicted HTTP cache (iOS is aggressive about this, and a
+            reinstall guarantees it), that's a real network round-trip during
+            which the OS shows its own backdrop instead of our content: the
+            white flash. Safari-on-reload never showed it because Safari
+            holds the previous frame until the new first paint, and a cold
+            PWA launch has no previous frame to hold.
+            Injecting the link from script (rather than emitting a
+            rel="preload" tag plus a separate swap script) keeps this free of
+            any dependency on head tag ordering — React hoists link/script
+            tags, and an id lookup that ran before its target existed would
+            silently leave the app unstyled. The load handler flips it to a
+            real stylesheet the moment it's available; the error and timeout
+            paths flip it anyway so a failed preload degrades to a normal
+            (blocking) stylesheet fetch rather than an unstyled app.
+            The `css-pending` class it adds up front (and removes on any of
+            those three paths) drives the rule above that hides the splash's
+            CONTENTS until the real stylesheet lands. Without it the pre-CSS
+            paint isn't actually black: `color-scheme: dark` makes WebKit's
+            default text color WHITE, so the FORGE wordmark and the
+            currentColor SVG render white-on-black, unpositioned — measured
+            at ~2.4k bright pixels including pure white. Hiding them keeps
+            the first frame pure black, so the splash animation plays from
+            its proper start instead of jumping out of an unstyled state.
+            It's added by script, not baked into the SSR'd HTML, precisely so
+            that a JS-off client (which gets the <noscript> stylesheet below)
+            never ends up with permanently invisible content. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var d=document.documentElement;d.classList.add('css-pending');var h=" +
+              JSON.stringify(appCss) +
+              ";var l=document.createElement('link');l.rel='preload';l.as='style';l.href=h;" +
+              "function a(){if(l.rel!=='stylesheet')l.rel='stylesheet';d.classList.remove('css-pending')}" +
+              "l.onload=a;l.onerror=a;setTimeout(a,3000);document.head.appendChild(l)})()",
+          }}
+        />
+        <noscript>
+          <link rel="stylesheet" href={appCss} />
+        </noscript>
       </head>
       <body>
         {children}

@@ -19,10 +19,21 @@
 const CACHE_VERSION = "v1";
 const OCR_CACHE = `forge-ocr-${CACHE_VERSION}`;
 const PAGES_CACHE = `forge-pages-${CACHE_VERSION}`;
-const CURRENT_CACHES = [OCR_CACHE, PAGES_CACHE];
+const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;
+const CURRENT_CACHES = [OCR_CACHE, PAGES_CACHE, ASSETS_CACHE];
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
+  // Warm the shell during install so the very FIRST cold launch after an
+  // install/reinstall already has it locally, instead of being the one
+  // launch that still pays a full network round-trip for it. Best-effort:
+  // a failure here must not abort the install, or the SW never activates.
+  event.waitUntil(
+    caches
+      .open(PAGES_CACHE)
+      .then((cache) => cache.add(new Request("/", { cache: "reload" })))
+      .catch(() => undefined),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -42,6 +53,28 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Build output under /assets/: cache-first, and safe to keep forever
+  // without revalidation because every filename is content-hashed by Vite —
+  // a changed file is a different URL, so a cache hit can never be stale.
+  // This matters specifically for the render-blocking-ness of styles.css:
+  // it gates the whole first paint, so on a cold launch with an evicted
+  // HTTP cache it was a network round-trip the user saw as a white flash
+  // (see __root.tsx's RootShell). HTTP Cache-Control already marks these
+  // immutable, but Cache Storage survives iOS evicting the HTTP cache, so
+  // the two are complementary rather than redundant.
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.open(ASSETS_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+        const response = await fetch(request);
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      }),
+    );
+    return;
+  }
 
   // OCR assets: cache-first — they're versioned by path, not by content hash,
   // so once cached they're reused as-is until CACHE_VERSION changes above.

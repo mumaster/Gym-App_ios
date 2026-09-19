@@ -166,6 +166,11 @@ export function SplashScreen() {
 
   return (
     <div
+      // __root.tsx's inline critical CSS targets this id to paint a
+      // full-screen black cover on the very first frame, before styles.css
+      // has applied — see the comment there. Renaming it silently
+      // reintroduces a white flash on a cold PWA launch.
+      id="forge-boot"
       aria-hidden={dismissing}
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-background transition-opacity duration-[400ms] ease-out ${
         dismissing ? "pointer-events-none opacity-0" : "opacity-100"
