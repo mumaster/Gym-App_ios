@@ -1,0 +1,5 @@
+/manifest.webmanifest
+  Cache-Control: public, max-age=31536000, immutable
+
+/pwa/*
+  Cache-Control: public, max-age=31536000, immutable
