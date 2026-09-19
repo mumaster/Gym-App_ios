@@ -286,28 +286,41 @@ function RootShell({ children }: { children: ReactNode }) {
             On the success path specifically, flipping `rel` to "stylesheet"
             only STARTS the browser applying the CSS (parse/recalc/layout) —
             it doesn't finish synchronously. Removing css-pending in that
-            same tick (as an earlier version of this did) raced that: content
-            could become visible via the default `visibility` a frame or two
-            before Tailwind's styles had actually painted, showing unstyled,
+            same tick (an earlier version of this did exactly that) raced it:
+            content could become visible via the default `visibility` before
+            Tailwind's styles had actually painted, showing unstyled,
             unpositioned content (a plain-bordered "outline" of the badge and
-            wordmark) for a flash before the real layout caught up — worse
-            than the flash this whole mechanism exists to prevent. A double
-            requestAnimationFrame defers the reveal until the browser has
-            completed a real style+layout+paint pass against the new
-            stylesheet (a single rAF can still land before layout for that
-            pass is finalized in some engines, hence double). The error and
-            timeout paths skip that wait deliberately: there's no valid CSS
-            arriving to paint against, so there's nothing to lose by
-            revealing immediately, and doing so keeps the unstyled-fallback
-            content appearing as promptly as possible. */}
+            wordmark) — worse than the flash this whole mechanism exists to
+            prevent. A fixed frame count (an earlier version of THIS fix used
+            a double requestAnimationFrame) isn't a reliable enough signal
+            for how long that takes: it assumed flipping `rel` to
+            "stylesheet" reuses the already-fetched preload response near-
+            instantly, which held in this sandbox's only available test
+            engine (Chromium) but not, per a real-device report, on iOS
+            Safari — WebKit is documented as sometimes re-fetching rather
+            than reusing the preload on that swap, so the real gap there can
+            run well past a couple of frames. Polling `l.sheet.cssRules`
+            instead waits for actual confirmation that the CSSOM has been
+            built from this stylesheet — not a timing guess, and correct
+            regardless of how many times the browser (re)fetches internally
+            to get there — capped at 120 rAF ticks (~2s at 60fps) as a safety
+            net so a same-origin read that somehow never resolves can't hang
+            the reveal forever; the outer 3s setTimeout below is a second,
+            independent backstop under that. The error and timeout paths
+            skip waiting entirely and reveal immediately — there's no valid
+            CSS arriving to paint against on those, so there's nothing to
+            gain by waiting, and doing so keeps the unstyled fallback
+            appearing as promptly as possible. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
               "(function(){var d=document.documentElement;d.classList.add('css-pending');var h=" +
               JSON.stringify(appCss) +
               ";var l=document.createElement('link');l.rel='preload';l.as='style';l.href=h;" +
-              "function reveal(){d.classList.remove('css-pending')}" +
-              "function ok(){if(l.rel!=='stylesheet'){l.rel='stylesheet';requestAnimationFrame(function(){requestAnimationFrame(reveal)})}}" +
+              "var settled=false;function reveal(){if(settled)return;settled=true;d.classList.remove('css-pending')}" +
+              "var tries=0;function waitReady(){var ready=false;try{ready=!!(l.sheet&&l.sheet.cssRules&&l.sheet.cssRules.length>0)}catch(e){}" +
+              "tries++;if(ready||tries>120){requestAnimationFrame(reveal)}else{requestAnimationFrame(waitReady)}}" +
+              "function ok(){if(l.rel!=='stylesheet')l.rel='stylesheet';waitReady()}" +
               "function fail(){if(l.rel!=='stylesheet')l.rel='stylesheet';reveal()}" +
               "l.onload=ok;l.onerror=fail;setTimeout(fail,3000);document.head.appendChild(l)})()",
           }}
