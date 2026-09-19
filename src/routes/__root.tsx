@@ -122,6 +122,16 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
+        {/* The app's black background otherwise comes entirely from the
+            external styles.css stylesheet linked below — until that
+            finishes its network round-trip, html/body have no background
+            set at all, so the browser paints its default white in the gap.
+            This inline rule applies the instant the HTML parses, with no
+            request to wait on, so there's no white flash before SplashScreen
+            (or its own background) ever gets a chance to paint. Kept in
+            sync with --background in styles.css by being the same plain
+            black (oklch(0 0 0) === #000). */}
+        <style>{"html,body{background-color:#000}"}</style>
         <HeadContent />
       </head>
       <body>
