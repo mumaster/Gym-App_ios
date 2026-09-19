@@ -175,8 +175,17 @@ export function SplashScreen() {
           Tailwind class rather than an interpolated one, since Tailwind's
           build-time scanner can't see through a template-literal-
           interpolated arbitrary value and would silently emit no CSS for
-          one. */}
-      <div className="glow animate-in zoom-in-90 fade-in flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-[500ms]">
+          one. fill-mode-both is required, not cosmetic: tw-animate-css's
+          animate-in defaults to animation-fill-mode: none, and this splash
+          paints from SSR'd markup — without "both" telling the browser to
+          apply the "from" keyframe (opacity 0, 90% scale) before the
+          animation's delay/start has actually been processed, the badge
+          briefly renders at its normal resting state (fully opaque, full
+          size) the instant the stylesheet applies, then snaps back to
+          invisible/scaled-down to actually begin the animation — a visible
+          flash right as the entrance animation starts. The bar <path>
+          right below already carries fill-mode-both for the same reason. */}
+      <div className="glow animate-in zoom-in-90 fade-in fill-mode-both flex size-24 items-center justify-center rounded-[2rem] bg-primary/10 duration-[500ms]">
         <svg
           viewBox="0 0 24 24"
           width={60}
