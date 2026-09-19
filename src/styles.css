@@ -294,7 +294,15 @@
    weight clusters snap onto the bar once (from the same off-axis, faded
    start) instead of looping, and hold the assembled end state (fill-mode
    both) rather than resetting. A snappier ease than the idle loop's, to
-   read as a deliberate "click into place" rather than ambient motion. */
+   read as a deliberate "click into place" rather than ambient motion.
+   Deliberately short (220ms, not the original 620ms): this cubic-bezier is a
+   heavily front-loaded ease-out — the plate is already ~97% of the way to
+   its final spot by the curve's halfway point — so a long total duration
+   just adds a long, visually-static "tail" after the eye already reads it
+   as landed, which is what made the spark burst (correctly tied to this
+   animation's literal end) feel like it was firing late. Shortening the
+   duration keeps that same snap character but shrinks the tail to well
+   under a human-perceptible gap. */
 @keyframes dumbbell-assemble {
   0% {
     transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
@@ -307,7 +315,7 @@
 }
 
 @utility animate-dumbbell-assemble {
-  animation: dumbbell-assemble 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: dumbbell-assemble 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* SplashScreen: a forceful burst of sparks at the instant each weight-plate

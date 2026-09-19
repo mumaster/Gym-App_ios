@@ -15,11 +15,13 @@ const FLASH_COLOR = "oklch(0.97 0.06 85)";
  *  SVG convention: 0 = +x, 90 = +y/down), plus a bright flash and expanding
  *  shockwave ring at the impact point itself. Fires once, delayMs after
  *  mount, exactly matching that cluster's own dumbbell-assemble delay +
- *  duration (its 100% keyframe), so the strike lands the instant the plate
- *  does. The flash/spark keyframes themselves pop to full brightness within
- *  a couple of ms of firing (see spark-flash/spark-fly in styles.css) rather
- *  than easing in, so there's no perceptible gap between "plate lands" and
- *  "spark is visible" on top of that sync. Per-spark reach/length/width vary
+ *  duration (its 100% keyframe, now a short 220ms — see the comment on
+ *  dumbbell-assemble in styles.css for why a shorter animation, not a
+ *  fudged delay, is what actually keeps this in sync). The flash/spark
+ *  keyframes themselves pop to full brightness within a couple of ms of
+ *  firing (see spark-flash/spark-fly in styles.css) rather than easing in,
+ *  so there's no perceptible gap between "plate lands" and "spark is
+ *  visible" on top of that sync. Per-spark reach/length/width vary
  *  with index using a fixed formula (not
  *  Math.random(), which would mismatch between SSR and hydration) so the
  *  burst reads as an organic scatter rather than a uniform starburst. */
@@ -88,13 +90,13 @@ function SparkBurst({
  *  this long — enough time for the full reveal choreography to play out
  *  and settle, so it reads as a deliberate brand moment rather than a
  *  flash cut short mid-animation. */
-const MIN_VISIBLE_MS = 2500;
+const MIN_VISIBLE_MS = 2100;
 /** Must match the fade-out transition duration below. */
 const EXIT_MS = 400;
-/** The last spark burst fires at 880ms and flies for 560ms (see the
+/** The last spark burst fires at 480ms and flies for 560ms (see the
  *  SparkBurst calls below) — the wordmark waits for that strike to finish
  *  landing before it appears, so it reads as forged by it. */
-const TEXT_DELAY_MS = 880 + 560;
+const TEXT_DELAY_MS = 480 + 560;
 
 /**
  * Full-screen brand splash shown once per cold app open (mounted at the
@@ -185,24 +187,20 @@ export function SplashScreen() {
           </g>
 
           {/* Sparks fire the instant each cluster lands — 180ms/260ms delay
-              + the 620ms assemble animation above (verified pixel-exact via
-              a frozen-animation diff against the settled frame: the
-              cubic-bezier easing is NOT meaningfully front-loaded once
-              anti-aliased edges/glow are accounted for — it stays visibly in
-              motion right up to its literal declared end). Wide 8-spark
-              cones (each pointing away from the icon's center) for a
-              forceful, full-blown strike rather than a light scatter. */}
+              + the 220ms assemble animation above. Wide 8-spark cones (each
+              pointing away from the icon's center) for a forceful,
+              full-blown strike rather than a light scatter. */}
           <SparkBurst
             x={14.4}
             y={9.6}
             angles={[-95, -74, -53, -32, -11, 10, 31, 50]}
-            delayMs={800}
+            delayMs={400}
           />
           <SparkBurst
             x={9.6}
             y={14.4}
             angles={[85, 106, 127, 148, 169, 190, 211, 230]}
-            delayMs={880}
+            delayMs={480}
           />
         </svg>
       </div>
