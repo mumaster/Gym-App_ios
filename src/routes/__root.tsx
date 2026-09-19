@@ -110,6 +110,73 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa/icon-180.png" },
+      // iOS's own native launch screen for a home-screen-installed PWA is
+      // shown before any of the page's own HTML/CSS/JS ever runs, so no
+      // amount of in-page fix (see the inline <style> below) can touch it —
+      // it's a separate mechanism entirely. iOS Safari's support for the
+      // manifest's background_color as that launch screen's color has long
+      // been inconsistent across versions (ours is already correctly set to
+      // #000000, but that alone isn't reliably honored), so the standard,
+      // reliable fix is these apple-touch-startup-image links instead: one
+      // solid-black PNG per common iPhone screen size (device pixels =
+      // CSS points × the device's pixel ratio), each scoped to exactly that
+      // device via its media query, so iOS shows black immediately rather
+      // than defaulting to white while the page loads. Portrait only, since
+      // the app doesn't support landscape.
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/x-xsmax11pro-splash.png",
+        media:
+          "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/xr-11-splash.png",
+        media:
+          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/xsmax-11promax-splash.png",
+        media:
+          "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/12-13-14-splash.png",
+        media:
+          "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/12-13promax-14plus-splash.png",
+        media:
+          "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/14pro-15-16-splash.png",
+        media:
+          "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/14promax-15plus-16plus-splash.png",
+        media:
+          "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/16pro-splash.png",
+        media:
+          "(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/pwa/splash/16promax-splash.png",
+        media:
+          "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
     ],
   }),
   shellComponent: RootShell,
