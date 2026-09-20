@@ -250,7 +250,8 @@ function RootShell({ children }: { children: ReactNode }) {
         <style>
           {"html,body{background-color:#000}html{color-scheme:dark}" +
             "#forge-boot{position:fixed;inset:0;z-index:100;background-color:#000}" +
-            "html.css-pending #forge-boot *{visibility:hidden}"}
+            "html.css-pending #forge-boot *{visibility:hidden}" +
+            "html.no-transition #forge-boot *{transition:none!important}"}
         </style>
         <HeadContent />
         {/* styles.css is loaded via preload+swap rather than a plain
@@ -285,41 +286,77 @@ function RootShell({ children }: { children: ReactNode }) {
             never ends up with permanently invisible content.
             On the success path specifically, flipping `rel` to "stylesheet"
             only STARTS the browser applying the CSS (parse/recalc/layout) —
-            it doesn't finish synchronously. Removing css-pending in that
-            same tick (an earlier version of this did exactly that) raced it:
-            content could become visible via the default `visibility` before
-            Tailwind's styles had actually painted, showing unstyled,
-            unpositioned content (a plain-bordered "outline" of the badge and
-            wordmark) — worse than the flash this whole mechanism exists to
-            prevent. A fixed frame count (an earlier version of THIS fix used
-            a double requestAnimationFrame) isn't a reliable enough signal
-            for how long that takes: it assumed flipping `rel` to
-            "stylesheet" reuses the already-fetched preload response near-
-            instantly, which held in this sandbox's only available test
-            engine (Chromium) but not, per a real-device report, on iOS
-            Safari — WebKit is documented as sometimes re-fetching rather
-            than reusing the preload on that swap, so the real gap there can
-            run well past a couple of frames. Polling `l.sheet.cssRules`
-            instead waits for actual confirmation that the CSSOM has been
-            built from this stylesheet — not a timing guess, and correct
-            regardless of how many times the browser (re)fetches internally
-            to get there — capped at 120 rAF ticks (~2s at 60fps) as a safety
-            net so a same-origin read that somehow never resolves can't hang
-            the reveal forever; the outer 3s setTimeout below is a second,
-            independent backstop under that. The error and timeout paths
-            skip waiting entirely and reveal immediately — there's no valid
-            CSS arriving to paint against on those, so there's nothing to
-            gain by waiting, and doing so keeps the unstyled fallback
-            appearing as promptly as possible. */}
+            it doesn't finish synchronously. Two earlier attempts at waiting
+            for that both failed on real iOS Safari despite checking out in
+            this sandbox's only available test engine (a Chromium-only
+            Playwright install — no WebKit build to actually verify against):
+            a fixed frame count assumed the preload response gets reused
+            near-instantly on the rel swap, which doesn't hold on WebKit
+            (documented to sometimes re-fetch instead); polling
+            `l.sheet.cssRules.length` next, on the theory that confirms the
+            CSSOM is built — reported back as still showing the badge with
+            square (pre-rounded) corners and the wordmark flashing visible
+            then vanishing, meaning cssRules being populated does NOT imply
+            the browser has finished computing styles from it across the
+            page, at least not reliably on WebKit; those are apparently more
+            separable pipeline stages there than on Chromium, where checking
+            actual computed style (not cssRules) never showed a gap in
+            testing.
+            So: check computed style directly, which is the one signal that
+            can't lie about what the browser has actually rendered regardless
+            of engine-specific pipeline timing. `--background` is a plain CSS
+            custom property `styles.css`'s `:root` sets and nothing in this
+            page's inline critical CSS touches, so its presence is an
+            unambiguous, engine-agnostic proof that styles.css has actually
+            been applied — not just fetched, not just parsed into a
+            stylesheet object, but applied. Capped at 120 rAF ticks (~2s at
+            60fps) as a safety net so a check that somehow never resolves
+            can't hang the reveal forever; the outer 3s setTimeout below is a
+            second, independent backstop under that. The error and timeout
+            paths skip waiting entirely and reveal immediately — there's no
+            valid CSS arriving to paint against on those, so there's nothing
+            to gain by waiting, and doing so keeps the unstyled fallback
+            appearing as promptly as possible.
+            None of the above was actually the "outline" bug's root cause,
+            though — it was still reproducing even once revealing waited for
+            confirmed-applied computed style, including in plain Safari (not
+            just the installed PWA), which is what exposed that this was
+            never really a reveal-TIMING problem. `duration-[500ms]` (on the
+            badge) and `duration-[550ms]` (on the wordmark's own
+            `transition-all`) compile to a flat `transition-duration`
+            unconditionally — Tailwind sets it whether or not a `transition`
+            utility is present alongside it, and `transition-property`
+            defaults to `all`. That means these elements have an ACTIVE
+            transition on every property from the moment they exist, so the
+            very first time their styles resolve — jumping from unstyled
+            (`border-radius: 0`, default opacity 1) to Tailwind's real values
+            (`rounded-[2rem]`'s 32px, `opacity-0` while `textVisible` is
+            still false) — that jump itself gets caught by the transition
+            and animates over hundreds of ms, instead of applying instantly:
+            a square box slowly rounding into shape, wordmark text fading
+            out instead of just already being invisible. This was always
+            latent — it's invisible when styles.css blocks first paint
+            (the ORIGINAL bug this whole mechanism exists to fix), since
+            there's never an unstyled state to transition FROM in that case.
+            Making CSS non-blocking is what first made an unstyled state
+            possible to observe, which is what surfaced this.
+            `no-transition` (companion to `css-pending`, same lifecycle)
+            blocks all transitions under `#forge-boot` for that entire
+            window, so this first, unstyled-to-styled jump can only ever
+            apply instantly — never animated — regardless of exactly when
+            reveal happens. Legitimate transitions (the wordmark's own
+            opacity fade, driven later by React's `textVisible` state) are
+            unaffected: by the time that happens, `no-transition` is long
+            gone and the jump it exists to suppress already resolved. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){var d=document.documentElement;d.classList.add('css-pending');var h=" +
+              "(function(){var d=document.documentElement;d.classList.add('css-pending');d.classList.add('no-transition');var h=" +
               JSON.stringify(appCss) +
               ";var l=document.createElement('link');l.rel='preload';l.as='style';l.href=h;" +
-              "var settled=false;function reveal(){if(settled)return;settled=true;d.classList.remove('css-pending')}" +
-              "var tries=0;function waitReady(){var ready=false;try{ready=!!(l.sheet&&l.sheet.cssRules&&l.sheet.cssRules.length>0)}catch(e){}" +
-              "tries++;if(ready||tries>120){requestAnimationFrame(reveal)}else{requestAnimationFrame(waitReady)}}" +
+              "var settled=false;function reveal(){if(settled)return;settled=true;d.classList.remove('css-pending');d.classList.remove('no-transition')}" +
+              "var tries=0;function cssApplied(){try{return getComputedStyle(d).getPropertyValue('--background').trim()!==''}catch(e){return false}}" +
+              "function waitReady(){tries++;if(cssApplied()||tries>120){requestAnimationFrame(reveal)}else{requestAnimationFrame(waitReady)}}" +
               "function ok(){if(l.rel!=='stylesheet')l.rel='stylesheet';waitReady()}" +
               "function fail(){if(l.rel!=='stylesheet')l.rel='stylesheet';reveal()}" +
               "l.onload=ok;l.onerror=fail;setTimeout(fail,3000);document.head.appendChild(l)})()",
