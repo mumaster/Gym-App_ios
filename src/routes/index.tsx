@@ -21,6 +21,9 @@ import {
   dayKeyFromDate,
   entriesForDay,
   nutrientStatus,
+  type Macros,
+  type NutrientStatus,
+  type NutritionGoals,
 } from "../lib/gym/nutrition";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords } from "../lib/gym/progress";
@@ -218,64 +221,43 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-[1.3fr_1fr] gap-2.5">
+          <NutritionTile
+            active={todayEntries.length > 0}
+            hasGoals={hasNutritionGoals}
+            totals={todayTotals}
+            goals={nutritionGoals}
+            calorieStatus={calorieStatus}
+            caloriePct={caloriePct}
+            onClick={() => navigate({ to: "/nutrition" })}
+          />
+
           <BentoTile
             icon={Flame}
             active={streak > 0}
-            label="Day streak"
+            label="Streak"
             onClick={() => navigate({ to: "/history" })}
           >
-            <p className="tabular text-[32px] font-bold leading-none">{streak}</p>
+            <p className="tabular text-[28px] font-bold leading-none">{streak}</p>
             {longestStreak > streak ? (
               <p className="mt-1 text-[11px] text-muted-foreground">Best {longestStreak}</p>
             ) : null}
           </BentoTile>
 
           <BentoTile
-            icon={Apple}
-            active={todayEntries.length > 0}
-            label="Calories today"
-            onClick={() => navigate({ to: "/nutrition" })}
-          >
-            <p className="tabular text-[22px] font-bold leading-none">
-              {todayTotals.calories}
-              {calorieGoal ? (
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  {" "}
-                  /{calorieGoal}
-                </span>
-              ) : null}
-            </p>
-            {hasNutritionGoals && calorieGoal ? (
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={`h-full rounded-full ${
-                    calorieStatus === "over"
-                      ? "bg-destructive"
-                      : calorieStatus === "near"
-                        ? "bg-chart-3"
-                        : "bg-primary"
-                  }`}
-                  style={{ width: `${caloriePct}%` }}
-                />
-              </div>
-            ) : null}
-          </BentoTile>
-
-          <BentoTile
             icon={Dumbbell}
             active={sessionsThisWeek > 0}
-            label="This week"
+            label="Week"
             onClick={() => navigate({ to: "/history" })}
           >
-            <p className="tabular text-[32px] font-bold leading-none">{sessionsThisWeek}</p>
+            <p className="tabular text-[28px] font-bold leading-none">{sessionsThisWeek}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">{workouts.length} total</p>
           </BentoTile>
 
           <BentoTile
             icon={Trophy}
             active={!!topPr}
-            label="Best lift"
+            label="Best PR"
             onClick={() => navigate({ to: "/history" })}
           >
             {topPr ? (
@@ -309,6 +291,108 @@ function HomeScreen() {
   );
 }
 
+/** Same tile family as BentoTile but wider (spans all 3 grid columns) and
+ *  taller (grid-rows-[1.3fr_1fr] gives it more of row 1) — nutrition is the
+ *  one stat here with four separate numbers worth glancing at (calories plus
+ *  all three macros), so it gets the room the single-number tiles don't need. */
+function NutritionTile({
+  active,
+  hasGoals,
+  totals,
+  goals,
+  calorieStatus,
+  caloriePct,
+  onClick,
+}: {
+  active: boolean;
+  hasGoals: boolean;
+  totals: Macros;
+  goals: NutritionGoals;
+  calorieStatus: NutrientStatus;
+  caloriePct: number;
+  onClick: () => void;
+}) {
+  const barClass = (status: NutrientStatus) =>
+    status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
+
+  return (
+    <button
+      onClick={() => {
+        haptic(10);
+        onClick();
+      }}
+      className="glass relative col-span-3 flex min-h-0 flex-col gap-3 overflow-hidden rounded-3xl p-4 text-left active:scale-[0.98]"
+    >
+      <Apple
+        className={`pointer-events-none absolute -bottom-5 -right-5 size-24 ${
+          active ? "text-primary/[0.06]" : "text-white/[0.03]"
+        }`}
+        strokeWidth={1.5}
+      />
+      <div className="relative flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+              active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            <Apple className="size-3.5" />
+          </span>
+          <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Nutrition today
+          </span>
+        </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </div>
+
+      <div className="relative">
+        <p className="tabular text-[28px] font-bold leading-none">
+          {totals.calories}
+          <span className="text-[13px] font-medium text-muted-foreground">
+            {goals.calories ? ` /${goals.calories}` : ""} kcal
+          </span>
+        </p>
+        {hasGoals && goals.calories ? (
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full ${barClass(calorieStatus)}`}
+              style={{ width: `${caloriePct}%` }}
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative grid grid-cols-3 gap-2">
+        {(["protein", "carbs", "fat"] as const).map((key) => {
+          const goal = goals[key];
+          const status = nutrientStatus(totals[key], goal);
+          const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
+          return (
+            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-2">
+              <p className="tabular text-[15px] font-bold leading-none">
+                {totals[key]}
+                <span className="text-[10px] font-medium text-muted-foreground">g</span>
+              </p>
+              <p className="mt-1 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {key === "protein" ? "Protein" : key === "carbs" ? "Carbs" : "Fat"}
+                {goal != null ? `/${goal}` : ""}
+              </p>
+              {goal != null ? (
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-background/40">
+                  <div
+                    className={`h-full rounded-full ${barClass(status)}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </button>
+  );
+}
+
 function BentoTile({
   icon: Icon,
   active,
@@ -331,7 +415,7 @@ function BentoTile({
       className="glass relative flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.97]"
     >
       <Icon
-        className={`pointer-events-none absolute -bottom-3 -right-3 size-16 ${
+        className={`pointer-events-none absolute -bottom-2.5 -right-2.5 size-12 ${
           active ? "text-primary/10" : "text-white/[0.04]"
         }`}
         strokeWidth={1.5}
