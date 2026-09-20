@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { Check } from "lucide-react";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { AccentId } from "../../lib/gym/types";
@@ -14,7 +13,6 @@ const ACCENTS: { id: AccentId; label: string; swatch: string }[] = [
 
 export function ThemePicker() {
   const { accent, customAccent, update } = useGym();
-  const wheelRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-4">
@@ -31,42 +29,43 @@ export function ThemePicker() {
           }`}
           style={{ backgroundColor: a.swatch }}
         >
-          {accent === a.id ? (
-            <Check className="size-5 text-background" strokeWidth={3} />
-          ) : null}
+          {accent === a.id ? <Check className="size-5 text-background" strokeWidth={3} /> : null}
         </button>
       ))}
 
-      {/* Custom color wheel */}
-      <button
-        onClick={() => {
-          haptic(15);
-          wheelRef.current?.click();
-        }}
-        aria-label="Custom color"
-        className={`relative flex size-12 items-center justify-center overflow-hidden rounded-full border-2 transition-transform active:scale-95 ${
-          accent === "custom" ? "border-foreground" : "border-border"
-        }`}
-        style={{
-          background:
-            accent === "custom"
-              ? customAccent
-              : "conic-gradient(from 0deg, #f87171, #fbbf24, #a3e635, #34d399, #22d3ee, #818cf8, #e879f9, #f87171)",
-        }}
-      >
-        {accent === "custom" ? (
-          <Check className="size-5 text-background" strokeWidth={3} />
-        ) : null}
-        <input
-          ref={wheelRef}
-          type="color"
-          value={customAccent}
-          onChange={(e) => update({ accent: "custom", customAccent: e.target.value })}
-          className="pointer-events-none absolute inset-0 size-full opacity-0"
+      {/* Custom color wheel. The <input type="color"> is a sibling of the
+          decorative swatch, not nested inside a <button> — a <button>'s
+          content model forbids interactive descendants, and that nesting
+          was silently breaking the native color picker on iOS Safari (it
+          simply had no effect when tapped). The input itself is now the
+          real interactive element, absolutely positioned over the swatch
+          and invisible but still hit-testable. */}
+      <div className="group relative size-12">
+        <div
           aria-hidden
-          tabIndex={-1}
+          className={`flex size-12 items-center justify-center overflow-hidden rounded-full border-2 transition-transform group-active:scale-95 ${
+            accent === "custom" ? "border-foreground" : "border-border"
+          }`}
+          style={{
+            background:
+              accent === "custom"
+                ? customAccent
+                : "conic-gradient(from 0deg, #f87171, #fbbf24, #a3e635, #34d399, #22d3ee, #818cf8, #e879f9, #f87171)",
+          }}
+        >
+          {accent === "custom" ? (
+            <Check className="size-5 text-background" strokeWidth={3} />
+          ) : null}
+        </div>
+        <input
+          type="color"
+          aria-label="Custom color"
+          value={customAccent}
+          onClick={() => haptic(15)}
+          onChange={(e) => update({ accent: "custom", customAccent: e.target.value })}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
         />
-      </button>
+      </div>
     </div>
   );
 }

@@ -13,10 +13,13 @@ export function ProfileAvatar({
   const Icon = avatar.icon;
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full ${className}`}
-      style={{ width: size, height: size, backgroundColor: avatar.bg }}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-primary ${className}`}
+      style={{ width: size, height: size }}
     >
-      <Icon className="text-background" style={{ width: size * 0.58, height: size * 0.58 }} />
+      <Icon
+        className="text-primary-foreground"
+        style={{ width: size * 0.58, height: size * 0.58 }}
+      />
     </span>
   );
 }

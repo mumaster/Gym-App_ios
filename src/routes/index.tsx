@@ -286,7 +286,7 @@ function WorkoutHome() {
             navigate({ to: "/settings" });
           }}
           aria-label="Settings"
-          className="rounded-full"
+          className="flex items-center justify-center rounded-full"
         >
           <ProfileAvatar avatarId={avatarId} size={40} />
         </button>
