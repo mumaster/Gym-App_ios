@@ -12,12 +12,15 @@ import { DEFAULT_PROFILES } from "./data";
 import { DEFAULT_PLATES } from "./plates";
 import {
   mealForTime,
+  recipePerServing,
   type FoodEntry,
   type MealIngredient,
   type MealTemplate,
   type MealType,
   type NutritionGoals,
   type NutritionProfile,
+  type Recipe,
+  type WaterEntry,
 } from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
@@ -91,6 +94,12 @@ interface GymState {
   mealTemplates: MealTemplate[];
   /** Named, reusable workout plans the user can start exactly as saved. */
   workoutTemplates: WorkoutTemplate[];
+  /** Saved recipes (ingredients + serving count) — see lib/gym/nutrition.ts's Recipe. */
+  recipes: Recipe[];
+  /** Logged water, newest first. */
+  waterEntries: WaterEntry[];
+  /** Daily water target in ml, or null if the user hasn't set one. */
+  waterGoalMl: number | null;
 }
 
 const initialState: GymState = {
@@ -118,6 +127,9 @@ const initialState: GymState = {
   nutritionProfile: null,
   mealTemplates: [],
   workoutTemplates: [],
+  recipes: [],
+  waterEntries: [],
+  waterGoalMl: null,
 };
 
 const KEY = "forge.gym.state.v2";
@@ -171,6 +183,9 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     workoutTemplates: raw.workoutTemplates ?? [],
+    recipes: raw.recipes ?? [],
+    waterEntries: raw.waterEntries ?? [],
+    waterGoalMl: raw.waterGoalMl ?? null,
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -245,6 +260,12 @@ interface Ctx extends GymState {
   deleteMealTemplate: (id: string) => void;
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
   logMealTemplate: (id: string, meal: MealType) => void;
+  saveRecipe: (name: string, servings: number, ingredients: MealIngredient[]) => void;
+  deleteRecipe: (id: string) => void;
+  /** Logs one food entry for `servings` servings of a saved recipe, scaled from its per-serving macros. */
+  logRecipe: (id: string, servings: number, meal: MealType) => void;
+  logWater: (ml: number) => void;
+  removeWaterEntry: (id: string) => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -574,6 +595,44 @@ export function GymProvider({ children }: { children: ReactNode }) {
           }));
           return { ...s, foodEntries: [...entries, ...s.foodEntries] };
         }),
+
+      saveRecipe: (name, servings, ingredients) =>
+        setState((s) => ({
+          ...s,
+          recipes: [{ id: crypto.randomUUID(), name, servings, ingredients }, ...s.recipes],
+        })),
+      deleteRecipe: (id) =>
+        setState((s) => ({ ...s, recipes: s.recipes.filter((r) => r.id !== id) })),
+      // A serving's macros are stored as a per100-style figure so this reuses
+      // the exact same scaledMacros math every other food entry uses — grams
+      // here is just `servings * 100`, not a real weight, purely to encode
+      // "how many servings" through the existing grams/per100 shape rather
+      // than adding a parallel one just for recipe-sourced entries.
+      logRecipe: (id, servings, meal) =>
+        setState((s) => {
+          const recipe = s.recipes.find((r) => r.id === id);
+          if (!recipe) return s;
+          const entry: FoodEntry = {
+            id: crypto.randomUUID(),
+            name: recipe.name,
+            logged_at: new Date().toISOString(),
+            meal,
+            grams: Math.round(Math.max(0, servings) * 100),
+            per100: recipePerServing(recipe),
+          };
+          return { ...s, foodEntries: [entry, ...s.foodEntries] };
+        }),
+
+      logWater: (ml) =>
+        setState((s) => ({
+          ...s,
+          waterEntries: [
+            { id: crypto.randomUUID(), ml, logged_at: new Date().toISOString() },
+            ...s.waterEntries,
+          ],
+        })),
+      removeWaterEntry: (id) =>
+        setState((s) => ({ ...s, waterEntries: s.waterEntries.filter((e) => e.id !== id) })),
     };
   }, [state, hydrated, session, syncStatus]);
 

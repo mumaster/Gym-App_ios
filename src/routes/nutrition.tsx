@@ -1,8 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Settings2, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Droplet,
+  Plus,
+  Settings2,
+  Trash2,
+  X,
+} from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
+import { CreateRecipeSheet } from "../components/gym/CreateRecipeSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import {
@@ -17,11 +28,19 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   nutrientStatus,
+  recipePerServing,
   scaledMacros,
   type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { haptic, useGym } from "../lib/gym/store";
+
+/** Quick-add amounts on the Water card, smallest first. */
+const WATER_QUICK_ADD = [250, 500, 750, 1000];
+
+/** Trims a fixed-2dp liters string down to whatever precision it actually needs. */
+const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\.?0+$/, "")}L`;
 
 export const Route = createFileRoute("/nutrition")({
   head: () => ({
@@ -43,12 +62,28 @@ export const Route = createFileRoute("/nutrition")({
 });
 
 function NutritionScreen() {
-  const { foodEntries, nutritionGoals, mealTemplates, hydrated, removeFoodEntry, logMealTemplate } =
-    useGym();
+  const {
+    foodEntries,
+    nutritionGoals,
+    mealTemplates,
+    recipes,
+    waterEntries,
+    waterGoalMl,
+    hydrated,
+    removeFoodEntry,
+    logMealTemplate,
+    logRecipe,
+    logWater,
+    removeWaterEntry,
+    update,
+  } = useGym();
   /** null = closed, "add" = fresh entry, an entry = editing that one. */
   const [foodSheet, setFoodSheet] = useState<"add" | FoodEntry | null>(null);
   const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
   const [createMealOpen, setCreateMealOpen] = useState(false);
+  const [createRecipeOpen, setCreateRecipeOpen] = useState(false);
+  const [waterGoalEditing, setWaterGoalEditing] = useState(false);
+  const [waterGoalDraft, setWaterGoalDraft] = useState("");
   /** 0 = today, -1 = yesterday, etc. Only today allows adding/logging. */
   const [dayOffset, setDayOffset] = useState(0);
 
@@ -61,6 +96,28 @@ function NutritionScreen() {
   const totals = useMemo(() => dailyTotals(selectedEntries), [selectedEntries]);
   const hasGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
   const isToday = dayOffset === 0;
+
+  const selectedWaterEntries = useMemo(
+    () => entriesForDay(waterEntries, selectedKey),
+    [waterEntries, selectedKey],
+  );
+  const totalWaterMl = useMemo(
+    () => selectedWaterEntries.reduce((sum, e) => sum + e.ml, 0),
+    [selectedWaterEntries],
+  );
+  const waterPct = waterGoalMl ? Math.min(100, (totalWaterMl / waterGoalMl) * 100) : 0;
+
+  const openWaterGoalEditor = () => {
+    haptic(12);
+    setWaterGoalDraft(waterGoalMl ? String(waterGoalMl) : "");
+    setWaterGoalEditing(true);
+  };
+  const saveWaterGoal = () => {
+    haptic(15);
+    const n = Math.round(parseDecimal(waterGoalDraft));
+    update({ waterGoalMl: n > 0 ? n : null });
+    setWaterGoalEditing(false);
+  };
   const dayLabel = isToday
     ? "Today"
     : dayOffset === -1
@@ -137,6 +194,97 @@ function NutritionScreen() {
         ) : null}
       </Card>
 
+      <SectionLabel>Water</SectionLabel>
+      <Card className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="tabular text-[26px] font-bold leading-none">
+              {formatLiters(totalWaterMl)}
+            </p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {waterGoalMl ? `of ${formatLiters(waterGoalMl)} goal` : `${totalWaterMl}ml logged`}
+            </p>
+          </div>
+          <button
+            onClick={openWaterGoalEditor}
+            aria-label="Set water goal"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+          >
+            <Settings2 className="size-4" />
+          </button>
+        </div>
+
+        {waterGoalEditing ? (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              inputMode="numeric"
+              type="text"
+              value={waterGoalDraft}
+              onFocus={selectOnFocus}
+              onChange={(e) => {
+                if (DECIMAL_INPUT_RE.test(e.target.value)) setWaterGoalDraft(e.target.value);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && saveWaterGoal()}
+              placeholder="e.g. 2500"
+              className="tabular h-10 w-full min-w-0 flex-1 rounded-xl bg-muted px-3 text-[15px] font-semibold outline-none"
+            />
+            <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
+            <button
+              onClick={saveWaterGoal}
+              aria-label="Save water goal"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            >
+              <Check className="size-4" />
+            </button>
+          </div>
+        ) : waterGoalMl ? (
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-sky-400 transition-all"
+              style={{ width: `${waterPct}%` }}
+            />
+          </div>
+        ) : null}
+
+        {isToday ? (
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {WATER_QUICK_ADD.map((ml) => (
+              <button
+                key={ml}
+                onClick={() => {
+                  haptic(15);
+                  logWater(ml);
+                }}
+                className="glass flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
+              >
+                <Droplet className="size-4 text-sky-400" />
+                <span className="text-[12px] font-semibold">
+                  +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </Card>
+
+      {selectedWaterEntries.length > 0 ? (
+        <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {selectedWaterEntries.map((entry) => (
+            <button
+              key={entry.id}
+              onClick={() => {
+                haptic(10);
+                removeWaterEntry(entry.id);
+              }}
+              aria-label={`Remove ${entry.ml}ml water entry`}
+              className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
+            >
+              <Droplet className="size-3 text-sky-400" /> {entry.ml}ml <X className="size-3" />
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {isToday ? (
         <>
           <button
@@ -192,6 +340,50 @@ function NutritionScreen() {
             className="glass mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
           >
             <Plus className="size-4" /> New meal
+          </button>
+
+          <SectionLabel>Recipes</SectionLabel>
+          {recipes.length === 0 ? (
+            <Card className="p-4 text-[13px] text-muted-foreground">
+              Save ingredients as a recipe with a serving count — log a single serving in one tap,
+              scaled automatically from the whole batch.
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {recipes.map((recipe) => {
+                const perServing = recipePerServing(recipe);
+                return (
+                  <Card key={recipe.id} className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold">{recipe.name}</p>
+                      <p className="tabular text-[12px] text-muted-foreground">
+                        {recipe.servings} serving{recipe.servings === 1 ? "" : "s"} ·{" "}
+                        {perServing.calories} kcal/serving
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        haptic([20, 30]);
+                        logRecipe(recipe.id, 1, mealForTime(new Date().toISOString()));
+                      }}
+                      aria-label={`Log 1 serving of ${recipe.name}`}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          <button
+            onClick={() => {
+              haptic(15);
+              setCreateRecipeOpen(true);
+            }}
+            className="glass mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
+          >
+            <Plus className="size-4" /> New recipe
           </button>
         </>
       ) : null}
@@ -263,6 +455,7 @@ function NutritionScreen() {
       />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
       <CreateMealSheet open={createMealOpen} onClose={() => setCreateMealOpen(false)} />
+      <CreateRecipeSheet open={createRecipeOpen} onClose={() => setCreateRecipeOpen(false)} />
     </Screen>
   );
 }

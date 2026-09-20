@@ -68,6 +68,44 @@ export interface MealTemplate {
   ingredients: MealIngredient[];
 }
 
+/**
+ * A named, reusable recipe: an ingredient list plus how many servings the
+ * whole batch yields. Distinct from a MealTemplate above (which logs every
+ * ingredient as its own entry, unscaled, every time): a Recipe computes
+ * per-serving macros from its ingredients' combined totals divided by
+ * `servings`, and logging it records a single food entry sized to however
+ * many servings were actually eaten, rather than the whole batch.
+ */
+export interface Recipe {
+  id: string;
+  name: string;
+  /** How many servings the full ingredient list yields. */
+  servings: number;
+  ingredients: MealIngredient[];
+}
+
+/** Per-serving macros — the whole batch's combined totals divided by `servings`. */
+export function recipePerServing(recipe: Recipe): Macros {
+  const total = dailyTotals(recipe.ingredients);
+  const servings = Math.max(1, recipe.servings);
+  return {
+    calories: Math.round(total.calories / servings),
+    protein: Number((total.protein / servings).toFixed(1)),
+    carbs: Number((total.carbs / servings).toFixed(1)),
+    fat: Number((total.fat / servings).toFixed(1)),
+    fiber: Number((total.fiber / servings).toFixed(1)),
+    salt: Number((total.salt / servings).toFixed(2)),
+  };
+}
+
+/** One logged glass/bottle/etc of water. */
+export interface WaterEntry {
+  id: string;
+  ml: number;
+  /** ISO timestamp when logged. */
+  logged_at: string;
+}
+
 /** Display order used everywhere a nutrient list is shown. */
 export const NUTRIENT_ORDER: NutrientKey[] = [
   "calories",
@@ -238,7 +276,8 @@ export function scaledMacros(entry: { grams: number; per100: Macros }): Macros {
   };
 }
 
-export function entriesForDay(entries: FoodEntry[], key: string): FoodEntry[] {
+/** Filters any logged_at-timestamped list (FoodEntry, WaterEntry, …) down to one calendar day. */
+export function entriesForDay<T extends { logged_at: string }>(entries: T[], key: string): T[] {
   return entries.filter((e) => dayKey(e.logged_at) === key);
 }
 

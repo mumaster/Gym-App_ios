@@ -4,6 +4,7 @@ import {
   Apple,
   CalendarDays,
   ChevronRight,
+  Droplet,
   Dumbbell,
   Flame,
   LayoutGrid,
@@ -79,6 +80,7 @@ function HomeScreen() {
     program,
     foodEntries,
     nutritionGoals,
+    waterEntries,
     avatarId,
   } = useGym();
 
@@ -94,6 +96,10 @@ function HomeScreen() {
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayEntries = useMemo(() => entriesForDay(foodEntries, todayKey), [foodEntries, todayKey]);
   const todayTotals = useMemo(() => dailyTotals(todayEntries), [todayEntries]);
+  const todayWaterMl = useMemo(
+    () => entriesForDay(waterEntries, todayKey).reduce((sum, e) => sum + e.ml, 0),
+    [waterEntries, todayKey],
+  );
   const hasNutritionGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
   const calorieGoal = nutritionGoals.calories;
   const calorieStatus = nutrientStatus(todayTotals.calories, calorieGoal);
@@ -229,6 +235,7 @@ function HomeScreen() {
             goals={nutritionGoals}
             calorieStatus={calorieStatus}
             caloriePct={caloriePct}
+            waterMl={todayWaterMl}
             onClick={() => navigate({ to: "/nutrition" })}
           />
 
@@ -288,6 +295,7 @@ function NutritionTile({
   goals,
   calorieStatus,
   caloriePct,
+  waterMl,
   onClick,
 }: {
   active: boolean;
@@ -296,6 +304,9 @@ function NutritionTile({
   goals: NutritionGoals;
   calorieStatus: NutrientStatus;
   caloriePct: number;
+  /** Today's logged water, in ml — 0 hides the water pill entirely rather
+   *  than showing a "0L" that would just be noise for anyone not using it. */
+  waterMl: number;
   onClick: () => void;
 }) {
   const barClass = (status: NutrientStatus) =>
@@ -332,7 +343,15 @@ function NutritionTile({
             </span>
           </span>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        <div className="flex shrink-0 items-center gap-2">
+          {waterMl > 0 ? (
+            <span className="flex items-center gap-1 rounded-full bg-sky-400/15 px-2 py-1 text-[11px] font-bold text-sky-400">
+              <Droplet className="size-3" />
+              {(waterMl / 1000).toFixed(1)}L
+            </span>
+          ) : null}
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </div>
       </div>
 
       {hasGoals && goals.calories ? (
