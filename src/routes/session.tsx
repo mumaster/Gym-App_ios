@@ -313,7 +313,7 @@ function SessionScreen() {
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <p className="text-lg font-semibold">No active session</p>
         <button
-          onClick={() => navigate({ to: "/" })}
+          onClick={() => navigate({ to: "/generate" })}
           className="min-h-[52px] active:scale-95 rounded-2xl bg-primary px-6 font-bold text-primary-foreground"
         >
           Build a workout

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as ExercisesRouteImport } from './routes/exercises'
+import { Route as GenerateRouteImport } from './routes/generate'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as NutritionRouteImport } from './routes/nutrition'
 import { Route as SessionRouteImport } from './routes/session'
@@ -32,6 +33,11 @@ const EquipmentRoute = EquipmentRouteImport.update({
 const ExercisesRoute = ExercisesRouteImport.update({
   id: '/exercises',
   path: '/exercises',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GenerateRoute = GenerateRouteImport.update({
+  id: '/generate',
+  path: '/generate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
+  '/generate': typeof GenerateRoute
   '/history': typeof HistoryRouteWithChildren
   '/nutrition': typeof NutritionRoute
   '/session': typeof SessionRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
+  '/generate': typeof GenerateRoute
   '/nutrition': typeof NutritionRoute
   '/session': typeof SessionRoute
   '/settings': typeof SettingsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
+  '/generate': typeof GenerateRoute
   '/history': typeof HistoryRouteWithChildren
   '/nutrition': typeof NutritionRoute
   '/session': typeof SessionRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/equipment'
     | '/exercises'
+    | '/generate'
     | '/history'
     | '/nutrition'
     | '/session'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/equipment'
     | '/exercises'
+    | '/generate'
     | '/nutrition'
     | '/session'
     | '/settings'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/equipment'
     | '/exercises'
+    | '/generate'
     | '/history'
     | '/nutrition'
     | '/session'
@@ -137,6 +149,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EquipmentRoute: typeof EquipmentRoute
   ExercisesRoute: typeof ExercisesRoute
+  GenerateRoute: typeof GenerateRoute
   HistoryRoute: typeof HistoryRouteWithChildren
   NutritionRoute: typeof NutritionRoute
   SessionRoute: typeof SessionRoute
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       path: '/exercises'
       fullPath: '/exercises'
       preLoaderRoute: typeof ExercisesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generate': {
+      id: '/generate'
+      path: '/generate'
+      fullPath: '/generate'
+      preLoaderRoute: typeof GenerateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -228,6 +248,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EquipmentRoute: EquipmentRoute,
   ExercisesRoute: ExercisesRoute,
+  GenerateRoute: GenerateRoute,
   HistoryRoute: HistoryRouteWithChildren,
   NutritionRoute: NutritionRoute,
   SessionRoute: SessionRoute,
