@@ -89,6 +89,8 @@ export interface PlannedExercise {
   superset_slot?: "A" | "B";
   /** Progressive-overload suggestion from history, in kg — see lib/gym/progression.ts. */
   suggested_weight?: number;
+  /** Reps to aim for on working sets, paired with `suggested_weight` — see lib/gym/progression.ts. */
+  suggested_reps?: number;
 }
 
 export interface Workout {
@@ -105,6 +107,23 @@ export interface Workout {
   /** True when started via "Start {day} day" for the active weekly scheme's
    * next slot — only sessions like this advance the split's cyclePosition. */
   fromScheduledDay?: boolean;
+  /** True when started from an active multi-week Program's next scheduled
+   * day — only sessions like this advance the program's cursor. Mutually
+   * exclusive with `fromScheduledDay` in practice (a session is started from
+   * at most one scheduling source), but not enforced at the type level since
+   * nothing reads both at once. */
+  fromProgramDay?: boolean;
+}
+
+/** A named, reusable plan the user can start exactly as saved, as an
+ *  alternative to the on-the-fly generator — same precedent as
+ *  `MealTemplate` in lib/gym/nutrition.ts. */
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  plan: PlannedExercise[];
+  duration_minutes: number;
+  target_muscles: Muscle[];
 }
 
 export interface EquipmentProfile {

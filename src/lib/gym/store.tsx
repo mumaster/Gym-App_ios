@@ -22,14 +22,17 @@ import {
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
+import { advanceProgram, type Program } from "./programs";
 import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
   EquipmentProfile,
   LoggedSet,
+  Muscle,
   PlannedExercise,
   Unit,
   Workout,
+  WorkoutTemplate,
 } from "./types";
 import {
   onAuthStateChange,
@@ -69,6 +72,12 @@ interface GymState {
   notifyEnabled: boolean;
   /** The user's chosen weekly split, if they've set one up. */
   weeklyScheme: WeeklyScheme | null;
+  /** The user's active multi-week program, if they've set one up — a
+   *  bounded, progressing alternative to the indefinitely-repeating
+   *  weeklyScheme, see lib/gym/programs.ts. Independent of weeklyScheme in
+   *  state (both can exist), but the UI shows program info preferentially
+   *  when both are present. */
+  program: Program | null;
   /** Logged food, newest first. */
   foodEntries: FoodEntry[];
   /** Daily nutrition limits the user set for themselves — see NutritionGoalsSheet. */
@@ -80,6 +89,8 @@ interface GymState {
   nutritionProfile: NutritionProfile | null;
   /** Saved ingredient combos (e.g. "Banana oatmeal") the user can log in one tap. */
   mealTemplates: MealTemplate[];
+  /** Named, reusable workout plans the user can start exactly as saved. */
+  workoutTemplates: WorkoutTemplate[];
 }
 
 const initialState: GymState = {
@@ -101,10 +112,12 @@ const initialState: GymState = {
   restOverride: null,
   notifyEnabled: false,
   weeklyScheme: null,
+  program: null,
   foodEntries: [],
   nutritionGoals: {},
   nutritionProfile: null,
   mealTemplates: [],
+  workoutTemplates: [],
 };
 
 const KEY = "forge.gym.state.v2";
@@ -153,9 +166,11 @@ function migrate(raw: Partial<GymState>): GymState {
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: raw.weeklyScheme ?? null,
+    program: raw.program ?? null,
     nutritionGoals: raw.nutritionGoals ?? {},
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
+    workoutTemplates: raw.workoutTemplates ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -185,7 +200,10 @@ interface Ctx extends GymState {
   signOut: () => Promise<void>;
   update: (patch: Partial<GymState>) => void;
   startWorkout: (
-    input: Pick<Workout, "plan" | "duration_minutes" | "target_muscles" | "fromScheduledDay">,
+    input: Pick<
+      Workout,
+      "plan" | "duration_minutes" | "target_muscles" | "fromScheduledDay" | "fromProgramDay"
+    >,
   ) => void;
   logSet: (set: LoggedSet) => void;
   updateSet: (
@@ -206,6 +224,16 @@ interface Ctx extends GymState {
   setWeeklyScheme: (scheme: WeeklyScheme) => void;
   updateScheduleSlotDow: (index: number, dow: number) => void;
   clearWeeklyScheme: () => void;
+  setProgram: (program: Program) => void;
+  updateProgramSlotDow: (index: number, dow: number) => void;
+  clearProgram: () => void;
+  saveWorkoutTemplate: (
+    name: string,
+    plan: PlannedExercise[],
+    duration_minutes: number,
+    target_muscles: Muscle[],
+  ) => void;
+  deleteWorkoutTemplate: (id: string) => void;
   addFoodEntry: (entry: FoodEntry) => void;
   updateFoodEntry: (
     id: string,
@@ -343,6 +371,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             finished: false,
             unit: "kg",
             fromScheduledDay: input.fromScheduledDay ?? false,
+            fromProgramDay: input.fromProgramDay ?? false,
           },
         })),
       logSet: (set) =>
@@ -395,6 +424,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
                           (s.weeklyScheme.cyclePosition + 1) % s.weeklyScheme.schedule.length,
                       }
                     : s.weeklyScheme,
+                // Same "only advance the session that actually scheduled it"
+                // guard as weeklyScheme above, mirrored for the program cursor.
+                program:
+                  s.program && s.activeWorkout.fromProgramDay
+                    ? advanceProgram(s.program)
+                    : s.program,
               }
             : s,
         ),
@@ -478,6 +513,31 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, weeklyScheme: { ...s.weeklyScheme, schedule } };
         }),
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
+
+      setProgram: (program) => setState((s) => ({ ...s, program })),
+      updateProgramSlotDow: (index, dow) =>
+        setState((s) => {
+          if (!s.program) return s;
+          const schedule = s.program.schedule.map((slot, i) =>
+            i === index ? { ...slot, dow } : slot,
+          );
+          return { ...s, program: { ...s.program, schedule } };
+        }),
+      clearProgram: () => setState((s) => ({ ...s, program: null })),
+
+      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles) =>
+        setState((s) => ({
+          ...s,
+          workoutTemplates: [
+            { id: crypto.randomUUID(), name, plan, duration_minutes, target_muscles },
+            ...s.workoutTemplates,
+          ],
+        })),
+      deleteWorkoutTemplate: (id) =>
+        setState((s) => ({
+          ...s,
+          workoutTemplates: s.workoutTemplates.filter((t) => t.id !== id),
+        })),
 
       addFoodEntry: (entry) => setState((s) => ({ ...s, foodEntries: [entry, ...s.foodEntries] })),
       updateFoodEntry: (id, patch) =>

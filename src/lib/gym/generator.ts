@@ -1,8 +1,16 @@
 import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
-import { suggestWeight } from "./progression";
+import { plateStep } from "./plates";
+import { roundToStep, suggestWeight } from "./progression";
 import type { ReadinessScore } from "./readiness";
-import type { EquipmentId, Exercise, PlannedExercise, TargetMuscle, Workout } from "./types";
+import type {
+  EquipmentId,
+  EquipmentProfile,
+  Exercise,
+  PlannedExercise,
+  TargetMuscle,
+  Workout,
+} from "./types";
 
 export const availableExercises = (equipment: EquipmentId[], avoided: string[] = []): Exercise[] =>
   EXERCISES.filter(
@@ -155,6 +163,14 @@ interface GenerateArgs {
   history?: Workout[];
   /** Today's readiness check-in — scales suggested weight up or down. */
   readinessScore?: ReadinessScore;
+  /** Active equipment profile — enables plate/dumbbell-realistic rounding of
+   *  suggested weights (see lib/gym/plates.ts's `plateStep`). Falls back to a
+   *  plain 0.5kg round when omitted. */
+  profile?: EquipmentProfile;
+  /** Scales progressive-overload suggested weights on top of the per-exercise
+   *  history-based suggestion — e.g. a Program's build/deload week. Defaults
+   *  to 1 (no change); see lib/gym/programs.ts. */
+  intensityMultiplier?: number;
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -284,6 +300,8 @@ export function generateWorkout({
   avoided = [],
   history = [],
   readinessScore,
+  profile,
+  intensityMultiplier = 1,
 }: GenerateArgs): PlannedExercise[] {
   const pool = availableExercises(equipment, avoided);
   const shape = shapeFor(duration);
@@ -295,16 +313,22 @@ export function generateWorkout({
 
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
+    const step = profile ? plateStep(choice, profile) : 0.5;
     const suggestion = history.length
-      ? suggestWeight(choice.id, history, target_reps, readinessScore)
+      ? suggestWeight(choice.id, history, target_reps, readinessScore, step)
       : null;
+    const suggestedWeight =
+      suggestion && intensityMultiplier !== 1
+        ? Number(roundToStep(suggestion.weight * intensityMultiplier, step).toFixed(2))
+        : suggestion?.weight;
     return {
       exercise_id: choice.id,
       target_sets: compound ? shape.compoundSets : shape.accessorySets,
       warmup_sets: compound ? shape.compoundWarmups : 0,
       target_reps,
       rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
-      ...(suggestion ? { suggested_weight: suggestion.weight } : {}),
+      ...(suggestedWeight !== undefined ? { suggested_weight: suggestedWeight } : {}),
+      ...(suggestion ? { suggested_reps: suggestion.reps } : {}),
     };
   };
 

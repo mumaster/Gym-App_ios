@@ -107,13 +107,17 @@ export function splitDayLabel(templateId: SplitTemplateId, dayId: string): strin
   return splitTemplateById(templateId).days.find((d) => d.id === dayId)?.label ?? dayId;
 }
 
-/** Concrete target muscles for a scheduled slot — full-body days fall back to least-recently-trained. */
+/** Concrete target muscles for a scheduled slot — full-body days fall back to
+ *  least-recently-trained. Takes a plain `templateId` rather than a whole
+ *  `WeeklyScheme` so it's reusable for the multi-week Program concept in
+ *  lib/gym/programs.ts, which schedules slots the same way but isn't itself
+ *  a WeeklyScheme. */
 export function musclesForSlot(
-  scheme: WeeklyScheme,
+  templateId: SplitTemplateId,
   slot: ScheduleSlot,
   workouts: Workout[],
 ): Muscle[] {
-  const template = splitTemplateById(scheme.templateId);
+  const template = splitTemplateById(templateId);
   const day = template.days.find((d) => d.id === slot.dayId);
   if (!day) return [];
   if (day.muscles.length) return day.muscles;

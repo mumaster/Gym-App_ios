@@ -5,14 +5,17 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  Bookmark,
   CalendarClock,
   ChevronRight,
+  Flame,
   Heart,
   Play,
   Plus,
   RefreshCw,
   Repeat,
   Settings2,
+  Snowflake,
   Sparkles,
   Timer,
   TrendingUp,
@@ -22,9 +25,11 @@ import {
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
+import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
+import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
 import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
@@ -37,6 +42,8 @@ import {
   targetsFromRegions,
   type RegionId,
 } from "../lib/gym/anatomy";
+import { plateStep } from "../lib/gym/plates";
+import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { READINESS_LABELS, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
@@ -80,6 +87,8 @@ function WorkoutHome() {
     toggleLovedExercise,
     avoidedExerciseIds,
     weeklyScheme,
+    program,
+    workoutTemplates,
     readinessLog,
     setTodayReadiness,
     avatarId,
@@ -93,6 +102,9 @@ function WorkoutHome() {
   const [variation, setVariation] = useState(0);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
+  const [programSheetOpen, setProgramSheetOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [readinessEditing, setReadinessEditing] = useState(false);
   /**
    * True when the current muscle selection came straight from a PT-designed
@@ -110,6 +122,10 @@ function WorkoutHome() {
    * sessions started with this true advance the weekly scheme's rotation.
    */
   const [followingSchedule, setFollowingSchedule] = useState(false);
+  /** Same idea as `followingSchedule`, for an active multi-week Program's
+   *  next scheduled day — mutually exclusive with it in practice, since a
+   *  session is started from at most one scheduling source. */
+  const [followingProgram, setFollowingProgram] = useState(false);
 
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const muscles = musclesFromRegions(regions);
@@ -138,6 +154,7 @@ function WorkoutHome() {
     haptic(12);
     setCuratedSelection(false);
     setFollowingSchedule(false);
+    setFollowingProgram(false);
     setRegions((cur) => {
       const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
       if (next.length === 1 && next[0] === id && PAIRINGS[id]) setProposal(id);
@@ -152,6 +169,7 @@ function WorkoutHome() {
       haptic(12);
       setCuratedSelection(false);
       setFollowingSchedule(false);
+      setFollowingProgram(false);
       setRegions((cur) => cur.filter((id) => !owned.includes(id)));
       setProposal(null);
       return;
@@ -164,6 +182,7 @@ function WorkoutHome() {
     const pair = PAIRINGS[proposal]!;
     haptic([20, 30]);
     setFollowingSchedule(false);
+    setFollowingProgram(false);
     setRegions((cur) => (cur.includes(pair.with) ? cur : [...cur, pair.with]));
     setProposal(null);
   };
@@ -174,6 +193,7 @@ function WorkoutHome() {
   const build = (nextVariation: number) => {
     haptic(25);
     setVariation(nextVariation);
+    const week = followingProgram && program ? currentProgramWeek(program) : null;
     setPlan(
       generateWorkout({
         duration,
@@ -184,7 +204,9 @@ function WorkoutHome() {
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
         history: workouts,
+        profile,
         ...(todayReadiness !== undefined ? { readinessScore: todayReadiness } : {}),
+        ...(week ? { intensityMultiplier: week.intensity } : {}),
       }),
     );
   };
@@ -232,6 +254,7 @@ function WorkoutHome() {
     haptic([20, 30]);
     setCuratedSelection(true);
     setFollowingSchedule(false);
+    setFollowingProgram(false);
     setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
     setProposal(null);
   };
@@ -247,7 +270,26 @@ function WorkoutHome() {
     haptic([20, 30]);
     setCuratedSelection(true);
     setFollowingSchedule(true);
-    const targetMuscles = musclesForSlot(weeklyScheme, scheduledSlot, workouts);
+    setFollowingProgram(false);
+    const targetMuscles = musclesForSlot(weeklyScheme.templateId, scheduledSlot, workouts);
+    setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
+    setProposal(null);
+  };
+
+  const programWeek = program ? currentProgramWeek(program) : null;
+  const scheduledProgramSlot = program?.schedule[program.cyclePosition];
+  const programDayLabel =
+    program && scheduledProgramSlot
+      ? splitDayLabel(program.templateId, scheduledProgramSlot.dayId)
+      : "";
+
+  const startProgramDay = () => {
+    if (!program || !scheduledProgramSlot) return;
+    haptic([20, 30]);
+    setCuratedSelection(true);
+    setFollowingSchedule(false);
+    setFollowingProgram(true);
+    const targetMuscles = musclesForSlot(program.templateId, scheduledProgramSlot, workouts);
     setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
   };
@@ -260,6 +302,23 @@ function WorkoutHome() {
       duration_minutes: duration,
       target_muscles: muscles,
       fromScheduledDay: followingSchedule,
+      fromProgramDay: followingProgram,
+    });
+    navigate({ to: "/session" });
+  };
+
+  /** Start a saved template's exact plan, same as `repeat` below but from a
+   *  named template rather than a specific past session. */
+  const startTemplate = (
+    templatePlan: PlannedExercise[],
+    templateDuration: number,
+    templateMuscles: Muscle[],
+  ) => {
+    haptic([20, 40, 20]);
+    startWorkout({
+      plan: templatePlan,
+      duration_minutes: templateDuration,
+      target_muscles: templateMuscles,
     });
     navigate({ to: "/session" });
   };
@@ -502,9 +561,82 @@ function WorkoutHome() {
         </p>
       </Card>
 
-      <SectionLabel>This week</SectionLabel>
+      <SectionLabel>{program ? "Your program" : "This week"}</SectionLabel>
       <Card className="mb-4 p-4">
-        {weeklyScheme ? (
+        {program && programWeek ? (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
+                  {programWeek.type === "deload" ? (
+                    <Snowflake className="size-3.5" />
+                  ) : (
+                    <Flame className="size-3.5" />
+                  )}
+                  Week {program.currentWeek + 1} of {program.weeks.length}
+                  {programWeek.type === "deload" ? " · Deload" : ""}
+                </p>
+                <p className="mt-1 truncate text-[18px] font-bold">Next: {programDayLabel}</p>
+                <p className="text-[13px] text-muted-foreground">
+                  {program.name} · {splitTemplateById(program.templateId).label}
+                </p>
+              </div>
+              <button
+                onClick={() => setProgramSheetOpen(true)}
+                aria-label="Edit program"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+              >
+                <Settings2 className="size-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 flex gap-1">
+              {program.weeks.map((w, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 flex-1 rounded-full ${
+                    i < program.currentWeek
+                      ? "bg-primary/40"
+                      : i === program.currentWeek
+                        ? "bg-primary"
+                        : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <div className="mt-3 flex justify-between gap-1">
+              {program.schedule.map((slot, i) => {
+                const isNext = i === program.cyclePosition;
+                const label = splitDayLabel(program.templateId, slot.dayId);
+                return (
+                  <div
+                    key={i}
+                    className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
+                      isNext ? "bg-primary/20" : "bg-muted"
+                    }`}
+                  >
+                    <p
+                      className={`text-[10px] font-bold uppercase tracking-wide ${
+                        isNext ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      {DOW_LABELS[slot.dow]}
+                    </p>
+                    <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={startProgramDay}
+              className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+            >
+              <Zap className="size-4" /> Start {programDayLabel} day
+            </button>
+          </>
+        ) : weeklyScheme ? (
           <>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -557,26 +689,66 @@ function WorkoutHome() {
             >
               <Zap className="size-4" /> Start {scheduledDayLabel} day
             </button>
+            <button
+              onClick={() => setProgramSheetOpen(true)}
+              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+            >
+              <Flame className="size-3.5" /> Build a program instead
+            </button>
           </>
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[16px] font-semibold">Plan your training week</p>
+              <p className="text-[16px] font-semibold">Plan your training</p>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Pick a split and Forge proposes which days to train it.
+                A weekly split repeats forever; a program adds planned progression and a deload.
               </p>
             </div>
-            <button
-              onClick={() => setPlanSheetOpen(true)}
-              className="min-h-[40px] shrink-0 rounded-full bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
-            >
-              Set up
-            </button>
+            <div className="flex shrink-0 flex-col gap-2">
+              <button
+                onClick={() => setPlanSheetOpen(true)}
+                className="min-h-[36px] rounded-full bg-secondary px-4 text-[13px] font-bold text-secondary-foreground active:scale-95"
+              >
+                Weekly plan
+              </button>
+              <button
+                onClick={() => setProgramSheetOpen(true)}
+                className="min-h-[36px] rounded-full bg-primary px-4 text-[13px] font-bold text-primary-foreground active:scale-95"
+              >
+                Program
+              </button>
+            </div>
           </div>
         )}
       </Card>
 
-      {hydrated && !weeklyScheme && workouts.length > 0 && regions.length === 0 ? (
+      {hydrated && workoutTemplates.length > 0 ? (
+        <div className="mb-4">
+          <SectionLabel>Saved templates</SectionLabel>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {workoutTemplates.slice(0, 6).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => startTemplate(t.plan, t.duration_minutes, t.target_muscles)}
+                className="glass shrink-0 rounded-2xl px-4 py-2 text-left active:scale-[0.985]"
+              >
+                <p className="text-[13px] font-semibold">{t.name}</p>
+                <p className="text-[12px] text-muted-foreground">
+                  {t.plan.length} exercises · ~{estimateMinutes(t.plan)} min
+                </p>
+              </button>
+            ))}
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="glass shrink-0 rounded-2xl px-4 py-2 text-[13px] font-semibold text-primary active:scale-[0.985]"
+            >
+              Manage
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {hydrated && !weeklyScheme && !program && workouts.length > 0 && regions.length === 0 ? (
         <Card className="mb-4 p-4">
           <div className="flex items-start gap-3">
             <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
@@ -789,9 +961,20 @@ function WorkoutHome() {
 
       {plan ? (
         <>
-          <SectionLabel>
-            Your plan · ~{estimateMinutes(plan)} min · {plan.length} exercises
-          </SectionLabel>
+          <div className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1">
+            <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Your plan · ~{estimateMinutes(plan)} min · {plan.length} exercises
+            </p>
+            <button
+              onClick={() => {
+                haptic(12);
+                setSavingTemplate(true);
+              }}
+              className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary"
+            >
+              <Bookmark className="size-3.5" /> Save
+            </button>
+          </div>
           <div className="space-y-2">
             {plan.map((p, i) => {
               const ex = exerciseById(p.exercise_id);
@@ -838,6 +1021,7 @@ function WorkoutHome() {
                       {p.suggested_weight ? (
                         <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary">
                           <TrendingUp className="size-3.5" /> Suggested {p.suggested_weight}kg
+                          {p.suggested_reps ? ` × ${p.suggested_reps}` : ""}
                         </p>
                       ) : null}
                     </div>
@@ -896,12 +1080,20 @@ function WorkoutHome() {
             cur
               ? cur.map((p, i) => {
                   if (i !== swapIndex) return p;
-                  const { suggested_weight: _dropped, ...rest } = p;
-                  const suggestion = suggestWeight(ex.id, workouts, p.target_reps, todayReadiness);
+                  const { suggested_weight: _dropped, suggested_reps: _droppedReps, ...rest } = p;
+                  const suggestion = suggestWeight(
+                    ex.id,
+                    workouts,
+                    p.target_reps,
+                    todayReadiness,
+                    plateStep(ex, profile),
+                  );
                   return {
                     ...rest,
                     exercise_id: ex.id,
-                    ...(suggestion ? { suggested_weight: suggestion.weight } : {}),
+                    ...(suggestion
+                      ? { suggested_weight: suggestion.weight, suggested_reps: suggestion.reps }
+                      : {}),
                   };
                 })
               : cur,
@@ -912,6 +1104,20 @@ function WorkoutHome() {
       />
 
       <WeeklyPlanSheet open={planSheetOpen} onClose={() => setPlanSheetOpen(false)} />
+      <ProgramBuilderSheet open={programSheetOpen} onClose={() => setProgramSheetOpen(false)} />
+      <WorkoutTemplatesSheet
+        open={templatesOpen || savingTemplate}
+        onClose={() => {
+          setTemplatesOpen(false);
+          setSavingTemplate(false);
+        }}
+        draft={
+          savingTemplate && plan
+            ? { plan, duration_minutes: duration, target_muscles: muscles }
+            : null
+        }
+        onStart={startTemplate}
+      />
     </Screen>
   );
 }

@@ -88,6 +88,7 @@ function SessionScreen() {
   const navigate = useNavigate();
   const {
     activeWorkout,
+    workouts,
     hydrated,
     update,
     finishWorkout,
@@ -106,6 +107,7 @@ function SessionScreen() {
   const [pos, setPos] = useState({ block: 0, slot: 0, round: 1 });
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState<"normal" | "big" | null>(null);
+  const [finishedSummary, setFinishedSummary] = useState<PlannedExercise[] | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -257,6 +259,55 @@ function SessionScreen() {
 
   if (!hydrated) return <div className="min-h-[100dvh] bg-background" />;
 
+  if (finishedSummary) {
+    const summaryProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
+    const uniqueIds = Array.from(new Set(finishedSummary.map((p) => p.exercise_id)));
+    return (
+      <div className="safe-top min-h-[100dvh] bg-background px-4 pb-8">
+        <div className="mx-auto w-full max-w-xl">
+          <div className="flex flex-col items-center gap-2 pb-6 pt-10 text-center">
+            <Trophy className="size-10 text-primary" />
+            <h1 className="text-2xl font-bold">Workout complete</h1>
+            <p className="text-[14px] text-muted-foreground">Here's what to aim for next time.</p>
+          </div>
+          <div className="space-y-2">
+            {uniqueIds.map((id) => {
+              const ex = exerciseById(id);
+              const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
+              if (!ex || !plannedEntry) return null;
+              const step = plateStep(ex, summaryProfile);
+              const suggestion = suggestWeight(
+                id,
+                workouts,
+                plannedEntry.target_reps,
+                undefined,
+                step,
+              );
+              return (
+                <div key={id} className="glass rounded-2xl p-3">
+                  <p className="text-[15px] font-semibold">{ex.name}</p>
+                  {suggestion ? (
+                    <p className="text-[13px] text-muted-foreground">
+                      Next time: {suggestion.weight}kg × {suggestion.reps} — {suggestion.reason}
+                    </p>
+                  ) : (
+                    <p className="text-[13px] text-muted-foreground">Logged — no suggestion yet.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => navigate({ to: "/history" })}
+            className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
+          >
+            View history
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!activeWorkout || !planned || !block) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
@@ -325,9 +376,10 @@ function SessionScreen() {
   const endWorkout = () => {
     haptic([30, 50, 30]);
     setCelebrate(plan.some((p) => p.bonus) ? "big" : "normal");
+    const planSnapshot = plan;
     setTimeout(() => {
       finishWorkout();
-      navigate({ to: "/history" });
+      setFinishedSummary(planSnapshot);
     }, 1800);
   };
 
@@ -830,6 +882,8 @@ function ExerciseBlock({
   } = useGym();
   const exercise = exerciseById(planned.exercise_id);
   const todayReadiness = todaysCheckIn(readinessLog)?.score;
+  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
+  const step = exercise ? plateStep(exercise, profile) : 0.5;
 
   const logged = useMemo(
     () =>
@@ -876,8 +930,8 @@ function ExerciseBlock({
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
-    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, todayReadiness),
-    [workouts, planned.exercise_id, planned.target_reps, todayReadiness],
+    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, todayReadiness, step),
+    [workouts, planned.exercise_id, planned.target_reps, todayReadiness, step],
   );
 
   useEffect(() => {
@@ -889,13 +943,10 @@ function ExerciseBlock({
     setEditIdx(null);
   }, [logged.length]);
 
-  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const prefillWeight = lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
   const prefillReps = bestReps || targetTopReps;
 
   if (!exercise) return null;
-
-  const step = plateStep(exercise, profile);
 
   const submitSet = (w: number, r: number, rpeValue?: number) => {
     unlockAudio();
@@ -1124,7 +1175,7 @@ function ExerciseBlock({
               ) : (
                 <TrendingDown className="size-4 shrink-0" />
               )}{" "}
-              Suggested {suggestion.weight}kg — {suggestion.reason}
+              Suggested {suggestion.weight}kg × {suggestion.reps} — {suggestion.reason}
             </p>
           ) : null}
 
