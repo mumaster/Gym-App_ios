@@ -20,7 +20,7 @@ export function Screen({
             onto an element's own text when applied directly to the element
             that contains it, instead of confining it to what's behind. */}
         <div className="glass-strong absolute inset-0 border-x-0 border-t-0" />
-        <div className="relative mx-auto grid w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-end gap-3 px-4">
+        <div className="relative mx-auto grid w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4">
           <div className="min-w-0">
             <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-foreground">
               {title}
