@@ -26,7 +26,7 @@ import {
   type NutritionGoals,
 } from "../lib/gym/nutrition";
 import { currentProgramWeek } from "../lib/gym/programs";
-import { personalRecords } from "../lib/gym/progress";
+import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
@@ -221,7 +221,7 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-3 grid-rows-[1.3fr_1fr] gap-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.8fr_1fr_0.9fr] gap-2.5">
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -235,7 +235,7 @@ function HomeScreen() {
           <BentoTile
             icon={Flame}
             active={streak > 0}
-            label="Streak"
+            label="Day streak"
             onClick={() => navigate({ to: "/history" })}
           >
             <p className="tabular text-[28px] font-bold leading-none">{streak}</p>
@@ -247,28 +247,14 @@ function HomeScreen() {
           <BentoTile
             icon={Dumbbell}
             active={sessionsThisWeek > 0}
-            label="Week"
+            label="This week"
             onClick={() => navigate({ to: "/history" })}
           >
             <p className="tabular text-[28px] font-bold leading-none">{sessionsThisWeek}</p>
             <p className="mt-1 text-[11px] text-muted-foreground">{workouts.length} total</p>
           </BentoTile>
 
-          <BentoTile
-            icon={Trophy}
-            active={!!topPr}
-            label="Best PR"
-            onClick={() => navigate({ to: "/history" })}
-          >
-            {topPr ? (
-              <div className="min-w-0">
-                <p className="truncate text-[16px] font-bold leading-tight">{topPr.name}</p>
-                <p className="tabular text-[12px] text-muted-foreground">{topPr.e1rm} kg e1RM</p>
-              </div>
-            ) : (
-              <p className="text-[13px] text-muted-foreground">No PR yet</p>
-            )}
-          </BentoTile>
+          <BestLiftTile pr={topPr} onClick={() => navigate({ to: "/history" })} />
         </div>
 
         <div className="grid shrink-0 grid-cols-3 gap-2.5">
@@ -321,16 +307,17 @@ function NutritionTile({
         haptic(10);
         onClick();
       }}
-      className="glass relative col-span-3 flex min-h-0 flex-col gap-3 overflow-hidden rounded-3xl p-4 text-left active:scale-[0.98]"
+      aria-label="Nutrition today"
+      className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
     >
       <Apple
-        className={`pointer-events-none absolute -bottom-5 -right-5 size-24 ${
+        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
           active ? "text-primary/[0.06]" : "text-white/[0.03]"
         }`}
         strokeWidth={1.5}
       />
-      <div className="relative flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
+      <div className="relative flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span
             className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
               active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
@@ -338,29 +325,24 @@ function NutritionTile({
           >
             <Apple className="size-3.5" />
           </span>
-          <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Nutrition today
+          <span className="tabular truncate text-[19px] font-bold leading-none">
+            {totals.calories}
+            <span className="text-[12px] font-medium text-muted-foreground">
+              {goals.calories ? ` /${goals.calories}` : ""} kcal
+            </span>
           </span>
         </div>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </div>
 
-      <div className="relative">
-        <p className="tabular text-[28px] font-bold leading-none">
-          {totals.calories}
-          <span className="text-[13px] font-medium text-muted-foreground">
-            {goals.calories ? ` /${goals.calories}` : ""} kcal
-          </span>
-        </p>
-        {hasGoals && goals.calories ? (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div
-              className={`h-full rounded-full ${barClass(calorieStatus)}`}
-              style={{ width: `${caloriePct}%` }}
-            />
-          </div>
-        ) : null}
-      </div>
+      {hasGoals && goals.calories ? (
+        <div className="relative -mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full ${barClass(calorieStatus)}`}
+            style={{ width: `${caloriePct}%` }}
+          />
+        </div>
+      ) : null}
 
       <div className="relative grid grid-cols-3 gap-2">
         {(["protein", "carbs", "fat"] as const).map((key) => {
@@ -368,17 +350,17 @@ function NutritionTile({
           const status = nutrientStatus(totals[key], goal);
           const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
           return (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-2">
+            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1.5">
               <p className="tabular text-[15px] font-bold leading-none">
                 {totals[key]}
                 <span className="text-[10px] font-medium text-muted-foreground">g</span>
               </p>
-              <p className="mt-1 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {key === "protein" ? "Protein" : key === "carbs" ? "Carbs" : "Fat"}
                 {goal != null ? `/${goal}` : ""}
               </p>
               {goal != null ? (
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-background/40">
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
                   <div
                     className={`h-full rounded-full ${barClass(status)}`}
                     style={{ width: `${pct}%` }}
@@ -389,6 +371,49 @@ function NutritionTile({
           );
         })}
       </div>
+    </button>
+  );
+}
+
+/** Full-width (col-span-2) like NutritionTile, but a single compact row
+ *  rather than a stacked block — a PR's exercise name is the one piece of
+ *  text on this whole screen with genuinely unpredictable length, and a
+ *  horizontal layout gives it the full tile width to run into before
+ *  `truncate` ever has to kick in, instead of the ~1/3-width column it had
+ *  when this was a fourth cell in a square bento grid. */
+function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () => void }) {
+  return (
+    <button
+      onClick={() => {
+        haptic(10);
+        onClick();
+      }}
+      className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-3.5 text-left active:scale-[0.97]"
+    >
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+          pr ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+        }`}
+      >
+        <Trophy className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Best lift
+        </p>
+        {pr ? (
+          <p className="line-clamp-2 text-[15px] font-bold leading-tight">{pr.name}</p>
+        ) : (
+          <p className="truncate text-[13px] text-muted-foreground">
+            No PR yet — finish a working set
+          </p>
+        )}
+      </div>
+      {pr ? (
+        <span className="tabular shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary">
+          {pr.e1rm} kg
+        </span>
+      ) : null}
     </button>
   );
 }
