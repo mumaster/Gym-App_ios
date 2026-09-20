@@ -28,7 +28,7 @@ import { PlateHint } from "../components/gym/PlateHint";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { suggestWeight } from "../lib/gym/progression";
@@ -1194,7 +1194,7 @@ function ExerciseBlock({
                 value={weight}
                 aria-label="Weight in kg"
                 placeholder={`${prefillWeight}`}
-                onFocus={placeCursorAtEnd}
+                onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                   setWeight(e.target.value);
@@ -1229,7 +1229,7 @@ function ExerciseBlock({
                 value={reps}
                 placeholder={`${prefillReps}`}
                 aria-label="Reps"
-                onFocus={placeCursorAtEnd}
+                onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                   setReps(e.target.value);
@@ -1373,7 +1373,7 @@ function Stepper({
         type="text"
         value={Number.isFinite(value) ? value : ""}
         aria-label={ariaLabel}
-        onFocus={placeCursorAtEnd}
+        onFocus={selectOnFocus}
         onChange={(e) => {
           if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
           onChange(e.target.value === "" ? min : parseDecimal(e.target.value));

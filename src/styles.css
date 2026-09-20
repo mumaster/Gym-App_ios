@@ -153,6 +153,17 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Text-selection highlight follows whichever accent the user picked
+     (--color-primary is re-pointed at runtime by the accent-<id> class on
+     <html>, see GymProvider), rather than the browser's default blue — most
+     visible on the numeric fields selectOnFocus (numericInput.ts) selects
+     the whole value of, so it reads as an intentional "about to overwrite"
+     highlight in the app's own color, not a generic OS selection. */
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);

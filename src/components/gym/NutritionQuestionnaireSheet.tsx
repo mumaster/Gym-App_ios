@@ -14,7 +14,7 @@ import {
   type NutritionProfile,
   type Sex,
 } from "../../lib/gym/nutrition";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 const GOALS: { id: NutritionGoalType; label: string; description: string }[] = [
@@ -84,7 +84,7 @@ function NumberField({
         inputMode="decimal"
         type="text"
         value={value}
-        onFocus={placeCursorAtEnd}
+        onFocus={selectOnFocus}
         onChange={(e) => {
           if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
           onChange(e.target.value);

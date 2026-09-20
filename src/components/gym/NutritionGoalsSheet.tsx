@@ -8,7 +8,7 @@ import {
   NUTRIENT_UNITS,
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 const emptyDraft = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
@@ -92,7 +92,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
                   inputMode="decimal"
                   type="text"
                   value={draft[key]}
-                  onFocus={placeCursorAtEnd}
+                  onFocus={selectOnFocus}
                   onChange={(e) => {
                     if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                     setDraft((cur) => ({ ...cur, [key]: e.target.value }));

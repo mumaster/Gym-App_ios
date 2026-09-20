@@ -4,7 +4,7 @@ import { Check, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
 import type { EquipmentId } from "../lib/gym/types";
@@ -288,7 +288,7 @@ function WeightField({
       type="text"
       aria-label={label}
       value={draft ?? String(value)}
-      onFocus={placeCursorAtEnd}
+      onFocus={selectOnFocus}
       onChange={(e) => {
         const next = e.target.value;
         if (!DECIMAL_INPUT_RE.test(next)) return;

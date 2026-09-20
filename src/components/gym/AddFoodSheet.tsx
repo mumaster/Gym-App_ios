@@ -18,7 +18,7 @@ import {
   type MealType,
   type NutrientKey,
 } from "../../lib/gym/nutrition";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
@@ -439,7 +439,7 @@ export function AddFoodSheet({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onFocus={placeCursorAtEnd}
+                onFocus={selectOnFocus}
                 placeholder="e.g. Greek yogurt"
                 className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
               />
@@ -497,7 +497,7 @@ export function AddFoodSheet({
                 inputMode="decimal"
                 type="text"
                 value={grams}
-                onFocus={placeCursorAtEnd}
+                onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                   setGrams(e.target.value);
@@ -527,7 +527,7 @@ export function AddFoodSheet({
                         inputMode="decimal"
                         type="text"
                         value={per100[key]}
-                        onFocus={placeCursorAtEnd}
+                        onFocus={selectOnFocus}
                         onChange={(e) => {
                           if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                           setPer100((cur) => ({ ...cur, [key]: e.target.value }));

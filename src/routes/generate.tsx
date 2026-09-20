@@ -32,7 +32,7 @@ import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
-import { DECIMAL_INPUT_RE, parseDecimal, placeCursorAtEnd } from "../lib/gym/numericInput";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import {
   DEFAULT_REGION,
   PAIRINGS,
@@ -502,7 +502,7 @@ function WorkoutHome() {
             type="text"
             inputMode="numeric"
             value={customInput}
-            onFocus={placeCursorAtEnd}
+            onFocus={selectOnFocus}
             onChange={(e) => {
               const raw = e.target.value;
               if (!DECIMAL_INPUT_RE.test(raw)) return;
