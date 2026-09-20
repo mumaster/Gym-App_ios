@@ -1,22 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   Apple,
   CalendarDays,
   ChevronRight,
+  Dumbbell,
   Flame,
   LayoutGrid,
+  type LucideIcon,
   Play,
   Search,
-  Settings2,
   Snowflake,
   Trophy,
   Zap,
 } from "lucide-react";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
-import { Card, Screen, SectionLabel } from "../components/gym/Screen";
-import { StreakCalendar } from "../components/gym/StreakCalendar";
-import { estimateMinutes } from "../lib/gym/generator";
 import {
   NUTRIENT_ORDER,
   dailyTotals,
@@ -27,7 +25,7 @@ import {
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords } from "../lib/gym/progress";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
-import { bestStreak, currentStreak, recentCalendar } from "../lib/gym/streak";
+import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
 
 export const Route = createFileRoute("/")({
@@ -74,21 +72,17 @@ function HomeScreen() {
     hydrated,
     activeWorkout,
     workouts,
-    workoutTemplates,
     weeklyScheme,
     program,
     foodEntries,
     nutritionGoals,
     avatarId,
-    startWorkout,
   } = useGym();
 
   const streak = useMemo(() => currentStreak(workouts), [workouts]);
   const longestStreak = useMemo(() => bestStreak(workouts), [workouts]);
-  const calendarColumns = useMemo(() => recentCalendar(workouts, 8), [workouts]);
   const sessionsThisWeek = useMemo(() => {
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    const cutoff = Date.now() - weekMs;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return workouts.filter((w) => new Date(w.date).getTime() >= cutoff).length;
   }, [workouts]);
 
@@ -110,329 +104,251 @@ function HomeScreen() {
   const schemeDayLabel =
     weeklyScheme && schemeSlot ? splitDayLabel(weeklyScheme.templateId, schemeSlot.dayId) : "";
 
-  const lastWorkout = workouts[0];
+  const dateLabel = useMemo(
+    () =>
+      new Date()
+        .toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })
+        .toUpperCase(),
+    [],
+  );
 
-  const startTemplate = (
-    plan: (typeof workoutTemplates)[number]["plan"],
-    duration_minutes: number,
-    target_muscles: (typeof workoutTemplates)[number]["target_muscles"],
-  ) => {
-    haptic([20, 40, 20]);
-    startWorkout({ plan, duration_minutes, target_muscles });
-    navigate({ to: "/session" });
-  };
+  /** A single hero at the top of the screen carries both "what's next" and its
+   *  own CTA, replacing what would otherwise be a separate quick-actions row
+   *  plus a separate training-plan card — there's only vertical room here for
+   *  one dominant element, and this is the one thing the screen most wants to
+   *  say. Priority: an in-progress session always wins (resuming it is more
+   *  urgent than anything else); then an active Program; then a WeeklyScheme;
+   *  otherwise a plain "generate" prompt. */
+  let heroIcon: LucideIcon = Zap;
+  let heroEyebrow = "No plan yet";
+  let heroTitle = "Ready to train?";
+  let heroSub: string | null = null;
+  let heroCta = "Generate";
+  let heroTarget: "/session" | "/generate" = "/generate";
 
-  if (!hydrated) return <Screen title="Home">{null}</Screen>;
+  if (activeWorkout) {
+    heroIcon = Play;
+    heroEyebrow = "Session in progress";
+    heroTitle = `${activeWorkout.plan.length} exercises · ${activeWorkout.completed_sets.length} sets logged`;
+    heroSub = null;
+    heroCta = "Resume";
+    heroTarget = "/session";
+  } else if (program && programWeek) {
+    heroIcon = programWeek.type === "deload" ? Snowflake : Flame;
+    heroEyebrow = `Week ${program.currentWeek + 1} of ${program.weeks.length}${
+      programWeek.type === "deload" ? " · Deload" : ""
+    }`;
+    heroTitle = `Next: ${programDayLabel}`;
+    const templateLabel = splitTemplateById(program.templateId).label;
+    heroSub = program.name === templateLabel ? templateLabel : `${program.name} · ${templateLabel}`;
+    heroCta = "Continue";
+    heroTarget = "/generate";
+  } else if (weeklyScheme && schemeSlot) {
+    heroIcon = Flame;
+    heroEyebrow = splitTemplateById(weeklyScheme.templateId).label;
+    heroTitle = `Next: ${schemeDayLabel}`;
+    heroSub = null;
+    heroCta = "Continue";
+    heroTarget = "/generate";
+  }
+  const HeroIcon = heroIcon;
+
+  if (!hydrated) return <div className="fixed inset-0 bg-background" />;
 
   return (
-    <Screen
-      title="Home"
-      subtitle={`${greeting()} — here's where things stand`}
-      action={
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
+      <header className="safe-top shrink-0 flex items-center justify-between gap-3 px-5 pb-1">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
+            {dateLabel}
+          </p>
+          <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
+            {greeting()}
+          </h1>
+        </div>
         <button
           onClick={() => {
             haptic(12);
             navigate({ to: "/settings" });
           }}
           aria-label="Settings"
-          className="flex items-center justify-center rounded-full"
+          className="flex shrink-0 items-center justify-center rounded-full active:scale-95"
         >
-          <ProfileAvatar avatarId={avatarId} size={40} />
+          <ProfileAvatar avatarId={avatarId} size={42} />
         </button>
-      }
-    >
-      {activeWorkout ? (
-        <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                Session in progress
-              </p>
-              <p className="mt-1 text-lg font-bold">
-                {activeWorkout.plan.length} exercises · {activeWorkout.completed_sets.length} sets
-                logged
-              </p>
-            </div>
-            <ChevronRight className="size-6 text-primary" />
-          </div>
-        </Card>
-      ) : null}
+      </header>
 
-      <div className="flex gap-2">
+      <main className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 pb-[calc(5.625rem+var(--tab-bar-clearance))] pt-3">
         <button
           onClick={() => {
             haptic(12);
-            navigate({ to: "/generate" });
+            navigate({ to: heroTarget });
           }}
-          className="glow flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.985]"
+          className="glass glow shrink-0 rounded-[28px] p-5 text-left transition-transform active:scale-[0.98]"
         >
-          <Zap className="size-4" /> Generate workout
-        </button>
-        <button
-          onClick={() => {
-            haptic(12);
-            navigate({ to: "/nutrition" });
-          }}
-          className="glass flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-bold active:scale-[0.985]"
-        >
-          <Apple className="size-4" /> Log food
-        </button>
-      </div>
-
-      <SectionLabel>Training plan</SectionLabel>
-      {program && programWeek ? (
-        <Card className="p-4" onClick={() => navigate({ to: "/generate" })}>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
-                {programWeek.type === "deload" ? (
-                  <Snowflake className="size-3.5" />
-                ) : (
-                  <Flame className="size-3.5" />
-                )}
-                Week {program.currentWeek + 1} of {program.weeks.length}
-                {programWeek.type === "deload" ? " · Deload" : ""}
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+                <HeroIcon className="size-3.5" /> {heroEyebrow}
               </p>
-              <p className="mt-1 truncate text-[18px] font-bold">Next: {programDayLabel}</p>
-              <p className="text-[13px] text-muted-foreground">
-                {program.name} · {splitTemplateById(program.templateId).label}
-              </p>
+              <p className="mt-1.5 truncate text-[20px] font-bold leading-tight">{heroTitle}</p>
+              {heroSub ? (
+                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{heroSub}</p>
+              ) : null}
             </div>
-            <ChevronRight className="size-6 shrink-0 text-primary" />
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary py-2.5 pl-4 pr-3 text-[14px] font-bold text-primary-foreground">
+              {heroCta} <ChevronRight className="size-4" />
+            </span>
           </div>
-          <div className="mt-3 flex gap-1">
-            {program.weeks.map((w, i) => (
-              <div
-                key={i}
-                className={`h-1.5 flex-1 rounded-full ${
-                  i < program.currentWeek
-                    ? "bg-primary/40"
-                    : i === program.currentWeek
-                      ? "bg-primary"
-                      : "bg-muted"
-                }`}
-              />
-            ))}
-          </div>
-        </Card>
-      ) : weeklyScheme && schemeSlot ? (
-        <Card className="p-4" onClick={() => navigate({ to: "/generate" })}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                {splitTemplateById(weeklyScheme.templateId).label}
-              </p>
-              <p className="mt-1 truncate text-[18px] font-bold">Next: {schemeDayLabel}</p>
-              <p className="text-[13px] text-muted-foreground">
-                {weeklyScheme.schedule.length} day{weeklyScheme.schedule.length === 1 ? "" : "s"} a
-                week
-              </p>
-            </div>
-            <ChevronRight className="size-6 shrink-0 text-primary" />
-          </div>
-        </Card>
-      ) : (
-        <Card className="p-4" onClick={() => navigate({ to: "/generate" })}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[16px] font-semibold">No training plan yet</p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Set up a weekly split or a multi-week program from the generator.
-              </p>
-            </div>
-            <Settings2 className="size-5 shrink-0 text-primary" />
-          </div>
-        </Card>
-      )}
-
-      <SectionLabel>Activity</SectionLabel>
-      <Card className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <Flame className={`size-6 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`} />
-            <div>
-              <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                Day streak
-              </p>
-            </div>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div>
-            <p className="tabular text-[20px] font-bold leading-none">{sessionsThisWeek}</p>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">This week</p>
-          </div>
-          <div className="h-8 w-px bg-border" />
-          <div>
-            <p className="tabular text-[20px] font-bold leading-none">{workouts.length}</p>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              Total sessions
-            </p>
-          </div>
-          {longestStreak > streak ? (
-            <>
-              <div className="h-8 w-px bg-border" />
-              <div>
-                <p className="tabular text-[20px] font-bold leading-none">{longestStreak}</p>
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Best</p>
-              </div>
-            </>
-          ) : null}
-        </div>
-        {workouts.length ? (
-          <div className="mt-3">
-            <StreakCalendar columns={calendarColumns} />
-          </div>
-        ) : (
-          <p className="mt-3 text-[13px] text-muted-foreground">
-            Finish your first workout to start a streak.
-          </p>
-        )}
-      </Card>
-
-      <SectionLabel>Nutrition today</SectionLabel>
-      <Card className="p-4" onClick={() => navigate({ to: "/nutrition" })}>
-        {hasNutritionGoals && calorieGoal ? (
-          <>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[15px] font-semibold">Calories</span>
-              <span className="tabular text-[13px] text-muted-foreground">
-                {todayTotals.calories} / {calorieGoal} kcal
-              </span>
-            </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  calorieStatus === "over"
-                    ? "bg-destructive"
-                    : calorieStatus === "near"
-                      ? "bg-chart-3"
-                      : "bg-primary"
-                }`}
-                style={{ width: `${caloriePct}%` }}
-              />
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {(["protein", "carbs", "fat"] as const).map((key) => (
-                <div key={key} className="rounded-xl bg-muted px-2 py-2 text-center">
-                  <p className="tabular text-[14px] font-bold leading-none">
-                    {todayTotals[key]}
-                    <span className="text-[11px] font-medium text-muted-foreground">g</span>
-                  </p>
-                  <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {key === "protein" ? "Protein" : key === "carbs" ? "Carbs" : "Fat"}
-                    {nutritionGoals[key] != null ? ` / ${nutritionGoals[key]}` : ""}
-                  </p>
-                </div>
+          {program && programWeek ? (
+            <div className="mt-3.5 flex gap-1">
+              {program.weeks.map((w, i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full ${
+                    i < program.currentWeek
+                      ? "bg-primary/40"
+                      : i === program.currentWeek
+                        ? "bg-primary"
+                        : "bg-white/10"
+                  }`}
+                />
               ))}
             </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[16px] font-semibold">
-                {todayEntries.length
-                  ? `${todayTotals.calories} kcal logged today`
-                  : "Nothing logged today"}
-              </p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">
-                Set daily limits to track progress toward a goal.
-              </p>
-            </div>
-            <ChevronRight className="size-5 shrink-0 text-primary" />
-          </div>
-        )}
-      </Card>
+          ) : null}
+        </button>
 
-      {workoutTemplates.length > 0 ? (
-        <>
-          <SectionLabel>Saved templates</SectionLabel>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {workoutTemplates.slice(0, 6).map((t) => (
-              <button
-                key={t.id}
-                onClick={() => startTemplate(t.plan, t.duration_minutes, t.target_muscles)}
-                className="glass flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-left active:scale-[0.985]"
-              >
-                <div>
-                  <p className="text-[13px] font-semibold">{t.name}</p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {t.plan.length} exercises · ~{estimateMinutes(t.plan)} min
-                  </p>
-                </div>
-                <Play className="size-4 shrink-0 text-primary" />
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
-
-      {lastWorkout ? (
-        <>
-          <SectionLabel>Last session</SectionLabel>
-          <Card
-            className="p-4"
-            onClick={() =>
-              navigate({ to: "/history/$workoutId", params: { workoutId: lastWorkout.id } })
-            }
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[16px] font-semibold">
-                  {new Date(lastWorkout.date).toLocaleDateString(undefined, {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </p>
-                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                  {lastWorkout.target_muscles.join(" · ") || "Full body"} ·{" "}
-                  {lastWorkout.completed_sets.length} sets
-                </p>
-              </div>
-              <ChevronRight className="size-5 shrink-0 text-primary" />
-            </div>
-          </Card>
-        </>
-      ) : null}
-
-      {topPr ? (
-        <>
-          <SectionLabel>Best lift</SectionLabel>
-          <Card
-            className="flex items-center justify-between p-4"
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2.5">
+          <BentoTile
+            icon={Flame}
+            active={streak > 0}
+            label="Day streak"
             onClick={() => navigate({ to: "/history" })}
           >
-            <div>
-              <span className="text-[16px] font-semibold">{topPr.name}</span>
-              <p className="text-[12px] text-muted-foreground">
-                {topPr.weight}kg × {topPr.reps}
-              </p>
-            </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary">
-              <Trophy className="size-4" />
-              {topPr.e1rm} kg
-            </span>
-          </Card>
-        </>
-      ) : null}
+            <p className="tabular text-[32px] font-bold leading-none">{streak}</p>
+            {longestStreak > streak ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">Best {longestStreak}</p>
+            ) : null}
+          </BentoTile>
 
-      <SectionLabel>More</SectionLabel>
-      <div className="grid grid-cols-3 gap-2">
-        {QUICK_LINKS.map(({ to, label, icon: Icon }) => (
-          <button
-            key={to}
-            onClick={() => {
-              haptic(10);
-              navigate({ to });
-            }}
-            className="glass flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 active:scale-95"
+          <BentoTile
+            icon={Apple}
+            active={todayEntries.length > 0}
+            label="Calories today"
+            onClick={() => navigate({ to: "/nutrition" })}
           >
-            <Icon className="size-5 text-primary" />
-            <span className="text-[12px] font-semibold">{label}</span>
-          </button>
-        ))}
+            <p className="tabular text-[22px] font-bold leading-none">
+              {todayTotals.calories}
+              {calorieGoal ? (
+                <span className="text-[12px] font-medium text-muted-foreground">
+                  {" "}
+                  /{calorieGoal}
+                </span>
+              ) : null}
+            </p>
+            {hasNutritionGoals && calorieGoal ? (
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full ${
+                    calorieStatus === "over"
+                      ? "bg-destructive"
+                      : calorieStatus === "near"
+                        ? "bg-chart-3"
+                        : "bg-primary"
+                  }`}
+                  style={{ width: `${caloriePct}%` }}
+                />
+              </div>
+            ) : null}
+          </BentoTile>
+
+          <BentoTile
+            icon={Dumbbell}
+            active={sessionsThisWeek > 0}
+            label="This week"
+            onClick={() => navigate({ to: "/history" })}
+          >
+            <p className="tabular text-[32px] font-bold leading-none">{sessionsThisWeek}</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{workouts.length} total</p>
+          </BentoTile>
+
+          <BentoTile
+            icon={Trophy}
+            active={!!topPr}
+            label="Best lift"
+            onClick={() => navigate({ to: "/history" })}
+          >
+            {topPr ? (
+              <div className="min-w-0">
+                <p className="truncate text-[16px] font-bold leading-tight">{topPr.name}</p>
+                <p className="tabular text-[12px] text-muted-foreground">{topPr.e1rm} kg e1RM</p>
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">No PR yet</p>
+            )}
+          </BentoTile>
+        </div>
+
+        <div className="grid shrink-0 grid-cols-3 gap-2.5">
+          {QUICK_LINKS.map(({ to, label, icon: Icon }) => (
+            <button
+              key={to}
+              onClick={() => {
+                haptic(10);
+                navigate({ to });
+              }}
+              className="glass flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-2xl active:scale-95"
+            >
+              <Icon className="size-[18px] text-primary" />
+              <span className="text-[11px] font-semibold">{label}</span>
+            </button>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function BentoTile({
+  icon: Icon,
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  icon: LucideIcon;
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      onClick={() => {
+        haptic(10);
+        onClick();
+      }}
+      className="glass relative flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.97]"
+    >
+      <Icon
+        className={`pointer-events-none absolute -bottom-3 -right-3 size-16 ${
+          active ? "text-primary/10" : "text-white/[0.04]"
+        }`}
+        strokeWidth={1.5}
+      />
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+            active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <Icon className="size-3.5" />
+        </span>
+        <span className="truncate text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
       </div>
-    </Screen>
+      <div className="relative min-w-0">{children}</div>
+    </button>
   );
 }
