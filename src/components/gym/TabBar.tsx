@@ -1,51 +1,91 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Apple, Dumbbell, CalendarDays, Home, Search } from "lucide-react";
+import { Apple, Dumbbell, CalendarDays, Home, type LucideIcon, Search } from "lucide-react";
 
 // Equipment moved into Settings (see settings.tsx) — it's a setup/config
 // screen someone visits rarely after their first session, not a daily
 // destination, so it didn't earn a permanent tab slot. Home sits in the
-// literal center of what's left, with two tabs on each side keeping their
-// prior relative order (Workout/History before it, Exercises/Nutrition
-// after) — center billing matches it being the app's actual landing screen.
-const TABS = [
-  { to: "/generate", label: "Workout", icon: Dumbbell, emphasize: false },
-  { to: "/history", label: "History", icon: CalendarDays, emphasize: false },
-  { to: "/", label: "Home", icon: Home, emphasize: true },
-  { to: "/exercises", label: "Exercises", icon: Search, emphasize: false },
-  { to: "/nutrition", label: "Nutrition", icon: Apple, emphasize: false },
+// literal center, split off from the other four tabs entirely rather than
+// just widened among them — two on each side keep their prior relative
+// order (Workout/History before it, Exercises/Nutrition after).
+const LEFT_TABS = [
+  { to: "/generate", label: "Workout", icon: Dumbbell },
+  { to: "/history", label: "History", icon: CalendarDays },
 ] as const;
+const RIGHT_TABS = [
+  { to: "/exercises", label: "Exercises", icon: Search },
+  { to: "/nutrition", label: "Nutrition", icon: Apple },
+] as const;
+
+function TabButton({
+  to,
+  label,
+  icon: Icon,
+  active,
+}: {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className="flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 active:scale-95"
+    >
+      <Icon
+        className={`size-[22px] ${active ? "text-primary" : "text-muted-foreground"}`}
+        strokeWidth={active ? 2.4 : 1.9}
+      />
+      {/* Fixed-size dot, always rendered (just transparent when inactive)
+          so a tab switching active state never shifts the row's height. */}
+      <span className={`size-1 rounded-full ${active ? "bg-primary" : "bg-transparent"}`} />
+    </Link>
+  );
+}
 
 export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (pathname.startsWith("/session")) return null;
+  const homeActive = pathname === "/";
 
   return (
-    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
-      <div className="glass-strong mx-auto flex max-w-md items-stretch justify-between gap-1 rounded-3xl p-1.5 shadow-[var(--shadow-float)]">
-        {TABS.map(({ to, label, icon: Icon, emphasize }) => {
-          const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              aria-current={active ? "page" : undefined}
-              // Home reads as "slightly larger" than its siblings purely
-              // through a bigger icon and a wider flex share (1.35× the
-              // others' growth) — min-h stays the identical 54px so the
-              // row itself never grows to fit it, it just claims more of
-              // the row's existing height/width for itself.
-              className={`flex min-h-[54px] min-w-[44px] ${emphasize ? "flex-[1.35]" : "flex-1"} flex-col active:scale-95 items-center justify-center gap-1 rounded-[1.875rem] text-[11px] font-medium transition-colors ${
-                active ? "bg-primary/15 text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <Icon
-                className={emphasize ? "size-[26px]" : "size-[22px]"}
-                strokeWidth={active ? 2.4 : 1.9}
-              />
-              {label}
-            </Link>
-          );
-        })}
+    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-8">
+      {/* relative anchor for the Home button below — it's positioned
+          against THIS box, not the pill's own (which would shift if the
+          pill's own padding/height ever changes). */}
+      <div className="relative mx-auto max-w-md">
+        <div className="glass-strong flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]">
+          {LEFT_TABS.map((tab) => (
+            <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
+          ))}
+          {/* Empty space the size of the Home button below, so the side
+              tabs never render underneath it. */}
+          <div className="w-16 shrink-0" aria-hidden="true" />
+          {RIGHT_TABS.map((tab) => (
+            <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
+          ))}
+        </div>
+
+        {/* The one tile on this bar that's deliberately "loose" from the
+            rest — a raised circle centered on the pill's own top edge
+            (half overlapping down into it, half floating free above),
+            rather than just a wider slot inside the same row like the
+            other four. Filled with bg-primary/text-primary-foreground so
+            it follows whichever accent color is chosen in Settings, the
+            same as every other themed surface in the app — nothing about
+            it is hardcoded. Always solid, not muted when inactive: it's
+            the app's one permanently-emphasized action, not a tab whose
+            color should fade based on where you currently are. */}
+        <Link
+          to="/"
+          aria-label="Home"
+          aria-current={homeActive ? "page" : undefined}
+          className="glow absolute left-1/2 top-0 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] active:scale-95"
+        >
+          <Home className="size-7" strokeWidth={2.2} />
+        </Link>
       </div>
     </nav>
   );

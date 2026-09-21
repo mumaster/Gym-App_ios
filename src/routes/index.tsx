@@ -191,7 +191,7 @@ function HomeScreen() {
         </button>
       </header>
 
-      <main className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 pb-[calc(5.625rem+var(--tab-bar-clearance))] pt-3">
+      <main className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-3">
         <button
           onClick={() => {
             haptic(12);

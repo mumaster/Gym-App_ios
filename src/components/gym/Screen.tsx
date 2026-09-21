@@ -33,7 +33,7 @@ export function Screen({
         </div>
       </header>
       <main
-        className={`mx-auto w-full max-w-xl px-4 pt-3 ${padBottom ? "pb-[calc(5.625rem+var(--tab-bar-clearance))]" : "pb-8"}`}
+        className={`mx-auto w-full max-w-xl px-4 pt-3 ${padBottom ? "pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))]" : "pb-8"}`}
       >
         {children}
       </main>
