@@ -29,6 +29,7 @@ import { advanceProgram, type Program } from "./programs";
 import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
+  ColorScheme,
   EquipmentProfile,
   LoggedSet,
   Muscle,
@@ -57,6 +58,9 @@ interface GymState {
   accent: AccentId;
   /** Hex color used when accent === "custom". */
   customAccent: string;
+  /** Light/dark mode. Defaults to "dark" — see the `initialState` assignment
+   *  below for why "system" isn't the default despite being an option. */
+  colorScheme: ColorScheme;
   /** Which character represents the user in the profile/settings icon. */
   avatarId: AvatarId;
   supersetsEnabled: boolean;
@@ -111,6 +115,11 @@ const initialState: GymState = {
   restSeconds: 90,
   accent: "green",
   customAccent: "#34d399",
+  // Defaults to the app's existing look rather than "system" — the app has
+  // been dark-only until now, so a silent flip to light for anyone whose
+  // device happens to be in light mode would be a bigger surprise than
+  // just adding the option and leaving current behavior as the default.
+  colorScheme: "dark",
   avatarId: DEFAULT_AVATAR_ID,
   supersetsEnabled: false,
   supersetRounds: 3,
@@ -168,6 +177,7 @@ function migrate(raw: Partial<GymState>): GymState {
     unit: "kg",
     accent: raw.accent ?? "green",
     customAccent: raw.customAccent ?? "#34d399",
+    colorScheme: raw.colorScheme ?? "dark",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     supersetsEnabled: raw.supersetsEnabled ?? false,
     supersetRounds: raw.supersetRounds ?? 3,
@@ -361,6 +371,39 @@ export function GymProvider({ children }: { children: ReactNode }) {
       root.style.removeProperty("--custom-primary");
     }
   }, [state.accent, state.customAccent]);
+
+  // Applies light/dark to <html> the same way the accent effect above
+  // applies accent-<id> — RootShell SSRs `class="dark"` unconditionally
+  // (no access to a stored preference at request time), so this corrects
+  // it client-side once hydrated, same tradeoff the accent class already
+  // makes (a possible one-frame flash of the wrong theme, not solved here
+  // — see CLAUDE.md's Styling section for why that's an accepted gap
+  // rather than something this reaches into RootShell's own SSR'd markup
+  // to fix). "system" tracks the device live via matchMedia, updating the
+  // class immediately if the user flips their OS setting while the app is
+  // still open, without needing a reload.
+  useEffect(() => {
+    const root = document.documentElement;
+    const applyScheme = (dark: boolean) => {
+      root.classList.toggle("dark", dark);
+      root.classList.toggle("light", !dark);
+    };
+
+    if (state.colorScheme === "light") {
+      applyScheme(false);
+      return;
+    }
+    if (state.colorScheme === "dark") {
+      applyScheme(true);
+      return;
+    }
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    applyScheme(media.matches);
+    const onChange = (e: MediaQueryListEvent) => applyScheme(e.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [state.colorScheme]);
 
   const value = useMemo<Ctx>(() => {
     const allSets = (exerciseId: string) =>

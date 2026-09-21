@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronRight, Cloud, CloudOff, LayoutGrid, LogOut, RefreshCw } from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
+import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { ThemePicker } from "../components/gym/ThemePicker";
 import { haptic, useGym } from "../lib/gym/store";
@@ -111,6 +112,13 @@ function SettingsScreen() {
       </Card>
 
       <SectionLabel>Appearance</SectionLabel>
+      <p className="mb-1.5 px-1 text-[12.5px] font-medium text-muted-foreground">Color scheme</p>
+      <Card className="p-0">
+        <ColorSchemePicker />
+      </Card>
+      <p className="mb-1.5 mt-3 px-1 text-[12.5px] font-medium text-muted-foreground">
+        Accent color
+      </p>
       <Card className="p-0">
         <ThemePicker />
       </Card>

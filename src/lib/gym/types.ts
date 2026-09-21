@@ -140,5 +140,9 @@ export interface EquipmentProfile {
 
 export type AccentId = "green" | "blue" | "orange" | "purple" | "pink" | "yellow" | "custom";
 
+/** "system" follows the device's own light/dark setting and updates live if
+ *  it changes while the app is open; "light"/"dark" pin it regardless. */
+export type ColorScheme = "system" | "light" | "dark";
+
 /** Kilograms are the only supported unit. */
 export type Unit = "kg";

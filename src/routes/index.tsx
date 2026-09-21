@@ -223,7 +223,7 @@ function HomeScreen() {
                       ? "bg-primary/40"
                       : i === program.currentWeek
                         ? "bg-primary"
-                        : "bg-white/10"
+                        : "bg-foreground/10"
                   }`}
                 />
               ))}
@@ -332,7 +332,7 @@ function NutritionTile({
     >
       <Apple
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          active ? "text-primary/[0.06]" : "text-white/[0.03]"
+          active ? "text-primary/[0.06]" : "text-foreground/[0.03]"
         }`}
         strokeWidth={1.5}
       />
@@ -474,7 +474,7 @@ function WaterTile({
     <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
       <Droplet
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          active ? "text-primary/[0.08]" : "text-white/[0.03]"
+          active ? "text-primary/[0.08]" : "text-foreground/[0.03]"
         }`}
         strokeWidth={1.5}
       />
@@ -552,7 +552,7 @@ function BentoTile({
     >
       <Icon
         className={`pointer-events-none absolute -bottom-2.5 -right-2.5 size-12 ${
-          active ? "text-primary/10" : "text-white/[0.04]"
+          active ? "text-primary/10" : "text-foreground/[0.04]"
         }`}
         strokeWidth={1.5}
       />

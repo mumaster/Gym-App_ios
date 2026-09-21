@@ -151,6 +151,49 @@
   --glow-primary: 0 0 32px color-mix(in oklch, var(--primary) 28%, transparent);
 }
 
+/* Light mode — applied via a `.light` class on <html> (GymProvider's own
+   effect, mirroring how accent-<id> is already applied there), alongside
+   `.dark` above holding today's values unchanged. Only the structural/
+   neutral tokens change here (background, foreground, card/surface, muted,
+   border, shadow) — every accent's own --primary/--primary-foreground pair
+   above is untouched and applies identically in both modes, since those
+   are self-contained on a solid bg-primary surface (a button, a filled
+   badge) and were already chosen for contrast against their OWN
+   background, not the page's. iOS's own light "systemGroupedBackground" is
+   a soft off-white rather than pure white, which is why --background here
+   isn't oklch(1 0 0) — glass surfaces read as genuinely translucent white
+   panels sitting on top of that, the light-mode equivalent of the dark
+   theme's translucent dark-gray-on-black panels. */
+.light {
+  color-scheme: light;
+  --background: oklch(0.97 0.002 260);
+  --foreground: oklch(0.16 0.005 260);
+  --surface: oklch(1 0 0 / 70%);
+  --surface-strong: oklch(1 0 0 / 85%);
+  --card: oklch(1 0 0 / 70%);
+  --card-foreground: oklch(0.16 0.005 260);
+  --popover: oklch(1 0 0 / 96%);
+  --popover-foreground: oklch(0.16 0.005 260);
+
+  --secondary: oklch(0.93 0.003 260 / 85%);
+  --secondary-foreground: oklch(0.16 0.005 260);
+  --muted: oklch(0.93 0.003 260 / 75%);
+  --muted-foreground: oklch(0.45 0.008 260);
+  --accent: oklch(0.55 0.15 235);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0 0 0 / 9%);
+  --input: oklch(0 0 0 / 8%);
+
+  /* A dark, low-opacity shadow reads as a harsh smudge on a light surface
+     the way the dark theme's 65%-opacity black one doesn't on black —
+     lightened and tightened to the soft elevation shadows iOS itself uses
+     in light mode. */
+  --shadow-float: 0 12px 32px oklch(0 0 0 / 12%);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -217,17 +260,23 @@
 
 /* Used only by Screen.tsx's sticky page header. `--surface-strong` (what
    .glass-strong uses) is a genuinely lighter, desaturated gray, not a
-   tinted black — combined with its own border, that read as a visibly
-   different-colored bar sitting on top of the page rather than blending
-   into it, unlike index.tsx's Home header (plain text straight on
+   tinted background color — combined with its own border, that read as a
+   visibly different-colored bar sitting on top of the page rather than
+   blending into it, unlike index.tsx's Home header (plain text straight on
    `--background`, no panel at all). This keeps the same reason a header
    needs backdrop-filter in the first place — so text stays legible over
    whatever's scrolled underneath it — while tinting with `--background`
    itself instead of `--surface-strong`, and dropping the border, so it
-   reads as "the page's own black, made translucent," not a separate
-   surface layered on top of it. */
+   reads as "the page's own background, made translucent," not a separate
+   surface layered on top of it. `color-mix` (not a literal oklch value, and
+   not the plain --background var directly, which has no alpha channel to
+   soften) derives the translucent tint from whatever --background actually
+   resolves to right now — black in dark mode, the light theme's off-white
+   in light mode — the same technique .accent-custom already uses for its
+   own derived --ring/--glow-primary, so this adapts automatically instead
+   of needing a second, light-mode-specific copy of this rule. */
 @utility glass-header {
-  background-color: oklch(0 0 0 / 55%);
+  background-color: color-mix(in oklch, var(--background) 55%, transparent);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
