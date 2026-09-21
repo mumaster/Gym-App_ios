@@ -236,7 +236,7 @@ function NutritionScreen() {
         ) : waterGoalMl ? (
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-sky-400 transition-all"
+              className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${waterPct}%` }}
             />
           </div>
@@ -253,7 +253,7 @@ function NutritionScreen() {
                 }}
                 className="glass flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
               >
-                <Droplet className="size-4 text-sky-400" />
+                <Droplet className="size-4 text-primary" />
                 <span className="text-[12px] font-semibold">
                   +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
                 </span>
@@ -275,7 +275,7 @@ function NutritionScreen() {
               aria-label={`Remove ${entry.ml}ml water entry`}
               className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
             >
-              <Droplet className="size-3 text-sky-400" /> {entry.ml}ml <X className="size-3" />
+              <Droplet className="size-3 text-primary" /> {entry.ml}ml <X className="size-3" />
             </button>
           ))}
         </div>

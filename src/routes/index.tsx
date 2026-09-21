@@ -474,7 +474,7 @@ function WaterTile({
     <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
       <Droplet
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          active ? "text-sky-400/[0.08]" : "text-white/[0.03]"
+          active ? "text-primary/[0.08]" : "text-white/[0.03]"
         }`}
         strokeWidth={1.5}
       />
@@ -509,7 +509,7 @@ function WaterTile({
 
       {goalMl ? (
         <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-sky-400" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
         </div>
       ) : null}
 
@@ -519,7 +519,7 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={`Add ${ml}ml of water`}
-            className="flex min-h-[34px] items-center justify-center rounded-full bg-sky-400/15 text-[12px] font-bold text-sky-400 active:scale-95"
+            className="flex min-h-[34px] items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-primary active:scale-95"
           >
             +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
