@@ -45,6 +45,42 @@ export function registerServiceWorker() {
   else window.addEventListener("load", register, { once: true });
 }
 
+/** Unregisters every service worker and clears every Cache Storage entry
+ *  for this origin, then reloads — the in-app equivalent of the
+ *  delete-and-reinstall trick that's the only fully reliable fix for a
+ *  stuck stale shell (see sw.js's `CACHE_VERSION` comment and
+ *  __root.tsx's stale-shell recovery script). Deliberately more aggressive
+ *  than `onUpdateAvailable`'s soft prompt above: that one only fires when
+ *  `registration.update()` finds sw.js's own bytes have actually changed,
+ *  which a deploy that only changes app UI (not sw.js) never triggers —
+ *  the stale content in that case lives in Cache Storage regardless of
+ *  whether sw.js changed, and normally only clears via the navigate
+ *  handler's own background revalidation, which can silently lose the
+ *  race against iOS evicting the service worker before it completes (see
+ *  the same comment). This runs from live, already-executing JS instead,
+ *  so it can't lose that race — exactly why it exists as an explicit,
+ *  user-triggered escape hatch rather than something automatic. A plain
+ *  `reload()` after clearing both layers still has to get past the
+ *  document's own hour-long HTTP `Cache-Control` (`src/server.ts`), but a
+ *  reload navigation revalidates with the server rather than trusting a
+ *  cached response outright, unlike a normal link or back/forward
+ *  navigation would. */
+export async function forceUpdate(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    }
+  } finally {
+    location.reload();
+  }
+}
+
 /** Subscribes to "a new version has taken over" — fires at most once per
  *  update (a fresh controllerchange each time a newer SW activates over an
  *  already-active one). Deliberately NOT an auto-reload: the new shell is
