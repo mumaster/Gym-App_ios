@@ -215,6 +215,23 @@
   border: 1px solid var(--border);
 }
 
+/* Used only by Screen.tsx's sticky page header. `--surface-strong` (what
+   .glass-strong uses) is a genuinely lighter, desaturated gray, not a
+   tinted black — combined with its own border, that read as a visibly
+   different-colored bar sitting on top of the page rather than blending
+   into it, unlike index.tsx's Home header (plain text straight on
+   `--background`, no panel at all). This keeps the same reason a header
+   needs backdrop-filter in the first place — so text stays legible over
+   whatever's scrolled underneath it — while tinting with `--background`
+   itself instead of `--surface-strong`, and dropping the border, so it
+   reads as "the page's own black, made translucent," not a separate
+   surface layered on top of it. */
+@utility glass-header {
+  background-color: oklch(0 0 0 / 55%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
 @utility glow {
   box-shadow: var(--glow-primary);
 }
