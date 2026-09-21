@@ -69,20 +69,22 @@ export function TabBar() {
         </div>
 
         {/* The one tile on this bar that's deliberately "loose" from the
-            rest — a raised circle centered on the pill's own top edge
-            (half overlapping down into it, half floating free above),
-            rather than just a wider slot inside the same row like the
-            other four. Filled with bg-primary/text-primary-foreground so
-            it follows whichever accent color is chosen in Settings, the
-            same as every other themed surface in the app — nothing about
-            it is hardcoded. Always solid, not muted when inactive: it's
-            the app's one permanently-emphasized action, not a tab whose
-            color should fade based on where you currently are. */}
+            rest — a raised circle centered a little below the pill's own
+            top edge (`top-3`, not `top-0`: sitting exactly on the edge
+            read as floating too high/out of place, so it's nudged down to
+            overlap more into the pill and poke up less above it), rather
+            than just a wider slot inside the same row like the other
+            four. Filled with bg-primary/text-primary-foreground so it
+            follows whichever accent color is chosen in Settings, the same
+            as every other themed surface in the app — nothing about it is
+            hardcoded. Always solid, not muted when inactive: it's the
+            app's one permanently-emphasized action, not a tab whose color
+            should fade based on where you currently are. */}
         <Link
           to="/"
           aria-label="Home"
           aria-current={homeActive ? "page" : undefined}
-          className="glow absolute left-1/2 top-0 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] active:scale-95"
+          className="glow absolute left-1/2 top-3 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] active:scale-95"
         >
           <Home className="size-7" strokeWidth={2.2} />
         </Link>
