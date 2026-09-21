@@ -19,19 +19,29 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
     setAddingIngredient(false);
   };
 
+  const totals = useMemo(() => dailyTotals(ingredients), [ingredients]);
+  const canSave = name.trim().length > 0 && ingredients.length > 0;
+
+  const persist = () => {
+    if (!canSave) return false;
+    saveMealTemplate(name.trim(), ingredients);
+    return true;
+  };
+
+  // Closing (Done, or tapping the backdrop) with a name and at least one
+  // ingredient already entered should keep the meal rather than silently
+  // discard it — same reasoning as AddFoodSheet's own Done/backdrop save.
   const close = () => {
+    persist();
     reset();
     onClose();
   };
 
-  const totals = useMemo(() => dailyTotals(ingredients), [ingredients]);
-  const canSave = name.trim().length > 0 && ingredients.length > 0;
-
   const save = () => {
-    if (!canSave) return;
+    if (!persist()) return;
     haptic([20, 30]);
-    saveMealTemplate(name.trim(), ingredients);
-    close();
+    reset();
+    onClose();
   };
 
   return (

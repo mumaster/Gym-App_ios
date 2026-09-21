@@ -138,10 +138,12 @@ export function AddFoodSheet({
   };
 
   const close = () => {
-    // Closing (Done, or tapping the backdrop) while editing an existing
-    // entry should keep whatever was changed, not silently discard it —
-    // there's no separate "Save" action to remind the user to hit first.
-    if (editEntry && step === "review") persistEdits();
+    // Closing (Done, or tapping the backdrop) with the review form filled
+    // in — whether that's a scan result, a manual entry, or an edit —
+    // should keep it rather than silently discard it: there's no separate
+    // reminder to hit "Add to log" first, and Done reads as "I'm finished
+    // with this," not "throw it away."
+    if (step === "review") persistEdits();
     reset();
     onClose();
   };
@@ -559,7 +561,9 @@ export function AddFoodSheet({
 
             {/* Editing an existing entry already saves on Done/backdrop close
               (see `close` above) — a separate button here would just be a
-              second, redundant way to do the same thing. */}
+              second, redundant way to do the same thing. New entries keep
+              an explicit button too, as the primary/expected action, even
+              though Done now saves them as well. */}
             {editEntry && !onIngredientCaptured ? null : (
               <button
                 onClick={save}

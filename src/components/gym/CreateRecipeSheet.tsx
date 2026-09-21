@@ -33,11 +33,6 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
     setAddingIngredient(false);
   };
 
-  const close = () => {
-    reset();
-    onClose();
-  };
-
   const totals = useMemo(() => dailyTotals(ingredients), [ingredients]);
   const perServing = useMemo(
     () => recipePerServing({ id: "", name: "", servings, ingredients }),
@@ -45,11 +40,26 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
   );
   const canSave = name.trim().length > 0 && ingredients.length > 0 && servings > 0;
 
-  const save = () => {
-    if (!canSave) return;
-    haptic([20, 30]);
+  const persist = () => {
+    if (!canSave) return false;
     saveRecipe(name.trim(), servings, ingredients);
-    close();
+    return true;
+  };
+
+  // Closing (Done, or tapping the backdrop) with a name and at least one
+  // ingredient already entered should keep the recipe rather than silently
+  // discard it — same reasoning as AddFoodSheet's own Done/backdrop save.
+  const close = () => {
+    persist();
+    reset();
+    onClose();
+  };
+
+  const save = () => {
+    if (!persist()) return;
+    haptic([20, 30]);
+    reset();
+    onClose();
   };
 
   return (
