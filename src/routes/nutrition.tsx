@@ -30,17 +30,13 @@ import {
   nutrientStatus,
   recipePerServing,
   scaledMacros,
+  formatLiters,
+  WATER_QUICK_ADD,
   type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { haptic, useGym } from "../lib/gym/store";
-
-/** Quick-add amounts on the Water card, smallest first. */
-const WATER_QUICK_ADD = [250, 500, 750, 1000];
-
-/** Trims a fixed-2dp liters string down to whatever precision it actually needs. */
-const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\.?0+$/, "")}L`;
 
 export const Route = createFileRoute("/nutrition")({
   head: () => ({

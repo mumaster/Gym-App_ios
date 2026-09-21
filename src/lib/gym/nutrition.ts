@@ -106,6 +106,15 @@ export interface WaterEntry {
   logged_at: string;
 }
 
+/** Quick-add amounts offered wherever water can be logged in one tap —
+ *  the Nutrition screen's own Water card and the Home dashboard's Water
+ *  tile both use this exact list, so the two never drift apart on what
+ *  "quick add" means. */
+export const WATER_QUICK_ADD = [250, 500, 750, 1000];
+
+/** Trims a fixed-2dp liters string down to whatever precision it actually needs. */
+export const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\.?0+$/, "")}L`;
+
 /** Display order used everywhere a nutrient list is shown. */
 export const NUTRIENT_ORDER: NutrientKey[] = [
   "calories",

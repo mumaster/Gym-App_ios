@@ -18,9 +18,11 @@ import {
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import {
   NUTRIENT_ORDER,
+  WATER_QUICK_ADD,
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
+  formatLiters,
   nutrientStatus,
   type Macros,
   type NutrientStatus,
@@ -81,7 +83,9 @@ function HomeScreen() {
     foodEntries,
     nutritionGoals,
     waterEntries,
+    waterGoalMl,
     avatarId,
+    logWater,
   } = useGym();
 
   const streak = useMemo(() => currentStreak(workouts), [workouts]);
@@ -227,7 +231,7 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.8fr_1fr_0.9fr] gap-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.7fr_0.8fr_0.85fr_0.45fr] gap-2.5">
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -235,8 +239,17 @@ function HomeScreen() {
             goals={nutritionGoals}
             calorieStatus={calorieStatus}
             caloriePct={caloriePct}
-            waterMl={todayWaterMl}
             onClick={() => navigate({ to: "/nutrition" })}
+          />
+
+          <WaterTile
+            totalMl={todayWaterMl}
+            goalMl={waterGoalMl}
+            onAdd={(ml) => {
+              haptic(12);
+              logWater(ml);
+            }}
+            onOpen={() => navigate({ to: "/nutrition" })}
           />
 
           <BentoTile
@@ -295,7 +308,6 @@ function NutritionTile({
   goals,
   calorieStatus,
   caloriePct,
-  waterMl,
   onClick,
 }: {
   active: boolean;
@@ -304,9 +316,6 @@ function NutritionTile({
   goals: NutritionGoals;
   calorieStatus: NutrientStatus;
   caloriePct: number;
-  /** Today's logged water, in ml — 0 hides the water pill entirely rather
-   *  than showing a "0L" that would just be noise for anyone not using it. */
-  waterMl: number;
   onClick: () => void;
 }) {
   const barClass = (status: NutrientStatus) =>
@@ -343,15 +352,7 @@ function NutritionTile({
             </span>
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {waterMl > 0 ? (
-            <span className="flex items-center gap-1 rounded-full bg-sky-400/15 px-2 py-1 text-[11px] font-bold text-sky-400">
-              <Droplet className="size-3" />
-              {(waterMl / 1000).toFixed(1)}L
-            </span>
-          ) : null}
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </div>
 
       {hasGoals && goals.calories ? (
@@ -399,7 +400,12 @@ function NutritionTile({
  *  text on this whole screen with genuinely unpredictable length, and a
  *  horizontal layout gives it the full tile width to run into before
  *  `truncate` ever has to kick in, instead of the ~1/3-width column it had
- *  when this was a fourth cell in a square bento grid. */
+ *  when this was a fourth cell in a square bento grid. Deliberately the
+ *  lowest-emphasis tile on the screen now — smaller padding/icon/type than
+ *  its own original size, trading its row's height to WaterTile below,
+ *  since a PR is checked far less often day-to-day than water intake. Still
+ *  sized against the catalog's longest exercise name (35 characters) at
+ *  this smaller scale, not just at the old, larger one. */
 function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () => void }) {
   return (
     <button
@@ -407,33 +413,119 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
         haptic(10);
         onClick();
       }}
-      className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-3.5 text-left active:scale-[0.97]"
+      className="glass col-span-2 flex min-h-0 items-center gap-2.5 rounded-2xl p-2.5 text-left active:scale-[0.97]"
     >
       <span
-        className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
           pr ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
         }`}
       >
-        <Trophy className="size-4" />
+        <Trophy className="size-3.5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
           Best lift
         </p>
         {pr ? (
-          <p className="line-clamp-2 text-[15px] font-bold leading-tight">{pr.name}</p>
+          <p className="line-clamp-2 text-[13px] font-bold leading-tight">{pr.name}</p>
         ) : (
-          <p className="truncate text-[13px] text-muted-foreground">
+          <p className="truncate text-[12px] text-muted-foreground">
             No PR yet — finish a working set
           </p>
         )}
       </div>
       {pr ? (
-        <span className="tabular shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary">
+        <span className="tabular shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-bold text-primary">
           {pr.e1rm} kg
         </span>
       ) : null}
     </button>
+  );
+}
+
+/** Full-width (col-span-2), the "bigger" sibling of the other stat tiles —
+ *  water is the one Home tile whose whole point is letting you act on it
+ *  without leaving the screen, so it deliberately breaks HomeScreen's own
+ *  "read-mostly, never mutates state directly" rule (see the file's own
+ *  header comment) for exactly this one case: `onAdd` calls `logWater`
+ *  straight from the tap, no sheet, no navigation, no extra taps. A plain
+ *  `<div>` rather than a `<button>` like the other tiles specifically so
+ *  the quick-add buttons can nest inside it — a `<button>` can't legally
+ *  contain another interactive element (the same HTML-content-model rule
+ *  `ThemePicker`'s color swatch ran into). Tapping the header row (icon +
+ *  total + chevron) still opens `/nutrition` like every other tile does;
+ *  only that row is a real `<button>`, sitting as a sibling of the
+ *  quick-add row rather than a wrapper around it. */
+function WaterTile({
+  totalMl,
+  goalMl,
+  onAdd,
+  onOpen,
+}: {
+  totalMl: number;
+  goalMl: number | null;
+  onAdd: (ml: number) => void;
+  onOpen: () => void;
+}) {
+  const pct = goalMl ? Math.min(100, (totalMl / goalMl) * 100) : 0;
+  const active = totalMl > 0;
+
+  return (
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
+      <Droplet
+        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
+          active ? "text-sky-400/[0.08]" : "text-white/[0.03]"
+        }`}
+        strokeWidth={1.5}
+      />
+      <button
+        onClick={() => {
+          haptic(10);
+          onOpen();
+        }}
+        aria-label="Water intake today"
+        className="relative flex items-center justify-between gap-3 text-left"
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+              active ? "bg-sky-400/15 text-sky-400" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            <Droplet className="size-3.5" />
+          </span>
+          <span className="tabular truncate text-[19px] font-bold leading-none">
+            {formatLiters(totalMl)}
+            {goalMl ? (
+              <span className="text-[12px] font-medium text-muted-foreground">
+                {" "}
+                / {formatLiters(goalMl)}
+              </span>
+            ) : null}
+          </span>
+        </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+
+      {goalMl ? (
+        <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-sky-400" style={{ width: `${pct}%` }} />
+        </div>
+      ) : null}
+
+      <div className="relative grid grid-cols-4 gap-1.5">
+        {WATER_QUICK_ADD.map((ml) => (
+          <button
+            key={ml}
+            onClick={() => onAdd(ml)}
+            aria-label={`Add ${ml}ml of water`}
+            className="flex min-h-[34px] items-center justify-center rounded-full bg-sky-400/15 text-[12px] font-bold text-sky-400 active:scale-95"
+          >
+            +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
