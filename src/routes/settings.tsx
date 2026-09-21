@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Cloud, CloudOff, LogOut } from "lucide-react";
+import { ChevronRight, Cloud, CloudOff, LayoutGrid, LogOut } from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
@@ -73,6 +73,25 @@ function SettingsScreen() {
           </div>
         )}
       </Card>
+
+      <SectionLabel>Equipment</SectionLabel>
+      <Link
+        to="/equipment"
+        className="glass flex items-center justify-between gap-3 rounded-2xl p-4 transition-transform active:scale-[0.985]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <LayoutGrid className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">Equipment profiles</p>
+            <p className="truncate text-[12.5px] text-muted-foreground">
+              Gear, plates, and avoided exercises
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      </Link>
 
       <SectionLabel>Avatar</SectionLabel>
       <Card className="p-0">
