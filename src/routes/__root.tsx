@@ -15,6 +15,7 @@ import { loadCachedCatalog, refreshCatalog } from "../lib/gym/catalog";
 import { registerServiceWorker } from "../pwa";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
+import { UpdateBanner } from "../components/gym/UpdateBanner";
 
 function NotFoundComponent() {
   return (
@@ -447,6 +448,7 @@ function RootComponent() {
         <Outlet />
         <TabBar />
         <SplashScreen />
+        <UpdateBanner />
       </GymProvider>
     </QueryClientProvider>
   );
