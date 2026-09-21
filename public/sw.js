@@ -16,7 +16,16 @@
 // the app shell's own HTML (so reopening the installed app with a flaky or
 // absent connection still opens instead of showing a browser error).
 
-const CACHE_VERSION = "v1";
+// Bump this on any deploy where a stale cached shell (PAGES_CACHE) could
+// end up referencing content-hashed JS/CSS filenames a newer deploy has
+// since removed from the server — a mismatch that leaves an installed PWA
+// stuck (see __root.tsx's stale-shell auto-reload script for the full
+// story). Changing this string changes sw.js's own bytes, which is what
+// makes the browser notice there's a new service worker to install at all;
+// `activate` below then deletes every cache key not in CURRENT_CACHES,
+// clearing the stale entry out from under any device still running the
+// previous version.
+const CACHE_VERSION = "v2";
 const OCR_CACHE = `forge-ocr-${CACHE_VERSION}`;
 const PAGES_CACHE = `forge-pages-${CACHE_VERSION}`;
 const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;

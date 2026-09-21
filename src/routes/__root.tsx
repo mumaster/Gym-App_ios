@@ -365,6 +365,54 @@ function RootShell({ children }: { children: ReactNode }) {
         <noscript>
           <link rel="stylesheet" href={appCss} />
         </noscript>
+        {/* Self-heal from a stale cached app shell. sw.js's navigation
+            handler is stale-while-revalidate (see that file), and the
+            document itself carries an hour-long Cache-Control
+            (src/server.ts's withDocumentCaching) — both deliberate tradeoffs
+            for a fast cold launch, but both mean a device can be served an
+            OLD cached HTML after a new deploy whose <Scripts/> tags point at
+            content-hashed JS files a fresh deploy has since replaced. That
+            script 404s, React never mounts, and SplashScreen — whose own
+            entrance animation is pure CSS and plays fine from the SSR'd
+            markup with zero JS — gets stuck showing the badge/bar forever
+            with no wordmark, since that's gated by React state that never
+            arrives. Reported in the wild as exactly that: the animated badge
+            with no text, unrecoverable by force-quitting the app (which just
+            re-serves the same stale cache) — only fixed by fully deleting
+            and reinstalling the Home Screen icon, which forces a genuinely
+            fresh fetch. This script catches that class of failure directly
+            instead of relying on a user to know that trick: a capture-phase
+            listener (resource load errors don't bubble, but capture-phase
+            dispatch to ancestors still happens) catches a failed <script>
+            tag, and an unhandledrejection listener catches a failed dynamic
+            import (the phrasing varies by engine, hence the loose regex).
+            Either one triggers up to two auto-reloads, spaced out to give
+            the service worker's background revalidation (already in flight
+            since the first failed load) a real chance to land a fresh shell
+            before the retry. If it's still failing after that — e.g.
+            genuinely offline — a plain, Tailwind-independent fallback button
+            appears instead of a silent infinite loop, since Tailwind's own
+            CSS may be exactly what failed to load. The attempt counter lives
+            in sessionStorage so it survives the reload it triggers, and is
+            cleared on a real successful mount (see RootComponent's effect)
+            so one bad launch doesn't poison a later, unrelated failure. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var KEY='forge-reload-attempts';var MAX=2;var handled=false;" +
+              "function attempts(){try{return parseInt(sessionStorage.getItem(KEY)||'0',10)}catch(e){return 0}}" +
+              "function showFallback(){var el=document.createElement('div');" +
+              "el.setAttribute('style','position:fixed;inset:0;z-index:200;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:24px');" +
+              'el.innerHTML=\'<p style="font-size:16px;opacity:.85;max-width:280px">Forge couldn\\\'t finish loading.</p><button id="forge-reload-btn" style="background:#fff;color:#000;border:none;border-radius:999px;padding:12px 24px;font-size:15px;font-weight:600">Reload</button>\';' +
+              "document.body.appendChild(el);" +
+              "document.getElementById('forge-reload-btn').addEventListener('click',function(){try{sessionStorage.removeItem(KEY)}catch(e){}location.reload()})}" +
+              "function bumpAndReload(){if(handled)return;handled=true;var n=attempts();" +
+              "if(n<MAX){try{sessionStorage.setItem(KEY,String(n+1))}catch(e){}setTimeout(function(){location.reload()},1200)}else{showFallback()}}" +
+              "window.addEventListener('error',function(e){var t=e&&e.target;if(t&&t.tagName==='SCRIPT')bumpAndReload()},true);" +
+              "window.addEventListener('unhandledrejection',function(e){var msg=(e&&e.reason&&(e.reason.message||String(e.reason)))||'';" +
+              "if(/fetch dynamically imported module|importing a module script failed|failed to fetch/i.test(msg))bumpAndReload()})})()",
+          }}
+        />
       </head>
       <body>
         {children}
@@ -381,6 +429,15 @@ function RootComponent() {
     loadCachedCatalog();
     void refreshCatalog();
     registerServiceWorker();
+    // A real mount means the stale-shell auto-reload above (if it fired)
+    // did its job — clear its attempt counter so a later, unrelated
+    // failure starts its own fresh retry budget instead of inheriting
+    // whatever was left over from this one.
+    try {
+      sessionStorage.removeItem("forge-reload-attempts");
+    } catch {
+      /* sessionStorage unavailable — nothing to clean up */
+    }
   }, []);
 
   return (
