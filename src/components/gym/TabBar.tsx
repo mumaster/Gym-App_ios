@@ -32,8 +32,13 @@ function TabButton({
       to={to}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className="flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 active:scale-95"
+      className="flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 pt-3 active:scale-95"
     >
+      {/* pt-3 on the row (rather than centering with no offset) sits this
+          icon+dot cluster below the bar's own vertical center line — icon
+          and dot themselves are unchanged in size, just shifted down as a
+          group, so they read closer to the Home badge's own lower visual
+          weight instead of floating noticeably higher than it. */}
       <Icon
         className={`size-[22px] ${active ? "text-primary" : "text-muted-foreground"}`}
         strokeWidth={active ? 2.4 : 1.9}
