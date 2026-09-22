@@ -53,14 +53,19 @@
      clearance a bottom sheet gets, so it can sit closer to the edge. */
   --tab-bar-clearance: max(calc(env(safe-area-inset-bottom) * 0.5), 0.5rem);
   /* How much bottom padding every scrollable route reserves so its last
-     bit of content clears the floating tab bar — TabBar.tsx's own pill
-     PLUS the raised circular Home button that pokes up above it. A
-     single source of truth for Screen.tsx and index.tsx (the two places
-     that both need it) specifically because it has to track TabBar.tsx's
-     actual geometry by hand; letting it drift out of sync in only one of
-     the two would silently clip the last card/button on whichever routes
-     use the stale value. */
-  --tab-bar-content-clearance: 7rem;
+     bit of content clears the floating tab bar. A single source of truth
+     for Screen.tsx and index.tsx (the two places that both need it)
+     specifically because it has to track TabBar.tsx's actual geometry by
+     hand; letting it drift out of sync in only one of the two would
+     silently clip the last card/button on whichever routes use the stale
+     value. Was 7rem while Home was a raised circle poking up above the
+     pill's own top edge — now that Home sits inline in the same row as
+     every other tab (same height, no longer the bar's tallest point),
+     the pill's own top edge is all this needs to clear: pill height
+     (4rem) + <nav>'s own pt-2 (0.5rem) + a ~20px landing gap, re-measured
+     via Playwright (getBoundingClientRect()s, not eyeballed) the same way
+     the original 7rem value was. */
+  --tab-bar-content-clearance: 5.75rem;
   --font-ios:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui,
     sans-serif;

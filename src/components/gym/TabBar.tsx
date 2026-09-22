@@ -51,43 +51,44 @@ export function TabBar() {
   const homeActive = pathname === "/";
 
   return (
-    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-8">
-      {/* relative anchor for the Home button below — it's positioned
-          against THIS box, not the pill's own (which would shift if the
-          pill's own padding/height ever changes). */}
-      <div className="relative mx-auto max-w-md">
+    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
+      <div className="mx-auto max-w-md">
         <div className="glass-strong flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]">
           {LEFT_TABS.map((tab) => (
             <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
           ))}
-          {/* Empty space the size of the Home button below, so the side
-              tabs never render underneath it. */}
-          <div className="w-16 shrink-0" aria-hidden="true" />
+          {/* Home used to be a detached circle raised above the pill's own
+              top edge (`absolute`, `-translate-y-1/2`), which pushed the
+              bar's total footprint taller than the other four tabs' own
+              row and needed extra top padding on <nav> plus a larger
+              --tab-bar-content-clearance everywhere else to keep from
+              clipping page content under it (see CLAUDE.md). Reported as
+              wanting that space back: Home is now an ordinary flex-1 cell
+              in the same row as the other four, same `min-h-[54px]`, no
+              longer poking above the bar at all — the badge inside it is
+              what stays visually distinct, not the row's own height. */}
+          <Link
+            to="/"
+            aria-label="Home"
+            aria-current={homeActive ? "page" : undefined}
+            className="flex min-h-[54px] flex-1 items-center justify-center active:scale-95"
+          >
+            {/* Solid bg-primary/text-primary-foreground, always — the one
+                permanently-emphasized action on this bar, so (unlike the
+                other four tabs' icon-color-only active state) its fill
+                never mutes just because you're not currently on `/`.
+                Follows whichever accent is chosen in Settings like every
+                other themed surface; nothing here is hardcoded. Sized to
+                sit comfortably inside the row's own height rather than
+                needing to exceed it. */}
+            <span className="glow flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)]">
+              <Home className="size-5" strokeWidth={2.2} />
+            </span>
+          </Link>
           {RIGHT_TABS.map((tab) => (
             <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
           ))}
         </div>
-
-        {/* The one tile on this bar that's deliberately "loose" from the
-            rest — a raised circle centered a little below the pill's own
-            top edge (`top-3`, not `top-0`: sitting exactly on the edge
-            read as floating too high/out of place, so it's nudged down to
-            overlap more into the pill and poke up less above it), rather
-            than just a wider slot inside the same row like the other
-            four. Filled with bg-primary/text-primary-foreground so it
-            follows whichever accent color is chosen in Settings, the same
-            as every other themed surface in the app — nothing about it is
-            hardcoded. Always solid, not muted when inactive: it's the
-            app's one permanently-emphasized action, not a tab whose color
-            should fade based on where you currently are. */}
-        <Link
-          to="/"
-          aria-label="Home"
-          aria-current={homeActive ? "page" : undefined}
-          className="glow absolute left-1/2 top-3 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] active:scale-95"
-        >
-          <Home className="size-7" strokeWidth={2.2} />
-        </Link>
       </div>
     </nav>
   );
