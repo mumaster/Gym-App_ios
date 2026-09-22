@@ -78,11 +78,15 @@ export function TabBar() {
                 other four tabs' icon-color-only active state) its fill
                 never mutes just because you're not currently on `/`.
                 Follows whichever accent is chosen in Settings like every
-                other themed surface; nothing here is hardcoded. Sized to
-                sit comfortably inside the row's own height rather than
-                needing to exceed it. */}
-            <span className="glow flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)]">
-              <Home className="size-5" strokeWidth={2.2} />
+                other themed surface; nothing here is hardcoded. `h-full`
+                (rather than a fixed `size-*`) makes it exactly as tall as
+                the row itself, edge-to-edge with the other tabs' own
+                min-h-[54px] cell; `aspect-square` keeps the width locked
+                to that same height so rounded-full still yields a true
+                circle (same radius top/bottom/left/right) instead of
+                stretching into a pill/oval shape. */}
+            <span className="glow flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)]">
+              <Home className="size-6" strokeWidth={2.2} />
             </span>
           </Link>
           {RIGHT_TABS.map((tab) => (
