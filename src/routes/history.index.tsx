@@ -15,6 +15,7 @@ import {
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { exerciseById } from "../lib/gym/data";
+import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { e1rmTrend, personalRecords } from "../lib/gym/progress";
 import { bestStreak, currentStreak, recentCalendar } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
@@ -41,6 +42,8 @@ export const Route = createFileRoute("/history/")({
 
 function HistoryScreen() {
   const { workouts, hydrated } = useGym();
+  const t = useTranslation();
+  const locale = useLocale();
 
   const volumeByMuscle = useMemo(() => {
     const map = new Map<Muscle, number>();
@@ -74,22 +77,20 @@ function HistoryScreen() {
     };
   }, [prs, workouts]);
 
-  if (!hydrated) return <Screen title="History">{null}</Screen>;
+  if (!hydrated) return <Screen title={t.history.title}>{null}</Screen>;
 
   return (
-    <Screen title="History" subtitle={`${workouts.length} completed sessions`}>
+    <Screen title={t.history.title} subtitle={t.history.completedSessions(workouts.length)}>
       {workouts.length === 0 ? (
         <Card className="p-6 text-center">
-          <p className="text-[17px] font-semibold">No sessions yet</p>
-          <p className="mt-1 text-[14px] text-muted-foreground">
-            Finish your first workout and it will show up here with PRs and volume charts.
-          </p>
+          <p className="text-[17px] font-semibold">{t.history.noSessionsYet}</p>
+          <p className="mt-1 text-[14px] text-muted-foreground">{t.history.noSessionsYetDesc}</p>
         </Card>
       ) : null}
 
       {workouts.length > 0 ? (
         <>
-          <SectionLabel>Streak</SectionLabel>
+          <SectionLabel>{t.history.streak}</SectionLabel>
           <Card className="p-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
@@ -99,14 +100,16 @@ function HistoryScreen() {
                 <div>
                   <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    Day streak
+                    {t.history.dayStreak}
                   </p>
                 </div>
               </div>
               <div className="h-8 w-px bg-border" />
               <div>
                 <p className="tabular text-[20px] font-bold leading-none">{longestStreak}</p>
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Best</p>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  {t.history.best}
+                </p>
               </div>
             </div>
             <div className="mt-3">
@@ -118,7 +121,7 @@ function HistoryScreen() {
 
       {volumeByMuscle.length ? (
         <>
-          <SectionLabel>Volume per muscle (kg)</SectionLabel>
+          <SectionLabel>{t.history.volumePerMuscle}</SectionLabel>
           <Card className="p-4">
             <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -152,11 +155,9 @@ function HistoryScreen() {
 
       {topLiftTrend ? (
         <>
-          <SectionLabel>Progress · {topLiftTrend.name}</SectionLabel>
+          <SectionLabel>{t.history.progressFor(topLiftTrend.name)}</SectionLabel>
           <Card className="p-4">
-            <p className="mb-2 text-[12px] text-muted-foreground">
-              Estimated 1-rep max per session (Epley formula)
-            </p>
+            <p className="mb-2 text-[12px] text-muted-foreground">{t.history.estimated1rm}</p>
             <div className="h-40 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={topLiftTrend.points}>
@@ -169,8 +170,8 @@ function HistoryScreen() {
                     width={32}
                   />
                   <Tooltip
-                    formatter={(value: number) => [`${value} kg`, "Est. 1RM"]}
-                    labelFormatter={(label) => `Session ${label}`}
+                    formatter={(value: number) => [`${value} kg`, t.history.est1rm]}
+                    labelFormatter={(label) => t.history.sessionN(label)}
                     contentStyle={{
                       background: "var(--popover)",
                       border: "1px solid var(--border)",
@@ -194,7 +195,7 @@ function HistoryScreen() {
 
       {prs.length ? (
         <>
-          <SectionLabel>Personal records · est. 1RM</SectionLabel>
+          <SectionLabel>{t.history.personalRecords}</SectionLabel>
           <div className="space-y-2">
             {prs.map((p) => (
               <Card key={p.exercise_id} className="flex items-center justify-between p-4">
@@ -214,7 +215,7 @@ function HistoryScreen() {
         </>
       ) : null}
 
-      {workouts.length ? <SectionLabel>Sessions</SectionLabel> : null}
+      {workouts.length ? <SectionLabel>{t.history.sessions}</SectionLabel> : null}
       <div className="space-y-2">
         {workouts.map((w) => {
           const volume = w.completed_sets.reduce((v, s) => v + s.weight * s.reps, 0);
@@ -223,7 +224,7 @@ function HistoryScreen() {
               <Card className="p-4 active:scale-[0.99]">
                 <div className="flex items-center justify-between">
                   <p className="text-[17px] font-semibold">
-                    {new Date(w.date).toLocaleDateString(undefined, {
+                    {new Date(w.date).toLocaleDateString(locale, {
                       weekday: "short",
                       day: "numeric",
                       month: "short",
@@ -231,16 +232,16 @@ function HistoryScreen() {
                   </p>
                   <div className="flex items-center gap-1">
                     <p className="tabular text-[14px] text-muted-foreground">
-                      {w.duration_minutes} min
+                      {t.history.minutesShort(w.duration_minutes)}
                     </p>
                     <ChevronRight className="size-5 text-primary" />
                   </div>
                 </div>
                 <p className="mt-1 text-[13px] text-muted-foreground">
-                  {w.target_muscles.join(" · ") || "Full body"}
+                  {w.target_muscles.join(" · ") || t.generate.fullBody}
                 </p>
                 <p className="tabular mt-2 text-[14px]">
-                  {w.completed_sets.length} sets · {volume.toLocaleString()} kg volume
+                  {t.history.setsAndVolume(w.completed_sets.length, volume.toLocaleString(locale))}
                 </p>
               </Card>
             </Link>

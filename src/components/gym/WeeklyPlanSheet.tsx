@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { useTranslation } from "../../lib/gym/i18n";
 import {
   DOW_DISPLAY_ORDER,
-  DOW_LABELS,
   SPLIT_TEMPLATES,
   buildSchedule,
   initialCyclePosition,
@@ -28,6 +28,7 @@ type Mode = "manage" | "template" | "days";
 
 export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { weeklyScheme, setWeeklyScheme, updateScheduleSlotDow, clearWeeklyScheme } = useGym();
+  const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
@@ -83,11 +84,10 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     const activeTemplate = splitTemplateById(weeklyScheme.templateId);
     const usedDows = new Set(weeklyScheme.schedule.map((s) => s.dow));
     return (
-      <BottomSheet open={open} onClose={onClose} title="Your weekly plan">
+      <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.title}>
         <div className="space-y-4">
           <p className="text-[13px] text-muted-foreground">
-            {activeTemplate.label} · {weeklyScheme.schedule.length}{" "}
-            {weeklyScheme.schedule.length === 1 ? "day" : "days"} a week
+            {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
           </p>
 
           <div className="space-y-2">
@@ -104,14 +104,14 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                       <span className="text-[15px] font-semibold">{dayLabel}</span>
                       {isNext ? (
                         <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
-                          Next up
+                          {t.weeklyPlan.nextUp}
                         </span>
                       ) : null}
-                      <p className="text-[13px] text-muted-foreground">{DOW_LABELS[slot.dow]}</p>
+                      <p className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</p>
                     </div>
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
-                      aria-label={`Change day for ${dayLabel}`}
+                      aria-label={t.weeklyPlan.changeDay(dayLabel)}
                       className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                     >
                       <Pencil className="size-4" />
@@ -134,7 +134,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                                   : "bg-secondary text-secondary-foreground"
                             }`}
                           >
-                            {DOW_LABELS[dow]}
+                            {t.common.dow[dow]}
                           </button>
                         );
                       })}
@@ -150,13 +150,13 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
               onClick={() => setMode("template")}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
             >
-              Change split
+              {t.weeklyPlan.changeSplit}
             </button>
             <button
               onClick={remove}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive active:scale-95"
             >
-              <Trash2 className="size-4" /> Remove weekly plan
+              <Trash2 className="size-4" /> {t.weeklyPlan.removeWeeklyPlan}
             </button>
           </div>
         </div>
@@ -165,23 +165,20 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Set up a weekly plan">
+    <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.setupTitle}>
       {mode === "template" ? (
         <div className="space-y-2">
-          <p className="mb-1 text-[13px] text-muted-foreground">
-            Pick a split — it decides which muscles land on which day. The generator's set, rep and
-            rest scheme is unchanged.
-          </p>
-          {SPLIT_TEMPLATES.map((t) => (
+          <p className="mb-1 text-[13px] text-muted-foreground">{t.weeklyPlan.pickSplitDesc}</p>
+          {SPLIT_TEMPLATES.map((tpl) => (
             <button
-              key={t.id}
-              onClick={() => pickTemplate(t.id)}
+              key={tpl.id}
+              onClick={() => pickTemplate(tpl.id)}
               className="glass flex w-full flex-col gap-1 rounded-2xl p-4 text-left active:scale-[0.985]"
             >
-              <span className="text-[17px] font-semibold">{t.label}</span>
-              <span className="text-[13px] text-muted-foreground">{t.description}</span>
+              <span className="text-[17px] font-semibold">{tpl.label}</span>
+              <span className="text-[13px] text-muted-foreground">{tpl.description}</span>
               <span className="mt-1 text-[12px] font-semibold text-primary">
-                {t.days.map((d) => d.label).join(" → ")}
+                {tpl.days.map((d) => d.label).join(" → ")}
               </span>
             </button>
           ))}
@@ -192,12 +189,12 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             onClick={() => setMode("template")}
             className="text-[13px] font-semibold text-primary"
           >
-            ← {template.label} · change split
+            {t.weeklyPlan.changeSplitBack(template.label)}
           </button>
 
           <div>
             <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-              Which days do you want to train?
+              {t.weeklyPlan.whichDays}
             </p>
             <div className="flex flex-wrap gap-2">
               {DOW_DISPLAY_ORDER.map((dow) => (
@@ -210,7 +207,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  {DOW_LABELS[dow]}
+                  {t.common.dow[dow]}
                 </button>
               ))}
             </div>
@@ -219,7 +216,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           {preview.length ? (
             <div>
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                Proposed schedule
+                {t.weeklyPlan.proposedSchedule}
               </p>
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
@@ -231,17 +228,15 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                       {splitDayLabel(templateId, slot.dayId)}
                     </span>
                     <span className="text-[13px] text-muted-foreground">
-                      {DOW_LABELS[slot.dow]}
+                      {t.common.dow[slot.dow]}
                     </span>
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                You can fine-tune individual days any time from the weekly plan card.
-              </p>
+              <p className="mt-2 text-[12px] text-muted-foreground">{t.weeklyPlan.fineTuneHint}</p>
             </div>
           ) : (
-            <p className="text-[14px] text-muted-foreground">Pick at least one training day.</p>
+            <p className="text-[14px] text-muted-foreground">{t.weeklyPlan.pickOneDay}</p>
           )}
 
           <button
@@ -249,7 +244,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             disabled={!preview.length}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> {weeklyScheme ? "Save changes" : "Start this plan"}
+            <Check className="size-5" />{" "}
+            {weeklyScheme ? t.weeklyPlan.saveChanges : t.weeklyPlan.startThisPlan}
           </button>
         </div>
       )}

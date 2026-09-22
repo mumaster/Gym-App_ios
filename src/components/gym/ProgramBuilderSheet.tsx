@@ -3,13 +3,13 @@ import { Check, Flame, Pencil, Snowflake, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import {
   DOW_DISPLAY_ORDER,
-  DOW_LABELS,
   SPLIT_TEMPLATES,
   buildSchedule,
   splitDayLabel,
   splitTemplateById,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
+import { useTranslation } from "../../lib/gym/i18n";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
 import { haptic, useGym } from "../../lib/gym/store";
 
@@ -30,6 +30,7 @@ type Mode = "manage" | "template" | "days" | "weeks";
 
 export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { program, setProgram, updateProgramSlotDow, clearProgram } = useGym();
+  const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [name, setName] = useState("Program");
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
@@ -97,8 +98,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       <BottomSheet open={open} onClose={onClose} title={program.name}>
         <div className="space-y-4">
           <p className="text-[13px] text-muted-foreground">
-            {activeTemplate.label} · Week {program.currentWeek + 1} of {program.weeks.length} ·{" "}
-            {program.schedule.length} {program.schedule.length === 1 ? "day" : "days"} a week
+            {t.programBuilder.manageSubtitle(
+              activeTemplate.label,
+              program.currentWeek + 1,
+              program.weeks.length,
+              program.schedule.length,
+            )}
           </p>
 
           <div className="flex gap-1.5">
@@ -135,14 +140,14 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                       <span className="text-[15px] font-semibold">{dayLabel}</span>
                       {isNext ? (
                         <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
-                          Next up
+                          {t.programBuilder.nextUp}
                         </span>
                       ) : null}
-                      <p className="text-[13px] text-muted-foreground">{DOW_LABELS[slot.dow]}</p>
+                      <p className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</p>
                     </div>
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
-                      aria-label={`Change day for ${dayLabel}`}
+                      aria-label={t.programBuilder.changeDay(dayLabel)}
                       className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                     >
                       <Pencil className="size-4" />
@@ -165,7 +170,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                                   : "bg-secondary text-secondary-foreground"
                             }`}
                           >
-                            {DOW_LABELS[dow]}
+                            {t.common.dow[dow]}
                           </button>
                         );
                       })}
@@ -181,13 +186,13 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               onClick={() => setMode("template")}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
             >
-              Start a new program
+              {t.programBuilder.startNewProgram}
             </button>
             <button
               onClick={remove}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive active:scale-95"
             >
-              <Trash2 className="size-4" /> Remove program
+              <Trash2 className="size-4" /> {t.programBuilder.removeProgram}
             </button>
           </div>
         </div>
@@ -196,23 +201,20 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Build a program">
+    <BottomSheet open={open} onClose={onClose} title={t.programBuilder.title}>
       {mode === "template" ? (
         <div className="space-y-2">
-          <p className="mb-1 text-[13px] text-muted-foreground">
-            Pick a split — a multi-week program sequences it with planned progression and a deload,
-            instead of repeating forever.
-          </p>
-          {SPLIT_TEMPLATES.map((t) => (
+          <p className="mb-1 text-[13px] text-muted-foreground">{t.programBuilder.pickSplitDesc}</p>
+          {SPLIT_TEMPLATES.map((tpl) => (
             <button
-              key={t.id}
-              onClick={() => pickTemplate(t.id)}
+              key={tpl.id}
+              onClick={() => pickTemplate(tpl.id)}
               className="glass flex w-full flex-col gap-1 rounded-2xl p-4 text-left active:scale-[0.985]"
             >
-              <span className="text-[17px] font-semibold">{t.label}</span>
-              <span className="text-[13px] text-muted-foreground">{t.description}</span>
+              <span className="text-[17px] font-semibold">{tpl.label}</span>
+              <span className="text-[13px] text-muted-foreground">{tpl.description}</span>
               <span className="mt-1 text-[12px] font-semibold text-primary">
-                {t.days.map((d) => d.label).join(" → ")}
+                {tpl.days.map((d) => d.label).join(" → ")}
               </span>
             </button>
           ))}
@@ -223,12 +225,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             onClick={() => setMode("template")}
             className="text-[13px] font-semibold text-primary"
           >
-            ← {template.label} · change split
+            {t.programBuilder.changeSplit(template.label)}
           </button>
 
           <div>
             <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-              Which days do you want to train?
+              {t.programBuilder.whichDays}
             </p>
             <div className="flex flex-wrap gap-2">
               {DOW_DISPLAY_ORDER.map((dow) => (
@@ -241,7 +243,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  {DOW_LABELS[dow]}
+                  {t.common.dow[dow]}
                 </button>
               ))}
             </div>
@@ -250,7 +252,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
           {preview.length ? (
             <div>
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                Proposed schedule
+                {t.programBuilder.proposedSchedule}
               </p>
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
@@ -262,14 +264,14 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                       {splitDayLabel(templateId, slot.dayId)}
                     </span>
                     <span className="text-[13px] text-muted-foreground">
-                      {DOW_LABELS[slot.dow]}
+                      {t.common.dow[slot.dow]}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-[14px] text-muted-foreground">Pick at least one training day.</p>
+            <p className="text-[14px] text-muted-foreground">{t.programBuilder.pickOneDay}</p>
           )}
 
           <button
@@ -277,7 +279,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             disabled={!preview.length}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            Next: pick a wave
+            {t.programBuilder.nextPickWave}
           </button>
         </div>
       ) : (
@@ -286,13 +288,13 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             onClick={() => setMode("days")}
             className="text-[13px] font-semibold text-primary"
           >
-            ← Change training days
+            {t.programBuilder.changeTrainingDays}
           </button>
 
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Program name"
+            placeholder={t.programBuilder.programNamePlaceholder}
             className="h-12 w-full rounded-2xl bg-muted px-4 text-[16px] font-semibold outline-none focus:ring-2 focus:ring-ring"
           />
 
@@ -335,7 +337,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             onClick={save}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
           >
-            <Check className="size-5" /> Start this program
+            <Check className="size-5" /> {t.programBuilder.startThisProgram}
           </button>
         </div>
       )}

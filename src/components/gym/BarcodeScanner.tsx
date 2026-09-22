@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
 
 /**
@@ -27,6 +28,7 @@ export function BarcodeScanner({
    *  resolves — the caller is responsible for closing the scanner. */
   onDetected: (barcode: string) => void;
 }) {
+  const t = useTranslation();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,8 +75,8 @@ export function BarcodeScanner({
         if (cancelled) return;
         setError(
           e instanceof Error && e.name === "NotAllowedError"
-            ? "Camera access was denied — allow it in your browser settings, or use a photo or manual entry instead."
-            : "Couldn't start the camera — try a photo or manual entry instead.",
+            ? t.barcodeScanner.cameraAccessDenied
+            : t.barcodeScanner.cameraStartFailed,
         );
       });
 
@@ -82,7 +84,7 @@ export function BarcodeScanner({
       cancelled = true;
       controls?.stop();
     };
-  }, [open]);
+  }, [open, t]);
 
   if (!open) return null;
 
@@ -91,10 +93,10 @@ export function BarcodeScanner({
       <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
 
       <div className="safe-top relative flex items-center justify-between px-5 pt-3">
-        <p className="text-[15px] font-semibold text-white">Scan barcode</p>
+        <p className="text-[15px] font-semibold text-white">{t.barcodeScanner.title}</p>
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.common.close}
           className="glass flex size-9 items-center justify-center rounded-full text-white active:scale-95"
         >
           <X className="size-5" />

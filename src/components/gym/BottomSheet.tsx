@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useTranslation } from "../../lib/gym/i18n";
 
 export function BottomSheet({
   open,
@@ -11,6 +12,7 @@ export function BottomSheet({
   title: string;
   children: ReactNode;
 }) {
+  const t = useTranslation();
   const titleId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
@@ -39,7 +41,7 @@ export function BottomSheet({
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <button
-        aria-label="Close"
+        aria-label={t.bottomSheet.close}
         onClick={onClose}
         className="absolute inset-0 bg-background/70 backdrop-blur-sm"
       />
@@ -60,7 +62,7 @@ export function BottomSheet({
             onClick={onClose}
             className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
           >
-            Done
+            {t.bottomSheet.done}
           </button>
         </div>
         <div className="pb-6">{children}</div>

@@ -5,6 +5,7 @@ import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
+import { useTranslation } from "../lib/gym/i18n";
 import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
 import type { EquipmentId } from "../lib/gym/types";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/equipment")({
 
 function EquipmentScreen() {
   const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise } = useGym();
+  const t = useTranslation();
   const [editingId, setEditingId] = useState(activeProfileId);
   const editing = profiles.find((p) => p.id === editingId) ?? profiles[0]!;
 
@@ -69,7 +71,7 @@ function EquipmentScreen() {
         ...profiles,
         {
           id,
-          name: `New Gym ${profiles.length + 1}`,
+          name: t.equipment.newGymName(profiles.length + 1),
           active_equipment_ids: ["bodyweight"],
           plates: { ...DEFAULT_PLATES },
           bar_weight: 20,
@@ -81,7 +83,7 @@ function EquipmentScreen() {
   };
 
   return (
-    <Screen title="Equipment" subtitle="Save a setup for every place you train">
+    <Screen title={t.equipment.title} subtitle={t.equipment.subtitle}>
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
         {profiles.map((p) => (
           <button
@@ -99,13 +101,13 @@ function EquipmentScreen() {
         <button
           onClick={addProfile}
           className="glass flex size-11 shrink-0 items-center justify-center rounded-full"
-          aria-label="Add profile"
+          aria-label={t.equipment.addProfile}
         >
           <Plus className="size-5 text-primary" />
         </button>
       </div>
 
-      <SectionLabel>Profile name</SectionLabel>
+      <SectionLabel>{t.equipment.profileName}</SectionLabel>
       <Card className="p-2">
         <input
           value={editing.name}
@@ -120,7 +122,7 @@ function EquipmentScreen() {
         />
       </Card>
 
-      <SectionLabel>Available equipment</SectionLabel>
+      <SectionLabel>{t.equipment.availableEquipment}</SectionLabel>
       <Card className="divide-y divide-border p-0">
         {EQUIPMENT.map((e) => {
           const on = editing.active_equipment_ids.includes(e.id);
@@ -144,16 +146,14 @@ function EquipmentScreen() {
       </Card>
 
       <p className="mt-3 px-1 text-[13px] text-muted-foreground">
-        {availableExercises(editing.active_equipment_ids, avoidedExerciseIds).length} exercises
-        unlocked with this profile.
+        {t.equipment.exercisesUnlocked(
+          availableExercises(editing.active_equipment_ids, avoidedExerciseIds).length,
+        )}
       </p>
 
-      <SectionLabel>Avoided exercises</SectionLabel>
+      <SectionLabel>{t.equipment.avoidedExercises}</SectionLabel>
       <Card className="p-4">
-        <p className="text-[13px] text-muted-foreground">
-          Marked exercises are never generated or offered as swaps — use this for an injury, pain
-          spot, or anything you'd rather skip. Mark one from its card in Exercises.
-        </p>
+        <p className="text-[13px] text-muted-foreground">{t.equipment.avoidedDesc}</p>
         {avoidedExerciseIds.length ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {avoidedExerciseIds.map((id) => {
@@ -175,16 +175,16 @@ function EquipmentScreen() {
             })}
           </div>
         ) : (
-          <p className="mt-2 text-[13px] text-muted-foreground/70">None yet.</p>
+          <p className="mt-2 text-[13px] text-muted-foreground/70">{t.equipment.noneYet}</p>
         )}
       </Card>
 
-      <SectionLabel>Bar weights</SectionLabel>
+      <SectionLabel>{t.equipment.barWeights}</SectionLabel>
       <Card className="divide-y divide-border p-0">
         {(
           [
-            ["Barbell / Smith bar", "bar_weight"],
-            ["Loadable dumbbell handle", "dumbbell_bar_weight"],
+            [t.equipment.barbellSmithBar, "bar_weight"],
+            [t.equipment.dumbbellHandle, "dumbbell_bar_weight"],
           ] as const
         ).map(([label, key]) => (
           <div key={key} className="flex min-h-[56px] items-center justify-between px-4">
@@ -201,7 +201,7 @@ function EquipmentScreen() {
         ))}
       </Card>
 
-      <SectionLabel>Plates you own (pairs)</SectionLabel>
+      <SectionLabel>{t.equipment.platesOwned}</SectionLabel>
       <Card className="divide-y divide-border p-0">
         {PLATE_SIZES.map((size) => {
           const count = editing.plates[String(size)] ?? 0;
@@ -214,7 +214,7 @@ function EquipmentScreen() {
                     haptic(10);
                     setPlate(size, -1);
                   }}
-                  aria-label={`Fewer ${size} kg plates`}
+                  aria-label={t.equipment.fewerPlates(size)}
                   className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                 >
                   <Minus className="size-4" />
@@ -225,7 +225,7 @@ function EquipmentScreen() {
                     haptic(10);
                     setPlate(size, 1);
                   }}
-                  aria-label={`More ${size} kg plates`}
+                  aria-label={t.equipment.morePlates(size)}
                   className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                 >
                   <Plus className="size-4" />
@@ -235,9 +235,7 @@ function EquipmentScreen() {
           );
         })}
       </Card>
-      <p className="mt-2 px-1 text-[13px] text-muted-foreground">
-        Used during your session to suggest exactly which plates to load per side.
-      </p>
+      <p className="mt-2 px-1 text-[13px] text-muted-foreground">{t.equipment.plateHint}</p>
 
       <div className="mt-4 flex gap-2">
         <button
@@ -247,7 +245,7 @@ function EquipmentScreen() {
           }}
           className="flex min-h-[56px] flex-1 items-center justify-center rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground"
         >
-          {activeProfileId === editing.id ? "Active profile" : "Set as active"}
+          {activeProfileId === editing.id ? t.equipment.activeProfile : t.equipment.setAsActive}
         </button>
         {profiles.length > 1 ? (
           <button
@@ -260,7 +258,7 @@ function EquipmentScreen() {
               setEditingId(rest[0]!.id);
             }}
             className="glass flex size-14 items-center justify-center rounded-2xl text-destructive"
-            aria-label="Delete profile"
+            aria-label={t.equipment.deleteProfile}
           >
             <Trash2 className="size-5" />
           </button>

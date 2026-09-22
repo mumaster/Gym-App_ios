@@ -1,19 +1,23 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Apple, Dumbbell, CalendarDays, Home, type LucideIcon, Search } from "lucide-react";
+import { useTranslation } from "../../lib/gym/i18n";
 
 // Equipment moved into Settings (see settings.tsx) — it's a setup/config
 // screen someone visits rarely after their first session, not a daily
 // destination, so it didn't earn a permanent tab slot. Home sits in the
 // literal center, split off from the other four tabs entirely rather than
 // just widened among them — two on each side keep their prior relative
-// order (Workout/History before it, Exercises/Nutrition after).
+// order (Workout/History before it, Exercises/Nutrition after). Labels are
+// translation keys, not display text — the tabs are icon-only visually
+// (see TabButton below), but aria-label still needs the localized name for
+// screen readers.
 const LEFT_TABS = [
-  { to: "/generate", label: "Workout", icon: Dumbbell },
-  { to: "/history", label: "History", icon: CalendarDays },
+  { to: "/generate", labelKey: "workout", icon: Dumbbell },
+  { to: "/history", labelKey: "history", icon: CalendarDays },
 ] as const;
 const RIGHT_TABS = [
-  { to: "/exercises", label: "Exercises", icon: Search },
-  { to: "/nutrition", label: "Nutrition", icon: Apple },
+  { to: "/exercises", labelKey: "exercises", icon: Search },
+  { to: "/nutrition", labelKey: "nutrition", icon: Apple },
 ] as const;
 
 function TabButton({
@@ -52,6 +56,7 @@ function TabButton({
 
 export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const t = useTranslation();
   if (pathname.startsWith("/session")) return null;
   const homeActive = pathname === "/";
 
@@ -59,8 +64,13 @@ export function TabBar() {
     <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
       <div className="mx-auto max-w-md">
         <div className="glass-strong flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]">
-          {LEFT_TABS.map((tab) => (
-            <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
+          {LEFT_TABS.map(({ labelKey, ...tab }) => (
+            <TabButton
+              key={tab.to}
+              {...tab}
+              label={t.tabbar[labelKey]}
+              active={pathname.startsWith(tab.to)}
+            />
           ))}
           {/* Home used to be a detached circle raised above the pill's own
               top edge (`absolute`, `-translate-y-1/2`), which pushed the
@@ -74,7 +84,7 @@ export function TabBar() {
               what stays visually distinct, not the row's own height. */}
           <Link
             to="/"
-            aria-label="Home"
+            aria-label={t.tabbar.home}
             aria-current={homeActive ? "page" : undefined}
             className="flex min-h-[54px] flex-1 items-center justify-center active:scale-95"
           >
@@ -94,8 +104,13 @@ export function TabBar() {
               <Home className="size-6" strokeWidth={2.2} />
             </span>
           </Link>
-          {RIGHT_TABS.map((tab) => (
-            <TabButton key={tab.to} {...tab} active={pathname.startsWith(tab.to)} />
+          {RIGHT_TABS.map(({ labelKey, ...tab }) => (
+            <TabButton
+              key={tab.to}
+              {...tab}
+              label={t.tabbar[labelKey]}
+              active={pathname.startsWith(tab.to)}
+            />
           ))}
         </div>
       </div>

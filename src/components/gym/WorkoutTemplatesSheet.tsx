@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Play, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { estimateMinutes } from "../../lib/gym/generator";
+import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Muscle, PlannedExercise } from "../../lib/gym/types";
 
@@ -30,6 +31,7 @@ export function WorkoutTemplatesSheet({
   onStart: (plan: PlannedExercise[], duration_minutes: number, target_muscles: Muscle[]) => void;
 }) {
   const { workoutTemplates, saveWorkoutTemplate, deleteWorkoutTemplate } = useGym();
+  const t = useTranslation();
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -45,17 +47,17 @@ export function WorkoutTemplatesSheet({
 
   if (draft) {
     return (
-      <BottomSheet open={open} onClose={onClose} title="Save as template">
+      <BottomSheet open={open} onClose={onClose} title={t.workoutTemplates.saveAsTemplate}>
         <div className="space-y-4">
           <p className="text-[13px] text-muted-foreground">
-            {draft.plan.length} exercises · ~{estimateMinutes(draft.plan)} min
+            {t.workoutTemplates.exerciseSummary(draft.plan.length, estimateMinutes(draft.plan))}
           </p>
           <input
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && save()}
-            placeholder="e.g. Push day A"
+            placeholder={t.workoutTemplates.namePlaceholder}
             className="h-12 w-full rounded-2xl bg-muted px-4 text-[16px] font-semibold outline-none focus:ring-2 focus:ring-ring"
           />
           <button
@@ -63,7 +65,7 @@ export function WorkoutTemplatesSheet({
             disabled={!name.trim()}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> Save template
+            <Check className="size-5" /> {t.workoutTemplates.saveTemplate}
           </button>
         </div>
       </BottomSheet>
@@ -71,23 +73,23 @@ export function WorkoutTemplatesSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Saved templates">
+    <BottomSheet open={open} onClose={onClose} title={t.workoutTemplates.title}>
       {workoutTemplates.length ? (
         <div className="space-y-2">
-          {workoutTemplates.map((t) => (
-            <div key={t.id} className="glass flex items-center gap-3 rounded-2xl p-3">
+          {workoutTemplates.map((tpl) => (
+            <div key={tpl.id} className="glass flex items-center gap-3 rounded-2xl p-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold">{t.name}</p>
+                <p className="truncate text-[15px] font-semibold">{tpl.name}</p>
                 <p className="text-[13px] text-muted-foreground">
-                  {t.plan.length} exercises · ~{estimateMinutes(t.plan)} min
+                  {t.workoutTemplates.exerciseSummary(tpl.plan.length, estimateMinutes(tpl.plan))}
                 </p>
               </div>
               <button
                 onClick={() => {
                   haptic(15);
-                  deleteWorkoutTemplate(t.id);
+                  deleteWorkoutTemplate(tpl.id);
                 }}
-                aria-label={`Delete ${t.name}`}
+                aria-label={t.workoutTemplates.deleteTemplate(tpl.name)}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive active:scale-95"
               >
                 <Trash2 className="size-4" />
@@ -95,9 +97,9 @@ export function WorkoutTemplatesSheet({
               <button
                 onClick={() => {
                   haptic([20, 40, 20]);
-                  onStart(t.plan, t.duration_minutes, t.target_muscles);
+                  onStart(tpl.plan, tpl.duration_minutes, tpl.target_muscles);
                 }}
-                aria-label={`Start ${t.name}`}
+                aria-label={t.workoutTemplates.startTemplate(tpl.name)}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground active:scale-95"
               >
                 <Play className="size-4" />
@@ -107,7 +109,7 @@ export function WorkoutTemplatesSheet({
         </div>
       ) : (
         <p className="py-6 text-center text-[14px] text-muted-foreground">
-          No saved templates yet — generate a plan, then tap "Save" before starting it.
+          {t.workoutTemplates.empty}
         </p>
       )}
     </BottomSheet>

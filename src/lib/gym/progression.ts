@@ -1,5 +1,25 @@
-import { readinessNote, readinessWeightFactor, type ReadinessScore } from "./readiness";
+import { readinessNoteKind, readinessWeightFactor, type ReadinessScore } from "./readiness";
 import type { Workout } from "./types";
+
+/** Translated copy this module needs but can't import directly (a plain lib
+ *  file, no access to useTranslation()) — the caller passes its own
+ *  `t.progression` from lib/gym/i18n.ts, defaulting to English so an
+ *  un-migrated caller still works. */
+export interface ProgressionCopy {
+  hitTop: (top: number) => string;
+  matching: string;
+  noteTrimmedLot: string;
+  noteTrimmedLittle: string;
+  noteNudgedUp: string;
+}
+
+const DEFAULT_COPY: ProgressionCopy = {
+  hitTop: (top) => `You hit ${top}+ reps on every set last time — try adding a little weight.`,
+  matching: "Matching your last session's weight — aim for one more rep.",
+  noteTrimmedLot: "Trimmed a good bit — you checked in wiped out today.",
+  noteTrimmedLittle: "Trimmed a little for today's readiness.",
+  noteNudgedUp: "Nudged up — you're feeling great today.",
+};
 
 /** [low, high] parsed from a target_reps string like "8-12" or a single number like "5". */
 export function repRange(targetReps: string): [number, number] {
@@ -50,6 +70,7 @@ export function suggestWeight(
   targetReps: string,
   readinessScore?: ReadinessScore,
   roundStep = 0.5,
+  copy: ProgressionCopy = DEFAULT_COPY,
 ): ProgressionSuggestion | null {
   const lastWorkout = workouts.find((w) =>
     w.completed_sets.some((s) => s.exercise_id === exerciseId && s.set_type === "working"),
@@ -72,17 +93,25 @@ export function suggestWeight(
     ? {
         weight: lastWeight + Math.max(roundStep, roundToStep(lastWeight * 0.025, roundStep)),
         reps: bottom,
-        reason: `You hit ${top}+ reps on every set last time — try adding a little weight.`,
+        reason: copy.hitTop(top),
       }
     : {
         weight: lastWeight,
         reps: Math.min(top, minRepsLastTime + 1),
-        reason: "Matching your last session's weight — aim for one more rep.",
+        reason: copy.matching,
       };
 
   const factor = readinessWeightFactor(readinessScore);
   const weight = Number(roundToStep(base.weight * factor, roundStep).toFixed(2));
-  const note = readinessNote(readinessScore);
+  const noteKind = readinessNoteKind(readinessScore);
+  const note =
+    noteKind === "trimmedLot"
+      ? copy.noteTrimmedLot
+      : noteKind === "trimmedLittle"
+        ? copy.noteTrimmedLittle
+        : noteKind === "nudgedUp"
+          ? copy.noteNudgedUp
+          : null;
   const reason = note ? `${base.reason} ${note}` : base.reason;
   const direction = weight > lastWeight ? "up" : weight < lastWeight ? "down" : "same";
 

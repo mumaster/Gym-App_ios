@@ -31,6 +31,7 @@ import type {
   AccentId,
   ColorScheme,
   EquipmentProfile,
+  Language,
   LoggedSet,
   Muscle,
   PlannedExercise,
@@ -61,6 +62,11 @@ interface GymState {
   /** Light/dark mode. Defaults to "dark" — see the `initialState` assignment
    *  below for why "system" isn't the default despite being an option. */
   colorScheme: ColorScheme;
+  /** UI display language. Defaults to "en" for the same reason colorScheme
+   *  defaults to "dark" — the app only ever shipped in English until now,
+   *  so a silent switch for anyone whose device happens to be set to Dutch
+   *  would be a bigger surprise than just adding the option. */
+  language: Language;
   /** Which character represents the user in the profile/settings icon. */
   avatarId: AvatarId;
   supersetsEnabled: boolean;
@@ -120,6 +126,7 @@ const initialState: GymState = {
   // device happens to be in light mode would be a bigger surprise than
   // just adding the option and leaving current behavior as the default.
   colorScheme: "dark",
+  language: "en",
   avatarId: DEFAULT_AVATAR_ID,
   supersetsEnabled: false,
   supersetRounds: 3,
@@ -188,6 +195,7 @@ function migrate(raw: Partial<GymState>): GymState {
     accent: raw.accent ?? "green",
     customAccent: raw.customAccent ?? "#34d399",
     colorScheme: raw.colorScheme ?? "dark",
+    language: raw.language ?? "en",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     supersetsEnabled: raw.supersetsEnabled ?? false,
     supersetRounds: raw.supersetRounds ?? 3,

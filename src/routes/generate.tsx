@@ -31,6 +31,7 @@ import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
+import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import {
   DEFAULT_REGION,
@@ -46,7 +47,7 @@ import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
-import { DOW_LABELS, musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
+import { musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 
@@ -73,6 +74,8 @@ const SHORTCUTS = [30, 45, 60];
 
 function WorkoutHome() {
   const navigate = useNavigate();
+  const t = useTranslation();
+  const locale = useLocale();
   const {
     profiles,
     activeProfileId,
@@ -333,15 +336,15 @@ function WorkoutHome() {
 
   return (
     <Screen
-      title="Workout"
-      subtitle="Build a session around today's constraints"
+      title={t.generate.title}
+      subtitle={t.generate.subtitle}
       action={
         <button
           onClick={() => {
             haptic(12);
             navigate({ to: "/settings" });
           }}
-          aria-label="Settings"
+          aria-label={t.common.settings}
           className="flex items-center justify-center rounded-full"
         >
           <ProfileAvatar avatarId={avatarId} size={40} />
@@ -353,11 +356,13 @@ function WorkoutHome() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                Session in progress
+                {t.generate.sessionInProgress}
               </p>
               <p className="mt-1 text-lg font-bold">
-                {activeWorkout.plan.length} exercises · {activeWorkout.completed_sets.length} sets
-                logged
+                {t.generate.sessionTitle(
+                  activeWorkout.plan.length,
+                  activeWorkout.completed_sets.length,
+                )}
               </p>
             </div>
             <ChevronRight className="size-6 text-primary" />
@@ -371,13 +376,16 @@ function WorkoutHome() {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
-                  <Repeat className="size-3.5" /> Repeat last workout
+                  <Repeat className="size-3.5" /> {t.generate.repeatLastWorkout}
                 </p>
                 <p className="mt-1 truncate text-lg font-bold">
-                  {workouts[0]!.target_muscles.join(" · ") || "Full body"}
+                  {workouts[0]!.target_muscles.join(" · ") || t.generate.fullBody}
                 </p>
                 <p className="text-[13px] text-muted-foreground">
-                  {workouts[0]!.plan.length} exercises · ~{estimateMinutes(workouts[0]!.plan)} min
+                  {t.generate.exerciseCount(
+                    workouts[0]!.plan.length,
+                    estimateMinutes(workouts[0]!.plan),
+                  )}
                 </p>
               </div>
               <Play className="size-6 shrink-0 text-primary" />
@@ -392,14 +400,16 @@ function WorkoutHome() {
                   className="glass shrink-0 rounded-2xl px-4 py-2 text-left"
                 >
                   <p className="text-[13px] font-semibold">
-                    {w.target_muscles.join(" · ") || "Full body"}
+                    {w.target_muscles.join(" · ") || t.generate.fullBody}
                   </p>
                   <p className="text-[12px] text-muted-foreground">
-                    {w.completed_sets.filter((s) => s.set_type === "working").length} sets ·{" "}
-                    {new Date(w.date).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {t.generate.setsAndDate(
+                      w.completed_sets.filter((s) => s.set_type === "working").length,
+                      new Date(w.date).toLocaleDateString(locale, {
+                        month: "short",
+                        day: "numeric",
+                      }),
+                    )}
                   </p>
                 </button>
               ))}
@@ -408,7 +418,7 @@ function WorkoutHome() {
         </div>
       ) : null}
 
-      <SectionLabel>Available time</SectionLabel>
+      <SectionLabel>{t.generate.availableTime}</SectionLabel>
       <Card className="p-4">
         <div className="mb-3 flex justify-center gap-2 overflow-x-auto no-scrollbar">
           {SHORTCUTS.map((d) => (
@@ -430,7 +440,9 @@ function WorkoutHome() {
           ))}
         </div>
         <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-          <span className="text-[15px] font-semibold text-muted-foreground">Minutes</span>
+          <span className="text-[15px] font-semibold text-muted-foreground">
+            {t.generate.minutes}
+          </span>
           <input
             type="text"
             inputMode="numeric"
@@ -459,14 +471,14 @@ function WorkoutHome() {
         <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
           <Timer className="size-4 text-primary" />
           {duration <= 30
-            ? "Short session: heavy compounds, 60s rest, superset-friendly."
+            ? t.generate.durationShort
             : duration <= 45
-              ? "Medium session: compounds plus a couple of accessories."
-              : "Long session: warm-up, main lifts and full isolation work."}
+              ? t.generate.durationMedium
+              : t.generate.durationLong}
         </p>
       </Card>
 
-      <SectionLabel>Equipment profile</SectionLabel>
+      <SectionLabel>{t.generate.equipmentProfile}</SectionLabel>
       <Card className="p-4">
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {profiles.map((p) => (
@@ -494,7 +506,7 @@ function WorkoutHome() {
         </p>
       </Card>
 
-      <SectionLabel>{program ? "Your program" : "This week"}</SectionLabel>
+      <SectionLabel>{program ? t.generate.yourProgram : t.generate.thisWeek}</SectionLabel>
       <Card className="mb-4 p-4">
         {program && programWeek ? (
           <>
@@ -506,17 +518,22 @@ function WorkoutHome() {
                   ) : (
                     <Flame className="size-3.5" />
                   )}
-                  Week {program.currentWeek + 1} of {program.weeks.length}
-                  {programWeek.type === "deload" ? " · Deload" : ""}
+                  {t.generate.weekOf(
+                    program.currentWeek + 1,
+                    program.weeks.length,
+                    programWeek.type === "deload",
+                  )}
                 </p>
-                <p className="mt-1 truncate text-[18px] font-bold">Next: {programDayLabel}</p>
+                <p className="mt-1 truncate text-[18px] font-bold">
+                  {t.generate.nextDay(programDayLabel)}
+                </p>
                 <p className="text-[13px] text-muted-foreground">
                   {program.name} · {splitTemplateById(program.templateId).label}
                 </p>
               </div>
               <button
                 onClick={() => setProgramSheetOpen(true)}
-                aria-label="Edit program"
+                aria-label={t.generate.editProgram}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
               >
                 <Settings2 className="size-4" />
@@ -554,7 +571,7 @@ function WorkoutHome() {
                         isNext ? "text-primary" : "text-muted-foreground"
                       }`}
                     >
-                      {DOW_LABELS[slot.dow]}
+                      {t.common.dow[slot.dow]}
                     </p>
                     <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
                   </div>
@@ -566,7 +583,7 @@ function WorkoutHome() {
               onClick={startProgramDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
             >
-              <Zap className="size-4" /> Start {programDayLabel} day
+              <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
             </button>
           </>
         ) : weeklyScheme ? (
@@ -576,16 +593,18 @@ function WorkoutHome() {
                 <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
                   {splitTemplateById(weeklyScheme.templateId).label}
                 </p>
-                <p className="mt-1 truncate text-[18px] font-bold">Next: {scheduledDayLabel}</p>
+                <p className="mt-1 truncate text-[18px] font-bold">
+                  {t.generate.nextDay(scheduledDayLabel)}
+                </p>
                 {scheduledSlot ? (
                   <p className="text-[13px] text-muted-foreground">
-                    Suggested {DOW_LABELS[scheduledSlot.dow]}
+                    {t.generate.suggestedDay(t.common.dow[scheduledSlot.dow]!)}
                   </p>
                 ) : null}
               </div>
               <button
                 onClick={() => setPlanSheetOpen(true)}
-                aria-label="Edit weekly plan"
+                aria-label={t.generate.editWeeklyPlan}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
               >
                 <Settings2 className="size-4" />
@@ -608,7 +627,7 @@ function WorkoutHome() {
                         isNext ? "text-primary" : "text-muted-foreground"
                       }`}
                     >
-                      {DOW_LABELS[slot.dow]}
+                      {t.common.dow[slot.dow]}
                     </p>
                     <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
                   </div>
@@ -620,21 +639,21 @@ function WorkoutHome() {
               onClick={startScheduledDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
             >
-              <Zap className="size-4" /> Start {scheduledDayLabel} day
+              <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
             </button>
             <button
               onClick={() => setProgramSheetOpen(true)}
               className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
             >
-              <Flame className="size-3.5" /> Build a program instead
+              <Flame className="size-3.5" /> {t.generate.buildProgramInstead}
             </button>
           </>
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[16px] font-semibold">Plan your training</p>
+              <p className="text-[16px] font-semibold">{t.generate.planYourTraining}</p>
               <p className="mt-0.5 text-[13px] text-muted-foreground">
-                A weekly split repeats forever; a program adds planned progression and a deload.
+                {t.generate.planYourTrainingDesc}
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2">
@@ -642,13 +661,13 @@ function WorkoutHome() {
                 onClick={() => setPlanSheetOpen(true)}
                 className="min-h-[36px] rounded-full bg-secondary px-4 text-[13px] font-bold text-secondary-foreground active:scale-95"
               >
-                Weekly plan
+                {t.generate.weeklyPlan}
               </button>
               <button
                 onClick={() => setProgramSheetOpen(true)}
                 className="min-h-[36px] rounded-full bg-primary px-4 text-[13px] font-bold text-primary-foreground active:scale-95"
               >
-                Program
+                {t.generate.program}
               </button>
             </div>
           </div>
@@ -657,17 +676,17 @@ function WorkoutHome() {
 
       {hydrated && workoutTemplates.length > 0 ? (
         <div className="mb-4">
-          <SectionLabel>Saved templates</SectionLabel>
+          <SectionLabel>{t.generate.savedTemplates}</SectionLabel>
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {workoutTemplates.slice(0, 6).map((t) => (
+            {workoutTemplates.slice(0, 6).map((tpl) => (
               <button
-                key={t.id}
-                onClick={() => startTemplate(t.plan, t.duration_minutes, t.target_muscles)}
+                key={tpl.id}
+                onClick={() => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles)}
                 className="glass shrink-0 rounded-2xl px-4 py-2 text-left active:scale-[0.985]"
               >
-                <p className="text-[13px] font-semibold">{t.name}</p>
+                <p className="text-[13px] font-semibold">{tpl.name}</p>
                 <p className="text-[12px] text-muted-foreground">
-                  {t.plan.length} exercises · ~{estimateMinutes(t.plan)} min
+                  {t.generate.exerciseCount(tpl.plan.length, estimateMinutes(tpl.plan))}
                 </p>
               </button>
             ))}
@@ -675,7 +694,7 @@ function WorkoutHome() {
               onClick={() => setTemplatesOpen(true)}
               className="glass shrink-0 rounded-2xl px-4 py-2 text-[13px] font-semibold text-primary active:scale-[0.985]"
             >
-              Manage
+              {t.common.manage}
             </button>
           </div>
         </div>
@@ -687,32 +706,32 @@ function WorkoutHome() {
             <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                Recommended today
+                {t.generate.recommendedToday}
               </p>
               <p className="mt-1 text-[15px] leading-snug">
                 {recommended
                   .map((r) =>
                     r.daysSince === null
-                      ? `${r.muscle} (never trained)`
-                      : `${r.muscle} (${r.daysSince}d ago)`,
+                      ? t.generate.neverTrained(r.muscle)
+                      : t.generate.daysAgo(r.muscle, r.daysSince),
                   )
                   .join(" · ")}
               </p>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                These groups have gone longest without a working set.
+                {t.generate.recommendedTodayDesc}
               </p>
             </div>
             <button
               onClick={applyRecommendation}
               className="min-h-[36px] shrink-0 rounded-full bg-primary px-3.5 text-[13px] font-bold text-primary-foreground active:scale-95"
             >
-              Use
+              {t.generate.use}
             </button>
           </div>
         </Card>
       ) : null}
 
-      <SectionLabel>Muscle map</SectionLabel>
+      <SectionLabel>{t.generate.muscleMap}</SectionLabel>
 
       {proposalPair ? (
         <div
@@ -726,12 +745,13 @@ function WorkoutHome() {
           <div className="flex items-center gap-2.5">
             <Sparkles className="size-5 shrink-0" style={{ color: SUGGESTED_COLOR }} />
             <p className="min-w-0 flex-1 text-[13.5px] leading-snug">
-              Pair <span className="font-bold">{regionById(proposal!).label}</span> with{" "}
-              <span className="font-bold">{regionById(proposalPair.with).label}</span>
-              {proposalPair.relation.includes("·")
-                ? ` for a ${proposalPair.relation.split("·")[1]!.trim()}`
-                : ""}
-              ?
+              {t.generate.pairSuggestion(
+                regionById(proposal!).label,
+                regionById(proposalPair.with).label,
+                proposalPair.relation.includes("·")
+                  ? t.generate.pairSuggestionFor(proposalPair.relation.split("·")[1]!.trim())
+                  : "",
+              )}
             </p>
             <button
               onClick={acceptProposal}
@@ -739,11 +759,11 @@ function WorkoutHome() {
               style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
             >
               <Plus className="size-3.5" strokeWidth={3} />
-              Add {regionById(proposalPair.with).label}
+              {t.generate.addMuscle(regionById(proposalPair.with).label)}
             </button>
             <button
               onClick={() => setProposal(null)}
-              aria-label="Dismiss suggestion"
+              aria-label={t.generate.dismissSuggestion}
               className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
             >
               <X className="size-4" />
@@ -760,7 +780,7 @@ function WorkoutHome() {
         />
       </Card>
 
-      <SectionLabel>Target muscles</SectionLabel>
+      <SectionLabel>{t.generate.targetMuscles}</SectionLabel>
       <div className="flex flex-wrap gap-2">
         {MUSCLES.map((m) => (
           <button
@@ -780,7 +800,7 @@ function WorkoutHome() {
       {focusGroups.length ? (
         <div className="mt-4">
           <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-            Focus (optional) — narrow a group to specific heads
+            {t.generate.focusOptional}
           </p>
           <div className="space-y-2">
             {focusGroups.map(({ group, heads }) => (
@@ -814,8 +834,7 @@ function WorkoutHome() {
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
           <p className="text-[14px] leading-snug text-foreground">
-            Warning: Targeting more than 2 major muscle groups in a single session may reduce focus,
-            increase system fatigue, and slow down strength progress.
+            {t.generate.warningTooManyGroups}
           </p>
         </div>
       ) : null}
@@ -824,7 +843,7 @@ function WorkoutHome() {
         <div className="mt-4">
           <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
             <Heart className="size-3.5 fill-current text-primary" />
-            Always included
+            {t.generate.alwaysIncluded}
           </p>
           <div className="flex flex-wrap gap-2">
             {lovedExerciseIds.map((id) => {
@@ -849,15 +868,13 @@ function WorkoutHome() {
 
       <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
         <div className="min-w-0">
-          <p className="text-[15px] font-semibold">Supersets</p>
-          <p className="text-[12.5px] text-muted-foreground">
-            Pair exercises back-to-back, rounds set by intensity
-          </p>
+          <p className="text-[15px] font-semibold">{t.generate.supersets}</p>
+          <p className="text-[12.5px] text-muted-foreground">{t.generate.supersetsDesc}</p>
         </div>
         <button
           role="switch"
           aria-checked={supersetsEnabled}
-          aria-label="Enable supersets"
+          aria-label={t.generate.enableSupersets}
           onClick={() => {
             haptic(12);
             update({ supersetsEnabled: !supersetsEnabled });
@@ -882,12 +899,12 @@ function WorkoutHome() {
         {generating ? (
           <>
             <DumbbellLoader size={26} className="text-primary-foreground" />
-            Building your session…
+            {t.generate.buildingSession}
           </>
         ) : (
           <>
             <Zap className="size-5" />
-            {plan ? "Regenerate workout" : "Generate workout"}
+            {plan ? t.generate.regenerateWorkout : t.generate.generateWorkout}
           </>
         )}
       </button>
@@ -896,7 +913,7 @@ function WorkoutHome() {
         <>
           <div className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1">
             <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Your plan · ~{estimateMinutes(plan)} min · {plan.length} exercises
+              {t.generate.yourPlan(estimateMinutes(plan), plan.length)}
             </p>
             <button
               onClick={() => {
@@ -905,7 +922,7 @@ function WorkoutHome() {
               }}
               className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary"
             >
-              <Bookmark className="size-3.5" /> Save
+              <Bookmark className="size-3.5" /> {t.generate.save}
             </button>
           </div>
           <div className="space-y-2">
@@ -934,7 +951,7 @@ function WorkoutHome() {
                                 : cur,
                             );
                           }}
-                          aria-label={loved ? `Unlove ${ex.name}` : `Love ${ex.name}`}
+                          aria-label={loved ? t.generate.unlove(ex.name) : t.generate.love(ex.name)}
                           aria-pressed={loved}
                           className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
                             loved ? "text-primary" : "text-muted-foreground"
@@ -944,17 +961,21 @@ function WorkoutHome() {
                         </button>
                       </div>
                       <p className="mt-0.5 text-[13px] text-muted-foreground">
-                        {p.warmup_sets ? `${p.warmup_sets} warm-up · ` : ""}
+                        {p.warmup_sets ? t.generate.warmupPrefix(p.warmup_sets) : ""}
                         {p.superset_group !== undefined
-                          ? `Superset ${p.superset_group}${p.superset_slot} · ${p.target_sets} rounds`
-                          : `${p.target_sets} × ${p.target_reps}`}{" "}
-                        · {p.rest_seconds ? `${p.rest_seconds}s rest · ` : ""}
+                          ? t.generate.supersetLabel(
+                              p.superset_group,
+                              p.superset_slot ?? "",
+                              p.target_sets,
+                            )
+                          : t.generate.setsByReps(p.target_sets, p.target_reps)}{" "}
+                        · {p.rest_seconds ? t.generate.restSuffix(p.rest_seconds) : ""}
                         {ex.muscle_targets[0] ?? ex.primary_muscle}
                       </p>
                       {p.suggested_weight ? (
                         <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary">
-                          <TrendingUp className="size-3.5" /> Suggested {p.suggested_weight}kg
-                          {p.suggested_reps ? ` × ${p.suggested_reps}` : ""}
+                          <TrendingUp className="size-3.5" />{" "}
+                          {t.generate.suggestedWeight(p.suggested_weight, p.suggested_reps)}
                         </p>
                       ) : null}
                     </div>
@@ -962,7 +983,7 @@ function WorkoutHome() {
                       <button
                         onClick={() => move(i, -1)}
                         disabled={i === 0}
-                        aria-label="Move up"
+                        aria-label={t.generate.moveUp}
                         className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
                         <ArrowUp className="size-4" />
@@ -970,14 +991,14 @@ function WorkoutHome() {
                       <button
                         onClick={() => move(i, 1)}
                         disabled={i === plan.length - 1}
-                        aria-label="Move down"
+                        aria-label={t.generate.moveDown}
                         className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
                         <ArrowDown className="size-4" />
                       </button>
                       <button
                         onClick={() => setSwapIndex(i)}
-                        aria-label="Swap exercise"
+                        aria-label={t.generate.swapExercise}
                         className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                       >
                         <Repeat className="size-4" />
@@ -993,13 +1014,13 @@ function WorkoutHome() {
               onClick={shuffle}
               className="glass flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
             >
-              <RefreshCw className="size-5" /> Shuffle
+              <RefreshCw className="size-5" /> {t.generate.shuffle}
             </button>
             <button
               onClick={start}
               className="glow flex min-h-[56px] flex-[2] items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985]"
             >
-              <Play className="size-5" /> Start workout
+              <Play className="size-5" /> {t.generate.startWorkout}
             </button>
           </div>
         </>

@@ -4,8 +4,10 @@ import { ChevronRight, Cloud, CloudOff, LayoutGrid, LogOut, RefreshCw } from "lu
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
+import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { ThemePicker } from "../components/gym/ThemePicker";
+import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { forceUpdate } from "../pwa";
 
@@ -24,6 +26,7 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsScreen() {
   const { session, syncStatus, signOut } = useGym();
+  const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
 
@@ -38,8 +41,8 @@ function SettingsScreen() {
   };
 
   return (
-    <Screen title="Settings" subtitle="Account and appearance">
-      <SectionLabel>Account</SectionLabel>
+    <Screen title={t.settings.title} subtitle={t.settings.subtitle}>
+      <SectionLabel>{t.settings.account}</SectionLabel>
       <Card className="p-4">
         {session ? (
           <div className="flex items-center justify-between gap-3">
@@ -48,10 +51,10 @@ function SettingsScreen() {
               <p className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
                 <Cloud className="size-3.5" />
                 {syncStatus === "syncing"
-                  ? "Syncing…"
+                  ? t.settings.syncing
                   : syncStatus === "error"
-                    ? "Couldn't reach the cloud — retrying"
-                    : "Synced to the cloud"}
+                    ? t.settings.syncError
+                    : t.settings.synced}
               </p>
             </div>
             <button
@@ -61,18 +64,16 @@ function SettingsScreen() {
               }}
               className="glass flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold text-muted-foreground"
             >
-              <LogOut className="size-4" /> Sign out
+              <LogOut className="size-4" /> {t.settings.signOut}
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[15px] font-semibold">
-                <CloudOff className="size-4 text-muted-foreground" /> Local only
+                <CloudOff className="size-4 text-muted-foreground" /> {t.settings.localOnly}
               </p>
-              <p className="text-[12.5px] text-muted-foreground">
-                Sign in to back up progress and use it on another device.
-              </p>
+              <p className="text-[12.5px] text-muted-foreground">{t.settings.localOnlyDesc}</p>
             </div>
             <button
               onClick={() => {
@@ -81,13 +82,13 @@ function SettingsScreen() {
               }}
               className="flex min-h-[44px] shrink-0 items-center rounded-full bg-primary px-4 text-[14px] font-semibold text-primary-foreground"
             >
-              Sign in
+              {t.settings.signIn}
             </button>
           </div>
         )}
       </Card>
 
-      <SectionLabel>Equipment</SectionLabel>
+      <SectionLabel>{t.settings.equipment}</SectionLabel>
       <Link
         to="/equipment"
         className="glass flex items-center justify-between gap-3 rounded-2xl p-4 transition-transform active:scale-[0.985]"
@@ -97,39 +98,45 @@ function SettingsScreen() {
             <LayoutGrid className="size-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold">Equipment profiles</p>
+            <p className="text-[15px] font-semibold">{t.settings.equipmentProfiles}</p>
             <p className="truncate text-[12.5px] text-muted-foreground">
-              Gear, plates, and avoided exercises
+              {t.settings.equipmentProfilesDesc}
             </p>
           </div>
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
       </Link>
 
-      <SectionLabel>Avatar</SectionLabel>
+      <SectionLabel>{t.settings.avatar}</SectionLabel>
       <Card className="p-0">
         <AvatarPicker />
       </Card>
 
-      <SectionLabel>Appearance</SectionLabel>
-      <p className="mb-1.5 px-1 text-[12.5px] font-medium text-muted-foreground">Color scheme</p>
+      <SectionLabel>{t.settings.appearance}</SectionLabel>
+      <p className="mb-1.5 px-1 text-[12.5px] font-medium text-muted-foreground">
+        {t.settings.colorScheme}
+      </p>
       <Card className="p-0">
         <ColorSchemePicker />
       </Card>
       <p className="mb-1.5 mt-3 px-1 text-[12.5px] font-medium text-muted-foreground">
-        Accent color
+        {t.settings.accentColor}
       </p>
       <Card className="p-0">
         <ThemePicker />
       </Card>
+      <p className="mb-1.5 mt-3 px-1 text-[12.5px] font-medium text-muted-foreground">
+        {t.settings.language}
+      </p>
+      <Card className="p-0">
+        <LanguagePicker />
+      </Card>
 
-      <SectionLabel>About</SectionLabel>
+      <SectionLabel>{t.settings.about}</SectionLabel>
       <Card className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
-          <p className="text-[15px] font-semibold">Force update</p>
-          <p className="text-[12.5px] text-muted-foreground">
-            If the app looks out of date after a new release, fetch the latest version now.
-          </p>
+          <p className="text-[15px] font-semibold">{t.settings.forceUpdate}</p>
+          <p className="text-[12.5px] text-muted-foreground">{t.settings.forceUpdateDesc}</p>
         </div>
         <button
           onClick={handleForceUpdate}
@@ -137,7 +144,7 @@ function SettingsScreen() {
           className="glass flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold text-primary disabled:opacity-60"
         >
           <RefreshCw className={`size-4 ${updating ? "animate-spin" : ""}`} />
-          {updating ? "Updating…" : "Update"}
+          {updating ? t.settings.updating : t.settings.update}
         </button>
       </Card>
 

@@ -4,12 +4,11 @@ import { BarcodeScanner } from "./BarcodeScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
+import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
-  MEAL_LABELS,
   MEAL_ORDER,
   mealForTime,
-  NUTRIENT_LABELS,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   scaledMacros,
@@ -23,10 +22,6 @@ import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
 type MacroKey = NutrientKey;
-
-const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
-  (key) => ({ key, label: NUTRIENT_LABELS[key], unit: NUTRIENT_UNITS[key] }),
-);
 
 const emptyPer100 = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
   MacroKey,
@@ -109,6 +104,10 @@ export function AddFoodSheet({
   onIngredientCaptured?: (ingredient: MealIngredient) => void;
 }) {
   const { addFoodEntry, updateFoodEntry, foodEntries } = useGym();
+  const t = useTranslation();
+  const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
+    (key) => ({ key, label: t.nutrients[key], unit: NUTRIENT_UNITS[key] }),
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>("start");
@@ -222,7 +221,7 @@ export function AddFoodSheet({
     }
     setPer100(next);
     setUnmatched(missing);
-    setName(result.name?.trim() || "Scanned food");
+    setName(result.name?.trim() || t.addFood.scannedFoodFallback);
     setSuggestedGrams(!gramsTouched ? result.servingSizeGrams : null);
     setStep("review");
   };
@@ -238,9 +237,7 @@ export function AddFoodSheet({
       applyScanResult(result);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      setScanError(
-        `Couldn't read that photo — try a clearer, well-lit shot, or enter it manually. (${detail})`,
-      );
+      setScanError(t.addFood.scanReadError(detail));
       setStep("start");
     }
   };
@@ -252,18 +249,14 @@ export function AddFoodSheet({
     try {
       const result = await lookupBarcode(barcode);
       if (!result) {
-        setScanError(
-          "Couldn't find that product — try photographing the label instead, or enter it manually.",
-        );
+        setScanError(t.addFood.barcodeNotFound);
         setStep("start");
         return;
       }
       applyScanResult(result);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      setScanError(
-        `Couldn't look up that barcode — try again, photograph the label instead, or enter it manually. (${detail})`,
-      );
+      setScanError(t.addFood.barcodeLookupError(detail));
       setStep("start");
     }
   };
@@ -327,7 +320,13 @@ export function AddFoodSheet({
       <BottomSheet
         open={open}
         onClose={close}
-        title={onIngredientCaptured ? "Add ingredient" : editEntry ? "Edit food" : "Add food"}
+        title={
+          onIngredientCaptured
+            ? t.addFood.addIngredient
+            : editEntry
+              ? t.addFood.editFood
+              : t.addFood.addFood
+        }
       >
         <input
           ref={fileInputRef}
@@ -355,10 +354,8 @@ export function AddFoodSheet({
             >
               <Camera className="size-6 shrink-0" />
               <div>
-                <p className="text-[16px] font-bold">Scan nutrition label</p>
-                <p className="text-[13px] opacity-80">
-                  Photograph the label — we'll read it for you
-                </p>
+                <p className="text-[16px] font-bold">{t.addFood.scanLabel}</p>
+                <p className="text-[13px] opacity-80">{t.addFood.scanLabelDesc}</p>
               </div>
             </button>
             <button
@@ -367,10 +364,8 @@ export function AddFoodSheet({
             >
               <ScanBarcode className="size-6 shrink-0 text-primary" />
               <div>
-                <p className="text-[16px] font-bold">Scan barcode</p>
-                <p className="text-[13px] text-muted-foreground">
-                  For packaged foods already in the product database
-                </p>
+                <p className="text-[16px] font-bold">{t.addFood.scanBarcode}</p>
+                <p className="text-[13px] text-muted-foreground">{t.addFood.scanBarcodeDesc}</p>
               </div>
             </button>
             <button
@@ -379,14 +374,16 @@ export function AddFoodSheet({
             >
               <Keyboard className="size-6 shrink-0 text-primary" />
               <div>
-                <p className="text-[16px] font-bold">Enter manually</p>
-                <p className="text-[13px] text-muted-foreground">Type in the values yourself</p>
+                <p className="text-[16px] font-bold">{t.addFood.enterManually}</p>
+                <p className="text-[13px] text-muted-foreground">{t.addFood.enterManuallyDesc}</p>
               </div>
             </button>
 
             {recentFoods.length ? (
               <div className="pt-1">
-                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Recent</p>
+                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                  {t.addFood.recent}
+                </p>
                 <div className="space-y-2">
                   {recentFoods.map((entry) => {
                     const m = scaledMacros(entry);
@@ -416,12 +413,10 @@ export function AddFoodSheet({
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <DumbbellLoader size={56} className="text-primary" />
             <p className="text-[15px] font-semibold">
-              {scanKind === "barcode" ? "Looking up that product…" : "Reading the label…"}
+              {scanKind === "barcode" ? t.addFood.lookingUpProduct : t.addFood.readingLabel}
             </p>
             <p className="text-[13px] text-muted-foreground">
-              {scanKind === "barcode"
-                ? "Checking the barcode against Open Food Facts' product database."
-                : "Your photo is sent to Google's Gemini API to read the label, then discarded."}
+              {scanKind === "barcode" ? t.addFood.lookingUpProductDesc : t.addFood.readingLabelDesc}
             </p>
           </div>
         ) : null}
@@ -430,26 +425,33 @@ export function AddFoodSheet({
           <div className="space-y-4">
             {unmatched.size > 0 ? (
               <p className="flex items-start gap-2 rounded-2xl bg-amber-400/10 px-4 py-3 text-[13px] text-amber-300">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" /> Couldn't read{" "}
-                {[...unmatched].map((k) => MACRO_FIELDS.find((f) => f.key === k)!.label).join(", ")}{" "}
-                — double-check those fields.
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />{" "}
+                {t.addFood.couldntRead(
+                  [...unmatched]
+                    .map((k) => MACRO_FIELDS.find((f) => f.key === k)!.label)
+                    .join(", "),
+                )}
               </p>
             ) : null}
 
             <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-              <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">Food</span>
+              <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
+                {t.addFood.food}
+              </span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onFocus={selectOnFocus}
-                placeholder="e.g. Greek yogurt"
+                placeholder={t.addFood.foodPlaceholder}
                 className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
               />
             </label>
 
             {onIngredientCaptured ? null : (
               <div>
-                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Meal</p>
+                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                  {t.addFood.meal}
+                </p>
                 <div className="flex gap-2">
                   {MEAL_ORDER.map((m) => (
                     <button
@@ -466,7 +468,7 @@ export function AddFoodSheet({
                           : "bg-muted text-secondary-foreground"
                       }`}
                     >
-                      {MEAL_LABELS[m]}
+                      {t.mealTypes[m]}
                     </button>
                   ))}
                 </div>
@@ -485,7 +487,7 @@ export function AddFoodSheet({
                 className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
               >
                 <span className="text-[14px] font-semibold text-primary">
-                  Use the label's serving size — {suggestedGrams}g?
+                  {t.addFood.useServingSize(suggestedGrams)}
                 </span>
                 <Check className="size-4 shrink-0 text-primary" />
               </button>
@@ -493,7 +495,7 @@ export function AddFoodSheet({
 
             <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
               <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
-                {onIngredientCaptured ? "Grams in this meal" : "Grams eaten"}
+                {onIngredientCaptured ? t.addFood.gramsInMeal : t.addFood.gramsEaten}
               </span>
               <input
                 inputMode="decimal"
@@ -511,7 +513,7 @@ export function AddFoodSheet({
 
             <div>
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                Per 100g — as printed on the label
+                {t.addFood.per100g}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {MACRO_FIELDS.map(({ key, label, unit }) => (
@@ -551,11 +553,17 @@ export function AddFoodSheet({
 
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
               <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
-                {onIngredientCaptured ? "This ingredient" : "This portion"}
+                {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
               </p>
               <p className="tabular mt-1 text-[15px] font-semibold">
-                {preview.calories} kcal · {preview.protein}g protein · {preview.carbs}g carbs ·{" "}
-                {preview.fat}g fat · {preview.fiber}g fiber · {preview.salt}g salt
+                {t.addFood.macroSummary(
+                  preview.calories,
+                  preview.protein,
+                  preview.carbs,
+                  preview.fat,
+                  preview.fiber,
+                  preview.salt,
+                )}
               </p>
             </div>
 
@@ -571,7 +579,7 @@ export function AddFoodSheet({
                 className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
               >
                 <Check className="size-5" />{" "}
-                {onIngredientCaptured ? "Add ingredient" : "Add to log"}
+                {onIngredientCaptured ? t.addFood.addIngredient : t.addFood.addToLog}
               </button>
             )}
           </div>

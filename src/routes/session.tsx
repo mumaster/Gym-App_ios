@@ -28,6 +28,7 @@ import { PlateHint } from "../components/gym/PlateHint";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
+import { useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
@@ -86,6 +87,7 @@ function buildBlocks(plan: PlannedExercise[]): Block[] {
 
 function SessionScreen() {
   const navigate = useNavigate();
+  const t = useTranslation();
   const {
     activeWorkout,
     workouts,
@@ -164,8 +166,8 @@ function SessionScreen() {
         Notification.permission === "granted"
       ) {
         try {
-          new Notification("Rest complete", {
-            body: "Time to lift — back to Forge.",
+          new Notification(t.session.restCompleteNotifTitle, {
+            body: t.session.restCompleteNotifBody,
             tag: "forge-rest",
           });
         } catch {
@@ -190,11 +192,11 @@ function SessionScreen() {
       rest.start(seconds);
       if (notifyEnabled) {
         void scheduleRestNotification(seconds).then((result) => {
-          if (!result.ok) setToast(`Background push not scheduled: ${result.reason}`);
+          if (!result.ok) setToast(t.session.pushNotScheduled(result.reason));
         });
       }
     },
-    [rest, notifyEnabled],
+    [rest, notifyEnabled, t.session],
   );
 
   // Cancel any pending server-sent notification for this device whenever the
@@ -267,8 +269,8 @@ function SessionScreen() {
         <div className="mx-auto w-full max-w-xl">
           <div className="flex flex-col items-center gap-2 pb-6 pt-10 text-center">
             <Trophy className="size-10 text-primary" />
-            <h1 className="text-2xl font-bold">Workout complete</h1>
-            <p className="text-[14px] text-muted-foreground">Here's what to aim for next time.</p>
+            <h1 className="text-2xl font-bold">{t.session.workoutComplete}</h1>
+            <p className="text-[14px] text-muted-foreground">{t.session.workoutCompleteSub}</p>
           </div>
           <div className="space-y-2">
             {uniqueIds.map((id) => {
@@ -282,16 +284,19 @@ function SessionScreen() {
                 plannedEntry.target_reps,
                 undefined,
                 step,
+                t.progression,
               );
               return (
                 <div key={id} className="glass rounded-2xl p-3">
                   <p className="text-[15px] font-semibold">{ex.name}</p>
                   {suggestion ? (
                     <p className="text-[13px] text-muted-foreground">
-                      Next time: {suggestion.weight}kg × {suggestion.reps} — {suggestion.reason}
+                      {t.session.nextTime(suggestion.weight, suggestion.reps, suggestion.reason)}
                     </p>
                   ) : (
-                    <p className="text-[13px] text-muted-foreground">Logged — no suggestion yet.</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      {t.session.loggedNoSuggestion}
+                    </p>
                   )}
                 </div>
               );
@@ -301,7 +306,7 @@ function SessionScreen() {
             onClick={() => navigate({ to: "/history" })}
             className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
           >
-            View history
+            {t.session.viewHistory}
           </button>
         </div>
       </div>
@@ -311,12 +316,12 @@ function SessionScreen() {
   if (!activeWorkout || !planned || !block) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-        <p className="text-lg font-semibold">No active session</p>
+        <p className="text-lg font-semibold">{t.session.noActiveSession}</p>
         <button
           onClick={() => navigate({ to: "/generate" })}
           className="min-h-[52px] active:scale-95 rounded-2xl bg-primary px-6 font-bold text-primary-foreground"
         >
-          Build a workout
+          {t.session.buildAWorkout}
         </button>
       </div>
     );
@@ -349,8 +354,9 @@ function SessionScreen() {
     if (!isSuperset) return "";
     const a = exerciseById(plan[block.indices[0]!]!.exercise_id);
     const b = exerciseById(plan[block.indices[1]!]!.exercise_id);
-    if (a && b && isAntagonistPair(a, b)) return `Superset (Antagonist • ${antagonistLabel(a, b)})`;
-    return `Superset ${slot + 1}/2`;
+    if (a && b && isAntagonistPair(a, b))
+      return t.session.supersetAntagonist(antagonistLabel(a, b));
+    return t.session.supersetSlot(slot + 1);
   })();
 
   /** When swapping inside a superset, the other half of the pair. */
@@ -391,7 +397,7 @@ function SessionScreen() {
 
   const toggleNotify = async () => {
     if (typeof Notification === "undefined") {
-      setToast("Notifications aren't supported in this browser.");
+      setToast(t.session.notificationsUnsupported);
       return;
     }
     if (notifyEnabled) {
@@ -399,7 +405,7 @@ function SessionScreen() {
       return;
     }
     if (Notification.permission === "denied") {
-      setToast("Notifications are blocked — enable them in your browser settings.");
+      setToast(t.session.notificationsBlocked);
       return;
     }
     const permission =
@@ -412,8 +418,8 @@ function SessionScreen() {
       // in-app cues still work either way — but surface why, since a silent
       // failure here is otherwise impossible to diagnose from outside.
       const result = await ensurePushSubscription();
-      if (!result.ok) setToast(`Notify on, but background push setup failed: ${result.reason}`);
-    } else setToast("Notifications weren't allowed.");
+      if (!result.ok) setToast(t.session.pushSetupFailed(result.reason));
+    } else setToast(t.session.notificationsNotAllowed);
   };
 
   const confirmCancelWorkout = () => {
@@ -446,7 +452,7 @@ function SessionScreen() {
     // Straight into the partner exercise — no rest between A and B.
     if (loggedSlot === 0 && remaining(other) > 0) {
       const bEx = exerciseById(plan[block.indices[1]!]!.exercise_id);
-      setToast(`Great set! Straight into ${bEx?.name ?? "Exercise B"}`);
+      setToast(t.session.straightInto(bEx?.name ?? t.session.exerciseBFallback));
       setPos((p) => ({ ...p, slot: 1 }));
       return;
     }
@@ -472,7 +478,7 @@ function SessionScreen() {
             <button
               onClick={() => navigate({ to: "/" })}
               className="glass flex size-11 items-center justify-center rounded-full"
-              aria-label="Close session"
+              aria-label={t.session.closeSession}
             >
               <X className="size-5" />
             </button>
@@ -482,12 +488,13 @@ function SessionScreen() {
                 {String(elapsed % 60).padStart(2, "0")}
               </p>
               <p className="text-[12px] text-muted-foreground">
-                {activeWorkout.target_muscles.join(" · ") || "Workout"} · {done}/{totalSets} sets
+                {activeWorkout.target_muscles.join(" · ") || t.generate.title} ·{" "}
+                {t.session.setsOfTotal(done, totalSets)}
               </p>
             </div>
             <button
               onClick={() => setListOpen(true)}
-              aria-label="Workout overview"
+              aria-label={t.session.workoutOverview}
               className="glass flex size-11 items-center justify-center rounded-full"
             >
               <List className="size-5 text-primary" />
@@ -510,7 +517,7 @@ function SessionScreen() {
             <div className="flex items-center gap-3">
               <Flame className="size-5 text-primary" />
               <span className="tabular text-xl font-bold">
-                {restDone ? "Rest complete — go!" : `${rest.secondsLeft}s rest`}
+                {restDone ? t.session.restComplete : t.session.restSeconds(rest.secondsLeft)}
               </span>
               <button
                 onClick={() => {
@@ -519,7 +526,7 @@ function SessionScreen() {
                 }}
                 className="pointer-events-auto ml-2 min-h-[44px] rounded-full bg-primary px-5 text-[15px] font-bold text-primary-foreground"
               >
-                Skip Rest
+                {t.session.skipRest}
               </button>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -546,7 +553,11 @@ function SessionScreen() {
         <div className={isSuperset ? "space-y-3" : ""}>
           {isSuperset ? (
             <p className="rounded-full bg-primary/20 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-widest text-primary">
-              {supersetBadge} • Round {Math.min(pos.round, block.rounds)} of {block.rounds}
+              {t.session.supersetRound(
+                supersetBadge,
+                Math.min(pos.round, block.rounds),
+                block.rounds,
+              )}
             </p>
           ) : null}
 
@@ -575,7 +586,7 @@ function SessionScreen() {
 
         {upNext ? (
           <p className="rounded-2xl bg-muted px-4 py-3 text-[14px] text-muted-foreground">
-            <span className="font-semibold text-foreground">Up next:</span> {upNext}
+            <span className="font-semibold text-foreground">{t.session.upNext}</span> {upNext}
           </p>
         ) : null}
 
@@ -583,18 +594,14 @@ function SessionScreen() {
           <div className="glass glow rounded-3xl p-5 text-center">
             <PartyPopper className="mx-auto size-10 text-primary" />
             <h2 className="mt-3 text-[26px] font-bold leading-tight tracking-tight">
-              Outstanding — you went beyond the plan!
+              {t.session.outstandingTitle}
             </h2>
-            <p className="mt-2 text-[15px] text-muted-foreground">
-              You didn&apos;t just finish the session, you added an extra exercise on top and closed
-              every single set. That is exactly the kind of effort that builds real strength. Be
-              proud of this one — you earned every rep.
-            </p>
+            <p className="mt-2 text-[15px] text-muted-foreground">{t.session.outstandingBody}</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               {[
-                ["Sets", `${done}`],
-                ["Volume", `${totalVolume.toLocaleString()} kg`],
-                ["Time", `${Math.max(1, Math.round(elapsed / 60))} min`],
+                [t.session.statSets, `${done}`],
+                [t.session.statVolume, `${totalVolume.toLocaleString()} kg`],
+                [t.session.statTime, `${Math.max(1, Math.round(elapsed / 60))} min`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-muted px-2 py-3">
                   <p className="tabular text-[18px] font-bold">{value}</p>
@@ -608,7 +615,7 @@ function SessionScreen() {
               onClick={endWorkout}
               className="glow mt-4 min-h-[52px] active:scale-95 w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground"
             >
-              Finish workout
+              {t.session.finishWorkout}
             </button>
           </div>
         ) : null}
@@ -616,7 +623,7 @@ function SessionScreen() {
         <div className="glass space-y-3 rounded-2xl p-4">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold">Rest timer</p>
+              <p className="font-semibold">{t.session.restTimer}</p>
               <div className="flex flex-wrap justify-end gap-1 rounded-full bg-muted p-1">
                 {(["auto", 60, 90, 120] as const).map((s) => {
                   const on = s === "auto" ? restOverride == null : restOverride === s;
@@ -628,7 +635,7 @@ function SessionScreen() {
                         on ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                       }`}
                     >
-                      {s === "auto" ? "Auto" : `${s}s`}
+                      {s === "auto" ? t.session.auto : `${s}s`}
                     </button>
                   );
                 })}
@@ -636,8 +643,8 @@ function SessionScreen() {
             </div>
             <p className="mt-1.5 text-[13px] text-muted-foreground">
               {restOverride == null
-                ? "Following each exercise's suggested rest."
-                : `Every set rests ${restOverride}s.`}
+                ? t.session.restFollowing
+                : t.session.restEverySet(restOverride)}
             </p>
           </div>
           <button
@@ -645,7 +652,7 @@ function SessionScreen() {
             className="flex w-full items-center justify-between gap-2"
             aria-pressed={soundEnabled}
           >
-            <span className="text-[15px] font-semibold">Rest-end beep</span>
+            <span className="text-[15px] font-semibold">{t.session.restEndBeep}</span>
             <span
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
                 soundEnabled
@@ -653,7 +660,7 @@ function SessionScreen() {
                   : "bg-secondary text-muted-foreground"
               }`}
             >
-              {soundEnabled ? "On" : "Off"}
+              {soundEnabled ? t.session.on : t.session.off}
             </span>
           </button>
           <button
@@ -667,7 +674,7 @@ function SessionScreen() {
               ) : (
                 <BellOff className="size-4 text-muted-foreground" />
               )}
-              Rest-end notification
+              {t.session.restEndNotification}
             </span>
             <span
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
@@ -676,12 +683,10 @@ function SessionScreen() {
                   : "bg-secondary text-muted-foreground"
               }`}
             >
-              {notifyEnabled ? "On" : "Off"}
+              {notifyEnabled ? t.session.on : t.session.off}
             </span>
           </button>
-          <p className="text-[13px] text-muted-foreground">
-            iPhone gives no buzz between sets — the beep is your cue. All weights in kg.
-          </p>
+          <p className="text-[13px] text-muted-foreground">{t.session.beepHint}</p>
         </div>
       </main>
 
@@ -694,23 +699,23 @@ function SessionScreen() {
           <button
             onClick={() => goToBlock(blockIndex - 1)}
             disabled={blockIndex === 0}
-            aria-label="Previous exercise"
+            aria-label={t.session.previousExercise}
             className="glass flex min-h-[52px] active:scale-95 w-14 items-center justify-center rounded-2xl disabled:opacity-30"
           >
             <ChevronLeft className="size-5" />
           </button>
           <span className="tabular w-14 text-center text-[13px] font-semibold text-muted-foreground">
-            {blockIndex + 1} of {blocks.length}
+            {t.common.ofTotal(blockIndex + 1, blocks.length)}
           </span>
           {isLastBlock ? (
             <>
               {blockComplete && bonusOptions.length > 0 ? (
                 <button
                   onClick={addBonus}
-                  aria-label="Add an extra exercise"
+                  aria-label={t.session.addExtra}
                   className="glass flex min-h-[52px] active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
                 >
-                  <Plus className="size-5 text-primary" /> Extra
+                  <Plus className="size-5 text-primary" /> {t.session.extra}
                 </button>
               ) : null}
               <button
@@ -721,7 +726,7 @@ function SessionScreen() {
                     : "bg-secondary text-muted-foreground"
                 }`}
               >
-                Finish workout
+                {t.session.finishWorkout}
               </button>
             </>
           ) : (
@@ -734,7 +739,7 @@ function SessionScreen() {
                   : "bg-secondary text-muted-foreground opacity-60"
               }`}
             >
-              {isSuperset ? "Complete superset" : "Next exercise"}{" "}
+              {isSuperset ? t.session.completeSuperset : t.session.nextExercise}{" "}
               <ChevronRight className="size-5" />
             </button>
           )}
@@ -752,7 +757,11 @@ function SessionScreen() {
         }}
       />
 
-      <BottomSheet open={listOpen} onClose={() => setListOpen(false)} title="Workout overview">
+      <BottomSheet
+        open={listOpen}
+        onClose={() => setListOpen(false)}
+        title={t.session.workoutOverview}
+      >
         <div className="space-y-2">
           {blocks.map((b, i) => (
             <button
@@ -765,7 +774,7 @@ function SessionScreen() {
             >
               {b.group !== undefined ? (
                 <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-                  Superset · {b.rounds} rounds
+                  {t.session.supersetRounds(b.rounds)}
                 </p>
               ) : null}
               {b.indices.map((idx) => {
@@ -796,35 +805,34 @@ function SessionScreen() {
           onClick={requestCancelWorkout}
           className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-bold text-destructive active:scale-95"
         >
-          <Ban className="size-4" /> Cancel workout
+          <Ban className="size-4" /> {t.session.cancelWorkout}
         </button>
       </BottomSheet>
 
       {cancelConfirmOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <button
-            aria-label="Keep training"
+            aria-label={t.session.keepTraining}
             onClick={() => setCancelConfirmOpen(false)}
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
           />
           <div className="glass-strong relative w-full max-w-sm rounded-3xl p-6 text-center shadow-[var(--shadow-float)]">
-            <h2 className="text-xl font-bold tracking-tight">Cancel this workout?</h2>
+            <h2 className="text-xl font-bold tracking-tight">{t.session.cancelWorkoutTitle}</h2>
             <p className="mt-2 text-[14px] text-muted-foreground">
-              {done} logged {done === 1 ? "set" : "sets"} will be discarded. This can&apos;t be
-              undone.
+              {t.session.cancelWorkoutBody(done, done === 1 ? t.session.set : t.session.sets)}
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
                 onClick={confirmCancelWorkout}
                 className="min-h-[52px] w-full rounded-2xl bg-destructive text-[15px] font-bold text-destructive-foreground active:scale-95"
               >
-                Cancel workout
+                {t.session.cancelWorkout}
               </button>
               <button
                 onClick={() => setCancelConfirmOpen(false)}
                 className="min-h-[52px] w-full rounded-2xl bg-secondary text-[15px] font-semibold text-secondary-foreground active:scale-95"
               >
-                Keep training
+                {t.session.keepTraining}
               </button>
             </div>
           </div>
@@ -880,6 +888,7 @@ function ExerciseBlock({
     activeProfileId,
     readinessLog,
   } = useGym();
+  const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
   const todayReadiness = todaysCheckIn(readinessLog)?.score;
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
@@ -930,8 +939,16 @@ function ExerciseBlock({
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
-    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, todayReadiness, step),
-    [workouts, planned.exercise_id, planned.target_reps, todayReadiness, step],
+    () =>
+      suggestWeight(
+        planned.exercise_id,
+        workouts,
+        planned.target_reps,
+        todayReadiness,
+        step,
+        t.progression,
+      ),
+    [workouts, planned.exercise_id, planned.target_reps, todayReadiness, step, t],
   );
 
   useEffect(() => {
@@ -1020,21 +1037,21 @@ function ExerciseBlock({
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
-            {letter ? `Exercise ${letter}` : `Exercise ${index + 1} of ${total}`}
+            {letter ? t.session.exerciseLetter(letter) : t.session.exerciseOf(index + 1, total)}
           </p>
           <h2 className="mt-1 text-[24px] font-bold leading-[1.1] tracking-tight">
             {exercise.name}
           </h2>
           <p className="mt-1.5 truncate text-[12px] text-muted-foreground">
-            {planned.warmup_sets ? `${planned.warmup_sets} warm-up · ` : ""}
-            Target {planned.target_sets} × {planned.target_reps} · {restForThisExercise}s rest ·{" "}
+            {planned.warmup_sets ? t.session.warmupPrefix(planned.warmup_sets) : ""}
+            {t.session.targetLine(planned.target_sets, planned.target_reps, restForThisExercise)}
             <span className="capitalize">{exercise.primary_muscle}</span>
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={onSwap}
-            aria-label="Swap exercise"
+            aria-label={t.generate.swapExercise}
             className="flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
           >
             <Repeat className="size-4" />
@@ -1043,7 +1060,7 @@ function ExerciseBlock({
             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`DeltaBolic ${exercise.name}`)}`}
             target="_blank"
             rel="noreferrer noopener"
-            aria-label="Watch demo"
+            aria-label={t.session.watchDemo}
             className="flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
           >
             <Youtube className="size-4 text-primary" />
@@ -1055,9 +1072,9 @@ function ExerciseBlock({
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-primary/15 px-4 py-3">
           <CheckCircle2 className="size-6 shrink-0 text-primary" />
           <div className="min-w-0">
-            <p className="text-[15px] font-bold">Well done — {planned.target_sets} sets logged</p>
+            <p className="text-[15px] font-bold">{t.session.wellDone(planned.target_sets)}</p>
             <p className="text-[13px] text-muted-foreground">
-              {index >= total - 1 ? "Finish your workout below." : "Move on to the next exercise."}
+              {index >= total - 1 ? t.session.finishBelow : t.session.moveToNext}
             </p>
           </div>
         </div>
@@ -1067,10 +1084,10 @@ function ExerciseBlock({
         <div
           className={`${GRID} px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground`}
         >
-          <span>Set</span>
-          <span>Prev</span>
-          <span className="text-center">kg</span>
-          <span className="text-center">Reps</span>
+          <span>{t.session.setCol}</span>
+          <span>{t.session.prevCol}</span>
+          <span className="text-center">{t.session.kgCol}</span>
+          <span className="text-center">{t.session.repsCol}</span>
         </div>
 
         {logged.map((s, i) => {
@@ -1082,11 +1099,22 @@ function ExerciseBlock({
                   <span className="tabular w-6 shrink-0 text-[15px] font-bold text-primary">
                     {s.set_type === "warmup" ? "W" : s.set_number}
                   </span>
-                  <Stepper value={editW} onChange={setEditW} step={step} ariaLabel="weight kg" />
+                  <Stepper
+                    value={editW}
+                    onChange={setEditW}
+                    step={step}
+                    ariaLabel={t.session.weightAriaLabel}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-6 shrink-0" />
-                  <Stepper value={editR} onChange={setEditR} step={1} min={0} ariaLabel="reps" />
+                  <Stepper
+                    value={editR}
+                    onChange={setEditR}
+                    step={1}
+                    min={0}
+                    ariaLabel={t.session.repsAriaLabel}
+                  />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1097,7 +1125,7 @@ function ExerciseBlock({
                     }}
                     className="min-h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-primary-foreground active:scale-95"
                   >
-                    Save
+                    {t.session.saveEdit}
                   </button>
                   <button
                     onClick={() => {
@@ -1107,13 +1135,13 @@ function ExerciseBlock({
                     }}
                     className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-destructive active:scale-95"
                   >
-                    Delete
+                    {t.session.deleteEdit}
                   </button>
                   <button
                     onClick={() => setEditIdx(null)}
                     className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-muted-foreground active:scale-95"
                   >
-                    Cancel
+                    {t.session.cancelEdit}
                   </button>
                 </div>
               </div>
@@ -1123,7 +1151,7 @@ function ExerciseBlock({
             <button
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
-              aria-label={`Edit set ${s.set_number}`}
+              aria-label={t.session.editSet(s.set_number)}
               className={`${GRID} w-full rounded-xl bg-primary/15 px-0.5 py-2 text-left active:scale-[0.99]`}
             >
               <span className="tabular text-[15px] font-bold text-primary">
@@ -1149,9 +1177,7 @@ function ExerciseBlock({
                 setSetType((t) => (t === "warmup" ? "working" : "warmup"));
               }}
               aria-label={
-                setType === "warmup"
-                  ? "Warm-up set — tap for working set"
-                  : "Working set — tap for warm-up"
+                setType === "warmup" ? t.session.warmupSetToggleOn : t.session.warmupSetToggleOff
               }
               className={`tabular size-11 shrink-0 rounded-xl text-[15px] font-bold active:scale-95 ${
                 setType === "warmup"
@@ -1163,8 +1189,8 @@ function ExerciseBlock({
             </button>
             <span className="text-[12px] text-muted-foreground">
               {nextPrevious
-                ? `Last time: ${nextPrevious.weight} × ${nextPrevious.reps}`
-                : "First time on this one"}
+                ? t.session.lastTime(nextPrevious.weight, nextPrevious.reps)
+                : t.session.firstTime}
             </span>
           </div>
 
@@ -1175,14 +1201,14 @@ function ExerciseBlock({
               ) : (
                 <TrendingDown className="size-4 shrink-0" />
               )}{" "}
-              Suggested {suggestion.weight}kg × {suggestion.reps} — {suggestion.reason}
+              {t.session.suggestedInline(suggestion.weight, suggestion.reps, suggestion.reason)}
             </p>
           ) : null}
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => bumpWeight(-1)}
-              aria-label="Less weight"
+              aria-label={t.session.lessWeight}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
               <Minus className="size-4" />
@@ -1192,7 +1218,7 @@ function ExerciseBlock({
                 inputMode="decimal"
                 type="text"
                 value={weight}
-                aria-label="Weight in kg"
+                aria-label={t.session.weightAriaLabel}
                 placeholder={`${prefillWeight}`}
                 onFocus={selectOnFocus}
                 onChange={(e) => {
@@ -1207,7 +1233,7 @@ function ExerciseBlock({
             </div>
             <button
               onClick={() => bumpWeight(1)}
-              aria-label="More weight"
+              aria-label={t.session.moreWeight}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
               <Plus className="size-4" />
@@ -1217,7 +1243,7 @@ function ExerciseBlock({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => bumpReps(-1)}
-              aria-label="Fewer reps"
+              aria-label={t.session.fewerReps}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
               <Minus className="size-4" />
@@ -1228,7 +1254,7 @@ function ExerciseBlock({
                 type="text"
                 value={reps}
                 placeholder={`${prefillReps}`}
-                aria-label="Reps"
+                aria-label={t.session.repsAriaLabel}
                 onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
@@ -1242,7 +1268,7 @@ function ExerciseBlock({
             </div>
             <button
               onClick={() => bumpReps(1)}
-              aria-label="More reps"
+              aria-label={t.session.moreReps}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
               <Plus className="size-4" />
@@ -1252,7 +1278,7 @@ function ExerciseBlock({
           {setType === "working" ? (
             <div className="flex items-center gap-2">
               <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                RPE
+                {t.session.rpe}
               </span>
               <div className="flex flex-1 gap-1">
                 {[6, 7, 8, 9, 10].map((n) => (
@@ -1263,7 +1289,7 @@ function ExerciseBlock({
                       setRpe((cur) => (cur === n ? null : n));
                     }}
                     aria-pressed={rpe === n}
-                    aria-label={`Rate of perceived exertion ${n}`}
+                    aria-label={t.session.rpeAriaLabel(n)}
                     className={`h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
                       rpe === n
                         ? "bg-primary text-primary-foreground"
@@ -1292,7 +1318,7 @@ function ExerciseBlock({
                   : "bg-primary text-primary-foreground"
               }`}
             >
-              {locked ? "Resting…" : `Repeat  ${lastLogged.weight} × ${lastLogged.reps}`}
+              {locked ? t.session.resting : t.session.repeat(lastLogged.weight, lastLogged.reps)}
             </button>
           ) : null}
           <button
@@ -1306,24 +1332,26 @@ function ExerciseBlock({
                   : "bg-primary text-primary-foreground"
             }`}
           >
-            {locked ? "Resting…" : "Log set"}
+            {locked ? t.session.resting : t.session.logSet}
           </button>
         </div>
       </div>
 
       <p className="mt-2 text-right text-[13px] text-muted-foreground">
-        {previous ? `Last: ${previous.weight}kg × ${previous.reps}` : "No history yet"}
+        {previous
+          ? t.session.lastPerformance(previous.weight, previous.reps)
+          : t.session.noHistoryYet}
       </p>
 
       {isPR ? (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary">
-          <Trophy className="size-4" /> PR pace — above your best of {best?.weight}kg × {best?.reps}
+          <Trophy className="size-4" /> {t.session.prPace(best?.weight ?? 0, best?.reps ?? 0)}
         </p>
       ) : null}
 
       <div className="mt-3 rounded-2xl border border-border/70 bg-muted/40 px-4 py-3">
         <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary">
-          <Lightbulb className="size-4" /> Key form cues
+          <Lightbulb className="size-4" /> {t.session.keyFormCues}
         </p>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
           {sentence(exercise.instructions)}
@@ -1355,6 +1383,7 @@ function Stepper({
   min?: number;
   ariaLabel: string;
 }) {
+  const t = useTranslation();
   const set = (v: number) => onChange(Number(Math.max(min, v).toFixed(2)));
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -1363,7 +1392,7 @@ function Stepper({
           haptic(10);
           set(value - step);
         }}
-        aria-label={`Less ${ariaLabel}`}
+        aria-label={t.session.lessLabel(ariaLabel)}
         className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
       >
         <Minus className="size-4" />
@@ -1385,7 +1414,7 @@ function Stepper({
           haptic(10);
           set(value + step);
         }}
-        aria-label={`More ${ariaLabel}`}
+        aria-label={t.session.moreLabel(ariaLabel)}
         className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
       >
         <Plus className="size-4" />

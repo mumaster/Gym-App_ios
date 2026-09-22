@@ -3,12 +3,14 @@ import { Check, Plus, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
+import { useTranslation } from "../../lib/gym/i18n";
 import { dailyTotals, scaledMacros, type MealIngredient } from "../../lib/gym/nutrition";
 import { selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
 export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { saveMealTemplate } = useGym();
+  const t = useTranslation();
   const [name, setName] = useState("");
   const [ingredients, setIngredients] = useState<MealIngredient[]>([]);
   const [addingIngredient, setAddingIngredient] = useState(false);
@@ -49,24 +51,28 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
       {/* Hidden while adding an ingredient so only one sheet is ever visible
           at once — this component's own state (name/ingredients) survives
           that toggle regardless, since it lives here, not inside AddFoodSheet. */}
-      <BottomSheet open={open && !addingIngredient} onClose={close} title="Create meal">
+      <BottomSheet open={open && !addingIngredient} onClose={close} title={t.createMeal.title}>
         <div className="space-y-4">
           <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">Meal</span>
+            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
+              {t.createMeal.meal}
+            </span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               onFocus={selectOnFocus}
-              placeholder="e.g. Banana oatmeal"
+              placeholder={t.createMeal.mealPlaceholder}
               className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />
           </label>
 
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Ingredients</p>
+            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+              {t.createMeal.ingredients}
+            </p>
             {ingredients.length === 0 ? (
               <Card className="p-4 text-center text-[14px] text-muted-foreground">
-                Add each ingredient — scan its label or enter it manually.
+                {t.createMeal.ingredientsEmpty}
               </Card>
             ) : (
               <div className="space-y-2">
@@ -85,7 +91,7 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
                           haptic(12);
                           setIngredients((cur) => cur.filter((_, idx) => idx !== i));
                         }}
-                        aria-label={`Remove ${ing.name}`}
+                        aria-label={t.createMeal.removeIngredient(ing.name)}
                         className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground"
                       >
                         <Trash2 className="size-4" />
@@ -104,17 +110,23 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
             }}
             className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
           >
-            <Plus className="size-4" /> Add ingredient
+            <Plus className="size-4" /> {t.createMeal.addIngredient}
           </button>
 
           {ingredients.length > 0 ? (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
               <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
-                Whole meal
+                {t.createMeal.wholeMeal}
               </p>
               <p className="tabular mt-1 text-[15px] font-semibold">
-                {totals.calories} kcal · {totals.protein}g protein · {totals.carbs}g carbs ·{" "}
-                {totals.fat}g fat · {totals.fiber}g fiber · {totals.salt}g salt
+                {t.createMeal.macroSummary(
+                  totals.calories,
+                  totals.protein,
+                  totals.carbs,
+                  totals.fat,
+                  totals.fiber,
+                  totals.salt,
+                )}
               </p>
             </div>
           ) : null}
@@ -124,7 +136,7 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
             disabled={!canSave}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> Save meal
+            <Check className="size-5" /> {t.createMeal.saveMeal}
           </button>
         </div>
       </BottomSheet>

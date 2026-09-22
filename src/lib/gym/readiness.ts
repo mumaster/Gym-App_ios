@@ -8,12 +8,14 @@ export interface ReadinessCheckIn {
   score: ReadinessScore;
 }
 
-export const READINESS_LABELS: Record<ReadinessScore, { emoji: string; label: string }> = {
-  1: { emoji: "🥵", label: "Wiped out" },
-  2: { emoji: "😣", label: "Rough" },
-  3: { emoji: "😐", label: "Okay" },
-  4: { emoji: "🙂", label: "Good" },
-  5: { emoji: "💪", label: "Great" },
+/** Emoji only — the label text itself is translated, see lib/gym/i18n.ts's
+ *  `readiness` namespace (keyed 1-5, same as this). */
+export const READINESS_EMOJI: Record<ReadinessScore, string> = {
+  1: "🥵",
+  2: "😣",
+  3: "😐",
+  4: "🙂",
+  5: "💪",
 };
 
 /** Today's check-in, if one has already been logged. */
@@ -40,15 +42,20 @@ export function readinessWeightFactor(score: ReadinessScore | undefined): number
   }
 }
 
-/** Transparent, user-facing explanation for why the suggestion was adjusted. */
-export function readinessNote(score: ReadinessScore | undefined): string | null {
+/** Which transparent, user-facing note (if any) explains why the suggestion
+ *  was adjusted — a kind rather than the text itself, since this is a plain
+ *  lib file with no access to the app's translations; the caller maps this
+ *  to localized copy (see lib/gym/i18n.ts's `progression` namespace). */
+export type ReadinessNoteKind = "trimmedLot" | "trimmedLittle" | "nudgedUp" | null;
+
+export function readinessNoteKind(score: ReadinessScore | undefined): ReadinessNoteKind {
   switch (score) {
     case 1:
-      return "Trimmed a good bit — you checked in wiped out today.";
+      return "trimmedLot";
     case 2:
-      return "Trimmed a little for today's readiness.";
+      return "trimmedLittle";
     case 5:
-      return "Nudged up — you're feeling great today.";
+      return "nudgedUp";
     default:
       return null;
   }

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { exerciseById } from "../lib/gym/data";
+import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { estimated1RM } from "../lib/gym/progress";
 import { useGym } from "../lib/gym/store";
 import type { LoggedSet } from "../lib/gym/types";
@@ -28,17 +29,19 @@ export const Route = createFileRoute("/history/$workoutId")({
 function SessionDetailScreen() {
   const { workoutId } = useParams({ from: "/history/$workoutId" });
   const { workouts, hydrated } = useGym();
+  const t = useTranslation();
+  const locale = useLocale();
   const workout = workouts.find((w) => w.id === workoutId);
 
-  if (!hydrated) return <Screen title="Session">{null}</Screen>;
+  if (!hydrated) return <Screen title={t.historyDetail.title}>{null}</Screen>;
 
   if (!workout) {
     return (
-      <Screen title="Session">
+      <Screen title={t.historyDetail.title}>
         <Card className="p-6 text-center">
-          <p className="text-[17px] font-semibold">Session not found</p>
+          <p className="text-[17px] font-semibold">{t.historyDetail.sessionNotFound}</p>
           <Link to="/history" className="mt-3 inline-block text-[15px] font-semibold text-primary">
-            Back to history
+            {t.historyDetail.backToHistory}
           </Link>
         </Card>
       </Screen>
@@ -86,8 +89,8 @@ function SessionDetailScreen() {
 
   return (
     <Screen
-      title={date.toLocaleDateString(undefined, { day: "numeric", month: "long" })}
-      subtitle={date.toLocaleString(undefined, {
+      title={date.toLocaleDateString(locale, { day: "numeric", month: "long" })}
+      subtitle={date.toLocaleString(locale, {
         weekday: "long",
         hour: "2-digit",
         minute: "2-digit",
@@ -95,7 +98,7 @@ function SessionDetailScreen() {
       action={
         <Link
           to="/history"
-          aria-label="Back to history"
+          aria-label={t.historyDetail.backToHistory}
           className="glass flex size-11 items-center justify-center rounded-full"
         >
           <ChevronLeft className="size-5" />
@@ -104,9 +107,9 @@ function SessionDetailScreen() {
     >
       <Card className="grid grid-cols-3 gap-2 p-4 text-center">
         {[
-          ["Duration", `${workout.duration_minutes} min`],
-          ["Sets", `${working.length} working`],
-          ["Volume", `${volume.toLocaleString()} kg`],
+          [t.historyDetail.duration, `${workout.duration_minutes} min`],
+          [t.session.statSets, t.historyDetail.workingSets(working.length)],
+          [t.historyDetail.volume, `${volume.toLocaleString(locale)} kg`],
         ].map(([label, value]) => (
           <div key={label}>
             <p className="tabular text-[20px] font-bold">{value}</p>
@@ -116,13 +119,13 @@ function SessionDetailScreen() {
       </Card>
 
       <p className="mt-3 px-1 text-[13px] text-muted-foreground">
-        {workout.target_muscles.join(" · ") || "Full body"}
+        {workout.target_muscles.join(" · ") || t.generate.fullBody}
       </p>
 
-      <SectionLabel>Exercises</SectionLabel>
+      <SectionLabel>{t.historyDetail.exercises}</SectionLabel>
       {byExercise.length === 0 ? (
         <Card className="p-6 text-center text-[15px] text-muted-foreground">
-          No sets were logged in this session.
+          {t.historyDetail.noSetsLogged}
         </Card>
       ) : null}
 
@@ -136,7 +139,7 @@ function SessionDetailScreen() {
               </div>
               {ex.isPR ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary">
-                  <Trophy className="size-4" /> PR {ex.bestE1rm} kg
+                  <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
                 </span>
               ) : null}
             </div>
@@ -152,7 +155,8 @@ function SessionDetailScreen() {
                   </span>
                   <span className="tabular text-[15px] font-semibold">{s.weight} kg</span>
                   <span className="tabular text-right text-[15px] font-semibold">
-                    {s.reps} reps{s.rpe ? <span className="text-primary"> @{s.rpe}</span> : null}
+                    {t.historyDetail.reps(s.reps)}
+                    {s.rpe ? <span className="text-primary"> @{s.rpe}</span> : null}
                   </span>
                 </div>
               ))}

@@ -21,10 +21,8 @@ import {
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
-  MEAL_LABELS,
   MEAL_ORDER,
   mealForTime,
-  NUTRIENT_LABELS,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   nutrientStatus,
@@ -35,6 +33,7 @@ import {
   type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
+import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { haptic, useGym } from "../lib/gym/store";
 
@@ -58,6 +57,8 @@ export const Route = createFileRoute("/nutrition")({
 });
 
 function NutritionScreen() {
+  const t = useTranslation();
+  const locale = useLocale();
   const {
     foodEntries,
     nutritionGoals,
@@ -115,26 +116,26 @@ function NutritionScreen() {
     setWaterGoalEditing(false);
   };
   const dayLabel = isToday
-    ? "Today"
+    ? t.nutrition.today
     : dayOffset === -1
-      ? "Yesterday"
-      : selectedDate.toLocaleDateString(undefined, {
+      ? t.nutrition.yesterday
+      : selectedDate.toLocaleDateString(locale, {
           weekday: "short",
           day: "numeric",
           month: "short",
         });
 
-  if (!hydrated) return <Screen title="Nutrition">{null}</Screen>;
+  if (!hydrated) return <Screen title={t.nutrition.title}>{null}</Screen>;
 
   return (
-    <Screen title="Nutrition">
+    <Screen title={t.nutrition.title}>
       <div className="mt-1 flex items-center justify-between px-1">
         <button
           onClick={() => {
             haptic(10);
             setDayOffset((d) => d - 1);
           }}
-          aria-label="Previous day"
+          aria-label={t.nutrition.previousDay}
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
         >
           <ChevronLeft className="size-4" />
@@ -145,7 +146,7 @@ function NutritionScreen() {
             haptic(10);
             setDayOffset((d) => Math.min(0, d + 1));
           }}
-          aria-label="Next day"
+          aria-label={t.nutrition.nextDay}
           disabled={isToday}
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
         >
@@ -155,14 +156,14 @@ function NutritionScreen() {
 
       <div className="mb-1.5 mt-4 flex items-center justify-between px-1">
         <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {isToday ? "Today's" : "That day's"} overview
+          {isToday ? t.nutrition.todaysOverview : t.nutrition.thatDaysOverview}
         </p>
         <button
           onClick={() => {
             haptic(12);
             setGoalsSheetOpen(true);
           }}
-          aria-label="Set daily nutrition limits"
+          aria-label={t.nutrition.setDailyLimits}
           className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
         >
           <Settings2 className="size-4" />
@@ -185,12 +186,12 @@ function NutritionScreen() {
             }}
             className="w-full text-center text-[13px] font-semibold text-primary"
           >
-            Set daily limits to track progress
+            {t.nutrition.setDailyLimitsToTrack}
           </button>
         ) : null}
       </Card>
 
-      <SectionLabel>Water</SectionLabel>
+      <SectionLabel>{t.nutrition.water}</SectionLabel>
       <Card className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -198,12 +199,14 @@ function NutritionScreen() {
               {formatLiters(totalWaterMl)}
             </p>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              {waterGoalMl ? `of ${formatLiters(waterGoalMl)} goal` : `${totalWaterMl}ml logged`}
+              {waterGoalMl
+                ? t.nutrition.ofGoal(formatLiters(waterGoalMl))
+                : t.nutrition.loggedMl(totalWaterMl)}
             </p>
           </div>
           <button
             onClick={openWaterGoalEditor}
-            aria-label="Set water goal"
+            aria-label={t.nutrition.setWaterGoal}
             className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
           >
             <Settings2 className="size-4" />
@@ -221,13 +224,13 @@ function NutritionScreen() {
                 if (DECIMAL_INPUT_RE.test(e.target.value)) setWaterGoalDraft(e.target.value);
               }}
               onKeyDown={(e) => e.key === "Enter" && saveWaterGoal()}
-              placeholder="e.g. 2500"
+              placeholder={t.nutrition.mlPlaceholder}
               className="tabular h-10 w-full min-w-0 flex-1 rounded-xl bg-muted px-3 text-[15px] font-semibold outline-none"
             />
             <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
             <button
               onClick={saveWaterGoal}
-              aria-label="Save water goal"
+              aria-label={t.nutrition.saveWaterGoal}
               className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
             >
               <Check className="size-4" />
@@ -272,7 +275,7 @@ function NutritionScreen() {
                 haptic(10);
                 removeWaterEntry(entry.id);
               }}
-              aria-label={`Remove ${entry.ml}ml water entry`}
+              aria-label={t.nutrition.removeWaterEntry(entry.ml)}
               className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
             >
               <Droplet className="size-3 text-primary" /> {entry.ml}ml <X className="size-3" />
@@ -290,15 +293,12 @@ function NutritionScreen() {
             }}
             className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
           >
-            <Plus className="size-5" /> Add food
+            <Plus className="size-5" /> {t.nutrition.addFood}
           </button>
 
-          <SectionLabel>Meals</SectionLabel>
+          <SectionLabel>{t.nutrition.meals}</SectionLabel>
           {mealTemplates.length === 0 ? (
-            <Card className="p-4 text-[13px] text-muted-foreground">
-              Save a combo of ingredients — like "Banana oatmeal" — to add it all in one tap next
-              time.
-            </Card>
+            <Card className="p-4 text-[13px] text-muted-foreground">{t.nutrition.mealsEmpty}</Card>
           ) : (
             <div className="space-y-2">
               {mealTemplates.map((template) => {
@@ -308,9 +308,8 @@ function NutritionScreen() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-semibold">{template.name}</p>
                       <p className="tabular text-[12px] text-muted-foreground">
-                        {template.ingredients.length} ingredient
-                        {template.ingredients.length === 1 ? "" : "s"} · {templateTotals.calories}{" "}
-                        kcal
+                        {t.nutrition.ingredientCount(template.ingredients.length)} ·{" "}
+                        {t.nutrition.kcal(templateTotals.calories)}
                       </p>
                     </div>
                     <button
@@ -318,7 +317,7 @@ function NutritionScreen() {
                         haptic([20, 30]);
                         logMealTemplate(template.id, mealForTime(new Date().toISOString()));
                       }}
-                      aria-label={`Log ${template.name}`}
+                      aria-label={t.nutrition.logTemplate(template.name)}
                       className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
                     >
                       <Plus className="size-4" />
@@ -335,14 +334,13 @@ function NutritionScreen() {
             }}
             className="glass mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
           >
-            <Plus className="size-4" /> New meal
+            <Plus className="size-4" /> {t.nutrition.newMeal}
           </button>
 
-          <SectionLabel>Recipes</SectionLabel>
+          <SectionLabel>{t.nutrition.recipes}</SectionLabel>
           {recipes.length === 0 ? (
             <Card className="p-4 text-[13px] text-muted-foreground">
-              Save ingredients as a recipe with a serving count — log a single serving in one tap,
-              scaled automatically from the whole batch.
+              {t.nutrition.recipesEmpty}
             </Card>
           ) : (
             <div className="space-y-2">
@@ -353,8 +351,8 @@ function NutritionScreen() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-semibold">{recipe.name}</p>
                       <p className="tabular text-[12px] text-muted-foreground">
-                        {recipe.servings} serving{recipe.servings === 1 ? "" : "s"} ·{" "}
-                        {perServing.calories} kcal/serving
+                        {t.nutrition.servingCount(recipe.servings)} ·{" "}
+                        {t.nutrition.kcalPerServing(perServing.calories)}
                       </p>
                     </div>
                     <button
@@ -362,7 +360,7 @@ function NutritionScreen() {
                         haptic([20, 30]);
                         logRecipe(recipe.id, 1, mealForTime(new Date().toISOString()));
                       }}
-                      aria-label={`Log 1 serving of ${recipe.name}`}
+                      aria-label={t.nutrition.logServing(recipe.name)}
                       className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
                     >
                       <Plus className="size-4" />
@@ -379,15 +377,15 @@ function NutritionScreen() {
             }}
             className="glass mt-2 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
           >
-            <Plus className="size-4" /> New recipe
+            <Plus className="size-4" /> {t.nutrition.newRecipe}
           </button>
         </>
       ) : null}
 
-      <SectionLabel>Log</SectionLabel>
+      <SectionLabel>{t.nutrition.log}</SectionLabel>
       {selectedEntries.length === 0 ? (
         <Card className="p-6 text-center text-[15px] text-muted-foreground">
-          {isToday ? "Nothing logged yet today." : "Nothing logged that day."}
+          {isToday ? t.nutrition.nothingLoggedToday : t.nutrition.nothingLoggedDay}
         </Card>
       ) : (
         <div className="space-y-4">
@@ -399,10 +397,10 @@ function NutritionScreen() {
               <div key={meal}>
                 <div className="mb-2 flex items-center justify-between px-1">
                   <p className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    {MEAL_LABELS[meal]}
+                    {t.mealTypes[meal]}
                   </p>
                   <p className="tabular text-[13px] text-muted-foreground">
-                    {mealTotals.calories} kcal
+                    {t.nutrition.kcal(mealTotals.calories)}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -415,13 +413,20 @@ function NutritionScreen() {
                             haptic(12);
                             setFoodSheet(entry);
                           }}
-                          aria-label={`Edit ${entry.name}`}
+                          aria-label={t.nutrition.editEntry(entry.name)}
                           className="min-w-0 flex-1 text-left"
                         >
                           <p className="truncate text-[16px] font-semibold">{entry.name}</p>
                           <p className="tabular text-[13px] text-muted-foreground">
-                            {entry.grams}g · {m.calories} kcal · {m.protein}g P · {m.carbs}g C ·{" "}
-                            {m.fat}g F · {m.fiber}g Fib · {m.salt}g Salt
+                            {t.nutrition.entryLine(
+                              entry.grams,
+                              m.calories,
+                              m.protein,
+                              m.carbs,
+                              m.fat,
+                              m.fiber,
+                              m.salt,
+                            )}
                           </p>
                         </button>
                         <button
@@ -429,7 +434,7 @@ function NutritionScreen() {
                             haptic(15);
                             removeFoodEntry(entry.id);
                           }}
-                          aria-label={`Remove ${entry.name}`}
+                          aria-label={t.nutrition.removeEntry(entry.name)}
                           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground"
                         >
                           <Trash2 className="size-4" />
@@ -465,6 +470,7 @@ function NutrientMeter({
   consumed: number;
   limit: number | undefined;
 }) {
+  const t = useTranslation();
   const status = nutrientStatus(consumed, limit);
   const unit = NUTRIENT_UNITS[nutrientKey];
   const pct = limit ? Math.min(100, (consumed / limit) * 100) : 0;
@@ -475,7 +481,7 @@ function NutrientMeter({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[14px] font-semibold">{NUTRIENT_LABELS[nutrientKey]}</span>
+        <span className="text-[14px] font-semibold">{t.nutrients[nutrientKey]}</span>
         <span className="tabular text-[13px] text-muted-foreground">
           {limit != null ? `${consumed} / ${limit} ${unit}` : `${consumed} ${unit}`}
         </span>
@@ -490,11 +496,12 @@ function NutrientMeter({
           </div>
           {status === "over" ? (
             <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-destructive">
-              <AlertTriangle className="size-3.5" /> {Math.abs(remaining!)} {unit} over
+              <AlertTriangle className="size-3.5" /> {Math.abs(remaining!)} {unit}{" "}
+              {t.nutrition.over}
             </p>
           ) : (
             <p className="mt-1 text-[12px] text-muted-foreground">
-              {remaining} {unit} left
+              {remaining} {unit} {t.nutrition.left}
             </p>
           )}
         </>

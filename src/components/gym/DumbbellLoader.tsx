@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "../../lib/gym/i18n";
 
 /**
  * Loading indicator: the app icon's own Dumbbell glyph (lucide's exact path
@@ -18,6 +19,7 @@ export function DumbbellLoader({
   size?: number;
   className?: string;
 }) {
+  const t = useTranslation();
   return (
     <svg
       viewBox="0 0 24 24"
@@ -30,7 +32,7 @@ export function DumbbellLoader({
       strokeLinejoin="round"
       className={className}
       role="img"
-      aria-label="Loading"
+      aria-label={t.common.loading}
     >
       {/* The bar itself stays put. */}
       <path d="m9.6 14.4 4.8-4.8" />

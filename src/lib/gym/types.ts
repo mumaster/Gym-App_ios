@@ -146,3 +146,6 @@ export type ColorScheme = "system" | "light" | "dark";
 
 /** Kilograms are the only supported unit. */
 export type Unit = "kg";
+
+/** UI display language — see lib/gym/i18n.ts for the actual dictionaries. */
+export type Language = "en" | "nl";

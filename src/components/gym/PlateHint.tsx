@@ -1,11 +1,13 @@
 import { Layers } from "lucide-react";
 import { exerciseById } from "../../lib/gym/data";
+import { useTranslation } from "../../lib/gym/i18n";
 import { formatPlates, solvePlates } from "../../lib/gym/plates";
 import { useGym } from "../../lib/gym/store";
 
 /** Shows how to load a barbell / smith bar / loadable dumbbell for a target weight. */
 export function PlateHint({ exerciseId, target }: { exerciseId: string; target: number }) {
   const { profiles, activeProfileId } = useGym();
+  const t = useTranslation();
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
   const exercise = exerciseById(exerciseId);
   if (!profile || !exercise) return null;
@@ -25,10 +27,10 @@ export function PlateHint({ exerciseId, target }: { exerciseId: string; target: 
       <Layers className="mt-0.5 size-4 shrink-0 text-primary" />
       <p className="text-[13px] leading-snug text-muted-foreground">
         <span className="font-semibold text-foreground">
-          {solution.total} kg {isDumbbell && !isBar ? "per dumbbell" : ""}
+          {solution.total} kg {isDumbbell && !isBar ? t.plateHint.perDumbbell : ""}
         </span>{" "}
-        = {bar} kg bar + {formatPlates(solution.perSide)} per side
-        {solution.exact ? "" : ` · closest loadable to ${target} kg with your plates`}
+        = {t.plateHint.breakdownSuffix(bar, formatPlates(solution.perSide))}
+        {solution.exact ? "" : t.plateHint.closest(target)}
       </p>
     </div>
   );

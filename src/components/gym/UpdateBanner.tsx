@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "../../lib/gym/i18n";
 import { onUpdateAvailable } from "../../pwa";
 import { haptic } from "../../lib/gym/store";
 
@@ -12,6 +13,7 @@ import { haptic } from "../../lib/gym/store";
  *  for this session; it doesn't stop the update from applying next launch. */
 export function UpdateBanner() {
   const [visible, setVisible] = useState(false);
+  const t = useTranslation();
 
   useEffect(() => onUpdateAvailable(() => setVisible(true)), []);
 
@@ -20,7 +22,7 @@ export function UpdateBanner() {
   return (
     <div className="safe-top fixed inset-x-0 top-0 z-[90] flex justify-center px-4">
       <div className="glass-strong flex items-center gap-3 rounded-full py-2 pl-4 pr-2 shadow-[var(--shadow-float)]">
-        <p className="text-[13px] font-medium text-foreground">A new version is ready</p>
+        <p className="text-[13px] font-medium text-foreground">{t.updateBanner.text}</p>
         <button
           onClick={() => {
             haptic(15);
@@ -28,7 +30,7 @@ export function UpdateBanner() {
           }}
           className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[13px] font-semibold text-primary-foreground active:scale-95"
         >
-          <RefreshCw className="size-3.5" /> Reload
+          <RefreshCw className="size-3.5" /> {t.updateBanner.reload}
         </button>
       </div>
     </div>

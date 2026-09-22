@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { AccentId } from "../../lib/gym/types";
 
@@ -13,6 +14,7 @@ const ACCENTS: { id: AccentId; label: string; swatch: string }[] = [
 
 export function ThemePicker() {
   const { accent, customAccent, update } = useGym();
+  const t = useTranslation();
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-4">
@@ -61,7 +63,7 @@ export function ThemePicker() {
         </div>
         <input
           type="color"
-          aria-label="Custom color"
+          aria-label={t.common.customColor}
           value={customAccent}
           onClick={() => haptic(15)}
           onChange={(e) => update({ accent: "custom", customAccent: e.target.value })}

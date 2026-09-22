@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
+import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
   NUTRIENT_ORDER,
   WATER_QUICK_ADD,
@@ -31,7 +32,7 @@ import {
 } from "../lib/gym/nutrition";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
-import { READINESS_LABELS, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
+import { READINESS_EMOJI, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
@@ -55,27 +56,10 @@ export const Route = createFileRoute("/")({
   component: HomeScreen,
 });
 
-const GREETINGS = [
-  [4, "Late one"],
-  [11, "Good morning"],
-  [14, "Good midday"],
-  [18, "Good afternoon"],
-  [22, "Good evening"],
-] as const;
-
-function greeting(): string {
-  const hour = new Date().getHours();
-  return GREETINGS.find(([h]) => hour < h)?.[1] ?? "Good night";
-}
-
-const QUICK_LINKS = [
-  { to: "/equipment" as const, label: "Equipment", icon: LayoutGrid },
-  { to: "/exercises" as const, label: "Exercises", icon: Search },
-  { to: "/history" as const, label: "History", icon: CalendarDays },
-];
-
 function HomeScreen() {
   const navigate = useNavigate();
+  const t = useTranslation();
+  const locale = useLocale();
   const {
     hydrated,
     activeWorkout,
@@ -123,12 +107,25 @@ function HomeScreen() {
   const schemeDayLabel =
     weeklyScheme && schemeSlot ? splitDayLabel(weeklyScheme.templateId, schemeSlot.dayId) : "";
 
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 4) return t.home.greetingLate;
+    if (hour < 11) return t.home.greetingMorning;
+    if (hour < 14) return t.home.greetingMidday;
+    if (hour < 18) return t.home.greetingAfternoon;
+    if (hour < 22) return t.home.greetingEvening;
+    return t.home.greetingNight;
+  };
+
+  const QUICK_LINKS = [
+    { to: "/equipment" as const, label: t.home.quickLinkEquipment, icon: LayoutGrid },
+    { to: "/exercises" as const, label: t.home.quickLinkExercises, icon: Search },
+    { to: "/history" as const, label: t.home.quickLinkHistory, icon: CalendarDays },
+  ];
+
   const dateLabel = useMemo(
-    () =>
-      new Date()
-        .toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })
-        .toUpperCase(),
-    [],
+    () => new Date().toLocaleDateString(locale, t.home.dateFormat).toUpperCase(),
+    [locale, t],
   );
 
   /** A single hero at the top of the screen carries both "what's next" and its
@@ -139,35 +136,40 @@ function HomeScreen() {
    *  urgent than anything else); then an active Program; then a WeeklyScheme;
    *  otherwise a plain "generate" prompt. */
   let heroIcon: LucideIcon = Zap;
-  let heroEyebrow = "No plan yet";
-  let heroTitle = "Ready to train?";
+  let heroEyebrow = t.home.noPlanYet;
+  let heroTitle = t.home.readyToTrain;
   let heroSub: string | null = null;
-  let heroCta = "Generate";
+  let heroCta = t.home.generate;
   let heroTarget: "/session" | "/generate" = "/generate";
 
   if (activeWorkout) {
     heroIcon = Play;
-    heroEyebrow = "Session in progress";
-    heroTitle = `${activeWorkout.plan.length} exercises · ${activeWorkout.completed_sets.length} sets logged`;
+    heroEyebrow = t.home.sessionInProgress;
+    heroTitle = t.home.sessionProgressTitle(
+      activeWorkout.plan.length,
+      activeWorkout.completed_sets.length,
+    );
     heroSub = null;
-    heroCta = "Resume";
+    heroCta = t.home.resume;
     heroTarget = "/session";
   } else if (program && programWeek) {
     heroIcon = programWeek.type === "deload" ? Snowflake : Flame;
-    heroEyebrow = `Week ${program.currentWeek + 1} of ${program.weeks.length}${
-      programWeek.type === "deload" ? " · Deload" : ""
-    }`;
-    heroTitle = `Next: ${programDayLabel}`;
+    heroEyebrow = t.home.weekOf(
+      program.currentWeek + 1,
+      program.weeks.length,
+      programWeek.type === "deload",
+    );
+    heroTitle = t.home.nextDay(programDayLabel);
     const templateLabel = splitTemplateById(program.templateId).label;
     heroSub = program.name === templateLabel ? templateLabel : `${program.name} · ${templateLabel}`;
-    heroCta = "Continue";
+    heroCta = t.home.continueCta;
     heroTarget = "/generate";
   } else if (weeklyScheme && schemeSlot) {
     heroIcon = Flame;
     heroEyebrow = splitTemplateById(weeklyScheme.templateId).label;
-    heroTitle = `Next: ${schemeDayLabel}`;
+    heroTitle = t.home.nextDay(schemeDayLabel);
     heroSub = null;
-    heroCta = "Continue";
+    heroCta = t.home.continueCta;
     heroTarget = "/generate";
   }
   const HeroIcon = heroIcon;
@@ -190,7 +192,7 @@ function HomeScreen() {
             haptic(12);
             navigate({ to: "/settings" });
           }}
-          aria-label="Settings"
+          aria-label={t.common.settings}
           className="flex shrink-0 items-center justify-center rounded-full active:scale-95"
         >
           <ProfileAvatar avatarId={avatarId} size={42} />
@@ -324,6 +326,7 @@ function NutritionTile({
   caloriePct: number;
   onClick: () => void;
 }) {
+  const t = useTranslation();
   const barClass = (status: NutrientStatus) =>
     status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
 
@@ -333,7 +336,7 @@ function NutritionTile({
         haptic(10);
         onClick();
       }}
-      aria-label="Nutrition today"
+      aria-label={t.home.nutritionAriaLabel}
       className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
     >
       <Apple
@@ -382,7 +385,7 @@ function NutritionTile({
                 <span className="text-[10px] font-medium text-muted-foreground">g</span>
               </p>
               <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {key === "protein" ? "Protein" : key === "carbs" ? "Carbs" : "Fat"}
+                {key === "protein" ? t.home.protein : key === "carbs" ? t.home.carbs : t.home.fat}
                 {goal != null ? `/${goal}` : ""}
               </p>
               {goal != null ? (
@@ -431,6 +434,7 @@ function ActivityTile({
   totalWorkouts: number;
   onClick: () => void;
 }) {
+  const t = useTranslation();
   return (
     <button
       onClick={() => {
@@ -450,10 +454,13 @@ function ActivityTile({
         <div className="min-w-0">
           <p className="tabular truncate text-[17px] font-bold leading-none">
             {streak}
-            <span className="text-[11px] font-medium text-muted-foreground"> day streak</span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {" "}
+              {t.home.dayStreak}
+            </span>
           </p>
           <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
-            {longestStreak > streak ? `Best ${longestStreak}` : "Keep it going"}
+            {longestStreak > streak ? t.home.best(longestStreak) : t.home.keepItGoing}
           </p>
         </div>
       </div>
@@ -473,9 +480,14 @@ function ActivityTile({
         <div className="min-w-0">
           <p className="tabular truncate text-[17px] font-bold leading-none">
             {sessionsThisWeek}
-            <span className="text-[11px] font-medium text-muted-foreground"> this week</span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {" "}
+              {t.home.thisWeek}
+            </span>
           </p>
-          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">{totalWorkouts} total</p>
+          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
+            {t.home.total(totalWorkouts)}
+          </p>
         </div>
       </div>
     </button>
@@ -494,6 +506,7 @@ function ActivityTile({
  *  sized against the catalog's longest exercise name (35 characters) at
  *  this smaller scale, not just at the old, larger one. */
 function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () => void }) {
+  const t = useTranslation();
   return (
     <button
       onClick={() => {
@@ -511,14 +524,12 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Best lift
+          {t.home.bestLift}
         </p>
         {pr ? (
           <p className="line-clamp-2 text-[13px] font-bold leading-tight">{pr.name}</p>
         ) : (
-          <p className="truncate text-[12px] text-muted-foreground">
-            No PR yet — finish a working set
-          </p>
+          <p className="truncate text-[12px] text-muted-foreground">{t.home.noPrYet}</p>
         )}
       </div>
       {pr ? (
@@ -554,6 +565,7 @@ function WaterTile({
   onAdd: (ml: number) => void;
   onOpen: () => void;
 }) {
+  const t = useTranslation();
   const pct = goalMl ? Math.min(100, (totalMl / goalMl) * 100) : 0;
   const active = totalMl > 0;
 
@@ -570,7 +582,7 @@ function WaterTile({
           haptic(10);
           onOpen();
         }}
-        aria-label="Water intake today"
+        aria-label={t.home.waterAriaLabel}
         className="relative flex items-center justify-between gap-3 text-left"
       >
         <div className="flex min-w-0 items-center gap-2.5">
@@ -605,7 +617,7 @@ function WaterTile({
           <button
             key={ml}
             onClick={() => onAdd(ml)}
-            aria-label={`Add ${ml}ml of water`}
+            aria-label={t.home.addWater(ml)}
             className="flex min-h-[36px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
           >
             +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
@@ -647,6 +659,7 @@ function ReadinessTile({
   onEdit: () => void;
   onPick: (score: ReadinessScore) => void;
 }) {
+  const t = useTranslation();
   const answered = checkIn && !editing;
 
   return (
@@ -664,7 +677,7 @@ function ReadinessTile({
       {answered ? (
         <button
           onClick={onEdit}
-          aria-label="Today's readiness"
+          aria-label={t.home.todaysReadiness}
           className="relative flex items-center justify-between gap-3 text-left"
         >
           <div className="flex min-w-0 items-center gap-2.5">
@@ -672,11 +685,11 @@ function ReadinessTile({
               <Activity className="size-3.5" />
             </span>
             <span className="truncate text-[14px] font-bold leading-none">
-              {READINESS_LABELS[checkIn.score].emoji} {READINESS_LABELS[checkIn.score].label}
+              {READINESS_EMOJI[checkIn.score]} {t.readiness[checkIn.score]}
             </span>
           </div>
           <span className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-[11.5px] font-bold text-secondary-foreground">
-            Change
+            {t.home.change}
           </span>
         </button>
       ) : (
@@ -686,7 +699,7 @@ function ReadinessTile({
               <Activity className="size-3.5" />
             </span>
             <span className="truncate text-[12.5px] font-semibold text-muted-foreground">
-              How are you feeling today?
+              {t.home.howAreYouFeeling}
             </span>
           </div>
           <div className="relative grid grid-cols-5 gap-1.5">
@@ -694,10 +707,10 @@ function ReadinessTile({
               <button
                 key={score}
                 onClick={() => onPick(score)}
-                aria-label={READINESS_LABELS[score].label}
+                aria-label={t.readiness[score]}
                 className="flex min-h-[38px] items-center justify-center rounded-full bg-muted text-[17px] leading-none active:scale-95"
               >
-                {READINESS_LABELS[score].emoji}
+                {READINESS_EMOJI[score]}
               </button>
             ))}
           </div>

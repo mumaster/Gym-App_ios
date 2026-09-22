@@ -20,6 +20,7 @@ import {
   slugifyId,
   useExerciseCatalog,
 } from "../lib/gym/catalog";
+import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import type {
   EquipmentId,
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/exercises")({
 });
 
 function ExercisesScreen() {
+  const t = useTranslation();
   const {
     profiles,
     activeProfileId,
@@ -111,31 +113,31 @@ function ExercisesScreen() {
     a.download = `forge-exercises-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${exercises.length} exercises`);
+    toast.success(t.exercises.exportedCount(exercises.length));
   };
 
   const importCsv = async (file: File) => {
     const { list, errors } = csvToExercises(await file.text());
     if (!list.length) {
-      toast.error(errors[0] ?? "Nothing could be imported");
+      toast.error(errors[0] ?? t.exercises.nothingToImport);
       return;
     }
     const { error } = await saveExercises(list);
     if (error) toast.error(error);
-    else
-      toast.success(
-        `Imported ${list.length} exercises${errors.length ? ` · ${errors.length} rows skipped` : ""}`,
-      );
+    else toast.success(t.exercises.importedCount(list.length, errors.length));
   };
 
   return (
-    <Screen title="Exercises" subtitle={`${results.length} of ${exercises.length} exercises`}>
+    <Screen
+      title={t.exercises.title}
+      subtitle={t.exercises.subtitle(results.length, exercises.length)}
+    >
       <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
         <Search className="size-5 text-muted-foreground" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search exercises"
+          placeholder={t.exercises.search}
           className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground"
         />
       </div>
@@ -162,17 +164,17 @@ function ExercisesScreen() {
       </div>
 
       <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-        {(["All", ...targetChoices] as const).map((t) => (
+        {(["All", ...targetChoices] as const).map((choice) => (
           <button
-            key={t}
-            onClick={() => setTarget(t)}
+            key={choice}
+            onClick={() => setTarget(choice)}
             className={`min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-              target === t
+              target === choice
                 ? "bg-primary text-primary-foreground"
                 : "glass text-secondary-foreground"
             }`}
           >
-            {t === "All" ? "Any muscle" : t}
+            {choice === "All" ? t.exercises.anyMuscle : choice}
           </button>
         ))}
       </div>
@@ -184,18 +186,18 @@ function ExercisesScreen() {
             onlyAvailable ? "bg-primary text-primary-foreground" : "glass text-secondary-foreground"
           }`}
         >
-          {onlyAvailable ? `Filtered to ${profile.name}` : "Show only what I can do today"}
+          {onlyAvailable ? t.exercises.filteredTo(profile.name) : t.exercises.showOnlyAvailable}
         </button>
         <button
           onClick={() => setOnlyLoved((v) => !v)}
           aria-pressed={onlyLoved}
-          aria-label="Show only loved exercises"
+          aria-label={t.exercises.showOnlyLoved}
           className={`flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[15px] font-semibold ${
             onlyLoved ? "bg-primary text-primary-foreground" : "glass text-secondary-foreground"
           }`}
         >
           <Heart className={`size-4 ${onlyLoved ? "fill-current" : ""}`} />
-          {lovedExerciseIds.length || "Loved"}
+          {lovedExerciseIds.length || t.exercises.loved}
         </button>
       </div>
 
@@ -204,19 +206,19 @@ function ExercisesScreen() {
           onClick={() => setDraft({ value: emptyExercise(), isNew: true })}
           className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl bg-primary text-[15px] font-semibold text-primary-foreground"
         >
-          <Plus className="size-4" /> New
+          <Plus className="size-4" /> {t.exercises.new}
         </button>
         <button
           onClick={() => fileRef.current?.click()}
           className="glass flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-[15px] font-semibold text-secondary-foreground"
         >
-          <Upload className="size-4" /> Import
+          <Upload className="size-4" /> {t.exercises.import}
         </button>
         <button
           onClick={exportCsv}
           className="glass flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-[15px] font-semibold text-secondary-foreground"
         >
-          <Download className="size-4" /> Export
+          <Download className="size-4" /> {t.exercises.export}
         </button>
       </div>
       <input
@@ -246,11 +248,11 @@ function ExercisesScreen() {
                   {e.movement_pattern} ·{" "}
                   {e.equipment_required
                     .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)
-                    .join(", ") || "No equipment"}
+                    .join(", ") || t.exercises.noEquipment}
                 </p>
               </button>
               <button
-                aria-label={avoided ? `Stop avoiding ${e.name}` : `Avoid ${e.name}`}
+                aria-label={avoided ? t.exercises.stopAvoiding(e.name) : t.exercises.avoid(e.name)}
                 aria-pressed={avoided}
                 onClick={() => {
                   haptic(12);
@@ -263,7 +265,7 @@ function ExercisesScreen() {
                 <ShieldOff className="size-4" />
               </button>
               <button
-                aria-label={loved ? `Unlove ${e.name}` : `Love ${e.name}`}
+                aria-label={loved ? t.exercises.unlove(e.name) : t.exercises.love(e.name)}
                 aria-pressed={loved}
                 onClick={() => {
                   haptic(12);
@@ -276,7 +278,7 @@ function ExercisesScreen() {
                 <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
               </button>
               <button
-                aria-label={`Edit ${e.name}`}
+                aria-label={t.exercises.edit(e.name)}
                 onClick={() => setDraft({ value: { ...e }, isNew: false })}
                 className="glass flex size-10 shrink-0 items-center justify-center rounded-full"
               >
@@ -305,7 +307,9 @@ function ExercisesScreen() {
                 <Heart
                   className={`size-4 ${lovedExerciseIds.includes(detail.id) ? "fill-current" : ""}`}
                 />
-                {lovedExerciseIds.includes(detail.id) ? "Loved" : "Love this"}
+                {lovedExerciseIds.includes(detail.id)
+                  ? t.exercises.lovedThis
+                  : t.exercises.loveThis}
               </button>
               <button
                 onClick={() => {
@@ -319,13 +323,15 @@ function ExercisesScreen() {
                 }`}
               >
                 <ShieldOff className="size-4" />
-                {avoidedExerciseIds.includes(detail.id) ? "Avoided" : "Avoid this"}
+                {avoidedExerciseIds.includes(detail.id)
+                  ? t.exercises.avoided
+                  : t.exercises.avoidThis}
               </button>
             </div>
             <p className="text-[15px] text-muted-foreground">{detail.instructions}</p>
             <div>
               <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Targets
+                {t.exercises.targets}
               </p>
               <div className="flex flex-wrap gap-2">
                 {(detail.muscle_targets.length
@@ -407,6 +413,7 @@ function ExerciseEditor({
   onClose: () => void;
   onChange: (value: Exercise) => void;
 }) {
+  const t = useTranslation();
   const [busy, setBusy] = useState(false);
   const value = draft?.value;
 
@@ -416,7 +423,7 @@ function ExerciseEditor({
   const save = async () => {
     if (!value) return;
     if (!value.name.trim()) {
-      toast.error("Give the exercise a name");
+      toast.error(t.exercises.giveExerciseName);
       return;
     }
     setBusy(true);
@@ -428,7 +435,7 @@ function ExerciseEditor({
     setBusy(false);
     if (error) toast.error(error);
     else {
-      toast.success("Saved");
+      toast.success(t.exercises.saved);
       onClose();
     }
   };
@@ -440,7 +447,7 @@ function ExerciseEditor({
     setBusy(false);
     if (error) toast.error(error);
     else {
-      toast.success("Deleted");
+      toast.success(t.exercises.deleted);
       onClose();
     }
   };
@@ -449,20 +456,20 @@ function ExerciseEditor({
     <BottomSheet
       open={!!draft}
       onClose={onClose}
-      title={draft?.isNew ? "New exercise" : "Edit exercise"}
+      title={draft?.isNew ? t.exercises.newExercise : t.exercises.editExercise}
     >
       {value ? (
         <div className="space-y-4 pb-2">
-          <Field label="Name">
+          <Field label={t.exercises.nameField}>
             <input
               value={value.name}
               onChange={(e) => onChange({ ...value, name: e.target.value })}
-              placeholder="e.g. Incline Cable Flye"
+              placeholder={t.exercises.namePlaceholder}
               className="glass h-12 w-full rounded-2xl px-3 text-[17px] outline-none"
             />
           </Field>
 
-          <Field label="Primary muscle">
+          <Field label={t.exercises.primaryMuscle}>
             <div className="flex flex-wrap gap-2">
               {MUSCLES.map((m) => (
                 <Chip
@@ -475,7 +482,7 @@ function ExerciseEditor({
             </div>
           </Field>
 
-          <Field label="Secondary muscles">
+          <Field label={t.exercises.secondaryMuscles}>
             <div className="flex flex-wrap gap-2">
               {MUSCLES.map((m) => (
                 <Chip
@@ -490,17 +497,17 @@ function ExerciseEditor({
             </div>
           </Field>
 
-          <Field label="Specific muscle targets (tap in order of emphasis)">
+          <Field label={t.exercises.specificTargets}>
             <div className="flex flex-wrap gap-2">
-              {TARGET_MUSCLES.map((t) => {
-                const pos = value.muscle_targets.indexOf(t);
+              {TARGET_MUSCLES.map((tm) => {
+                const pos = value.muscle_targets.indexOf(tm);
                 return (
                   <Chip
-                    key={t}
-                    label={pos === 0 ? `★ ${t}` : t}
+                    key={tm}
+                    label={pos === 0 ? `★ ${tm}` : tm}
                     active={pos !== -1}
                     onClick={() =>
-                      onChange({ ...value, muscle_targets: toggle(value.muscle_targets, t) })
+                      onChange({ ...value, muscle_targets: toggle(value.muscle_targets, tm) })
                     }
                   />
                 );
@@ -508,7 +515,7 @@ function ExerciseEditor({
             </div>
           </Field>
 
-          <Field label="Equipment required">
+          <Field label={t.exercises.equipmentRequired}>
             <div className="flex flex-wrap gap-2">
               {EQUIPMENT.map((eq) => (
                 <Chip
@@ -526,7 +533,7 @@ function ExerciseEditor({
             </div>
           </Field>
 
-          <Field label="Movement pattern">
+          <Field label={t.exercises.movementPattern}>
             <div className="flex flex-wrap gap-2">
               {PATTERNS.map((p) => (
                 <Chip
@@ -544,7 +551,7 @@ function ExerciseEditor({
             onClick={() => onChange({ ...value, compound: !value.compound })}
             className="glass flex min-h-[48px] w-full items-center justify-between rounded-2xl px-4"
           >
-            <span className="text-[15px] font-semibold">Compound movement</span>
+            <span className="text-[15px] font-semibold">{t.exercises.compoundMovement}</span>
             <span
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
                 value.compound
@@ -552,11 +559,11 @@ function ExerciseEditor({
                   : "bg-secondary text-secondary-foreground"
               }`}
             >
-              {value.compound ? "Yes" : "No"}
+              {value.compound ? t.exercises.yes : t.exercises.no}
             </span>
           </button>
 
-          <Field label="Instructions">
+          <Field label={t.exercises.instructions}>
             <textarea
               value={value.instructions}
               onChange={(e) => onChange({ ...value, instructions: e.target.value })}
@@ -565,7 +572,7 @@ function ExerciseEditor({
             />
           </Field>
 
-          <Field label="Form cues (one per line)">
+          <Field label={t.exercises.formCues}>
             <textarea
               value={value.cues.join("\n")}
               onChange={(e) =>
@@ -582,12 +589,12 @@ function ExerciseEditor({
               onClick={() => void save()}
               className="min-h-[50px] flex-1 rounded-2xl bg-primary text-[17px] font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Saving…" : "Save exercise"}
+              {busy ? t.exercises.savingExercise : t.exercises.saveExercise}
             </button>
             {!draft?.isNew ? (
               <button
                 disabled={busy}
-                aria-label="Delete exercise"
+                aria-label={t.exercises.deleteExercise}
                 onClick={() => void remove()}
                 className="glass flex size-[50px] shrink-0 items-center justify-center rounded-2xl text-destructive disabled:opacity-50"
               >

@@ -1,17 +1,22 @@
+import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { dayIndexToDate, type CalendarDay } from "../../lib/gym/streak";
 
 /** GitHub-style contribution grid: one column per week, Monday-first rows. */
 export function StreakCalendar({ columns }: { columns: CalendarDay[][] }) {
+  const t = useTranslation();
+  const locale = useLocale();
   return (
     <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
       {columns.map((column, i) => (
         <div key={i} className="flex flex-col gap-1">
           {column.map((day) => {
-            const label = `${dayIndexToDate(day.dayIndex).toLocaleDateString(undefined, {
+            const label = `${dayIndexToDate(day.dayIndex).toLocaleDateString(locale, {
               weekday: "long",
               month: "long",
               day: "numeric",
-            })}${day.isToday ? " (today)" : ""} — ${day.trained ? "trained" : "no session"}`;
+            })}${day.isToday ? t.streakCalendar.today : ""} — ${
+              day.trained ? t.streakCalendar.trained : t.streakCalendar.noSession
+            }`;
             return (
               <div
                 key={day.dayIndex}

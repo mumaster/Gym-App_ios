@@ -3,6 +3,7 @@ import { Check, Minus, Plus, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
+import { useTranslation } from "../../lib/gym/i18n";
 import {
   dailyTotals,
   recipePerServing,
@@ -21,6 +22,7 @@ import { haptic, useGym } from "../../lib/gym/store";
  */
 export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { saveRecipe } = useGym();
+  const t = useTranslation();
   const [name, setName] = useState("");
   const [servings, setServings] = useState(4);
   const [ingredients, setIngredients] = useState<MealIngredient[]>([]);
@@ -67,23 +69,27 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
       {/* Same "hide while adding an ingredient" pattern as CreateMealSheet —
           this sheet's own state (name/servings/ingredients) survives that
           toggle regardless, since it lives here, not inside AddFoodSheet. */}
-      <BottomSheet open={open && !addingIngredient} onClose={close} title="Create recipe">
+      <BottomSheet open={open && !addingIngredient} onClose={close} title={t.createRecipe.title}>
         <div className="space-y-4">
           <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">Recipe</span>
+            <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
+              {t.createRecipe.recipe}
+            </span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               onFocus={selectOnFocus}
-              placeholder="e.g. Chicken stir fry"
+              placeholder={t.createRecipe.recipePlaceholder}
               className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />
           </label>
 
           <div className="flex items-center justify-between rounded-2xl bg-muted px-4 py-3">
             <div>
-              <p className="text-[14px] font-semibold text-muted-foreground">Servings</p>
-              <p className="text-[12px] text-muted-foreground">How many the whole batch makes</p>
+              <p className="text-[14px] font-semibold text-muted-foreground">
+                {t.createRecipe.servings}
+              </p>
+              <p className="text-[12px] text-muted-foreground">{t.createRecipe.servingsDesc}</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -91,7 +97,7 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
                   haptic(10);
                   setServings((s) => Math.max(1, s - 1));
                 }}
-                aria-label="Fewer servings"
+                aria-label={t.createRecipe.fewerServings}
                 className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-95"
               >
                 <Minus className="size-4" />
@@ -102,7 +108,7 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
                   haptic(10);
                   setServings((s) => Math.min(50, s + 1));
                 }}
-                aria-label="More servings"
+                aria-label={t.createRecipe.moreServings}
                 className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-95"
               >
                 <Plus className="size-4" />
@@ -111,10 +117,12 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
           </div>
 
           <div>
-            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">Ingredients</p>
+            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+              {t.createRecipe.ingredients}
+            </p>
             {ingredients.length === 0 ? (
               <Card className="p-4 text-center text-[14px] text-muted-foreground">
-                Add each ingredient — scan its label or enter it manually.
+                {t.createRecipe.ingredientsEmpty}
               </Card>
             ) : (
               <div className="space-y-2">
@@ -133,7 +141,7 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
                           haptic(12);
                           setIngredients((cur) => cur.filter((_, idx) => idx !== i));
                         }}
-                        aria-label={`Remove ${ing.name}`}
+                        aria-label={t.createRecipe.removeIngredient(ing.name)}
                         className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground"
                       >
                         <Trash2 className="size-4" />
@@ -152,27 +160,35 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
             }}
             className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
           >
-            <Plus className="size-4" /> Add ingredient
+            <Plus className="size-4" /> {t.createRecipe.addIngredient}
           </button>
 
           {ingredients.length > 0 ? (
             <div className="space-y-2">
               <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3">
                 <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Whole batch
+                  {t.createRecipe.wholeBatch}
                 </p>
                 <p className="tabular mt-1 text-[14px]">
-                  {totals.calories} kcal · {totals.protein}g protein · {totals.carbs}g carbs ·{" "}
-                  {totals.fat}g fat
+                  {t.createRecipe.macroSummary4(
+                    totals.calories,
+                    totals.protein,
+                    totals.carbs,
+                    totals.fat,
+                  )}
                 </p>
               </div>
               <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
                 <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
-                  Per serving ({servings} total)
+                  {t.createRecipe.perServing(servings)}
                 </p>
                 <p className="tabular mt-1 text-[15px] font-semibold">
-                  {perServing.calories} kcal · {perServing.protein}g protein · {perServing.carbs}g
-                  carbs · {perServing.fat}g fat
+                  {t.createRecipe.macroSummary4(
+                    perServing.calories,
+                    perServing.protein,
+                    perServing.carbs,
+                    perServing.fat,
+                  )}
                 </p>
               </div>
             </div>
@@ -183,7 +199,7 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
             disabled={!canSave}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            <Check className="size-5" /> Save recipe
+            <Check className="size-5" /> {t.createRecipe.saveRecipe}
           </button>
         </div>
       </BottomSheet>

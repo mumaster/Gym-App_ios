@@ -2,12 +2,8 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { NutritionQuestionnaireSheet } from "./NutritionQuestionnaireSheet";
-import {
-  NUTRIENT_LABELS,
-  NUTRIENT_ORDER,
-  NUTRIENT_UNITS,
-  type NutritionGoals,
-} from "../../lib/gym/nutrition";
+import { useTranslation } from "../../lib/gym/i18n";
+import { NUTRIENT_ORDER, NUTRIENT_UNITS, type NutritionGoals } from "../../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
@@ -18,6 +14,7 @@ const emptyDraft = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as
 
 export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { nutritionGoals, setNutritionGoals } = useGym();
+  const t = useTranslation();
   const [draft, setDraft] = useState<Record<keyof NutritionGoals, string>>(emptyDraft);
   const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
 
@@ -57,12 +54,9 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
       {/* Hidden (not unmounted) while the questionnaire is up, mirroring
           CreateMealSheet/AddFoodSheet — two fixed inset-0 overlays stacked
           at once looks broken. */}
-      <BottomSheet open={open && !questionnaireOpen} onClose={close} title="Daily nutrition limits">
+      <BottomSheet open={open && !questionnaireOpen} onClose={close} title={t.nutritionGoals.title}>
         <div className="space-y-4">
-          <p className="text-[13px] text-muted-foreground">
-            Set a daily limit for whichever nutrients you want to keep an eye on. Leave the rest
-            blank — the overview only tracks progress for the ones you set.
-          </p>
+          <p className="text-[13px] text-muted-foreground">{t.nutritionGoals.desc}</p>
 
           <button
             onClick={() => {
@@ -74,10 +68,10 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             <Sparkles className="size-5 shrink-0 text-primary" />
             <span className="min-w-0">
               <span className="block text-[14px] font-semibold text-primary">
-                Suggest my limits
+                {t.nutritionGoals.suggestMyLimits}
               </span>
               <span className="block text-[12.5px] text-muted-foreground">
-                Answer a few quick questions and we'll pre-fill these for you.
+                {t.nutritionGoals.suggestMyLimitsDesc}
               </span>
             </span>
           </button>
@@ -86,7 +80,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             {NUTRIENT_ORDER.map((key) => (
               <label key={key} className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
                 <span className="w-20 shrink-0 text-[14px] font-semibold text-muted-foreground">
-                  {NUTRIENT_LABELS[key]}
+                  {t.nutrients[key]}
                 </span>
                 <input
                   inputMode="decimal"
@@ -97,7 +91,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
                     if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                     setDraft((cur) => ({ ...cur, [key]: e.target.value }));
                   }}
-                  placeholder="No limit"
+                  placeholder={t.nutritionGoals.noLimit}
                   className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
                 />
                 <span className="w-9 shrink-0 text-[12px] text-muted-foreground">
@@ -111,7 +105,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             onClick={clearAll}
             className="glass flex min-h-[52px] w-full items-center justify-center rounded-2xl text-[15px] font-semibold text-muted-foreground active:scale-95"
           >
-            Clear all
+            {t.nutritionGoals.clearAll}
           </button>
         </div>
       </BottomSheet>

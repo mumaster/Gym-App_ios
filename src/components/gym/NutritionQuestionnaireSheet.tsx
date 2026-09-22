@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, ChevronLeft } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { useTranslation } from "../../lib/gym/i18n";
 import {
   ACTIVITY_LEVELS,
-  NUTRIENT_LABELS,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   suggestNutritionGoals,
@@ -17,19 +17,61 @@ import {
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
-const GOALS: { id: NutritionGoalType; label: string; description: string }[] = [
-  { id: "lose", label: "Lose weight", description: "Eat in a calorie deficit" },
-  { id: "maintain", label: "Maintain", description: "Stay around your current weight" },
-  { id: "gain", label: "Gain weight", description: "Eat in a calorie surplus" },
+type Translations = ReturnType<typeof useTranslation>;
+
+const goalsList = (
+  t: Translations,
+): { id: NutritionGoalType; label: string; description: string }[] => [
+  {
+    id: "lose",
+    label: t.nutritionQuestionnaire.goalLose,
+    description: t.nutritionQuestionnaire.goalLoseDesc,
+  },
+  {
+    id: "maintain",
+    label: t.nutritionQuestionnaire.goalMaintain,
+    description: t.nutritionQuestionnaire.goalMaintainDesc,
+  },
+  {
+    id: "gain",
+    label: t.nutritionQuestionnaire.goalGain,
+    description: t.nutritionQuestionnaire.goalGainDesc,
+  },
 ];
 
-const PACES: { id: NutritionPace; label: string; description: string }[] = [
-  { id: "mild", label: "Mild", description: "Slow and steady, easiest to sustain" },
-  { id: "moderate", label: "Moderate", description: "A balanced pace" },
-  { id: "aggressive", label: "Aggressive", description: "Faster, harder to sustain" },
+const pacesList = (
+  t: Translations,
+): { id: NutritionPace; label: string; description: string }[] => [
+  {
+    id: "mild",
+    label: t.nutritionQuestionnaire.paceMild,
+    description: t.nutritionQuestionnaire.paceMildDesc,
+  },
+  {
+    id: "moderate",
+    label: t.nutritionQuestionnaire.paceModerate,
+    description: t.nutritionQuestionnaire.paceModerateDesc,
+  },
+  {
+    id: "aggressive",
+    label: t.nutritionQuestionnaire.paceAggressive,
+    description: t.nutritionQuestionnaire.paceAggressiveDesc,
+  },
 ];
 
-const STEP_LABELS = ["Basics", "Activity", "Goal", "Review"];
+const activityLevelsList = (
+  t: Translations,
+): { id: ActivityLevel; label: string; description: string; factor: number }[] =>
+  ACTIVITY_LEVELS.map((a) => {
+    const key = (a.id === "very_active" ? "veryActive" : a.id) as
+      "sedentary" | "light" | "moderate" | "active" | "veryActive";
+    return {
+      id: a.id,
+      factor: a.factor,
+      label: t.activityLevels[`${key}Label`],
+      description: t.activityLevels[`${key}Desc`],
+    };
+  });
 
 function OptionRow({
   selected,
@@ -107,6 +149,16 @@ export function NutritionQuestionnaireSheet({
   onApply: (goals: NutritionGoals) => void;
 }) {
   const { nutritionProfile, update } = useGym();
+  const t = useTranslation();
+  const STEP_LABELS = [
+    t.nutritionQuestionnaire.stepBasics,
+    t.nutritionQuestionnaire.stepActivity,
+    t.nutritionQuestionnaire.stepGoal,
+    t.nutritionQuestionnaire.stepReview,
+  ];
+  const GOALS = goalsList(t);
+  const PACES = pacesList(t);
+  const ACTIVITY_LEVELS_T = activityLevelsList(t);
   const [step, setStep] = useState(0);
   const [sex, setSex] = useState<Sex | null>(null);
   const [age, setAge] = useState("");
@@ -183,7 +235,7 @@ export function NutritionQuestionnaireSheet({
           : true;
 
   return (
-    <BottomSheet open={open} onClose={close} title="Suggest my limits">
+    <BottomSheet open={open} onClose={close} title={t.nutritionQuestionnaire.title}>
       <div className="space-y-4">
         <div className="flex items-center gap-1.5">
           {STEP_LABELS.map((label, i) => (
@@ -197,7 +249,7 @@ export function NutritionQuestionnaireSheet({
         {step === 0 ? (
           <div className="space-y-3">
             <p className="text-[13px] text-muted-foreground">
-              A few basics to estimate your daily energy needs.
+              {t.nutritionQuestionnaire.basicsDesc}
             </p>
             <div className="flex gap-2">
               {(["male", "female"] as const).map((s) => (
@@ -211,21 +263,27 @@ export function NutritionQuestionnaireSheet({
                     sex === s ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                   }`}
                 >
-                  {s}
+                  {t.nutritionQuestionnaire[s]}
                 </button>
               ))}
             </div>
-            <NumberField label="Age" unit="yrs" value={age} placeholder="30" onChange={setAge} />
             <NumberField
-              label="Height"
-              unit="cm"
+              label={t.nutritionQuestionnaire.age}
+              unit={t.nutritionQuestionnaire.years}
+              value={age}
+              placeholder="30"
+              onChange={setAge}
+            />
+            <NumberField
+              label={t.nutritionQuestionnaire.height}
+              unit={t.nutritionQuestionnaire.cm}
               value={heightCm}
               placeholder="175"
               onChange={setHeightCm}
             />
             <NumberField
-              label="Weight"
-              unit="kg"
+              label={t.nutritionQuestionnaire.weight}
+              unit={t.nutritionQuestionnaire.kg}
               value={weightKg}
               placeholder="75"
               onChange={setWeightKg}
@@ -236,9 +294,9 @@ export function NutritionQuestionnaireSheet({
         {step === 1 ? (
           <div className="space-y-2">
             <p className="text-[13px] text-muted-foreground">
-              How active are you day-to-day, outside the gym?
+              {t.nutritionQuestionnaire.activityDesc}
             </p>
-            {ACTIVITY_LEVELS.map((a) => (
+            {ACTIVITY_LEVELS_T.map((a) => (
               <OptionRow
                 key={a.id}
                 selected={activityLevel === a.id}
@@ -256,7 +314,9 @@ export function NutritionQuestionnaireSheet({
         {step === 2 ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <p className="text-[13px] text-muted-foreground">What's your goal?</p>
+              <p className="text-[13px] text-muted-foreground">
+                {t.nutritionQuestionnaire.goalDesc}
+              </p>
               {GOALS.map((g) => (
                 <OptionRow
                   key={g.id}
@@ -272,7 +332,9 @@ export function NutritionQuestionnaireSheet({
             </div>
             {goal && goal !== "maintain" ? (
               <div className="space-y-2">
-                <p className="text-[13px] text-muted-foreground">How fast?</p>
+                <p className="text-[13px] text-muted-foreground">
+                  {t.nutritionQuestionnaire.paceDesc}
+                </p>
                 {PACES.map((p) => (
                   <OptionRow
                     key={p.id}
@@ -293,8 +355,7 @@ export function NutritionQuestionnaireSheet({
         {step === 3 && suggested ? (
           <div className="space-y-3">
             <p className="text-[13px] text-muted-foreground">
-              An estimate based on your answers — not medical advice. Every value is still yours to
-              adjust after applying it.
+              {t.nutritionQuestionnaire.reviewDesc}
             </p>
             <div className="space-y-2">
               {NUTRIENT_ORDER.map((key) => (
@@ -303,7 +364,7 @@ export function NutritionQuestionnaireSheet({
                   className="flex items-center justify-between rounded-2xl bg-muted px-4 py-3"
                 >
                   <span className="text-[14px] font-semibold text-muted-foreground">
-                    {NUTRIENT_LABELS[key]}
+                    {t.nutrients[key]}
                   </span>
                   <span className="text-[16px] font-bold">
                     {suggested[key]}{" "}
@@ -323,7 +384,7 @@ export function NutritionQuestionnaireSheet({
               onClick={back}
               className="glass flex min-h-[52px] items-center justify-center gap-1 rounded-2xl px-5 text-[15px] font-semibold text-muted-foreground active:scale-95"
             >
-              <ChevronLeft className="size-4" /> Back
+              <ChevronLeft className="size-4" /> {t.common.back}
             </button>
           ) : null}
           {step < STEP_LABELS.length - 1 ? (
@@ -332,7 +393,7 @@ export function NutritionQuestionnaireSheet({
               disabled={!canAdvance}
               className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground disabled:opacity-40 active:scale-95"
             >
-              Next
+              {t.common.next}
             </button>
           ) : (
             <button
@@ -345,7 +406,7 @@ export function NutritionQuestionnaireSheet({
               }}
               className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
             >
-              Use these limits
+              {t.nutritionQuestionnaire.useTheseLimits}
             </button>
           )}
         </div>
