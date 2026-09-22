@@ -528,17 +528,24 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // only ever happens from the Settings screen, never mid-workout.
       //
       // Reloading immediately would still race sw.js's PAGES_CACHE, which
-      // (per the comment this replaced) doesn't get refreshed by this
-      // client-side switch on its own — an immediate reload could still
-      // serve the OLD scheme's cached shell once more. So this asks the SW
-      // to refetch and re-cache "/" first (sw.js's own
-      // "forge:revalidate-shell" message handler) and waits for its reply
-      // over a dedicated MessageChannel before reloading, rather than
-      // guessing at a delay — the reload only fires once the cache is
-      // actually known-fresh, or after a 1.5s safety timeout if the SW
-      // never responds (offline, no controller yet, etc.), so a switch
-      // still eventually reloads even then rather than silently doing
-      // nothing.
+      // doesn't get refreshed by this client-side switch on its own — an
+      // immediate reload could still serve the OLD scheme's cached shell
+      // once more. First attempt: ask the SW to refetch-and-recache "/"
+      // before reloading. Reported in practice: still a one-frame flash of
+      // the old scheme's status bar on reload — a fetch-and-recache is a
+      // genuine network round trip, and "wait for that write to settle" as
+      // a proxy for "the reload can't read stale content" turned out not
+      // to be airtight. sw.js's handler now just deletes the cache entry
+      // instead (see its own comment for why that's the actually-airtight
+      // fix: a deleted entry forces the navigate handler onto a plain
+      // network-only fetch, current cookie and all, with no cached branch
+      // left to race against). This still waits for that handler's reply
+      // over a dedicated MessageChannel before reloading — eviction is a
+      // near-instant storage op, not a network fetch, so this wait is now
+      // short and just prevents reloading before the delete has actually
+      // landed — with a 1.5s safety timeout if the SW never responds
+      // (offline, no controller yet, etc.), so a switch still eventually
+      // reloads even then rather than silently doing nothing.
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         let reloaded = false;
         const reload = () => {

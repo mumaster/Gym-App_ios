@@ -185,21 +185,32 @@ self.addEventListener("fetch", (event) => {
 // practice that only Settings' "Force update" (which wipes Cache Storage
 // outright, see pwa.ts's forceUpdate) was reliably clearing it, reported as
 // needing that every time to make a scheme switch actually stick.
-// store.tsx's color-scheme effect now posts this message immediately on a
-// genuine switch, while the page (and this worker) are definitely still
-// alive, so the cache is already correct by the time the reload below
-// fires — no stale launch to wait out at all.
+// store.tsx's color-scheme effect posts this message immediately on a
+// genuine switch, then reloads the page right after — a live class toggle
+// repaints the page's own content but not the actual OS status bar (see
+// that effect's own comment for why a real navigation, not a DOM change,
+// is what's needed there).
 //
-// That effect also reloads the page right after this, since a live class
-// toggle repaints the page's own content but not the actual OS status bar
-// (see that effect's own comment for why a real navigation, not a DOM
-// change, is what's needed there). It passes a MessagePort as event.ports[0]
-// and waits for a reply before reloading, specifically so that reload
-// doesn't race this cache write — an immediate reload could otherwise still
-// hit the cache-first branch above before this fetch/cache.put finishes,
-// serving the OLD scheme's shell one more time despite this handler running.
-// Replying only after the cache write settles (success OR failure) is what
-// makes that wait meaningful rather than a fixed guessed delay.
+// This handler originally re-fetched "/" and re-cache.put it here, on the
+// theory that having the cache already hold fresh content by the time the
+// reload fires would be enough. Reported in practice: switching still
+// showed the OLD scheme's status bar for one frame before correcting —
+// that fetch-and-recache was a genuine network round trip, and the
+// reload (gated on a reply from this handler, but only once THIS work
+// settled) could still land while a *different*, still-in-flight fetch
+// for the same "/" was mid-flight, or simply lose against fetch latency
+// in a way a "did the write finish" wait doesn't fully rule out. The
+// actual guarantee needed isn't "the cache is fresh" — it's "the reload
+// cannot possibly read a stale cache entry" — and there's a much more
+// direct way to get that: delete the entry instead of trying to race a
+// replacement into place. The navigate handler above already treats a
+// cache MISS as network-only (`return (await network) ?? ...`, no
+// `cached` branch to race), so an evicted entry means the very next
+// navigation is structurally forced onto the network, current cookie and
+// all — no fetch to win or lose a race against, no window where a stale
+// entry could still be read. That network fetch's own `cache.put()` (the
+// navigate handler's existing logic) naturally repopulates the cache
+// afterward, so there's no need to duplicate that here.
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "forge:revalidate-shell") return;
   const reply = () => {
@@ -213,16 +224,8 @@ self.addEventListener("message", (event) => {
   event.waitUntil(
     caches
       .open(PAGES_CACHE)
-      .then(async (cache) => {
-        try {
-          const response = await fetch("/", { cache: "reload" });
-          if (response.ok) await cache.put("/", response.clone());
-        } catch {
-          // Offline, or the request otherwise failed — the next real
-          // navigation's own stale-while-revalidate will retry, same as any
-          // other fetch failure this worker already tolerates elsewhere.
-        }
-      })
+      .then((cache) => cache.delete("/"))
+      .catch(() => undefined)
       .finally(reply),
   );
 });
