@@ -25,7 +25,7 @@
 // `activate` below then deletes every cache key not in CURRENT_CACHES,
 // clearing the stale entry out from under any device still running the
 // previous version.
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const OCR_CACHE = `forge-ocr-${CACHE_VERSION}`;
 const PAGES_CACHE = `forge-pages-${CACHE_VERSION}`;
 const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;
@@ -118,6 +118,35 @@ self.addEventListener("fetch", (event) => {
   // markup doesn't embed per-request server data (everything's hydrated from
   // localStorage client-side), so a cached shell is functionally identical
   // to a fresh one even across a deploy.
+  //
+  // One known limitation now: `__root.tsx`'s head() reads a
+  // `forge-color-scheme` cookie (see server.ts's own withDocumentCaching)
+  // to pick the SSR'd status-bar/theme-color meta values, so the "correct"
+  // cached shell for "/" can now depend on that cookie — but a service
+  // worker's `fetch` event genuinely CANNOT read the Cookie header at all:
+  // it's one of the Fetch spec's "forbidden" header names, redacted from
+  // `request.headers` in every context (page fetch, SW fetch event, no
+  // exceptions), even though the browser still attaches the real cookie to
+  // the actual outgoing network request underneath. An earlier attempt at
+  // `request.headers.get("cookie")` here to skip the cache for
+  // cookie-bearing requests looked like it worked in isolation (blocking
+  // the SW entirely "fixed" the bug in testing) but was quietly dead code
+  // in practice — the check always read as empty, so it never actually
+  // took the network-only branch. Confirmed by reproducing the real
+  // failure with the SW active: switch color scheme, then reload — the
+  // reload can still show the stale (pre-switch) status bar/theme-color
+  // once, if this cache already held an entry for "/" from before the
+  // switch. It's bounded to exactly one extra launch, not permanently
+  // stuck, because the `network` fetch below is unconditional regardless
+  // of cache hit/miss — it still runs, still gets the CURRENT cookie's
+  // correct response (the browser sends the real cookie on that req even
+  // though this code can't read it), and still overwrites the cache via
+  // `cache.put()`. So the launch immediately after a scheme change may
+  // show the old bar once; the one after that is correct, since by then
+  // the previous launch's background revalidation already refreshed the
+  // cached entry. No SW-side fix closes that one-launch gap — there's no
+  // spec-legal way for this code to know the current cookie ahead of the
+  // fetch it's already making.
   if (request.mode === "navigate") {
     event.respondWith(
       caches.open(PAGES_CACHE).then(async (cache) => {

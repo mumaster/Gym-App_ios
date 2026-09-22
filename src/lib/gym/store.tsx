@@ -383,18 +383,29 @@ export function GymProvider({ children }: { children: ReactNode }) {
   // class immediately if the user flips their OS setting while the app is
   // still open, without needing a reload.
   //
-  // Also flips the two iOS-PWA chrome meta tags __root.tsx's head() SSRs as
-  // permanently dark (apple-mobile-web-app-status-bar-style/theme-color) —
-  // unlike the <html> class above, nothing was updating these client-side
-  // at all before, so a light-mode user's actual status bar (the real OS
-  // chrome, not page content) stayed a solid black bar forever, not just
-  // for one SSR frame. iOS reads apple-mobile-web-app-status-bar-style once
-  // at a standalone PWA's cold launch, so on an already-open session this
-  // mutation is best-effort (some iOS versions pick it up live, some only
-  // apply it on the next relaunch) — same "corrects once hydrated, may lag
-  // a frame or a launch" tradeoff the <html> class above already accepts,
-  // just with a longer worst-case lag since there's no equivalent of a
-  // paint to force it sooner.
+  // Also flips the two iOS-PWA chrome meta tags __root.tsx's head() SSRs
+  // (apple-mobile-web-app-status-bar-style/theme-color), AND writes the
+  // resolved scheme to a `forge-color-scheme` cookie so the NEXT request's
+  // SSR can read it too — both parts are needed, for two different iOS
+  // status-bar-related bugs that were reported in sequence. First: unlike
+  // the <html> class above, nothing was updating these two meta tags'
+  // live DOM content at all before this, so a light-mode user's actual
+  // status bar (the real OS chrome, not page content) stayed a solid
+  // black bar for the whole session — the direct DOM `setAttribute` calls
+  // below fix that (confirmed via Playwright that this survives repeated
+  // client-side route navigation without TanStack Router's HeadContent
+  // reconciliation stomping it back). Second, reported after that fix:
+  // even force-quitting and reopening the installed PWA still showed
+  // black. That's because iOS reads apple-mobile-web-app-status-bar-style
+  // straight from the SSR'd HTML at cold-launch time, before any of this
+  // JS has had a chance to run — and __root.tsx's head() had no way to
+  // know the user's preference at request time, so it always served the
+  // same hardcoded dark value, every launch, forever. A client-side-only
+  // fix structurally cannot reach back and change what iOS already read
+  // from that response. The cookie write below closes that gap: it's the
+  // one piece of this preference an HTTP request can actually carry back
+  // to the server, so head() (see its own comment) can read it and bake
+  // the correct value into the NEXT request's HTML from the start.
   useEffect(() => {
     const root = document.documentElement;
     const statusBarMeta = document.querySelector(
@@ -410,6 +421,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // #f2f2f7 mirrors .light's --background choice below (iOS's own
       // light "systemGroupedBackground" rather than pure white).
       themeColorMeta?.setAttribute("content", dark ? "#000000" : "#f2f2f7");
+      // 1yr expiry: this is a durable preference, not a session value: no
+      // `Secure` attribute so it still round-trips on a plain-http local
+      // dev server, which every production deploy of this app is served
+      // over https anyway (Cloudflare terminates TLS in front of it).
+      document.cookie = `forge-color-scheme=${dark ? "dark" : "light"}; path=/; max-age=31536000; SameSite=Lax`;
     };
 
     if (state.colorScheme === "light") {
