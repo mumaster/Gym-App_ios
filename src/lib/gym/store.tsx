@@ -144,6 +144,16 @@ const initialState: GymState = {
 const KEY = "forge.gym.state.v2";
 const LEGACY_KEY = "forge.gym.state.v1";
 
+// Circuit breaker for the color-scheme effect's auto-reload-on-switch below
+// (see that effect's own comment for the mechanism, and hasHydratedBaselineRef's
+// comment for the infinite-reload-loop bug this specifically guards against
+// a *recurrence* of). sessionStorage survives the reload it's guarding
+// against — same property the RootShell stale-shell-recovery script
+// elsewhere in this app already relies on for its own reload budget — so a
+// genuine loop can be counted across reloads instead of resetting every time.
+const COLOR_SCHEME_RELOAD_GUARD_KEY = "forge.color-scheme-reload-count";
+const MAX_COLOR_SCHEME_AUTO_RELOADS = 2;
+
 /** Re-derive `set_number` per exercise (warm-ups and working sets counted apart). */
 function renumber(sets: LoggedSet[]): LoggedSet[] {
   const working = new Map<string, number>();
@@ -289,10 +299,27 @@ export function GymProvider({ children }: { children: ReactNode }) {
   const suppressPush = useRef(false);
   // Tracks the last color-scheme resolution the effect below actually
   // applied, so it can tell a genuine switch (worth nudging the service
-  // worker's cached shell to refresh — see that effect's own comment)
-  // apart from the initial mount's resolution (which just reflects
-  // whatever the cookie/SSR already had, nothing to revalidate).
+  // worker's cached shell and reloading — see that effect's own comment)
+  // apart from a resolution that isn't really a user switch at all. Must
+  // only start tracking once `hydrated` (below) is true — `state` (and so
+  // `state.colorScheme`) starts at `initialState`'s hardcoded "dark"
+  // default and only gets overwritten with the real persisted value
+  // asynchronously, in the load-from-localStorage effect a few lines down.
+  // Tracking from the very first render was a real, shipped bug: a
+  // light-mode user's first render resolves dark=true (the default),
+  // establishing that as the "baseline"; the localStorage effect then
+  // corrects state.colorScheme to "light", which reads as a GENUINE
+  // switch against that wrong baseline and fires the reload logic below —
+  // on every single page load, including the reload it triggers, which
+  // read the same hardcoded default first for exactly the same reason,
+  // for an infinite reload loop that soft-locked the app for any
+  // persisted light-mode user. `hasHydratedBaselineRef` below is what
+  // fixes this: the baseline is only established the first time this
+  // effect runs AFTER `hydrated` is true (see that effect's own guard),
+  // by which point state.colorScheme already reflects the real persisted
+  // value, not the pre-hydration placeholder.
   const lastAppliedDarkRef = useRef<boolean | null>(null);
+  const hasHydratedBaselineRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -433,13 +460,53 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // over https anyway (Cloudflare terminates TLS in front of it).
       document.cookie = `forge-color-scheme=${dark ? "dark" : "light"}; path=/; max-age=31536000; SameSite=Lax`;
 
-      // Everything below only matters on a GENUINE switch — not the
-      // initial mount's resolution, which just reflects whatever the
-      // cookie/SSR already had, with nothing to revalidate or nudge.
-      const isGenuineChange =
-        lastAppliedDarkRef.current !== null && lastAppliedDarkRef.current !== dark;
+      // Everything below only matters on a GENUINE switch, and — critically
+      // — only once `hydrated` is true. Before that, state.colorScheme is
+      // still `initialState`'s hardcoded "dark" default, not the real
+      // persisted value, so resolving it here at all would establish the
+      // WRONG baseline (see hasHydratedBaselineRef's own comment above for
+      // the infinite-reload-loop bug that caused). The first post-hydration
+      // run just establishes the correct baseline — no reload, since this
+      // isn't a switch, it's the initial correct resolution.
+      if (!hydrated) return;
+      if (!hasHydratedBaselineRef.current) {
+        hasHydratedBaselineRef.current = true;
+        lastAppliedDarkRef.current = dark;
+        // Reaching a stable post-hydration baseline without immediately
+        // needing another reload means the last one (if any) actually
+        // worked — clear the guard below so a later, unrelated switch
+        // gets its own fresh budget instead of inheriting a stale count.
+        try {
+          sessionStorage.removeItem(COLOR_SCHEME_RELOAD_GUARD_KEY);
+        } catch {
+          /* private-mode/disabled storage — nothing to clear */
+        }
+        return;
+      }
+      const isGenuineChange = lastAppliedDarkRef.current !== dark;
       lastAppliedDarkRef.current = dark;
       if (!isGenuineChange) return;
+
+      // Circuit breaker: cap how many times this effect will auto-reload
+      // per (sessionStorage-scoped) session, regardless of how confident
+      // the hydration-gating fix above is. If something we haven't
+      // foreseen still causes a reload-triggering false positive right
+      // after hydration, this stops it from looping forever again — the
+      // DOM/cookie/meta updates above have already applied either way, so
+      // the app itself keeps working even if this bails; only the OS
+      // status bar might lag until the user relaunches on their own.
+      let reloadCount = 0;
+      try {
+        reloadCount = Number(sessionStorage.getItem(COLOR_SCHEME_RELOAD_GUARD_KEY) ?? "0");
+      } catch {
+        /* private-mode/disabled storage — treat as 0, same as a fresh session */
+      }
+      if (reloadCount >= MAX_COLOR_SCHEME_AUTO_RELOADS) return;
+      try {
+        sessionStorage.setItem(COLOR_SCHEME_RELOAD_GUARD_KEY, String(reloadCount + 1));
+      } catch {
+        /* private-mode/disabled storage — nothing to persist, proceed anyway */
+      }
 
       // The classList toggle above already repaints the page's own content
       // instantly — that part was never the problem. The real OS status
@@ -506,7 +573,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
     const onChange = (e: MediaQueryListEvent) => applyScheme(e.matches);
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
-  }, [state.colorScheme]);
+  }, [state.colorScheme, hydrated]);
 
   const value = useMemo<Ctx>(() => {
     const allSets = (exerciseId: string) =>
