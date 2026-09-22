@@ -433,6 +433,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // over https anyway (Cloudflare terminates TLS in front of it).
       document.cookie = `forge-color-scheme=${dark ? "dark" : "light"}; path=/; max-age=31536000; SameSite=Lax`;
 
+      // Everything below only matters on a GENUINE switch — not the
+      // initial mount's resolution, which just reflects whatever the
+      // cookie/SSR already had, with nothing to revalidate or nudge.
+      const isGenuineChange =
+        lastAppliedDarkRef.current !== null && lastAppliedDarkRef.current !== dark;
+      lastAppliedDarkRef.current = dark;
+      if (!isGenuineChange) return;
+
       // Writing the cookie above only affects the NEXT navigation's own
       // SSR — it does nothing about sw.js's PAGES_CACHE, which still holds
       // whatever "/" was cached from BEFORE this switch (this effect runs
@@ -448,19 +456,37 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // outright) reliably cleared it. Rather than waiting on that chain,
       // tell the SW to refetch and re-cache "/" right now, while this
       // page (and its SW) are definitely still alive — see sw.js's own
-      // "forge:revalidate-shell" message handler. Skipped on the initial
-      // mount (lastAppliedDarkRef.current === null): that resolution just
-      // reflects whatever the cookie/SSR already had, so the cache is
-      // already correct and there's nothing to revalidate.
-      if (
-        lastAppliedDarkRef.current !== null &&
-        lastAppliedDarkRef.current !== dark &&
-        "serviceWorker" in navigator &&
-        navigator.serviceWorker.controller
-      ) {
+      // "forge:revalidate-shell" message handler.
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: "forge:revalidate-shell" });
       }
-      lastAppliedDarkRef.current = dark;
+
+      // The above gets the NEXT app launch right. It does nothing for the
+      // CURRENT one: the classList toggle above already repaints the
+      // page's own content instantly (that part was never the problem),
+      // but the real OS status bar chrome — the thing iOS 26+'s Liquid
+      // Glass tints by sampling the rendered page background (see this
+      // section's own writeup above) — reportedly only resamples at
+      // specific WebKit-internal checkpoints (load, and apparently scroll
+      // position, since Liquid Glass materials are documented as
+      // adapting to whatever content is currently scrolled underneath
+      // them), not continuously on every DOM mutation. There is no public
+      // API to directly ask WebKit to resample it. This nudges one of the
+      // checkpoints it's reported to react to: an immediate, invisible
+      // 1px scroll-and-back, in case that's enough to make Liquid Glass
+      // reread the (now-updated) background color without needing an
+      // actual reload. Best-effort and UNVERIFIED — this environment has
+      // no real iOS/WebKit to test Liquid Glass's actual resampling
+      // triggers against, so this is an educated attempt, not a
+      // confirmed fix; a no-op on a route with nothing to scroll (e.g.
+      // the fixed, non-scrolling Home dashboard).
+      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+        const y = window.scrollY;
+        requestAnimationFrame(() => {
+          window.scrollTo(0, y + 1);
+          requestAnimationFrame(() => window.scrollTo(0, y));
+        });
+      }
     };
 
     if (state.colorScheme === "light") {
