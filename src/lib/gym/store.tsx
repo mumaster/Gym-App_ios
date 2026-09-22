@@ -441,51 +441,54 @@ export function GymProvider({ children }: { children: ReactNode }) {
       lastAppliedDarkRef.current = dark;
       if (!isGenuineChange) return;
 
-      // Writing the cookie above only affects the NEXT navigation's own
-      // SSR — it does nothing about sw.js's PAGES_CACHE, which still holds
-      // whatever "/" was cached from BEFORE this switch (this effect runs
-      // without a navigation, so the navigate handler's own
-      // stale-while-revalidate never fires here to refresh it). Reported
-      // in practice: after switching scheme, an ordinary force-quit +
-      // reopen kept showing the OLD scheme's status bar/background —
-      // worse than the "one stale launch, self-corrects next" bound
-      // documented in CLAUDE.md, since that bound assumes the following
-      // launch's own background revalidation fetch reliably finishes
-      // before iOS evicts the SW, which it evidently doesn't always do —
-      // only Settings' blunter "Force update" (which wipes Cache Storage
-      // outright) reliably cleared it. Rather than waiting on that chain,
-      // tell the SW to refetch and re-cache "/" right now, while this
-      // page (and its SW) are definitely still alive — see sw.js's own
-      // "forge:revalidate-shell" message handler.
+      // The classList toggle above already repaints the page's own content
+      // instantly — that part was never the problem. The real OS status
+      // bar chrome doesn't follow it: iOS 26+'s Liquid Glass tints it by
+      // sampling the rendered page background (see this section's own
+      // writeup above), and that sampling only happens at specific WebKit
+      // lifecycle checkpoints — load being the one we can actually confirm,
+      // since force-quit + reopen is confirmed correct. There's no public
+      // API to ask WebKit to resample it mid-session; a speculative
+      // scroll-position nudge (tried here previously) turned out not to
+      // work in practice. A real navigation reload DOES hit that same
+      // load-time checkpoint, though — it's architecturally the same
+      // "fresh load of /" force-quit + reopen already is, just triggered
+      // from live JS instead of the OS — so this reloads the page itself,
+      // automatically, right after a genuine switch: as close to "reopen
+      // the app for the user" as a running page can do to itself. No data
+      // is at risk — GymState is already flushed to localStorage on every
+      // change by the persistence effect above this one, and the switch
+      // only ever happens from the Settings screen, never mid-workout.
+      //
+      // Reloading immediately would still race sw.js's PAGES_CACHE, which
+      // (per the comment this replaced) doesn't get refreshed by this
+      // client-side switch on its own — an immediate reload could still
+      // serve the OLD scheme's cached shell once more. So this asks the SW
+      // to refetch and re-cache "/" first (sw.js's own
+      // "forge:revalidate-shell" message handler) and waits for its reply
+      // over a dedicated MessageChannel before reloading, rather than
+      // guessing at a delay — the reload only fires once the cache is
+      // actually known-fresh, or after a 1.5s safety timeout if the SW
+      // never responds (offline, no controller yet, etc.), so a switch
+      // still eventually reloads even then rather than silently doing
+      // nothing.
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: "forge:revalidate-shell" });
-      }
-
-      // The above gets the NEXT app launch right. It does nothing for the
-      // CURRENT one: the classList toggle above already repaints the
-      // page's own content instantly (that part was never the problem),
-      // but the real OS status bar chrome — the thing iOS 26+'s Liquid
-      // Glass tints by sampling the rendered page background (see this
-      // section's own writeup above) — reportedly only resamples at
-      // specific WebKit-internal checkpoints (load, and apparently scroll
-      // position, since Liquid Glass materials are documented as
-      // adapting to whatever content is currently scrolled underneath
-      // them), not continuously on every DOM mutation. There is no public
-      // API to directly ask WebKit to resample it. This nudges one of the
-      // checkpoints it's reported to react to: an immediate, invisible
-      // 1px scroll-and-back, in case that's enough to make Liquid Glass
-      // reread the (now-updated) background color without needing an
-      // actual reload. Best-effort and UNVERIFIED — this environment has
-      // no real iOS/WebKit to test Liquid Glass's actual resampling
-      // triggers against, so this is an educated attempt, not a
-      // confirmed fix; a no-op on a route with nothing to scroll (e.g.
-      // the fixed, non-scrolling Home dashboard).
-      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
-        const y = window.scrollY;
-        requestAnimationFrame(() => {
-          window.scrollTo(0, y + 1);
-          requestAnimationFrame(() => window.scrollTo(0, y));
-        });
+        let reloaded = false;
+        const reload = () => {
+          if (reloaded) return;
+          reloaded = true;
+          location.reload();
+        };
+        const channel = new MessageChannel();
+        channel.port1.onmessage = reload;
+        navigator.serviceWorker.controller.postMessage({ type: "forge:revalidate-shell" }, [
+          channel.port2,
+        ]);
+        setTimeout(reload, 1500);
+      } else {
+        // No controlling SW yet (e.g. the very first load, before one's
+        // registered) — nothing cached to be stale, so nothing to wait on.
+        location.reload();
       }
     };
 

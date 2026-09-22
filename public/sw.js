@@ -187,21 +187,43 @@ self.addEventListener("fetch", (event) => {
 // needing that every time to make a scheme switch actually stick.
 // store.tsx's color-scheme effect now posts this message immediately on a
 // genuine switch, while the page (and this worker) are definitely still
-// alive, so the cache is already correct by the time the user force-quits
-// and reopens — no stale launch to wait out at all.
+// alive, so the cache is already correct by the time the reload below
+// fires — no stale launch to wait out at all.
+//
+// That effect also reloads the page right after this, since a live class
+// toggle repaints the page's own content but not the actual OS status bar
+// (see that effect's own comment for why a real navigation, not a DOM
+// change, is what's needed there). It passes a MessagePort as event.ports[0]
+// and waits for a reply before reloading, specifically so that reload
+// doesn't race this cache write — an immediate reload could otherwise still
+// hit the cache-first branch above before this fetch/cache.put finishes,
+// serving the OLD scheme's shell one more time despite this handler running.
+// Replying only after the cache write settles (success OR failure) is what
+// makes that wait meaningful rather than a fixed guessed delay.
 self.addEventListener("message", (event) => {
   if (event.data?.type !== "forge:revalidate-shell") return;
+  const reply = () => {
+    try {
+      event.ports?.[0]?.postMessage({ type: "forge:shell-revalidated" });
+    } catch {
+      // Port already closed (e.g. the page reloaded via its own safety
+      // timeout before this settled) — nothing left to notify.
+    }
+  };
   event.waitUntil(
-    caches.open(PAGES_CACHE).then(async (cache) => {
-      try {
-        const response = await fetch("/", { cache: "reload" });
-        if (response.ok) await cache.put("/", response.clone());
-      } catch {
-        // Offline, or the request otherwise failed — the next real
-        // navigation's own stale-while-revalidate will retry, same as any
-        // other fetch failure this worker already tolerates elsewhere.
-      }
-    }),
+    caches
+      .open(PAGES_CACHE)
+      .then(async (cache) => {
+        try {
+          const response = await fetch("/", { cache: "reload" });
+          if (response.ok) await cache.put("/", response.clone());
+        } catch {
+          // Offline, or the request otherwise failed — the next real
+          // navigation's own stale-while-revalidate will retry, same as any
+          // other fetch failure this worker already tolerates elsewhere.
+        }
+      })
+      .finally(reply),
   );
 });
 
