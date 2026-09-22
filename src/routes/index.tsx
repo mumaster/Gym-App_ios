@@ -197,13 +197,13 @@ function HomeScreen() {
         </button>
       </header>
 
-      <main className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-3">
+      <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-2">
         <button
           onClick={() => {
             haptic(12);
             navigate({ to: heroTarget });
           }}
-          className="glass glow shrink-0 rounded-[28px] p-5 text-left transition-transform active:scale-[0.98]"
+          className="glass glow shrink-0 rounded-[28px] p-4 text-left transition-transform active:scale-[0.98]"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -220,7 +220,7 @@ function HomeScreen() {
             </span>
           </div>
           {program && programWeek ? (
-            <div className="mt-3.5 flex gap-1">
+            <div className="mt-2.5 flex gap-1">
               {program.weeks.map((w, i) => (
                 <div
                   key={i}
@@ -237,7 +237,7 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.62fr_0.68fr_0.5fr_0.72fr_0.38fr] gap-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.62fr_0.68fr_0.5fr_0.72fr_0.38fr] gap-2">
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -305,7 +305,7 @@ function HomeScreen() {
                 haptic(10);
                 navigate({ to });
               }}
-              className="glass flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-2xl active:scale-95"
+              className="glass flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl active:scale-95"
             >
               <Icon className="size-[18px] text-primary" />
               <span className="text-[11px] font-semibold">{label}</span>
@@ -348,7 +348,7 @@ function NutritionTile({
         onClick();
       }}
       aria-label="Nutrition today"
-      className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col gap-1 overflow-hidden rounded-3xl p-3 text-left active:scale-[0.98]"
     >
       <Apple
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
@@ -384,13 +384,13 @@ function NutritionTile({
         </div>
       ) : null}
 
-      <div className="relative grid grid-cols-3 gap-2">
+      <div className="relative grid grid-cols-3 gap-1.5">
         {(["protein", "carbs", "fat"] as const).map((key) => {
           const goal = goals[key];
           const status = nutrientStatus(totals[key], goal);
           const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
           return (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1.5">
+            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-0.5">
               <p className="tabular text-[15px] font-bold leading-none">
                 {totals[key]}
                 <span className="text-[10px] font-medium text-muted-foreground">g</span>
@@ -400,7 +400,7 @@ function NutritionTile({
                 {goal != null ? `/${goal}` : ""}
               </p>
               {goal != null ? (
-                <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
+                <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-background/40">
                   <div
                     className={`h-full rounded-full ${barClass(status)}`}
                     style={{ width: `${pct}%` }}
@@ -491,7 +491,7 @@ function WaterTile({
   const active = totalMl > 0;
 
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1 overflow-hidden rounded-3xl p-3">
       <Droplet
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
           active ? "text-primary/[0.08]" : "text-foreground/[0.03]"
@@ -539,7 +539,7 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={`Add ${ml}ml of water`}
-            className="flex min-h-[34px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
+            className="flex min-h-[30px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
           >
             +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
@@ -584,8 +584,8 @@ function ReadinessTile({
 
   return (
     <div
-      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-3.5 ${
-        answered ? "justify-center" : "justify-between gap-1.5"
+      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-2.5 ${
+        answered ? "justify-center" : "justify-between"
       }`}
     >
       <Activity
@@ -628,7 +628,7 @@ function ReadinessTile({
                 key={score}
                 onClick={() => onPick(score)}
                 aria-label={READINESS_LABELS[score].label}
-                className="flex min-h-[36px] items-center justify-center rounded-full bg-muted text-[16px] leading-none active:scale-95"
+                className="flex min-h-[30px] items-center justify-center rounded-full bg-muted text-[15px] leading-none active:scale-95"
               >
                 {READINESS_LABELS[score].emoji}
               </button>
@@ -659,7 +659,7 @@ function BentoTile({
         haptic(10);
         onClick();
       }}
-      className="glass relative flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.97]"
+      className="glass relative flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-3xl p-3 text-left active:scale-[0.97]"
     >
       <Icon
         className={`pointer-events-none absolute -bottom-2.5 -right-2.5 size-12 ${
