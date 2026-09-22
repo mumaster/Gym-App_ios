@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
   Apple,
@@ -237,7 +237,7 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.62fr_0.68fr_0.5fr_0.72fr_0.38fr] gap-2">
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.76fr_0.8fr_0.68fr_0.33fr_0.33fr] gap-2.5">
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -272,27 +272,13 @@ function HomeScreen() {
             }}
           />
 
-          <BentoTile
-            icon={Flame}
-            active={streak > 0}
-            label="Day streak"
+          <ActivityTile
+            streak={streak}
+            longestStreak={longestStreak}
+            sessionsThisWeek={sessionsThisWeek}
+            totalWorkouts={workouts.length}
             onClick={() => navigate({ to: "/history" })}
-          >
-            <p className="tabular text-[28px] font-bold leading-none">{streak}</p>
-            {longestStreak > streak ? (
-              <p className="mt-1 text-[11px] text-muted-foreground">Best {longestStreak}</p>
-            ) : null}
-          </BentoTile>
-
-          <BentoTile
-            icon={Dumbbell}
-            active={sessionsThisWeek > 0}
-            label="This week"
-            onClick={() => navigate({ to: "/history" })}
-          >
-            <p className="tabular text-[28px] font-bold leading-none">{sessionsThisWeek}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{workouts.length} total</p>
-          </BentoTile>
+          />
 
           <BestLiftTile pr={topPr} onClick={() => navigate({ to: "/history" })} />
         </div>
@@ -348,7 +334,7 @@ function NutritionTile({
         onClick();
       }}
       aria-label="Nutrition today"
-      className="glass relative col-span-2 flex min-h-0 flex-col gap-1 overflow-hidden rounded-3xl p-3 text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
     >
       <Apple
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
@@ -384,13 +370,13 @@ function NutritionTile({
         </div>
       ) : null}
 
-      <div className="relative grid grid-cols-3 gap-1.5">
+      <div className="relative grid grid-cols-3 gap-2">
         {(["protein", "carbs", "fat"] as const).map((key) => {
           const goal = goals[key];
           const status = nutrientStatus(totals[key], goal);
           const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
           return (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-0.5">
+            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1.5">
               <p className="tabular text-[15px] font-bold leading-none">
                 {totals[key]}
                 <span className="text-[10px] font-medium text-muted-foreground">g</span>
@@ -400,7 +386,7 @@ function NutritionTile({
                 {goal != null ? `/${goal}` : ""}
               </p>
               {goal != null ? (
-                <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-background/40">
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
                   <div
                     className={`h-full rounded-full ${barClass(status)}`}
                     style={{ width: `${pct}%` }}
@@ -410,6 +396,87 @@ function NutritionTile({
             </div>
           );
         })}
+      </div>
+    </button>
+  );
+}
+
+/** Full-width (col-span-2), replacing what used to be two separate square
+ *  `BentoTile`s (Streak, This week) sharing one row as half-width cells.
+ *  Reported as reading too cramped once the grid grew to five rows and
+ *  every tile's padding got trimmed to fit real-device safe-area insets
+ *  (see "A real-device screenshot caught genuine clipping" above) — the
+ *  fix wasn't more padding on tiles already at their minimum, it was
+ *  needing fewer distinct stat blocks in the first place. Streak and This
+ *  week are both single-number, low-detail stats that read fine side by
+ *  side in one slim row (icon + number + caption, twice, split by a
+ *  vertical divider) instead of each getting its own icon badge, label
+ *  row, big tabular number AND ghost-icon watermark stacked in a taller
+ *  square cell — mirroring `BestLiftTile`'s own single-row shape below,
+ *  including skipping the ghost watermark that only earns its keep on a
+ *  tile tall enough to have real dead space to fill. Combining them this
+ *  way is what actually freed the row height this grid's other tiles
+ *  needed back — not a cosmetic merge, the mechanism the "less dense"
+ *  pass ran on. */
+function ActivityTile({
+  streak,
+  longestStreak,
+  sessionsThisWeek,
+  totalWorkouts,
+  onClick,
+}: {
+  streak: number;
+  longestStreak: number;
+  sessionsThisWeek: number;
+  totalWorkouts: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={() => {
+        haptic(10);
+        onClick();
+      }}
+      className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-3 text-left active:scale-[0.97]"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <span
+          className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
+            streak > 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <Flame className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="tabular truncate text-[17px] font-bold leading-none">
+            {streak}
+            <span className="text-[11px] font-medium text-muted-foreground"> day streak</span>
+          </p>
+          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
+            {longestStreak > streak ? `Best ${longestStreak}` : "Keep it going"}
+          </p>
+        </div>
+      </div>
+
+      <div className="h-8 w-px shrink-0 bg-border" />
+
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <span
+          className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
+            sessionsThisWeek > 0
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <Dumbbell className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="tabular truncate text-[17px] font-bold leading-none">
+            {sessionsThisWeek}
+            <span className="text-[11px] font-medium text-muted-foreground"> this week</span>
+          </p>
+          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">{totalWorkouts} total</p>
+        </div>
       </div>
     </button>
   );
@@ -491,7 +558,7 @@ function WaterTile({
   const active = totalMl > 0;
 
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1 overflow-hidden rounded-3xl p-3">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
       <Droplet
         className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
           active ? "text-primary/[0.08]" : "text-foreground/[0.03]"
@@ -539,7 +606,7 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={`Add ${ml}ml of water`}
-            className="flex min-h-[30px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
+            className="flex min-h-[36px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
           >
             +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
@@ -584,8 +651,8 @@ function ReadinessTile({
 
   return (
     <div
-      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-2.5 ${
-        answered ? "justify-center" : "justify-between"
+      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-3.5 ${
+        answered ? "justify-center" : "justify-between gap-1.5"
       }`}
     >
       <Activity
@@ -628,7 +695,7 @@ function ReadinessTile({
                 key={score}
                 onClick={() => onPick(score)}
                 aria-label={READINESS_LABELS[score].label}
-                className="flex min-h-[30px] items-center justify-center rounded-full bg-muted text-[15px] leading-none active:scale-95"
+                className="flex min-h-[38px] items-center justify-center rounded-full bg-muted text-[17px] leading-none active:scale-95"
               >
                 {READINESS_LABELS[score].emoji}
               </button>
@@ -637,49 +704,5 @@ function ReadinessTile({
         </>
       )}
     </div>
-  );
-}
-
-function BentoTile({
-  icon: Icon,
-  active,
-  label,
-  onClick,
-  children,
-}: {
-  icon: LucideIcon;
-  active: boolean;
-  label: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      onClick={() => {
-        haptic(10);
-        onClick();
-      }}
-      className="glass relative flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-3xl p-3 text-left active:scale-[0.97]"
-    >
-      <Icon
-        className={`pointer-events-none absolute -bottom-2.5 -right-2.5 size-12 ${
-          active ? "text-primary/10" : "text-foreground/[0.04]"
-        }`}
-        strokeWidth={1.5}
-      />
-      <div className="flex items-center gap-1.5">
-        <span
-          className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-            active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-          }`}
-        >
-          <Icon className="size-3.5" />
-        </span>
-        <span className="truncate text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-      </div>
-      <div className="relative min-w-0">{children}</div>
-    </button>
   );
 }
