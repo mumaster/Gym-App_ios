@@ -287,6 +287,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("offline");
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressPush = useRef(false);
+  // Tracks the last color-scheme resolution the effect below actually
+  // applied, so it can tell a genuine switch (worth nudging the service
+  // worker's cached shell to refresh — see that effect's own comment)
+  // apart from the initial mount's resolution (which just reflects
+  // whatever the cookie/SSR already had, nothing to revalidate).
+  const lastAppliedDarkRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     try {
@@ -426,6 +432,35 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // dev server, which every production deploy of this app is served
       // over https anyway (Cloudflare terminates TLS in front of it).
       document.cookie = `forge-color-scheme=${dark ? "dark" : "light"}; path=/; max-age=31536000; SameSite=Lax`;
+
+      // Writing the cookie above only affects the NEXT navigation's own
+      // SSR — it does nothing about sw.js's PAGES_CACHE, which still holds
+      // whatever "/" was cached from BEFORE this switch (this effect runs
+      // without a navigation, so the navigate handler's own
+      // stale-while-revalidate never fires here to refresh it). Reported
+      // in practice: after switching scheme, an ordinary force-quit +
+      // reopen kept showing the OLD scheme's status bar/background —
+      // worse than the "one stale launch, self-corrects next" bound
+      // documented in CLAUDE.md, since that bound assumes the following
+      // launch's own background revalidation fetch reliably finishes
+      // before iOS evicts the SW, which it evidently doesn't always do —
+      // only Settings' blunter "Force update" (which wipes Cache Storage
+      // outright) reliably cleared it. Rather than waiting on that chain,
+      // tell the SW to refetch and re-cache "/" right now, while this
+      // page (and its SW) are definitely still alive — see sw.js's own
+      // "forge:revalidate-shell" message handler. Skipped on the initial
+      // mount (lastAppliedDarkRef.current === null): that resolution just
+      // reflects whatever the cookie/SSR already had, so the cache is
+      // already correct and there's nothing to revalidate.
+      if (
+        lastAppliedDarkRef.current !== null &&
+        lastAppliedDarkRef.current !== dark &&
+        "serviceWorker" in navigator &&
+        navigator.serviceWorker.controller
+      ) {
+        navigator.serviceWorker.controller.postMessage({ type: "forge:revalidate-shell" });
+      }
+      lastAppliedDarkRef.current = dark;
     };
 
     if (state.colorScheme === "light") {

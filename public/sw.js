@@ -172,6 +172,39 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// __root.tsx's SSR now reads a `forge-color-scheme` cookie to pick both the
+// status-bar meta tags AND the actual page background (see CLAUDE.md's
+// "Light/dark/system color scheme" section for the iOS 26+ Liquid Glass
+// story behind that) — but switching the scheme in Settings happens without
+// a navigation, so the stale-while-revalidate handler above never runs to
+// refresh PAGES_CACHE's entry for "/": it still holds whatever was cached
+// from BEFORE the switch. Left alone, that meant the very NEXT cold launch
+// served the old scheme's cached shell, self-correcting (at best) only on
+// the launch after that, once ITS OWN background revalidation fetch
+// happened to finish before iOS evicted this worker — unreliable enough in
+// practice that only Settings' "Force update" (which wipes Cache Storage
+// outright, see pwa.ts's forceUpdate) was reliably clearing it, reported as
+// needing that every time to make a scheme switch actually stick.
+// store.tsx's color-scheme effect now posts this message immediately on a
+// genuine switch, while the page (and this worker) are definitely still
+// alive, so the cache is already correct by the time the user force-quits
+// and reopens — no stale launch to wait out at all.
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "forge:revalidate-shell") return;
+  event.waitUntil(
+    caches.open(PAGES_CACHE).then(async (cache) => {
+      try {
+        const response = await fetch("/", { cache: "reload" });
+        if (response.ok) await cache.put("/", response.clone());
+      } catch {
+        // Offline, or the request otherwise failed — the next real
+        // navigation's own stale-while-revalidate will retry, same as any
+        // other fetch failure this worker already tolerates elsewhere.
+      }
+    }),
+  );
+});
+
 // Rest-timer notifications sent by the send-rest-notifications edge function
 // (see supabase/functions/) while the page itself may be fully suspended —
 // this is what lets a rest-complete alert land with the screen locked.
