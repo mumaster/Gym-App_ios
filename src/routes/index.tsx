@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
+  Activity,
   Apple,
   CalendarDays,
   ChevronRight,
@@ -30,6 +31,7 @@ import {
 } from "../lib/gym/nutrition";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
+import { READINESS_LABELS, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
@@ -86,7 +88,11 @@ function HomeScreen() {
     waterGoalMl,
     avatarId,
     logWater,
+    readinessLog,
+    setTodayReadiness,
   } = useGym();
+  const [readinessEditing, setReadinessEditing] = useState(false);
+  const todayCheckIn = todaysCheckIn(readinessLog);
 
   const streak = useMemo(() => currentStreak(workouts), [workouts]);
   const longestStreak = useMemo(() => bestStreak(workouts), [workouts]);
@@ -231,7 +237,7 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.7fr_0.8fr_0.85fr_0.45fr] gap-2.5">
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.62fr_0.68fr_0.5fr_0.72fr_0.38fr] gap-2.5">
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -250,6 +256,20 @@ function HomeScreen() {
               logWater(ml);
             }}
             onOpen={() => navigate({ to: "/nutrition" })}
+          />
+
+          <ReadinessTile
+            checkIn={todayCheckIn}
+            editing={readinessEditing}
+            onEdit={() => {
+              haptic(12);
+              setReadinessEditing(true);
+            }}
+            onPick={(score) => {
+              haptic([15, 25]);
+              setTodayReadiness(score);
+              setReadinessEditing(false);
+            }}
           />
 
           <BentoTile
@@ -525,6 +545,97 @@ function WaterTile({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Moved here from `/generate` — the readiness check-in nudges suggested
+ *  workout weights (see `progression.ts`'s `readinessWeightFactor`), but
+ *  "how are you feeling" is a whole-day question, not a workout-generator
+ *  one, and belongs on the screen that's actually the app's daily landing
+ *  point. `/generate` still READS `readinessLog` for its own suggestion
+ *  math (via `todaysCheckIn`) — only the check-in widget itself moved, not
+ *  the data or its effect on generation.
+ *
+ *  Full-width like WaterTile, and for the same reason: this is the one
+ *  other Home tile that calls a store action directly (`setTodayReadiness`)
+ *  rather than only navigating, mirroring WaterTile's own break from
+ *  HomeScreen's read-mostly rule — a same-screen tap beats a trip to
+ *  Settings/`/generate` and back for something meant to be answered once,
+ *  first thing. Two states, matching the original `/generate` card:
+ *  answered-and-not-editing collapses to a single centered row (icon +
+ *  emoji + label, tapping it re-opens the picker); anything else shows the
+ *  5-wide emoji picker row instead. Both states share one fixed tile
+ *  height (this is still a CSS Grid row, not a resizing card), so the
+ *  picker's buttons are sized to fit within it rather than assumed to have
+ *  the generator page's own unbounded vertical room. */
+function ReadinessTile({
+  checkIn,
+  editing,
+  onEdit,
+  onPick,
+}: {
+  checkIn: { score: ReadinessScore } | undefined;
+  editing: boolean;
+  onEdit: () => void;
+  onPick: (score: ReadinessScore) => void;
+}) {
+  const answered = checkIn && !editing;
+
+  return (
+    <div
+      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-3.5 ${
+        answered ? "justify-center" : "justify-between gap-1.5"
+      }`}
+    >
+      <Activity
+        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
+          checkIn ? "text-primary/[0.08]" : "text-foreground/[0.03]"
+        }`}
+        strokeWidth={1.5}
+      />
+      {answered ? (
+        <button
+          onClick={onEdit}
+          aria-label="Today's readiness"
+          className="relative flex items-center justify-between gap-3 text-left"
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Activity className="size-3.5" />
+            </span>
+            <span className="truncate text-[14px] font-bold leading-none">
+              {READINESS_LABELS[checkIn.score].emoji} {READINESS_LABELS[checkIn.score].label}
+            </span>
+          </div>
+          <span className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-[11.5px] font-bold text-secondary-foreground">
+            Change
+          </span>
+        </button>
+      ) : (
+        <>
+          <div className="relative flex min-w-0 items-center gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <Activity className="size-3.5" />
+            </span>
+            <span className="truncate text-[12.5px] font-semibold text-muted-foreground">
+              How are you feeling today?
+            </span>
+          </div>
+          <div className="relative grid grid-cols-5 gap-1.5">
+            {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
+              <button
+                key={score}
+                onClick={() => onPick(score)}
+                aria-label={READINESS_LABELS[score].label}
+                className="flex min-h-[36px] items-center justify-center rounded-full bg-muted text-[16px] leading-none active:scale-95"
+              >
+                {READINESS_LABELS[score].emoji}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

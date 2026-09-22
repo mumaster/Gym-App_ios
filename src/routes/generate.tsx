@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
   ArrowDown,
   ArrowUp,
@@ -46,7 +45,7 @@ import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
-import { READINESS_LABELS, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
+import { todaysCheckIn } from "../lib/gym/readiness";
 import { DOW_LABELS, musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
@@ -90,7 +89,6 @@ function WorkoutHome() {
     program,
     workoutTemplates,
     readinessLog,
-    setTodayReadiness,
     avatarId,
   } = useGym();
   const [duration, setDuration] = useState(45);
@@ -105,7 +103,6 @@ function WorkoutHome() {
   const [programSheetOpen, setProgramSheetOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [readinessEditing, setReadinessEditing] = useState(false);
   /**
    * True when the current muscle selection came straight from a PT-designed
    * flow (a recommended-muscles nudge or a scheduled split day) rather than
@@ -408,70 +405,6 @@ function WorkoutHome() {
               ))}
             </div>
           ) : null}
-        </div>
-      ) : null}
-
-      {hydrated && !activeWorkout ? (
-        <div className="mb-4">
-          <SectionLabel>Readiness</SectionLabel>
-          <Card className="p-4">
-            {todayCheckIn && !readinessEditing ? (
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-[28px] leading-none">
-                    {READINESS_LABELS[todayCheckIn.score].emoji}
-                  </span>
-                  <div>
-                    <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                      Today's readiness
-                    </p>
-                    <p className="mt-0.5 text-[16px] font-bold">
-                      {READINESS_LABELS[todayCheckIn.score].label}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    haptic(12);
-                    setReadinessEditing(true);
-                  }}
-                  className="min-h-[36px] shrink-0 rounded-full bg-secondary px-3.5 text-[13px] font-bold text-secondary-foreground active:scale-95"
-                >
-                  Change
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="flex items-center gap-1.5 text-[16px] font-semibold">
-                  <Activity className="size-4 text-primary" /> How are you feeling today?
-                </p>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  We'll nudge today's suggested weights to match.
-                </p>
-                <div className="mt-3 flex justify-between gap-1.5">
-                  {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
-                    <button
-                      key={score}
-                      onClick={() => {
-                        haptic([15, 25]);
-                        setTodayReadiness(score);
-                        setReadinessEditing(false);
-                      }}
-                      aria-label={READINESS_LABELS[score].label}
-                      className="flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1 rounded-2xl bg-muted text-center active:scale-95"
-                    >
-                      <span className="text-[22px] leading-none">
-                        {READINESS_LABELS[score].emoji}
-                      </span>
-                      <span className="text-[10px] font-semibold leading-tight text-muted-foreground">
-                        {READINESS_LABELS[score].label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </Card>
         </div>
       ) : null}
 
