@@ -23,7 +23,7 @@ export function AvatarPicker() {
             }`}
             style={{ backgroundColor: a.bg }}
           >
-            <Icon className="size-7 text-background" />
+            <Icon className="size-7" style={{ color: a.ink }} />
             {selected ? (
               <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-foreground">
                 <Check className="size-3 text-background" strokeWidth={3} />

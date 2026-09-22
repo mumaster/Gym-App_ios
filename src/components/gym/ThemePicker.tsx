@@ -24,12 +24,14 @@ export function ThemePicker() {
             update({ accent: a.id });
           }}
           aria-label={a.label}
-          className={`flex size-12 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
+          className={`accent-${a.id} flex size-12 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
             accent === a.id ? "border-foreground" : "border-transparent"
           }`}
           style={{ backgroundColor: a.swatch }}
         >
-          {accent === a.id ? <Check className="size-5 text-background" strokeWidth={3} /> : null}
+          {accent === a.id ? (
+            <Check className="size-5 text-primary-foreground" strokeWidth={3} />
+          ) : null}
         </button>
       ))}
 
@@ -54,7 +56,7 @@ export function ThemePicker() {
           }}
         >
           {accent === "custom" ? (
-            <Check className="size-5 text-background" strokeWidth={3} />
+            <Check className="size-5 text-primary-foreground" strokeWidth={3} />
           ) : null}
         </div>
         <input

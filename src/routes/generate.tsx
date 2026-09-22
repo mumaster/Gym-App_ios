@@ -934,7 +934,7 @@ function WorkoutHome() {
           }`}
         >
           <span
-            className={`absolute top-[2px] size-[27px] rounded-full bg-foreground transition-all ${
+            className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
               supersetsEnabled ? "left-[22px]" : "left-[2px]"
             }`}
           />
