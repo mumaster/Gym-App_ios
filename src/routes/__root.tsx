@@ -144,13 +144,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         // only governs the launch IMAGE shown before WebKit starts painting
         // the page at all, not this handoff moment once it does. On an
         // installed iOS PWA this reads as: native launch image (now correctly
-        // black) → one frame of WebKit's own light-mode default canvas
-        // (white) → the page's actual black paint takes over — precisely the
-        // "black, then a brief white flash, then content" sequence reported
-        // even after the launch-image fixes above landed and survived a
-        // clean reinstall. Declaring dark here tells WebKit its own default
-        // canvas is dark too, closing that specific gap.
-        { name: "color-scheme", content: "dark" },
+        // matching this mode) → one frame of WebKit's own opposite-mode
+        // default canvas → the page's actual paint takes over — precisely
+        // the "black, then a brief white flash, then content" sequence
+        // reported even after the launch-image fixes above landed and
+        // survived a clean reinstall (for a dark-mode cold launch; the light
+        // case now avoids the mirror-image flash the same way). Declaring
+        // the resolved scheme here tells WebKit its own default canvas
+        // matches too, closing that specific gap — mirrors RootShell's own
+        // inline `color-scheme` for the same reason that one's set twice:
+        // this meta tag's application depends on HeadContent's own render
+        // order, the inline `<style>` doesn't, so RootShell's copy is the
+        // one guaranteed to apply first if the two ever raced.
+        { name: "color-scheme", content: dark ? "dark" : "light" },
         { title: "Forge — Smart Workout Generator & Tracker" },
         {
           name: "description",
@@ -271,28 +277,62 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  // Same cookie getColorSchemeCookie() already reads for head()'s meta tags
+  // (see that function's own comment) — reused here for a second, distinct
+  // reason found afterward: iOS 26+'s "Liquid Glass" redesign changed how
+  // WebKit tints the status bar/home-indicator area for an installed PWA.
+  // It no longer reliably honors apple-mobile-web-app-status-bar-style/
+  // theme-color the way earlier iOS versions did — confirmed by the status
+  // bar staying black even once those meta tags were proven (via direct
+  // curl/fetch against the deployed server, bypassing every cache layer)
+  // to be correctly serving "default"/"#f2f2f7" for a light-mode cookie.
+  // Multiple independent reports (as of September 2026) describe Safari 26
+  // instead sampling the actual rendered page background at the very top of
+  // the viewport — i.e., this <html>/<body> background and, during the
+  // splash's cold-launch window, #forge-boot's own background below, not a
+  // meta tag at all. Both were unconditionally black before this, the same
+  // "always dark first" gap already accepted for the *content* flash (see
+  // the "Light/dark/system color scheme" section in CLAUDE.md) — except on
+  // iOS 26+ this isn't just a one-frame flash, it's what the status bar
+  // itself is (or was, at time of writing) actually tinted from, so it
+  // needs the SSR'd values themselves to be correct, not just corrected
+  // post-hydration. Rendering the wrong class here would still cause a
+  // real hydration mismatch against the client's own (correct) render, so
+  // this calls the exact same isomorphic getColorSchemeCookie() head() uses
+  // — both sides resolve the identical cookie, keeping server and client
+  // renders in agreement.
+  const dark = getColorSchemeCookie() !== "light";
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={dark ? "dark" : "light"}>
       <head>
         {/* Critical CSS: everything needed for the first paint to be a
-            solid black screen, with zero network dependency. #forge-boot is
-            SplashScreen's own root — covering the viewport in black from
-            this rule (rather than only from Tailwind's `fixed inset-0
-            bg-background`) means the first paint is correct even before
-            styles.css has applied, which also hides the otherwise unstyled
-            TabBar buttons underneath (UA-default buttons render light grey).
-            ID specificity beats Tailwind's classes, but both resolve to the
-            same plain black (--background is oklch(0 0 0) === #000), and
+            solid black (or, in light mode, the app's light background)
+            screen, with zero network dependency. #forge-boot is
+            SplashScreen's own root — covering the viewport in this same
+            color from this rule (rather than only from Tailwind's `fixed
+            inset-0 bg-background`) means the first paint is correct even
+            before styles.css has applied, which also hides the otherwise
+            unstyled TabBar buttons underneath (UA-default buttons render
+            light grey). ID specificity beats Tailwind's classes, but both
+            resolve to the same color either way (--background is
+            oklch(0 0 0) === #000 in dark, .light's own oklch(0.97 0.002
+            260) ≈ #f2f2f7 in light — this hex is a plain approximation for
+            a context with no oklch() support to fall back on, not the
+            source of truth those CSS custom properties remain), and
             opacity/pointer-events are left alone so the dismiss transition
-            still works.
-            color-scheme:dark mirrors the <meta name="color-scheme"> above
+            still works. This SSR'd solid-color choice is what fixed the
+            status bar staying black in light mode on iOS 26+ specifically
+            — see the comment on RootShell's own `dark` above for why a
+            content-flash-only fix (correcting the class post-hydration)
+            wasn't enough there.
+            color-scheme mirrors the <meta name="color-scheme"> above
             (belt-and-suspenders, since this applies with zero dependency on
             HeadContent's own render order) and covers an even earlier gap:
             WebKit's default canvas color for the very first frame, before
             any author CSS has taken effect at all. */}
         <style>
-          {"html,body{background-color:#000}html{color-scheme:dark}" +
-            "#forge-boot{position:fixed;inset:0;z-index:100;background-color:#000}" +
+          {`html,body{background-color:${dark ? "#000" : "#f2f2f7"}}html{color-scheme:${dark ? "dark" : "light"}}` +
+            `#forge-boot{position:fixed;inset:0;z-index:100;background-color:${dark ? "#000" : "#f2f2f7"}}` +
             "html.css-pending #forge-boot *{visibility:hidden}" +
             "html.no-transition #forge-boot *{transition:none!important}"}
         </style>
