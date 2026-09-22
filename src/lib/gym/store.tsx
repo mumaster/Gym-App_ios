@@ -446,6 +446,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
     );
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const applyScheme = (dark: boolean) => {
+      void applySchemeAsync(dark);
+    };
+    const applySchemeAsync = async (dark: boolean) => {
       root.classList.toggle("dark", dark);
       root.classList.toggle("light", !dark);
       // "default" = white bar, black icons; "black" = black bar, white
@@ -506,6 +509,44 @@ export function GymProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(COLOR_SCHEME_RELOAD_GUARD_KEY, String(reloadCount + 1));
       } catch {
         /* private-mode/disabled storage — nothing to persist, proceed anyway */
+      }
+
+      // A second, independent race the reload below exposed: while signed
+      // in, local edits are pushed to the cloud on a 1.5s DEBOUNCE (the
+      // "Mirror local edits up to the cloud" effect above), but a fresh
+      // page load unconditionally PULLS the cloud copy and treats it as
+      // authoritative the moment session+hydrated are both true (the
+      // "reconcile against the cloud" effect above — its own comment says
+      // "on sign-in," but it actually re-runs on every load where a
+      // session already exists, since `hydrated` goes false→true on every
+      // mount). Before this effect started reloading the page itself,
+      // nothing else in the app ever navigated away within that 1.5s
+      // window, so this race was latent and never actually observable.
+      // Reported once it was: switching scheme while signed in reverted
+      // right back to whatever the cloud still held, regardless of which
+      // way the switch went — the reload was landing before the debounced
+      // push ever reached Supabase, so the fresh load's own cloud pull
+      // stomped the just-made local change straight back to the stale
+      // cloud value. Fixed by pushing this render's state to the cloud
+      // directly, bypassing the debounce, and awaiting it before
+      // reloading — a 2s cap keeps a slow/failed push from blocking the
+      // reload forever, since a stuck reload is worse than occasionally
+      // still losing this particular race on a bad connection.
+      if (session) {
+        if (pushTimer.current) {
+          clearTimeout(pushTimer.current);
+          pushTimer.current = null;
+        }
+        try {
+          await Promise.race([
+            pushCloudState(session.user.id, state),
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+          ]);
+        } catch {
+          /* push failed — proceed with the reload anyway rather than
+             getting stuck; the debounced push would have hit the same
+             failure mode regardless. */
+        }
       }
 
       // The classList toggle above already repaints the page's own content
@@ -580,6 +621,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
     const onChange = (e: MediaQueryListEvent) => applyScheme(e.matches);
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
+    // Deliberately scoped to colorScheme + hydrated only, same as the
+    // reconcile-against-cloud effect above: this must NOT re-run on every
+    // `state`/`session` change, only when the resolved scheme itself does
+    // (or hydration completes) — `state` and `session` are read from the
+    // closure purely for the cloud-flush-before-reload step inside
+    // applySchemeAsync, which only fires on a genuine switch anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.colorScheme, hydrated]);
 
   const value = useMemo<Ctx>(() => {
