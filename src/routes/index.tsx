@@ -340,7 +340,7 @@ function NutritionTile({
         <div className="flex min-w-0 items-center gap-2.5">
           <span
             className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-              active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+              active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
             <Apple className="size-3.5" />
@@ -417,7 +417,7 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
     >
       <span
         className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
-          pr ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+          pr ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
         }`}
       >
         <Trophy className="size-3.5" />
@@ -435,7 +435,7 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
         )}
       </div>
       {pr ? (
-        <span className="tabular shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-bold text-primary">
+        <span className="tabular shrink-0 rounded-full bg-primary px-2.5 py-1 text-[13px] font-bold text-primary-foreground">
           {pr.e1rm} kg
         </span>
       ) : null}
@@ -519,7 +519,7 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={`Add ${ml}ml of water`}
-            className="flex min-h-[34px] items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-primary active:scale-95"
+            className="flex min-h-[34px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
           >
             +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
@@ -559,7 +559,7 @@ function BentoTile({
       <div className="flex items-center gap-1.5">
         <span
           className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-            active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+            active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
           }`}
         >
           <Icon className="size-3.5" />
