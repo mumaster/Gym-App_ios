@@ -382,11 +382,34 @@ export function GymProvider({ children }: { children: ReactNode }) {
   // to fix). "system" tracks the device live via matchMedia, updating the
   // class immediately if the user flips their OS setting while the app is
   // still open, without needing a reload.
+  //
+  // Also flips the two iOS-PWA chrome meta tags __root.tsx's head() SSRs as
+  // permanently dark (apple-mobile-web-app-status-bar-style/theme-color) —
+  // unlike the <html> class above, nothing was updating these client-side
+  // at all before, so a light-mode user's actual status bar (the real OS
+  // chrome, not page content) stayed a solid black bar forever, not just
+  // for one SSR frame. iOS reads apple-mobile-web-app-status-bar-style once
+  // at a standalone PWA's cold launch, so on an already-open session this
+  // mutation is best-effort (some iOS versions pick it up live, some only
+  // apply it on the next relaunch) — same "corrects once hydrated, may lag
+  // a frame or a launch" tradeoff the <html> class above already accepts,
+  // just with a longer worst-case lag since there's no equivalent of a
+  // paint to force it sooner.
   useEffect(() => {
     const root = document.documentElement;
+    const statusBarMeta = document.querySelector(
+      'meta[name="apple-mobile-web-app-status-bar-style"]',
+    );
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const applyScheme = (dark: boolean) => {
       root.classList.toggle("dark", dark);
       root.classList.toggle("light", !dark);
+      // "default" = white bar, black icons; "black" = black bar, white
+      // icons — matches this app's own --background for each mode.
+      statusBarMeta?.setAttribute("content", dark ? "black" : "default");
+      // #f2f2f7 mirrors .light's --background choice below (iOS's own
+      // light "systemGroupedBackground" rather than pure white).
+      themeColorMeta?.setAttribute("content", dark ? "#000000" : "#f2f2f7");
     };
 
     if (state.colorScheme === "light") {
