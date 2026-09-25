@@ -15,9 +15,10 @@ npm run build:dev # build in development mode
 npm run preview   # preview a production build
 npm run lint      # eslint .
 npm run format    # prettier --write .
+npm test          # vitest run — unit tests for the pure lib/gym calculation code
 ```
 
-There is no test suite configured (no test runner in devDependencies, no `test` script). Type-check with `npx tsc --noEmit`.
+Type-check with `npx tsc --noEmit`. Tests live in `src/lib/gym/__tests__/*.test.ts` and cover the pure calculation modules (schedule, progression, nutrition, programs, generator); they run in CI before every deploy (`.github/workflows/deploy.yml`), so a failing test blocks the deploy. `vitest.config.ts` is deliberately separate from `vite.config.ts` so tests don't load the pre-bundled TanStack Start/Nitro plugins. When a sourced constant changes, update the test that pins it — the tests double as a record of which published number each rule uses.
 
 ## Fixed numbers must name their source
 
