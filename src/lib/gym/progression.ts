@@ -1,5 +1,6 @@
+import { exerciseById } from "./data";
 import { readinessNoteKind, readinessWeightFactor, type ReadinessScore } from "./readiness";
-import type { Workout } from "./types";
+import type { Muscle, Workout } from "./types";
 
 /** Translated copy this module needs but can't import directly (a plain lib
  *  file, no access to useTranslation()) — the caller passes its own
@@ -7,6 +8,7 @@ import type { Workout } from "./types";
  *  un-migrated caller still works. */
 export interface ProgressionCopy {
   hitTop: (top: number) => string;
+  hitTopOnce: (top: number) => string;
   matching: string;
   noteTrimmedLot: string;
   noteTrimmedLittle: string;
@@ -14,7 +16,10 @@ export interface ProgressionCopy {
 }
 
 const DEFAULT_COPY: ProgressionCopy = {
-  hitTop: (top) => `You hit ${top}+ reps on every set last time — try adding a little weight.`,
+  hitTop: (top) =>
+    `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
+  hitTopOnce: (top) =>
+    `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
   matching: "Matching your last session's weight — aim for one more rep.",
   noteTrimmedLot: "Trimmed a good bit — you checked in wiped out today.",
   noteTrimmedLittle: "Trimmed a little for today's readiness.",
@@ -48,15 +53,34 @@ export const roundToStep = (n: number, step: number) =>
   step > 0 ? Math.round(n / step) * step : n;
 
 /**
+ * Load-increase rule, from two published sources rather than a round number:
+ *
+ * - When: the ACSM position stand on progression models in resistance
+ *   training (Ratamess et al., Med Sci Sports Exerc 2009) recommends raising
+ *   the load once the current one can be done for one to two reps over the
+ *   target "on two consecutive training sessions"; the NSCA's "2-for-2 rule"
+ *   says the same. Here that means every working set reached the top of the
+ *   rep range in each of the last two sessions with this exercise.
+ * - How much: ACSM gives 2–10% (lower for small muscle mass, higher for
+ *   large); the NSCA splits it as 2.5–5% for upper-body and 5–10% for
+ *   lower-body exercises. The conservative end of each NSCA range is used,
+ *   never less than one loadable plate step.
+ */
+const UPPER_BODY_INCREASE = 0.025;
+const LOWER_BODY_INCREASE = 0.05;
+const LOWER_BODY: ReadonlySet<Muscle> = new Set(["Quads", "Hamstrings", "Glutes", "Calves"]);
+
+const workingSets = (w: Workout, exerciseId: string) =>
+  w.completed_sets.filter((s) => s.exercise_id === exerciseId && s.set_type === "working");
+
+/**
  * Progressive-overload suggestion for an exercise, using double progression:
- * if every working set in the most recent session that included it reached
- * the top of the target rep range, suggest a small weight bump (~2.5%) and
- * reset the rep target back to the bottom of the range; otherwise suggest
- * repeating the same weight and aiming for one more rep than the worst set
- * last time (capped at the top of the range). When `readinessScore` is given
- * (today's how-are-you-feeling check-in), the weight is further scaled —
- * trimmed on a rough day, nudged up on a great one — so the check-in
- * actually changes what gets suggested, not just logged.
+ * once every working set reached the top of the target rep range in the last
+ * two sessions that included it, suggest a load increase (see the constants
+ * above) and reset the rep target to the bottom of the range; otherwise
+ * repeat the same weight and aim for one more rep than the worst set last
+ * time (capped at the top of the range). When `readinessScore` is given
+ * (today's check-in), the weight is further scaled — see readiness.ts.
  *
  * `roundStep` rounds the suggested weight to a realistically loadable
  * increment (see lib/gym/plates.ts's `plateStep` — the smallest jump
@@ -72,34 +96,34 @@ export function suggestWeight(
   roundStep = 0.5,
   copy: ProgressionCopy = DEFAULT_COPY,
 ): ProgressionSuggestion | null {
-  const lastWorkout = workouts.find((w) =>
-    w.completed_sets.some((s) => s.exercise_id === exerciseId && s.set_type === "working"),
-  );
-  if (!lastWorkout) return null;
-
-  const sets = lastWorkout.completed_sets.filter(
-    (s) => s.exercise_id === exerciseId && s.set_type === "working",
-  );
+  const sessions = workouts.filter((w) => workingSets(w, exerciseId).length > 0).slice(0, 2);
+  const sets = sessions[0] ? workingSets(sessions[0], exerciseId) : [];
   if (!sets.length) return null;
 
   const lastWeight = sets[sets.length - 1]!.weight;
   if (lastWeight <= 0) return null;
 
   const [bottom, top] = repRange(targetReps);
-  const allHitTop = sets.every((s) => s.reps >= top);
+  const hitTop = (w: Workout) => workingSets(w, exerciseId).every((s) => s.reps >= top);
+  const hitTopLast = hitTop(sessions[0]!);
+  const hitTopTwice = hitTopLast && sessions.length === 2 && hitTop(sessions[1]!);
   const minRepsLastTime = Math.min(...sets.map((s) => s.reps));
+  const primary = exerciseById(exerciseId)?.primary_muscle;
+  const increase = primary && LOWER_BODY.has(primary) ? LOWER_BODY_INCREASE : UPPER_BODY_INCREASE;
 
-  const base = allHitTop
+  const base = hitTopTwice
     ? {
-        weight: lastWeight + Math.max(roundStep, roundToStep(lastWeight * 0.025, roundStep)),
+        weight: lastWeight + Math.max(roundStep, roundToStep(lastWeight * increase, roundStep)),
         reps: bottom,
         reason: copy.hitTop(top),
       }
-    : {
-        weight: lastWeight,
-        reps: Math.min(top, minRepsLastTime + 1),
-        reason: copy.matching,
-      };
+    : hitTopLast
+      ? { weight: lastWeight, reps: top, reason: copy.hitTopOnce(top) }
+      : {
+          weight: lastWeight,
+          reps: Math.min(top, minRepsLastTime + 1),
+          reason: copy.matching,
+        };
 
   const factor = readinessWeightFactor(readinessScore);
   const weight = Number(roundToStep(base.weight * factor, roundStep).toFixed(2));

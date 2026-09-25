@@ -730,7 +730,9 @@ const en = {
   },
   progression: {
     hitTop: (top: number) =>
-      `You hit ${top}+ reps on every set last time — try adding a little weight.`,
+      `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
+    hitTopOnce: (top: number) =>
+      `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
     matching: "Matching your last session's weight — aim for one more rep.",
     noteTrimmedLot: "Trimmed a good bit — you checked in wiped out today.",
     noteTrimmedLittle: "Trimmed a little for today's readiness.",
@@ -1452,7 +1454,9 @@ const nl: Dict = {
   },
   progression: {
     hitTop: (top: number) =>
-      `Je hebt vorige keer bij elke set ${top}+ reps gehaald — probeer wat extra gewicht.`,
+      `Je hebt in je laatste twee sessies bij elke set ${top}+ reps gehaald — tijd voor extra gewicht.`,
+    hitTopOnce: (top: number) =>
+      `Je hebt vorige keer bij elke set ${top}+ reps gehaald — doe dit nog één keer met dit gewicht, daarna meer gewicht.`,
     matching: "Gelijk aan het gewicht van je vorige sessie — probeer één rep meer.",
     noteTrimmedLot: "Flink verlaagd — je gaf aan vandaag uitgeput te zijn.",
     noteTrimmedLittle: "Iets verlaagd op basis van je paraatheid vandaag.",

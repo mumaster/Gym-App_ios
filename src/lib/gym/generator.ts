@@ -72,14 +72,30 @@ interface Shape {
   accessoryReps: string;
 }
 
+/**
+ * Rest between working sets follows the ACSM resistance-training position
+ * stands: 2009 (Ratamess et al.) says at least 2–3 min for heavier core
+ * lifts and 1–2 min for assistance exercises; the 2026 update recommends
+ * 2–3 min for hypertrophy work, after studies such as Schoenfeld et al.
+ * (J Strength Cond Res 2016) found 3-min rests beat 1-min rests for both
+ * strength and size. Every working set gets 2 min: the bottom of the
+ * 2–3 min range both stands share (the 3–5 min the 2026 stand gives for
+ * maximal-strength work is for 1–3RM training, which these rep ranges
+ * aren't), and the one value that also fits 2009's 1–2 min for assistance
+ * exercises. Using 3 min for longer sessions was tried and made a 60-min
+ * session fit fewer exercises than a 45-min one. Superset
+ * pairs keep their own round rest (pairRestFor) — each muscle already rests
+ * for its partner's set plus that round rest, which lands in the same
+ * 2–3 min window.
+ */
 function shapeFor(duration: number): Shape {
   if (duration <= 15)
     return {
       maxExercises: 3,
       compoundSets: 2,
       accessorySets: 2,
-      compoundRest: 50,
-      accessoryRest: 45,
+      compoundRest: 120,
+      accessoryRest: 120,
       compoundWarmups: 0,
       compoundShare: 1,
       compoundReps: "5-8",
@@ -90,8 +106,8 @@ function shapeFor(duration: number): Shape {
       maxExercises: 4,
       compoundSets: 3,
       accessorySets: 3,
-      compoundRest: 60,
-      accessoryRest: 45,
+      compoundRest: 120,
+      accessoryRest: 120,
       compoundWarmups: 0,
       compoundShare: 0.8,
       compoundReps: "5-8",
@@ -102,8 +118,8 @@ function shapeFor(duration: number): Shape {
       maxExercises: 5,
       compoundSets: 3,
       accessorySets: 3,
-      compoundRest: 85,
-      accessoryRest: 60,
+      compoundRest: 120,
+      accessoryRest: 120,
       compoundWarmups: 1,
       compoundShare: 0.7,
       compoundReps: "6-10",
@@ -114,8 +130,8 @@ function shapeFor(duration: number): Shape {
       maxExercises: 6,
       compoundSets: 4,
       accessorySets: 3,
-      compoundRest: 90,
-      accessoryRest: 60,
+      compoundRest: 120,
+      accessoryRest: 120,
       compoundWarmups: 1,
       compoundShare: 0.6,
       compoundReps: "6-10",
@@ -126,8 +142,8 @@ function shapeFor(duration: number): Shape {
       maxExercises: 7,
       compoundSets: 4,
       accessorySets: 3,
-      compoundRest: 105,
-      accessoryRest: 70,
+      compoundRest: 120,
+      accessoryRest: 120,
       compoundWarmups: 2,
       compoundShare: 0.55,
       compoundReps: "5-8",
@@ -138,7 +154,7 @@ function shapeFor(duration: number): Shape {
     compoundSets: 4,
     accessorySets: 4,
     compoundRest: 120,
-    accessoryRest: 75,
+    accessoryRest: 120,
     compoundWarmups: 2,
     compoundShare: 0.55,
     compoundReps: "5-8",
