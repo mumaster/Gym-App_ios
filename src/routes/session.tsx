@@ -32,8 +32,7 @@ import { useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
-import { suggestWeight } from "../lib/gym/progression";
-import { todaysCheckIn } from "../lib/gym/readiness";
+import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
 import {
   cancelRestNotification,
   ensurePushSubscription,
@@ -282,7 +281,6 @@ function SessionScreen() {
                 id,
                 workouts,
                 plannedEntry.target_reps,
-                undefined,
                 step,
                 t.progression,
               );
@@ -886,11 +884,9 @@ function ExerciseBlock({
     bestSet,
     profiles,
     activeProfileId,
-    readinessLog,
   } = useGym();
   const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
-  const todayReadiness = todaysCheckIn(readinessLog)?.score;
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const step = exercise ? plateStep(exercise, profile) : 0.5;
 
@@ -939,16 +935,8 @@ function ExerciseBlock({
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
-    () =>
-      suggestWeight(
-        planned.exercise_id,
-        workouts,
-        planned.target_reps,
-        todayReadiness,
-        step,
-        t.progression,
-      ),
-    [workouts, planned.exercise_id, planned.target_reps, todayReadiness, step, t],
+    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, step, t.progression),
+    [workouts, planned.exercise_id, planned.target_reps, step, t],
   );
 
   useEffect(() => {
@@ -960,7 +948,14 @@ function ExerciseBlock({
     setEditIdx(null);
   }, [logged.length]);
 
-  const prefillWeight = lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
+  // After a working set logged outside the target RPE range, the next set's
+  // weight moves 4% per point (see progression.ts's rpeAdjustedWeight).
+  const rpeAdjustment =
+    lastLogged?.set_type === "working" && setType === "working"
+      ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step)
+      : null;
+  const prefillWeight =
+    rpeAdjustment?.weight ?? lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
   const prefillReps = bestReps || targetTopReps;
 
   if (!exercise) return null;
@@ -1301,6 +1296,18 @@ function ExerciseBlock({
                 ))}
               </div>
             </div>
+          ) : null}
+          {setType === "working" ? (
+            <p className="text-[12px] text-muted-foreground">
+              {rpeAdjustment && lastLogged?.rpe != null
+                ? t.session.rpeAdjusted(
+                    lastLogged.rpe,
+                    TARGET_RPE[0],
+                    TARGET_RPE[1],
+                    rpeAdjustment.direction === "down",
+                  )
+                : t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
+            </p>
           ) : null}
 
           <PlateHint

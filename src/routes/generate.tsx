@@ -210,7 +210,6 @@ function WorkoutHome() {
         avoided: avoidedExerciseIds,
         history: workouts,
         profile,
-        ...(todayReadiness !== undefined ? { readinessScore: todayReadiness } : {}),
         ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
       }),
     );
@@ -1033,7 +1032,6 @@ function WorkoutHome() {
                     ex.id,
                     workouts,
                     p.target_reps,
-                    todayReadiness,
                     plateStep(ex, profile),
                   );
                   return {

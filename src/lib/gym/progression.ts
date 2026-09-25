@@ -1,5 +1,4 @@
 import { exerciseById } from "./data";
-import { readinessNoteKind, readinessWeightFactor, type ReadinessScore } from "./readiness";
 import type { Muscle, Workout } from "./types";
 
 /** Translated copy this module needs but can't import directly (a plain lib
@@ -10,9 +9,6 @@ export interface ProgressionCopy {
   hitTop: (top: number) => string;
   hitTopOnce: (top: number) => string;
   matching: string;
-  noteTrimmedLot: string;
-  noteTrimmedLittle: string;
-  noteNudgedUp: string;
 }
 
 const DEFAULT_COPY: ProgressionCopy = {
@@ -21,9 +17,6 @@ const DEFAULT_COPY: ProgressionCopy = {
   hitTopOnce: (top) =>
     `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
   matching: "Matching your last session's weight — aim for one more rep.",
-  noteTrimmedLot: "Trimmed a good bit — you checked in wiped out today.",
-  noteTrimmedLittle: "Trimmed a little for today's readiness.",
-  noteNudgedUp: "Nudged up — you're feeling great today.",
 };
 
 /** [low, high] parsed from a target_reps string like "8-12" or a single number like "5". */
@@ -79,8 +72,7 @@ const workingSets = (w: Workout, exerciseId: string) =>
  * two sessions that included it, suggest a load increase (see the constants
  * above) and reset the rep target to the bottom of the range; otherwise
  * repeat the same weight and aim for one more rep than the worst set last
- * time (capped at the top of the range). When `readinessScore` is given
- * (today's check-in), the weight is further scaled — see readiness.ts.
+ * time (capped at the top of the range).
  *
  * `roundStep` rounds the suggested weight to a realistically loadable
  * increment (see lib/gym/plates.ts's `plateStep` — the smallest jump
@@ -92,7 +84,6 @@ export function suggestWeight(
   exerciseId: string,
   workouts: Workout[],
   targetReps: string,
-  readinessScore?: ReadinessScore,
   roundStep = 0.5,
   copy: ProgressionCopy = DEFAULT_COPY,
 ): ProgressionSuggestion | null {
@@ -125,19 +116,42 @@ export function suggestWeight(
           reason: copy.matching,
         };
 
-  const factor = readinessWeightFactor(readinessScore);
-  const weight = Number(roundToStep(base.weight * factor, roundStep).toFixed(2));
-  const noteKind = readinessNoteKind(readinessScore);
-  const note =
-    noteKind === "trimmedLot"
-      ? copy.noteTrimmedLot
-      : noteKind === "trimmedLittle"
-        ? copy.noteTrimmedLittle
-        : noteKind === "nudgedUp"
-          ? copy.noteNudgedUp
-          : null;
-  const reason = note ? `${base.reason} ${note}` : base.reason;
+  const weight = Number(roundToStep(base.weight, roundStep).toFixed(2));
+  const reason = base.reason;
   const direction = weight > lastWeight ? "up" : weight < lastWeight ? "down" : "same";
 
   return { weight, reps: base.reps, bumped: direction === "up", direction, reason };
+}
+
+/**
+ * Within-session load autoregulation from logged RPE, following Helms et al.
+ * (Front Physiol 2018), where load for subsequent sets moved 4% for every
+ * RPE point outside the target range. The target is RPE 7–9 — 1 to 3 reps
+ * in reserve on the RIR-based RPE scale (Zourdos et al., J Strength Cond Res
+ * 2016, where RPE 10 = 0 reps left): hypertrophy improves as sets get closer
+ * to failure with diminishing returns near it (Refalo et al., Sports Med
+ * 2023; Robinson et al., Sports Med 2024), while strength gains barely
+ * depend on it. Returns null when the RPE is inside the range or missing,
+ * or when no loadable weight is close enough to the 4% change.
+ */
+export const TARGET_RPE: [number, number] = [7, 9];
+const LOAD_CHANGE_PER_RPE_POINT = 0.04;
+
+export function rpeAdjustedWeight(
+  weight: number,
+  rpe: number | undefined,
+  roundStep: number,
+): { weight: number; direction: "up" | "down" } | null {
+  if (rpe == null || weight <= 0) return null;
+  const [lo, hi] = TARGET_RPE;
+  const off = rpe > hi ? rpe - hi : rpe < lo ? rpe - lo : 0;
+  if (!off) return null;
+  const raw = weight * (1 - off * LOAD_CHANGE_PER_RPE_POINT);
+  // Rounded to a loadable weight. On light loads a single plate step can be
+  // far more than 4%, in which case rounding lands back on the same weight
+  // and no adjustment is made — forcing a whole step would overshoot the
+  // source's 4% (e.g. 10 kg → 7.5 kg is −25%).
+  const next = Number(roundToStep(raw, roundStep).toFixed(2));
+  if (next === weight) return null;
+  return { weight: Math.max(0, next), direction: off > 0 ? "down" : "up" };
 }

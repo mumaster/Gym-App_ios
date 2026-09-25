@@ -273,6 +273,9 @@ const en = {
     repsAriaLabel: "Reps",
     rpe: "RPE",
     rpeAriaLabel: (n: number) => `Rate of perceived exertion ${n}`,
+    rpeTarget: (lo: number, hi: number) => `Aim for ${lo}–${hi} (1–3 reps left)`,
+    rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
+      `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point (Helms et al. 2018).`,
     resting: "Resting…",
     repeat: (weight: number, reps: number) => `Repeat  ${weight} × ${reps}`,
     logSet: "Log set",
@@ -743,9 +746,6 @@ const en = {
     hitTopOnce: (top: number) =>
       `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
     matching: "Matching your last session's weight — aim for one more rep.",
-    noteTrimmedLot: "Trimmed a good bit — you checked in wiped out today.",
-    noteTrimmedLittle: "Trimmed a little for today's readiness.",
-    noteNudgedUp: "Nudged up — you're feeling great today.",
   },
 } satisfies Record<string, Record<string, unknown>>;
 
@@ -1000,6 +1000,9 @@ const nl: Dict = {
     repsAriaLabel: "Reps",
     rpe: "RPE",
     rpeAriaLabel: (n: number) => `Ervaren inspanning ${n}`,
+    rpeTarget: (lo: number, hi: number) => `Mik op ${lo}–${hi} (nog 1–3 reps over)`,
+    rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
+      `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt (Helms e.a. 2018).`,
     resting: "Rusten…",
     repeat: (weight: number, reps: number) => `Herhaal  ${weight} × ${reps}`,
     logSet: "Log set",
@@ -1477,9 +1480,6 @@ const nl: Dict = {
     hitTopOnce: (top: number) =>
       `Je hebt vorige keer bij elke set ${top}+ reps gehaald — doe dit nog één keer met dit gewicht, daarna meer gewicht.`,
     matching: "Gelijk aan het gewicht van je vorige sessie — probeer één rep meer.",
-    noteTrimmedLot: "Flink verlaagd — je gaf aan vandaag uitgeput te zijn.",
-    noteTrimmedLittle: "Iets verlaagd op basis van je paraatheid vandaag.",
-    noteNudgedUp: "Iets verhoogd — je voelt je vandaag geweldig.",
   },
 };
 

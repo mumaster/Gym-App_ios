@@ -660,13 +660,11 @@ function WaterTile({
   );
 }
 
-/** Moved here from `/generate` — the readiness check-in nudges suggested
- *  workout weights (see `progression.ts`'s `readinessWeightFactor`), but
- *  "how are you feeling" is a whole-day question, not a workout-generator
- *  one, and belongs on the screen that's actually the app's daily landing
- *  point. `/generate` still READS `readinessLog` for its own suggestion
- *  math (via `todaysCheckIn`) — only the check-in widget itself moved, not
- *  the data or its effect on generation.
+/** Moved here from `/generate` — "how are you feeling" is a whole-day
+ *  question, and belongs on the app's daily landing point. It's a wellness
+ *  log only: it used to scale suggested weights by fixed percentages, which
+ *  no study supports, so load now autoregulates from logged RPE instead
+ *  (see readiness.ts / progression.ts's `rpeAdjustedWeight`).
  *
  *  Full-width like WaterTile, and for the same reason: this is the one
  *  other Home tile that calls a store action directly (`setTodayReadiness`)

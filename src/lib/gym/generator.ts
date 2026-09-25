@@ -2,7 +2,6 @@ import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
 import { roundToStep, suggestWeight } from "./progression";
-import type { ReadinessScore } from "./readiness";
 import type {
   EquipmentId,
   EquipmentProfile,
@@ -177,8 +176,6 @@ interface GenerateArgs {
   avoided?: string[];
   /** Finished workout history — used to attach progressive-overload weight suggestions. */
   history?: Workout[];
-  /** Today's readiness check-in — scales suggested weight up or down. */
-  readinessScore?: ReadinessScore;
   /** Active equipment profile — enables plate/dumbbell-realistic rounding of
    *  suggested weights (see lib/gym/plates.ts's `plateStep`). Falls back to a
    *  plain 0.5kg round when omitted. */
@@ -319,7 +316,6 @@ export function generateWorkout({
   loved = [],
   avoided = [],
   history = [],
-  readinessScore,
   profile,
   intensityMultiplier = 1,
   volumeMultiplier = 1,
@@ -342,9 +338,7 @@ export function generateWorkout({
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
     const step = profile ? plateStep(choice, profile) : 0.5;
-    const suggestion = history.length
-      ? suggestWeight(choice.id, history, target_reps, readinessScore, step)
-      : null;
+    const suggestion = history.length ? suggestWeight(choice.id, history, target_reps, step) : null;
     const suggestedWeight =
       suggestion && intensityMultiplier !== 1
         ? Number(roundToStep(suggestion.weight * intensityMultiplier, step).toFixed(2))

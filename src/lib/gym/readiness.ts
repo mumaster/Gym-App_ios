@@ -24,39 +24,9 @@ export function todaysCheckIn(log: ReadinessCheckIn[]): ReadinessCheckIn | undef
   return log.find((c) => dayKey(c.date) === key);
 }
 
-/**
- * Multiplier applied to suggested working weight based on how the user says
- * they're feeling. Deliberately conservative — this trims or nudges load, it
- * never changes set/rep counts or session length.
- */
-export function readinessWeightFactor(score: ReadinessScore | undefined): number {
-  switch (score) {
-    case 1:
-      return 0.9;
-    case 2:
-      return 0.95;
-    case 5:
-      return 1.025;
-    default:
-      return 1;
-  }
-}
-
-/** Which transparent, user-facing note (if any) explains why the suggestion
- *  was adjusted — a kind rather than the text itself, since this is a plain
- *  lib file with no access to the app's translations; the caller maps this
- *  to localized copy (see lib/gym/i18n.ts's `progression` namespace). */
-export type ReadinessNoteKind = "trimmedLot" | "trimmedLittle" | "nudgedUp" | null;
-
-export function readinessNoteKind(score: ReadinessScore | undefined): ReadinessNoteKind {
-  switch (score) {
-    case 1:
-      return "trimmedLot";
-    case 2:
-      return "trimmedLittle";
-    case 5:
-      return "nudgedUp";
-    default:
-      return null;
-  }
-}
+// The check-in used to scale suggested weights by fixed percentages
+// (−10% / −5% / +2.5% for scores 1 / 2 / 5). No study supports adjusting
+// load from a general how-do-you-feel score, so it was removed: load is now
+// autoregulated from logged RPE instead (see progression.ts's
+// `rpeAdjustedWeight`), the method the autoregulation research actually
+// tested. The check-in itself stays as a daily wellness log.
