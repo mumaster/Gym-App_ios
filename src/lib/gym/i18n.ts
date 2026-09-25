@@ -458,8 +458,8 @@ const en = {
     addIngredient: "Add ingredient",
     editFood: "Edit food",
     addFood: "Add food",
-    scanFood: "Scan food",
-    scanFoodDesc: "Point at the barcode — or photograph the nutrition label",
+    scanFood: "Scan food label or barcode",
+    scanFoodDesc: "Barcodes are read automatically — use the shutter for a label",
     enterManually: "Enter manually",
     enterManuallyDesc: "Type in the values yourself",
     recent: "Recent",
@@ -494,7 +494,7 @@ const en = {
     addToLog: "Add to log",
   },
   barcodeScanner: {
-    title: "Scan food",
+    title: "Scan food label or barcode",
     aim: "Point at the barcode — it's read automatically.",
     noBarcodeHint: "No barcode? Tap the shutter to photograph the nutrition label.",
     lookingUp: "Looking up that product…",
@@ -1238,8 +1238,9 @@ const nl: Dict = {
     addIngredient: "Ingrediënt toevoegen",
     editFood: "Voedsel bewerken",
     addFood: "Voedsel toevoegen",
-    scanFood: "Voedsel scannen",
-    scanFoodDesc: "Richt op de streepjescode — of fotografeer het voedingslabel",
+    scanFood: "Voedingslabel of streepjescode scannen",
+    scanFoodDesc:
+      "Streepjescodes worden automatisch gelezen — gebruik de ontspanknop voor een label",
     enterManually: "Handmatig invoeren",
     enterManuallyDesc: "Voer de waarden zelf in",
     recent: "Recent",
@@ -1275,7 +1276,7 @@ const nl: Dict = {
     addToLog: "Toevoegen aan logboek",
   },
   barcodeScanner: {
-    title: "Voedsel scannen",
+    title: "Voedingslabel of streepjescode scannen",
     aim: "Richt op de streepjescode — die wordt automatisch gelezen.",
     noBarcodeHint:
       "Geen streepjescode? Tik op de ontspanknop om het voedingslabel te fotograferen.",
