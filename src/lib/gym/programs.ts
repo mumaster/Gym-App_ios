@@ -1,4 +1,5 @@
-import type { ScheduleSlot, SplitTemplateId } from "./splits";
+import { advanceRotation, type Rotation } from "./schedule";
+import type { SplitTemplateId } from "./splits";
 
 export type ProgramWeekType = "build" | "deload";
 
@@ -66,32 +67,27 @@ export const PROGRAM_PRESETS: ProgramPreset[] = [
 export const programPresetById = (id: string): ProgramPreset =>
   PROGRAM_PRESETS.find((p) => p.id === id) ?? PROGRAM_PRESETS[0]!;
 
-export interface Program {
+/** Same rotation shape as WeeklyScheme (`schedule` Monday-first,
+ *  `cyclePosition` = next session within the current week, plus the
+ *  calendar fields from lib/gym/schedule.ts), bounded by `weeks`. */
+export interface Program extends Rotation {
   id: string;
   name: string;
   templateId: SplitTemplateId;
-  /** One slot per training day/week, ordered by day-of-week ascending — same
-   *  shape as WeeklyScheme's, but scoped to this program rather than an
-   *  indefinitely-repeating cycle. */
-  schedule: ScheduleSlot[];
   weeks: ProgramWeek[];
   /** Index into `weeks` for the week currently being trained. */
   currentWeek: number;
-  /** Index into `schedule` for the next session within the current week. */
-  cyclePosition: number;
 }
 
 export const currentProgramWeek = (program: Program): ProgramWeek =>
   program.weeks[program.currentWeek] ?? program.weeks[0]!;
 
-/** Advances a program's cursor by one completed session — rolls into the
- *  next week (wrapping back to week 0, so a finished wave restarts rather
- *  than dead-ending) once the current week's schedule is exhausted. */
-export function advanceProgram(program: Program): Program {
-  const nextCyclePosition = program.cyclePosition + 1;
-  if (nextCyclePosition < program.schedule.length) {
-    return { ...program, cyclePosition: nextCyclePosition };
-  }
-  const nextWeek = (program.currentWeek + 1) % program.weeks.length;
-  return { ...program, currentWeek: nextWeek, cyclePosition: 0 };
+/** Advances a program's cursor by one finished or skipped session — rolls
+ *  into the next week (wrapping back to week 0, so a finished wave restarts
+ *  rather than dead-ending) once the current week's schedule is exhausted. */
+export function advanceProgram(program: Program, today = new Date()): Program {
+  const { rotation, wrapped } = advanceRotation(program, today);
+  return wrapped
+    ? { ...rotation, currentWeek: (program.currentWeek + 1) % program.weeks.length }
+    : rotation;
 }

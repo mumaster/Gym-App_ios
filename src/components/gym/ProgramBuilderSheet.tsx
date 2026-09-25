@@ -11,6 +11,7 @@ import {
 } from "../../lib/gym/splits";
 import { useTranslation } from "../../lib/gym/i18n";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
+import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /** A sane default spread of weekdays for a given training frequency — same
@@ -74,6 +75,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       weeks: preset.weeks,
       currentWeek: 0,
       cyclePosition: 0,
+      anchor: anchorFor(preview, 0),
     };
     setProgram(next);
     onClose();

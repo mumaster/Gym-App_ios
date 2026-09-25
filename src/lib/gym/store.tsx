@@ -26,6 +26,7 @@ import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import { advanceProgram, type Program } from "./programs";
+import { advanceRotation, anchorFor, resortRotation, weekIndex, type Rotation } from "./schedule";
 import type { WeeklyScheme } from "./splits";
 import type {
   AccentId,
@@ -187,6 +188,22 @@ function migrate(raw: Partial<GymState>): GymState {
     dumbbell_bar_weight: p.dumbbell_bar_weight ?? 2,
   });
 
+  // Older rotations were sorted Sunday-first and had no calendar anchor:
+  // re-sort Monday-first (cursor stays on the same session) and anchor so
+  // the next session is never already overdue right after upgrading.
+  const fixRotation = <R extends Rotation>(r: R | null | undefined): R | null => {
+    if (!r) return null;
+    const current = r.schedule[r.cyclePosition];
+    const schedule = [...r.schedule].sort((a, b) => weekIndex(a.dow) - weekIndex(b.dow));
+    const cyclePosition = Math.max(0, current ? schedule.indexOf(current) : 0);
+    return {
+      ...r,
+      schedule,
+      cyclePosition,
+      anchor: r.anchor ?? anchorFor(schedule, cyclePosition),
+    };
+  };
+
   const profiles = (raw.profiles?.length ? raw.profiles : DEFAULT_PROFILES).map(fixProfile);
   return {
     ...initialState,
@@ -205,8 +222,8 @@ function migrate(raw: Partial<GymState>): GymState {
     soundEnabled: raw.soundEnabled ?? true,
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
-    weeklyScheme: raw.weeklyScheme ?? null,
-    program: raw.program ?? null,
+    weeklyScheme: fixRotation(raw.weeklyScheme),
+    program: fixRotation(raw.program),
     nutritionGoals: raw.nutritionGoals ?? {},
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
@@ -715,11 +732,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
                 // silently skip the day that was really next.
                 weeklyScheme:
                   s.weeklyScheme && s.activeWorkout.fromScheduledDay
-                    ? {
-                        ...s.weeklyScheme,
-                        cyclePosition:
-                          (s.weeklyScheme.cyclePosition + 1) % s.weeklyScheme.schedule.length,
-                      }
+                    ? advanceRotation(s.weeklyScheme).rotation
                     : s.weeklyScheme,
                 // Same "only advance the session that actually scheduled it"
                 // guard as weeklyScheme above, mirrored for the program cursor.
@@ -807,7 +820,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
           const schedule = s.weeklyScheme.schedule.map((slot, i) =>
             i === index ? { ...slot, dow } : slot,
           );
-          return { ...s, weeklyScheme: { ...s.weeklyScheme, schedule } };
+          return { ...s, weeklyScheme: resortRotation({ ...s.weeklyScheme, schedule }) };
         }),
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
 
@@ -818,7 +831,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
           const schedule = s.program.schedule.map((slot, i) =>
             i === index ? { ...slot, dow } : slot,
           );
-          return { ...s, program: { ...s.program, schedule } };
+          return { ...s, program: resortRotation({ ...s.program, schedule }) };
         }),
       clearProgram: () => setState((s) => ({ ...s, program: null })),
 

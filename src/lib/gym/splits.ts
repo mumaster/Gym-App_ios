@@ -1,5 +1,7 @@
 import { MUSCLES } from "./data";
 import { recommendedMuscles } from "./recommendations";
+import type { Rotation } from "./schedule";
+import { weekIndex } from "./schedule";
 import type { Muscle, Workout } from "./types";
 
 export type SplitTemplateId = "full_body" | "upper_lower" | "push_pull_legs" | "bro_split";
@@ -76,26 +78,26 @@ export interface ScheduleSlot {
   dayId: string;
 }
 
-export interface WeeklyScheme {
+/** `schedule` is one slot per training day/week, ordered Monday-first;
+ *  `cyclePosition` indexes the next session and only advances when a
+ *  scheduled session is finished or skipped. See lib/gym/schedule.ts for
+ *  the calendar fields (`anchor`, `dayOverrides`). */
+export interface WeeklyScheme extends Rotation {
   templateId: SplitTemplateId;
-  /** One slot per training day/week, ordered by day-of-week ascending. */
-  schedule: ScheduleSlot[];
-  /** Index into `schedule` for the next session — advances whenever any workout finishes. */
-  cyclePosition: number;
 }
 
-/** Cyclically assigns a template's day-types across the chosen weekdays, in calendar order. */
+/** Cyclically assigns a template's day-types across the chosen weekdays, Monday-first. */
 export function buildSchedule(templateId: SplitTemplateId, dows: number[]): ScheduleSlot[] {
   const template = splitTemplateById(templateId);
-  const sorted = [...new Set(dows)].sort((a, b) => a - b);
+  const sorted = [...new Set(dows)].sort((a, b) => weekIndex(a) - weekIndex(b));
   return sorted.map((dow, i) => ({ dow, dayId: template.days[i % template.days.length]!.id }));
 }
 
 /** Best starting slot for a freshly-created schedule: the next slot due today or later. */
 export function initialCyclePosition(schedule: ScheduleSlot[]): number {
   if (!schedule.length) return 0;
-  const today = new Date().getDay();
-  const idx = schedule.findIndex((s) => s.dow >= today);
+  const today = weekIndex(new Date().getDay());
+  const idx = schedule.findIndex((s) => weekIndex(s.dow) >= today);
   return idx === -1 ? 0 : idx;
 }
 

@@ -11,6 +11,7 @@ import {
   splitTemplateById,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
+import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /** A sane default spread of weekdays for a given training frequency. */
@@ -60,10 +61,12 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const save = () => {
     if (!preview.length) return;
     haptic([20, 30]);
+    const cyclePosition = initialCyclePosition(preview);
     setWeeklyScheme({
       templateId,
       schedule: preview,
-      cyclePosition: initialCyclePosition(preview),
+      cyclePosition,
+      anchor: anchorFor(preview, cyclePosition),
     });
     onClose();
   };
