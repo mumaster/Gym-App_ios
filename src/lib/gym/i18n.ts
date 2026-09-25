@@ -543,8 +543,12 @@ const en = {
     noLimit: "No limit",
     clearAll: "Clear all",
     byDayType: "Different limits on rest days",
-    byDayTypeDesc:
-      "Rest days drop about 12% of calories, all from carbs — protein and fat stay the same.",
+    byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
+      `Rest days leave out the energy of your usual session — about ${kcal} kcal (${minutes} min at ${met} METs, ${kg} kg), taken from carbs. Protein and fat stay the same.`,
+    byDayTypeNeedsWeight:
+      "Answer “Suggest my limits” first — the rest-day estimate needs your bodyweight. Until then, rest days use your training-day limits.",
+    byDayTypeSource:
+      "Session energy: 2024 Adult Compendium of Physical Activities (resistance training 3.5 METs, supersets 5.8 METs). Carbs scale with training and protein stays daily: ACSM joint position on nutrition and athletic performance (2016), ISSN protein position stand (2017).",
     trainingDay: "Training day",
     restDay: "Rest day",
     restHint: "Blank fields follow your training-day limits automatically.",
@@ -1259,8 +1263,12 @@ const nl: Dict = {
     noLimit: "Geen limiet",
     clearAll: "Alles wissen",
     byDayType: "Andere limieten op rustdagen",
-    byDayTypeDesc:
-      "Rustdagen hebben zo'n 12% minder calorieën, allemaal uit koolhydraten — eiwit en vet blijven gelijk.",
+    byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
+      `Rustdagen laten de energie van je gebruikelijke training weg — zo'n ${kcal} kcal (${minutes} min bij ${String(met).replace(".", ",")} MET, ${String(kg).replace(".", ",")} kg), uit koolhydraten. Eiwit en vet blijven gelijk.`,
+    byDayTypeNeedsWeight:
+      "Vul eerst „Stel mijn limieten voor” in — de schatting voor rustdagen heeft je lichaamsgewicht nodig. Tot die tijd gelden op rustdagen je limieten voor trainingsdagen.",
+    byDayTypeSource:
+      "Trainingsenergie: 2024 Adult Compendium of Physical Activities (krachttraining 3,5 MET, supersets 5,8 MET). Koolhydraten volgen de training, eiwit blijft dagelijks gelijk: ACSM joint position on nutrition and athletic performance (2016), ISSN-positiestandpunt over eiwit (2017).",
     trainingDay: "Trainingsdag",
     restDay: "Rustdag",
     restHint: "Lege velden volgen automatisch je limieten voor trainingsdagen.",

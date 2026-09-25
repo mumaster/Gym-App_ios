@@ -7,9 +7,11 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   deriveRestDayGoals,
+  sessionEnergyKcal,
   trainingDayGoalsFromAverage,
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
+import { useSessionEnergy, useSessionShape } from "../../lib/gym/dayNutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
@@ -48,6 +50,8 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     update,
   } = useGym();
   const t = useTranslation();
+  const session = useSessionEnergy();
+  const sessionShape = useSessionShape();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [restDraft, setRestDraft] = useState<Draft>(emptyDraft);
   const [byDayType, setByDayType] = useState(false);
@@ -78,7 +82,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   };
 
   const showingRest = byDayType && tab === "rest";
-  const derivedRest = deriveRestDayGoals(fromDraft(draft));
+  const derivedRest = deriveRestDayGoals(fromDraft(draft), session?.kcal ?? 0);
   const activeDraft = showingRest ? restDraft : draft;
   const setActiveDraft = showingRest ? setRestDraft : setDraft;
 
@@ -113,7 +117,14 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             <div className="min-w-0">
               <p className="text-[14px] font-semibold">{t.nutritionGoals.byDayType}</p>
               <p className="text-[12.5px] text-muted-foreground">
-                {t.nutritionGoals.byDayTypeDesc}
+                {session
+                  ? t.nutritionGoals.byDayTypeDesc(
+                      session.kcal,
+                      session.minutes,
+                      session.met,
+                      session.weightKg,
+                    )
+                  : t.nutritionGoals.byDayTypeNeedsWeight}
               </p>
             </div>
             <button
@@ -163,6 +174,11 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
           {showingRest ? (
             <p className="text-[12.5px] text-muted-foreground">{t.nutritionGoals.restHint}</p>
           ) : null}
+          {byDayType ? (
+            <p className="text-[11.5px] text-muted-foreground">
+              {t.nutritionGoals.byDayTypeSource}
+            </p>
+          ) : null}
 
           <div className="space-y-2">
             {NUTRIENT_ORDER.map((key) => (
@@ -205,12 +221,15 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
       <NutritionQuestionnaireSheet
         open={questionnaireOpen}
         onClose={() => setQuestionnaireOpen(false)}
-        onApply={(goals) => {
+        onApply={(goals, weightKg) => {
           // With day-type limits on, the suggestion is an average day: raise
           // training days just enough that derived rest days keep the weekly
           // average on target, and let every rest field auto-derive again.
           const trainingDays = (program ?? weeklyScheme)?.schedule.length ?? DEFAULT_TRAINING_DAYS;
-          setDraft(toDraft(byDayType ? trainingDayGoalsFromAverage(goals, trainingDays) : goals));
+          const kcal = sessionEnergyKcal(weightKg, sessionShape.minutes, sessionShape.met);
+          setDraft(
+            toDraft(byDayType ? trainingDayGoalsFromAverage(goals, trainingDays, kcal) : goals),
+          );
           if (byDayType) setRestDraft(emptyDraft);
           setTab("training");
           setQuestionnaireOpen(false);

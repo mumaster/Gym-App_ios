@@ -262,17 +262,41 @@ export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
   return { calories, protein, carbs, fat, fiber, salt };
 }
 
-/** Share of training-day calories a rest day drops, taken entirely from
- *  carbs — protein, fat, fiber and salt stay the same on both day types. */
-export const REST_DAY_CALORIE_CUT = 0.12;
+/**
+ * Rest-day adjustment, grounded in two published sources rather than a flat
+ * percentage:
+ *
+ * - How much: the energy cost of the session that a rest day doesn't have,
+ *   from the 2024 Adult Compendium of Physical Activities (Herrmann et al.,
+ *   J Sport Health Sci 2024). Code 02054, "resistance (weight) training,
+ *   multiple exercises, 8-15 reps at varied resistance" = 3.5 METs; code
+ *   02055, "resistance training, circuit, reciprocal supersets" = 5.8 METs.
+ *   1 MET = 1 kcal/kg/h, the cost of sitting quietly, so the *extra* energy
+ *   of a session over spending that time at rest is (MET − 1) × kg × hours.
+ * - Where from: carbohydrate only. The ACSM/Academy of Nutrition and
+ *   Dietetics/Dietitians of Canada joint position (Thomas et al., 2016) and
+ *   Burke et al. (J Sports Sci 2011) scale daily carbohydrate to the fuel
+ *   needs of that day's training, while the ISSN protein position stand
+ *   (Jäger et al., 2017) sets protein as a daily 1.4–2.0 g/kg target
+ *   regardless of whether you trained — so protein and fat stay the same.
+ */
+export const RESISTANCE_TRAINING_MET = 3.5;
+export const SUPERSET_TRAINING_MET = 5.8;
 
-/** Rest-day limits auto-derived from the training-day ones. */
-export function deriveRestDayGoals(training: NutritionGoals): NutritionGoals {
+/** Extra kcal a session costs over spending the same time at rest. */
+export function sessionEnergyKcal(weightKg: number, minutes: number, met: number): number {
+  return Math.max(0, Math.round((met - 1) * weightKg * (minutes / 60)));
+}
+
+/** Rest-day limits: training-day limits minus one session's energy, taken
+ *  entirely from carbs (1 g carbohydrate ≈ 4 kcal). */
+export function deriveRestDayGoals(training: NutritionGoals, sessionKcal: number): NutritionGoals {
   const rest: NutritionGoals = { ...training };
   if (training.calories != null) {
-    const cut = training.calories * REST_DAY_CALORIE_CUT;
-    rest.calories = Math.round(training.calories - cut);
-    if (training.carbs != null) rest.carbs = Math.max(0, Math.round(training.carbs - cut / 4));
+    rest.calories = Math.max(0, Math.round(training.calories - sessionKcal));
+    if (training.carbs != null) {
+      rest.carbs = Math.max(0, Math.round(training.carbs - sessionKcal / 4));
+    }
   }
   return rest;
 }
@@ -282,23 +306,26 @@ export function deriveRestDayGoals(training: NutritionGoals): NutritionGoals {
 export const restDayGoals = (
   training: NutritionGoals,
   overrides: NutritionGoals,
+  sessionKcal: number,
 ): NutritionGoals => ({
-  ...deriveRestDayGoals(training),
+  ...deriveRestDayGoals(training, sessionKcal),
   ...overrides,
 });
 
 /** Turns one average daily target into training-day limits such that, with
  *  rest days derived via deriveRestDayGoals, the weekly average calories
- *  still land on the original target. The extra calories go to carbs. */
+ *  still land on the original target: with n training days and a session
+ *  cost D, 7·avg = n·T + (7−n)·(T−D), so T = avg + D·(7−n)/7. The extra
+ *  calories go to carbs. */
 export function trainingDayGoalsFromAverage(
   average: NutritionGoals,
   trainingDaysPerWeek: number,
+  sessionKcal: number,
 ): NutritionGoals {
   if (average.calories == null) return average;
   const n = Math.min(7, Math.max(0, trainingDaysPerWeek));
-  const trainingCalories = (7 * average.calories) / (n + (1 - REST_DAY_CALORIE_CUT) * (7 - n));
-  const extra = trainingCalories - average.calories;
-  const training: NutritionGoals = { ...average, calories: Math.round(trainingCalories) };
+  const extra = (sessionKcal * (7 - n)) / 7;
+  const training: NutritionGoals = { ...average, calories: Math.round(average.calories + extra) };
   if (average.carbs != null) training.carbs = Math.round(average.carbs + extra / 4);
   return training;
 }

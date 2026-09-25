@@ -146,7 +146,9 @@ export function NutritionQuestionnaireSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  onApply: (goals: NutritionGoals) => void;
+  /** `weightKg` is the answer just given — the stored profile isn't
+   *  updated yet from the caller's point of view when this runs. */
+  onApply: (goals: NutritionGoals, weightKg: number) => void;
 }) {
   const { nutritionProfile, update } = useGym();
   const t = useTranslation();
@@ -401,7 +403,7 @@ export function NutritionQuestionnaireSheet({
                 if (!profile || !suggested) return;
                 haptic([20, 30]);
                 update({ nutritionProfile: profile });
-                onApply(suggested);
+                onApply(suggested, profile.weightKg);
                 close();
               }}
               className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
