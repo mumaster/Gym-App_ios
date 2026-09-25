@@ -35,20 +35,9 @@ const fromDraft = (draft: Draft): NutritionGoals => {
   return goals;
 };
 
-/** Training days a questionnaire suggestion is balanced around when the
- *  user has no weekly plan/program to count sessions from. */
-const DEFAULT_TRAINING_DAYS = 4;
-
 export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const {
-    nutritionGoals,
-    nutritionByDayType,
-    restDayGoalOverrides,
-    program,
-    weeklyScheme,
-    setNutritionGoals,
-    update,
-  } = useGym();
+  const { nutritionGoals, nutritionByDayType, restDayGoalOverrides, setNutritionGoals, update } =
+    useGym();
   const t = useTranslation();
   const session = useSessionEnergy();
   const sessionShape = useSessionShape();
@@ -221,12 +210,12 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
       <NutritionQuestionnaireSheet
         open={questionnaireOpen}
         onClose={() => setQuestionnaireOpen(false)}
-        onApply={(goals, weightKg) => {
+        onApply={(goals, profile) => {
           // With day-type limits on, the suggestion is an average day: raise
           // training days just enough that derived rest days keep the weekly
           // average on target, and let every rest field auto-derive again.
-          const trainingDays = (program ?? weeklyScheme)?.schedule.length ?? DEFAULT_TRAINING_DAYS;
-          const kcal = sessionEnergyKcal(weightKg, sessionShape.minutes, sessionShape.met);
+          const kcal = sessionEnergyKcal(profile.weightKg, sessionShape.minutes, sessionShape.met);
+          const trainingDays = profile.sessionsPerWeek ?? 0;
           setDraft(
             toDraft(byDayType ? trainingDayGoalsFromAverage(goals, trainingDays, kcal) : goals),
           );

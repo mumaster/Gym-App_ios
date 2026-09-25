@@ -16,6 +16,16 @@ import {
 } from "../../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
+import { useSessionShape } from "../../lib/gym/dayNutrition";
+import type { Workout } from "../../lib/gym/types";
+
+/** Average finished sessions a week over the last four weeks, or null
+ *  without any — a prefill from what the user actually did. */
+function recentSessionsPerWeek(workouts: Workout[]): number | null {
+  const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+  const n = workouts.filter((w) => w.finished && new Date(w.date).getTime() >= cutoff).length;
+  return n ? Math.round(n / 4) : null;
+}
 
 type Translations = ReturnType<typeof useTranslation>;
 
@@ -41,37 +51,35 @@ const goalsList = (
 
 const pacesList = (
   t: Translations,
-): { id: NutritionPace; label: string; description: string }[] => [
-  {
-    id: "mild",
-    label: t.nutritionQuestionnaire.paceMild,
-    description: t.nutritionQuestionnaire.paceMildDesc,
-  },
-  {
-    id: "moderate",
-    label: t.nutritionQuestionnaire.paceModerate,
-    description: t.nutritionQuestionnaire.paceModerateDesc,
-  },
-  {
-    id: "aggressive",
-    label: t.nutritionQuestionnaire.paceAggressive,
-    description: t.nutritionQuestionnaire.paceAggressiveDesc,
-  },
-];
+  goal: NutritionGoalType | null,
+): { id: NutritionPace; label: string; description: string }[] => {
+  const q = t.nutritionQuestionnaire;
+  const gain = goal === "gain";
+  return [
+    { id: "mild", label: q.paceMild, description: gain ? q.gainMildDesc : q.loseMildDesc },
+    {
+      id: "moderate",
+      label: q.paceModerate,
+      description: gain ? q.gainModerateDesc : q.loseModerateDesc,
+    },
+    {
+      id: "aggressive",
+      label: q.paceAggressive,
+      description: gain ? q.gainAggressiveDesc : q.loseAggressiveDesc,
+    },
+  ];
+};
 
 const activityLevelsList = (
   t: Translations,
-): { id: ActivityLevel; label: string; description: string; factor: number }[] =>
-  ACTIVITY_LEVELS.map((a) => {
-    const key = (a.id === "very_active" ? "veryActive" : a.id) as
-      "sedentary" | "light" | "moderate" | "active" | "veryActive";
-    return {
-      id: a.id,
-      factor: a.factor,
-      label: t.activityLevels[`${key}Label`],
-      description: t.activityLevels[`${key}Desc`],
-    };
-  });
+): { id: ActivityLevel; label: string; description: string }[] =>
+  ACTIVITY_LEVELS.map((a) => ({
+    id: a.id,
+    label: t.activityLevels[`${a.id}Label`],
+    description: t.activityLevels[`${a.id}Desc`],
+  }));
+
+const isActivityLevel = (v: unknown): v is ActivityLevel => ACTIVITY_LEVELS.some((a) => a.id === v);
 
 function OptionRow({
   selected,
@@ -148,9 +156,9 @@ export function NutritionQuestionnaireSheet({
   onClose: () => void;
   /** `weightKg` is the answer just given — the stored profile isn't
    *  updated yet from the caller's point of view when this runs. */
-  onApply: (goals: NutritionGoals, weightKg: number) => void;
+  onApply: (goals: NutritionGoals, profile: NutritionProfile) => void;
 }) {
-  const { nutritionProfile, update } = useGym();
+  const { nutritionProfile, program, weeklyScheme, workouts, update } = useGym();
   const t = useTranslation();
   const STEP_LABELS = [
     t.nutritionQuestionnaire.stepBasics,
@@ -159,7 +167,7 @@ export function NutritionQuestionnaireSheet({
     t.nutritionQuestionnaire.stepReview,
   ];
   const GOALS = goalsList(t);
-  const PACES = pacesList(t);
+
   const ACTIVITY_LEVELS_T = activityLevelsList(t);
   const [step, setStep] = useState(0);
   const [sex, setSex] = useState<Sex | null>(null);
@@ -169,6 +177,9 @@ export function NutritionQuestionnaireSheet({
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(null);
   const [goal, setGoal] = useState<NutritionGoalType | null>(null);
   const [pace, setPace] = useState<NutritionPace>("moderate");
+  const [sessions, setSessions] = useState("");
+  const PACES = pacesList(t, goal);
+  const sessionShape = useSessionShape();
 
   // Seed from the last saved profile every time the sheet opens.
   useEffect(() => {
@@ -178,10 +189,22 @@ export function NutritionQuestionnaireSheet({
     setAge(nutritionProfile ? String(nutritionProfile.age) : "");
     setHeightCm(nutritionProfile ? String(nutritionProfile.heightCm) : "");
     setWeightKg(nutritionProfile ? String(nutritionProfile.weightKg) : "");
-    setActivityLevel(nutritionProfile?.activityLevel ?? null);
+    // Profiles saved before the FAO-based levels used ids that no longer
+    // exist (and counted gym training inside them), so they re-ask.
+    setActivityLevel(
+      isActivityLevel(nutritionProfile?.activityLevel) ? nutritionProfile.activityLevel : null,
+    );
+    setSessions(
+      String(
+        nutritionProfile?.sessionsPerWeek ??
+          (program ?? weeklyScheme)?.schedule.length ??
+          recentSessionsPerWeek(workouts) ??
+          "",
+      ),
+    );
     setGoal(nutritionProfile?.goal ?? null);
     setPace(nutritionProfile?.pace ?? "moderate");
-  }, [open, nutritionProfile]);
+  }, [open, nutritionProfile, program, weeklyScheme, workouts]);
 
   const ageNum = parseDecimal(age);
   const heightNum = parseDecimal(heightCm);
@@ -198,20 +221,24 @@ export function NutritionQuestionnaireSheet({
     weightNum >= 30 &&
     weightNum <= 300;
 
+  const sessionsNum = parseDecimal(sessions);
+  const sessionsValid = Number.isInteger(sessionsNum) && sessionsNum >= 0 && sessionsNum <= 14;
+
   const profile: NutritionProfile | null =
-    basicsValid && sex && activityLevel && goal
+    basicsValid && sex && activityLevel && sessionsValid && goal
       ? {
           sex,
           age: Math.round(ageNum),
           heightCm: Math.round(heightNum),
           weightKg: Math.round(weightNum * 10) / 10,
           activityLevel,
+          sessionsPerWeek: sessionsNum,
           goal,
           pace,
         }
       : null;
 
-  const suggested = profile ? suggestNutritionGoals(profile) : null;
+  const suggested = profile ? suggestNutritionGoals(profile, sessionShape) : null;
 
   const close = () => {
     setStep(0);
@@ -231,7 +258,7 @@ export function NutritionQuestionnaireSheet({
     step === 0
       ? basicsValid
       : step === 1
-        ? activityLevel != null
+        ? activityLevel != null && sessionsValid
         : step === 2
           ? goal != null
           : true;
@@ -310,6 +337,16 @@ export function NutritionQuestionnaireSheet({
                 }}
               />
             ))}
+            <p className="pt-2 text-[13px] text-muted-foreground">
+              {t.nutritionQuestionnaire.sessionsDesc}
+            </p>
+            <NumberField
+              label={t.nutritionQuestionnaire.sessionsLabel}
+              unit={t.nutritionQuestionnaire.perWeek}
+              value={sessions}
+              placeholder="3"
+              onChange={setSessions}
+            />
           </div>
         ) : null}
 
@@ -359,6 +396,11 @@ export function NutritionQuestionnaireSheet({
             <p className="text-[13px] text-muted-foreground">
               {t.nutritionQuestionnaire.reviewDesc}
             </p>
+            {profile?.goal !== "maintain" ? (
+              <p className="text-[13px] text-muted-foreground">
+                {t.nutritionQuestionnaire.checkWeeklyWeight}
+              </p>
+            ) : null}
             <div className="space-y-2">
               {NUTRIENT_ORDER.map((key) => (
                 <div
@@ -377,6 +419,9 @@ export function NutritionQuestionnaireSheet({
                 </div>
               ))}
             </div>
+            <p className="text-[11.5px] text-muted-foreground">
+              {t.nutritionQuestionnaire.sources}
+            </p>
           </div>
         ) : null}
 
@@ -403,7 +448,7 @@ export function NutritionQuestionnaireSheet({
                 if (!profile || !suggested) return;
                 haptic([20, 30]);
                 update({ nutritionProfile: profile });
-                onApply(suggested, profile.weightKg);
+                onApply(suggested, profile);
                 close();
               }}
               className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"

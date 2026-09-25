@@ -154,70 +154,95 @@ export type NutritionGoals = Partial<Record<NutrientKey, number>>;
 
 export type Sex = "male" | "female";
 
-export type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "very_active";
+/**
+ * Daily-life activity, *not counting gym sessions* (those are added
+ * separately — see suggestNutritionGoals). Physical activity levels (PAL,
+ * total energy ÷ BMR) are the FAO/WHO/UNU 2004 Expert Consultation on Human
+ * Energy Requirements' three lifestyle bands — sedentary/light 1.40–1.69,
+ * active/moderately active 1.70–1.99, vigorous 2.00–2.40 — at each band's
+ * midpoint (the report itself uses 1.55 for the sedentary band and 1.85 for
+ * the moderately active one). These replace the old 1.2–1.9 multipliers,
+ * which weren't tied to a source and started below FAO's lowest band.
+ * Note FAO pairs PAL with Schofield BMR equations; this app uses
+ * Mifflin-St Jeor for BMR, a small, knowing mismatch.
+ */
+export type ActivityLevel = "sedentary" | "active" | "vigorous";
 
-export const ACTIVITY_LEVELS: {
-  id: ActivityLevel;
-  label: string;
-  description: string;
-  factor: number;
-}[] = [
-  {
-    id: "sedentary",
-    label: "Sedentary",
-    description: "Desk job, little to no exercise",
-    factor: 1.2,
-  },
-  {
-    id: "light",
-    label: "Lightly active",
-    description: "Light exercise 1–3 days/week",
-    factor: 1.375,
-  },
-  {
-    id: "moderate",
-    label: "Moderately active",
-    description: "Moderate exercise 3–5 days/week",
-    factor: 1.55,
-  },
-  {
-    id: "active",
-    label: "Active",
-    description: "Hard exercise 6–7 days/week",
-    factor: 1.725,
-  },
-  {
-    id: "very_active",
-    label: "Very active",
-    description: "Physical job or training twice a day",
-    factor: 1.9,
-  },
+export const ACTIVITY_LEVELS: { id: ActivityLevel; factor: number }[] = [
+  { id: "sedentary", factor: 1.55 },
+  { id: "active", factor: 1.85 },
+  { id: "vigorous", factor: 2.2 },
 ];
 
 export type NutritionGoalType = "lose" | "maintain" | "gain";
 
 export type NutritionPace = "mild" | "moderate" | "aggressive";
 
-/** Calorie deficit/surplus applied to TDEE, as a fraction — smaller for a
- *  surplus than a deficit at the same "aggressive" label, since a fast bulk
- *  mostly adds fat rather than muscle. */
-const PACE_ADJUSTMENT: Record<NutritionGoalType, Record<NutritionPace, number>> = {
-  lose: { mild: -0.15, moderate: -0.2, aggressive: -0.25 },
-  maintain: { mild: 0, moderate: 0, aggressive: 0 },
-  gain: { mild: 0.08, moderate: 0.12, aggressive: 0.18 },
+/**
+ * Cutting: target a bodyweight loss of 0.5–1% per week (Helms, Aragon &
+ * Fitschen, J Int Soc Sports Nutr 2014 — the rate that best preserves
+ * muscle), with "moderate" at the midpoint. Converted to a daily deficit at
+ * 7700 kcal per kg of bodyweight lost (the classic 3500 kcal/lb rule). Hall
+ * (Int J Obes 2008) showed that rule overestimates the energy in weight lost
+ * by lean people, so real loss can run a bit faster than the target — the
+ * questionnaire tells the user to check their weekly weight and adjust.
+ */
+const LOSS_RATE_PER_WEEK: Record<NutritionPace, number> = {
+  mild: 0.005,
+  moderate: 0.0075,
+  aggressive: 0.01,
+};
+const KCAL_PER_KG = 7700;
+
+/** Bulking: a 10–20% energy surplus (Iraki, Fitschen, Espinar & Helms,
+ *  Sports 2019, for a gain of ~0.25–0.5% bodyweight per week), with
+ *  "moderate" at the midpoint. */
+const GAIN_SURPLUS: Record<NutritionPace, number> = {
+  mild: 0.1,
+  moderate: 0.15,
+  aggressive: 0.2,
 };
 
-/** Protein target in g/kg bodyweight — higher on a cut to help preserve
- *  muscle through the deficit. */
+/**
+ * Protein, g/kg bodyweight. Maintain/gain: 1.6, the point past which extra
+ * protein stopped adding muscle in Morton et al.'s meta-analysis (Br J
+ * Sports Med 2018, breakpoint 1.62 g/kg). Cut: 2.2, the upper end of that
+ * analysis's confidence interval — chosen because Helms et al. 2014
+ * recommend 2.3–3.1 g/kg of *lean* mass in a deficit, and 2.2 g/kg of
+ * bodyweight meets that lower bound for anyone above ~4% body fat, without
+ * needing a body-fat measurement the app doesn't have.
+ */
 const PROTEIN_PER_KG: Record<NutritionGoalType, number> = {
   lose: 2.2,
-  maintain: 1.8,
-  gain: 1.8,
+  maintain: 1.6,
+  gain: 1.6,
 };
 
-/** Never suggest below this, regardless of inputs — a floor for safety, not
- *  a recommendation to eat this little. */
-const MIN_CALORIES = 1200;
+/**
+ * Fat, as the midpoint of where the relevant ranges overlap: cutting, Helms
+ * et al. 2014's 15–30% of calories within the US Institute of Medicine's
+ * acceptable 20–35% → 20–30%, midpoint 25%; maintaining/gaining, the IOM's
+ * 20–35%, midpoint 27.5%, kept within Iraki et al. 2019's 0.5–1.5 g/kg.
+ * Carbohydrate is the remainder, as both papers recommend.
+ */
+const FAT_SHARE: Record<NutritionGoalType, number> = {
+  lose: 0.25,
+  maintain: 0.275,
+  gain: 0.275,
+};
+const FAT_G_PER_KG_RANGE: [number, number] = [0.5, 1.5];
+
+/** 14 g per 1000 kcal — the US Dietary Guidelines / Institute of Medicine
+ *  adequate intake for fiber. */
+const FIBER_PER_1000_KCAL = 14;
+
+/** Under 5 g salt (2 g sodium) a day — the WHO guideline for adults. */
+const SALT_LIMIT_G = 5;
+
+/** Never suggest below the lower end of the 2013 AHA/ACC/TOS obesity
+ *  guideline's diet prescriptions (1200–1500 kcal/day for women,
+ *  1500–1800 for men) — a floor for safety, not a recommendation. */
+const MIN_CALORIES: Record<Sex, number> = { female: 1200, male: 1500 };
 
 export interface NutritionProfile {
   sex: Sex;
@@ -225,6 +250,9 @@ export interface NutritionProfile {
   heightCm: number;
   weightKg: number;
   activityLevel: ActivityLevel;
+  /** Strength sessions a week — their energy is added on top of the
+   *  daily-life PAL. Missing on profiles saved before this was asked. */
+  sessionsPerWeek?: number;
   goal: NutritionGoalType;
   /** Ignored when goal is "maintain". */
   pace: NutritionPace;
@@ -238,28 +266,40 @@ function basalMetabolicRate(p: NutritionProfile): number {
 
 /**
  * Suggests daily limits from a short profile — a starting point to review
- * and adjust, not a prescription. Calories via Mifflin-St Jeor + activity
- * multiplier + goal/pace adjustment; protein via g/kg bodyweight (goal
- * dependent); fat as a fixed share of calories; carbs as the remainder;
- * fiber/salt from general dietary guidelines (not goal dependent).
+ * and adjust, not a prescription. Every constant above names its source.
+ * Energy: Mifflin-St Jeor BMR × FAO daily-life PAL, plus the weekly gym
+ * sessions' extra energy (Compendium METs, see sessionEnergyKcal) averaged
+ * per day; then the goal's deficit/surplus; then the safety floor.
  */
-export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
+export function suggestNutritionGoals(
+  p: NutritionProfile,
+  session: { minutes: number; met: number },
+): NutritionGoals {
   const bmr = basalMetabolicRate(p);
-  const activityFactor = ACTIVITY_LEVELS.find((a) => a.id === p.activityLevel)!.factor;
-  const tdee = bmr * activityFactor;
-  const adjustment = PACE_ADJUSTMENT[p.goal][p.pace];
-  const calories = Math.max(MIN_CALORIES, Math.round(tdee * (1 + adjustment)));
+  const pal = ACTIVITY_LEVELS.find((a) => a.id === p.activityLevel)?.factor ?? 1.55;
+  const trainingPerDay =
+    ((p.sessionsPerWeek ?? 0) * sessionEnergyKcal(p.weightKg, session.minutes, session.met)) / 7;
+  const tdee = bmr * pal + trainingPerDay;
+  const target =
+    p.goal === "lose"
+      ? tdee - (LOSS_RATE_PER_WEEK[p.pace] * p.weightKg * KCAL_PER_KG) / 7
+      : p.goal === "gain"
+        ? tdee * (1 + GAIN_SURPLUS[p.pace])
+        : tdee;
+  const calories = Math.max(MIN_CALORIES[p.sex], Math.round(target));
 
   const protein = Math.round(PROTEIN_PER_KG[p.goal] * p.weightKg);
-  const fatCalories = calories * 0.28;
-  const fat = Math.round(fatCalories / 9);
-  const carbCalories = Math.max(0, calories - protein * 4 - fatCalories);
-  const carbs = Math.round(carbCalories / 4);
+  let fat = (calories * FAT_SHARE[p.goal]) / 9;
+  if (p.goal !== "lose") {
+    const [lo, hi] = FAT_G_PER_KG_RANGE;
+    fat = Math.min(hi * p.weightKg, Math.max(lo * p.weightKg, fat));
+  }
+  fat = Math.round(fat);
+  const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
 
-  const fiber = Math.round((calories / 1000) * 14);
-  const salt = 6;
+  const fiber = Math.round((calories / 1000) * FIBER_PER_1000_KCAL);
 
-  return { calories, protein, carbs, fat, fiber, salt };
+  return { calories, protein, carbs, fat, fiber, salt: SALT_LIMIT_G };
 }
 
 /**
