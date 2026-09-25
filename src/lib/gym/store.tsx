@@ -25,7 +25,7 @@ import {
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
-import { advanceProgram, type Program } from "./programs";
+import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import {
   advanceRotation,
   anchorFor,
@@ -239,6 +239,18 @@ function migrate(raw: Partial<GymState>): GymState {
     };
   };
 
+  // Program weeks used unsourced build multipliers (up to 1.16) and a 60%
+  // load deload; rewrite them to the sourced values in programs.ts.
+  const fixProgramWeeks = (p: Program | null): Program | null =>
+    p
+      ? {
+          ...p,
+          weeks: p.weeks.map((w) =>
+            w.type === "deload" ? DELOAD_WEEK : { type: "build", intensity: 1, volume: 1 },
+          ),
+        }
+      : null;
+
   const profiles = (raw.profiles?.length ? raw.profiles : DEFAULT_PROFILES).map(fixProfile);
   return {
     ...initialState,
@@ -258,7 +270,7 @@ function migrate(raw: Partial<GymState>): GymState {
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
     weeklyScheme: fixRotation(raw.weeklyScheme),
-    program: fixRotation(raw.program),
+    program: fixProgramWeeks(fixRotation(raw.program)),
     nutritionGoals: raw.nutritionGoals ?? {},
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},

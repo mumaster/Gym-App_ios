@@ -184,9 +184,13 @@ interface GenerateArgs {
    *  plain 0.5kg round when omitted. */
   profile?: EquipmentProfile;
   /** Scales progressive-overload suggested weights on top of the per-exercise
-   *  history-based suggestion — e.g. a Program's build/deload week. Defaults
-   *  to 1 (no change); see lib/gym/programs.ts. */
+   *  history-based suggestion — a Program's deload week. Defaults to 1 (no
+   *  change); see lib/gym/programs.ts. */
   intensityMultiplier?: number;
+  /** Scales working sets per exercise after the plan is fitted to the time
+   *  budget (so fitting can't add the sets back) — a Program's deload week,
+   *  which is meant to be a shorter, lighter session. Defaults to 1. */
+  volumeMultiplier?: number;
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -318,7 +322,15 @@ export function generateWorkout({
   readinessScore,
   profile,
   intensityMultiplier = 1,
+  volumeMultiplier = 1,
 }: GenerateArgs): PlannedExercise[] {
+  const withVolume = (list: PlannedExercise[]) =>
+    volumeMultiplier === 1
+      ? list
+      : list.map((p) => ({
+          ...p,
+          target_sets: Math.max(1, Math.round(p.target_sets * volumeMultiplier)),
+        }));
   const pool = availableExercises(equipment, avoided);
   const shape = shapeFor(duration);
   const budget = duration * 60;
@@ -461,7 +473,7 @@ export function generateWorkout({
     else plan.splice(idx, 1);
   }
 
-  if (!supersets) return plan;
+  if (!supersets) return withVolume(plan);
 
   const exOf = (p: PlannedExercise) => EXERCISES.find((e) => e.id === p.exercise_id);
   let paired = applySupersets(plan);
@@ -548,5 +560,5 @@ export function generateWorkout({
   const straight = paired.filter((p) => p.superset_group === undefined);
   paired = [...grouped, ...straight];
 
-  return paired;
+  return withVolume(paired);
 }

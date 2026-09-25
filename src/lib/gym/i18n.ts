@@ -149,6 +149,8 @@ const en = {
     planYourTraining: "Plan your training",
     planYourTrainingDesc:
       "A weekly split repeats forever; a program adds planned progression and a deload.",
+    deloadExplain:
+      "Deload week: half the usual sets at 90% of the weight, so you recover before the next cycle (Bell et al. 2023–2025).",
     weeklyPlan: "Weekly plan",
     program: "Program",
     savedTemplates: "Saved templates",
@@ -874,6 +876,8 @@ const nl: Dict = {
     planYourTraining: "Plan je training",
     planYourTrainingDesc:
       "Een weekschema herhaalt zich eindeloos; een programma voegt geplande progressie en een deload toe.",
+    deloadExplain:
+      "Deloadweek: de helft van de gebruikelijke sets op 90% van het gewicht, zodat je herstelt voor de volgende cyclus (Bell e.a. 2023–2025).",
     weeklyPlan: "Weekplan",
     program: "Programma",
     savedTemplates: "Opgeslagen sjablonen",

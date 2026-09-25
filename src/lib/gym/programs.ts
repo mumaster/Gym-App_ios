@@ -5,10 +5,12 @@ export type ProgramWeekType = "build" | "deload";
 
 export interface ProgramWeek {
   type: ProgramWeekType;
-  /** Multiplier applied to progressive-overload suggested weights generated
-   *  during this week (see generator.ts's `intensityMultiplier`) — 1 for a
-   *  normal week, >1 to progressively overload across a wave, <1 to deload. */
+  /** Multiplier on the progressive-overload suggested weight generated
+   *  during this week (see generator.ts's `intensityMultiplier`). */
   intensity: number;
+  /** Multiplier on working sets per exercise (generator.ts's
+   *  `volumeMultiplier`). */
+  volume: number;
 }
 
 export interface ProgramPreset {
@@ -19,48 +21,52 @@ export interface ProgramPreset {
 }
 
 /**
- * Wave-periodization presets: a run of build weeks at progressively higher
- * intensity, closing on a deload week that drops volume/load to let fatigue
- * dissipate before the next wave — the "5/3/1-style" progression + deload
- * structure from the roadmap, without requiring a manually-tracked training
- * max per lift (this app has no such concept). Intensity scales whatever
- * lib/gym/progression.ts already suggests from actual logged performance,
- * rather than being computed from a percentage-of-1RM table.
+ * Deload weeks, from the deloading research rather than round numbers:
+ *
+ * - How often/long: a Delphi consensus of strength and physique coaches
+ *   (Bell et al., Sports Med Open 2023) puts deloads every 4–6 weeks for
+ *   5–7 days, and a survey of 246 athletes (Bell et al., Sports Med Open
+ *   2024) found 6.4 ± 1.7 days every 5.6 ± 2.3 weeks. So the waves are 4, 5
+ *   and 6 weeks long, each ending in a one-week deload (the old 3-week wave
+ *   deloaded more often than that).
+ * - What changes: both describe cutting volume (fewer sets) and load while
+ *   keeping training frequency. Bell et al.'s practical guide (Strength Cond
+ *   J 2025) gives a 40–60% volume cut for moderate recovery needs and about
+ *   a 10% load drop, so a deload keeps half the sets (the midpoint) at 90%
+ *   of the suggested weight. Coleman et al. (PeerJ 2024) found stopping
+ *   training entirely for a week cost some strength, which is why this is a
+ *   reduced week rather than a week off.
+ *
+ * Build weeks change nothing: load increases come from the sourced double-
+ * progression rule in progression.ts. The old build weeks also multiplied
+ * the weight by up to 1.16 on top of that, adding load twice with no source.
  */
+const BUILD_WEEK: ProgramWeek = { type: "build", intensity: 1, volume: 1 };
+export const DELOAD_WEEK: ProgramWeek = { type: "deload", intensity: 0.9, volume: 0.5 };
+
+const wave = (buildWeeks: number): ProgramWeek[] => [
+  ...Array.from({ length: buildWeeks }, () => BUILD_WEEK),
+  DELOAD_WEEK,
+];
+
 export const PROGRAM_PRESETS: ProgramPreset[] = [
-  {
-    id: "wave_3",
-    label: "3-Week Wave",
-    description: "Two build weeks, then a deload — a short cycle for faster feedback.",
-    weeks: [
-      { type: "build", intensity: 1 },
-      { type: "build", intensity: 1.075 },
-      { type: "deload", intensity: 0.6 },
-    ],
-  },
   {
     id: "wave_4",
     label: "4-Week Wave",
-    description: "Three build weeks of increasing intensity, then a deload before repeating.",
-    weeks: [
-      { type: "build", intensity: 1 },
-      { type: "build", intensity: 1.05 },
-      { type: "build", intensity: 1.1 },
-      { type: "deload", intensity: 0.6 },
-    ],
+    description: "Three build weeks, then a deload week — the shortest recommended cycle.",
+    weeks: wave(3),
+  },
+  {
+    id: "wave_5",
+    label: "5-Week Wave",
+    description: "Four build weeks, then a deload week — close to what most athletes use.",
+    weeks: wave(4),
   },
   {
     id: "wave_6",
     label: "6-Week Wave",
-    description: "Five build weeks stepping up gradually, then a deload — a longer, steadier ramp.",
-    weeks: [
-      { type: "build", intensity: 1 },
-      { type: "build", intensity: 1.04 },
-      { type: "build", intensity: 1.08 },
-      { type: "build", intensity: 1.12 },
-      { type: "build", intensity: 1.16 },
-      { type: "deload", intensity: 0.6 },
-    ],
+    description: "Five build weeks, then a deload week — the longest recommended cycle.",
+    weeks: wave(5),
   },
 ];
 

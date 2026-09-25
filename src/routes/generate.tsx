@@ -211,7 +211,7 @@ function WorkoutHome() {
         history: workouts,
         profile,
         ...(todayReadiness !== undefined ? { readinessScore: todayReadiness } : {}),
-        ...(week ? { intensityMultiplier: week.intensity } : {}),
+        ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
       }),
     );
   };
@@ -533,8 +533,15 @@ function WorkoutHome() {
                   {t.generate.nextDay(programDayLabel)}
                 </p>
                 <p className="text-[13px] text-muted-foreground">
-                  {program.name} · {splitTemplateById(program.templateId).label}
+                  {program.name === splitTemplateById(program.templateId).label
+                    ? program.name
+                    : `${program.name} · ${splitTemplateById(program.templateId).label}`}
                 </p>
+                {programWeek.type === "deload" ? (
+                  <p className="mt-1 text-[12.5px] text-muted-foreground">
+                    {t.generate.deloadExplain}
+                  </p>
+                ) : null}
               </div>
               <button
                 onClick={() => setProgramSheetOpen(true)}
