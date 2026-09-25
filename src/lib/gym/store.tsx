@@ -130,6 +130,8 @@ interface GymState {
   nutritionProfile: NutritionProfile | null;
   /** Saved ingredient combos (e.g. "Banana oatmeal") the user can log in one tap. */
   mealTemplates: MealTemplate[];
+  /** Starred foods for one-tap logging (name, usual portion, per-100g). */
+  favoriteFoods: MealIngredient[];
   /** Named, reusable workout plans the user can start exactly as saved. */
   workoutTemplates: WorkoutTemplate[];
   /** Saved recipes (ingredients + serving count) — see lib/gym/nutrition.ts's Recipe. */
@@ -175,6 +177,7 @@ const initialState: GymState = {
   restDayGoalOverrides: {},
   nutritionProfile: null,
   mealTemplates: [],
+  favoriteFoods: [],
   workoutTemplates: [],
   recipes: [],
   waterEntries: [],
@@ -286,6 +289,7 @@ function migrate(raw: Partial<GymState>): GymState {
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
+    favoriteFoods: raw.favoriteFoods ?? [],
     workoutTemplates: raw.workoutTemplates ?? [],
     recipes: raw.recipes ?? [],
     waterEntries: raw.waterEntries ?? [],
@@ -371,6 +375,8 @@ interface Ctx extends GymState {
   removeFoodEntry: (id: string) => void;
   setNutritionGoals: (goals: NutritionGoals) => void;
   saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
+  /** Stars or un-stars a food, matched by name (case-insensitive). */
+  toggleFavoriteFood: (food: MealIngredient) => void;
   deleteMealTemplate: (id: string) => void;
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
   logMealTemplate: (id: string, meal: MealType) => void;
@@ -965,6 +971,17 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
 
+      toggleFavoriteFood: (food) =>
+        setState((s) => {
+          const key = food.name.trim().toLowerCase();
+          const has = s.favoriteFoods.some((f) => f.name.trim().toLowerCase() === key);
+          return {
+            ...s,
+            favoriteFoods: has
+              ? s.favoriteFoods.filter((f) => f.name.trim().toLowerCase() !== key)
+              : [{ ...food, name: food.name.trim() }, ...s.favoriteFoods],
+          };
+        }),
       saveMealTemplate: (name, ingredients) =>
         setState((s) => ({
           ...s,

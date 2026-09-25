@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, Keyboard, Plus, ScanBarcode } from "lucide-react";
+import { AlertTriangle, Camera, Check, Keyboard, Plus, ScanBarcode, Star } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
@@ -103,7 +103,8 @@ export function AddFoodSheet({
    */
   onIngredientCaptured?: (ingredient: MealIngredient) => void;
 }) {
-  const { addFoodEntry, updateFoodEntry, foodEntries } = useGym();
+  const { addFoodEntry, updateFoodEntry, foodEntries, favoriteFoods, toggleFavoriteFood } =
+    useGym();
   const t = useTranslation();
   const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
     (key) => ({ key, label: t.nutrients[key], unit: NUTRIENT_UNITS[key] }),
@@ -162,19 +163,45 @@ export function AddFoodSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editEntry?.id]);
 
-  /** Most recently logged distinct foods, newest first, for one-tap re-add. */
+  const foodKey = (n: string) => n.trim().toLowerCase();
+  const favoriteKeys = useMemo(
+    () => new Set(favoriteFoods.map((f) => foodKey(f.name))),
+    [favoriteFoods],
+  );
+
+  /** Most recently logged distinct foods, newest first, for one-tap re-add
+   *  — favourites are listed separately above, so they're left out here. */
   const recentFoods = useMemo(() => {
     const seen = new Set<string>();
-    const list: FoodEntry[] = [];
-    for (const entry of foodEntries) {
-      const key = entry.name.trim().toLowerCase();
-      if (!key || seen.has(key)) continue;
+    const list: MealIngredient[] = [];
+    for (const entry of [...foodEntries].sort((a, b) => b.logged_at.localeCompare(a.logged_at))) {
+      const key = foodKey(entry.name);
+      if (!key || seen.has(key) || favoriteKeys.has(key)) continue;
       seen.add(key);
-      list.push(entry);
+      list.push({ name: entry.name, grams: entry.grams, per100: entry.per100 });
       if (list.length >= RECENT_LIMIT) break;
     }
     return list;
-  }, [foodEntries]);
+  }, [foodEntries, favoriteKeys]);
+
+  /** The "+" on a favourite/recent row: logs it straight away with its usual
+   *  portion (or, in the meal builder, adds it as an ingredient). */
+  const quickAdd = (food: MealIngredient) => {
+    haptic([20, 30]);
+    if (onIngredientCaptured) {
+      onIngredientCaptured(food);
+    } else {
+      addFoodEntry({
+        id: crypto.randomUUID(),
+        name: food.name,
+        logged_at: new Date().toISOString(),
+        meal: mealForTime(new Date().toISOString()),
+        grams: food.grams,
+        per100: food.per100,
+      });
+    }
+    close();
+  };
 
   const startManual = () => {
     haptic(15);
@@ -185,7 +212,7 @@ export function AddFoodSheet({
     setStep("review");
   };
 
-  const startFromRecent = (entry: FoodEntry) => {
+  const startFromRecent = (entry: MealIngredient) => {
     haptic(15);
     setName(entry.name);
     setMeal(mealForTime(new Date().toISOString()));
@@ -275,16 +302,18 @@ export function AddFoodSheet({
   const canSave = name.trim().length > 0 && gramsNum > 0;
 
   /** Writes the current form to the store. Returns whether it actually saved. */
+  const draftPer100 = () => ({
+    calories: parseDecimal(per100.calories) || 0,
+    protein: parseDecimal(per100.protein) || 0,
+    carbs: parseDecimal(per100.carbs) || 0,
+    fat: parseDecimal(per100.fat) || 0,
+    fiber: parseDecimal(per100.fiber) || 0,
+    salt: parseDecimal(per100.salt) || 0,
+  });
+
   const persistEdits = () => {
     if (!canSave) return false;
-    const per100Value = {
-      calories: parseDecimal(per100.calories) || 0,
-      protein: parseDecimal(per100.protein) || 0,
-      carbs: parseDecimal(per100.carbs) || 0,
-      fat: parseDecimal(per100.fat) || 0,
-      fiber: parseDecimal(per100.fiber) || 0,
-      salt: parseDecimal(per100.salt) || 0,
-    };
+    const per100Value = draftPer100();
     if (onIngredientCaptured) {
       onIngredientCaptured({ name: name.trim(), grams: gramsNum, per100: per100Value });
       return true;
@@ -348,6 +377,26 @@ export function AddFoodSheet({
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {scanError}
               </p>
             ) : null}
+            {favoriteFoods.length ? (
+              <FoodList
+                title={t.addFood.favorites}
+                foods={favoriteFoods}
+                favoriteKeys={favoriteKeys}
+                onOpen={startFromRecent}
+                onQuickAdd={quickAdd}
+                onToggleFavorite={toggleFavoriteFood}
+              />
+            ) : null}
+            {recentFoods.length ? (
+              <FoodList
+                title={t.addFood.recent}
+                foods={recentFoods}
+                favoriteKeys={favoriteKeys}
+                onOpen={startFromRecent}
+                onQuickAdd={quickAdd}
+                onToggleFavorite={toggleFavoriteFood}
+              />
+            ) : null}
             <button
               onClick={startScan}
               className="glow flex min-h-[64px] w-full items-center gap-3 rounded-2xl bg-primary px-5 text-left text-primary-foreground active:scale-[0.985]"
@@ -378,34 +427,6 @@ export function AddFoodSheet({
                 <p className="text-[13px] text-muted-foreground">{t.addFood.enterManuallyDesc}</p>
               </div>
             </button>
-
-            {recentFoods.length ? (
-              <div className="pt-1">
-                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                  {t.addFood.recent}
-                </p>
-                <div className="space-y-2">
-                  {recentFoods.map((entry) => {
-                    const m = scaledMacros(entry);
-                    return (
-                      <button
-                        key={entry.id}
-                        onClick={() => startFromRecent(entry)}
-                        className="glass flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left active:scale-[0.985]"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold">{entry.name}</p>
-                          <p className="tabular text-[12px] text-muted-foreground">
-                            {entry.grams}g · {m.calories} kcal
-                          </p>
-                        </div>
-                        <Plus className="size-4 shrink-0 text-primary" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
           </div>
         ) : null}
 
@@ -434,18 +455,42 @@ export function AddFoodSheet({
               </p>
             ) : null}
 
-            <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-              <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
-                {t.addFood.food}
-              </span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onFocus={selectOnFocus}
-                placeholder={t.addFood.foodPlaceholder}
-                className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-muted px-4 py-3">
+                <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
+                  {t.addFood.food}
+                </span>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onFocus={selectOnFocus}
+                  placeholder={t.addFood.foodPlaceholder}
+                  className="h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[15px] font-semibold text-foreground outline-none placeholder:text-muted-foreground placeholder:font-normal"
+                />
+              </label>
+              {name.trim() ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    haptic(10);
+                    toggleFavoriteFood({ name, grams: gramsNum || 100, per100: draftPer100() });
+                  }}
+                  aria-pressed={favoriteKeys.has(foodKey(name))}
+                  aria-label={
+                    favoriteKeys.has(foodKey(name))
+                      ? t.addFood.unfavorite(name)
+                      : t.addFood.favorite(name)
+                  }
+                  className="flex size-11 shrink-0 rounded-2xl bg-muted items-center justify-center text-primary active:scale-90"
+                >
+                  <Star
+                    className="size-4"
+                    fill={favoriteKeys.has(foodKey(name)) ? "currentColor" : "none"}
+                  />
+                </button>
+              ) : null}
+            </div>
 
             {onIngredientCaptured ? null : (
               <div>
@@ -592,5 +637,70 @@ export function AddFoodSheet({
         onDetected={(barcode) => void onBarcodeDetected(barcode)}
       />
     </>
+  );
+}
+
+function FoodList({
+  title,
+  foods,
+  favoriteKeys,
+  onOpen,
+  onQuickAdd,
+  onToggleFavorite,
+}: {
+  title: string;
+  foods: MealIngredient[];
+  favoriteKeys: Set<string>;
+  onOpen: (food: MealIngredient) => void;
+  onQuickAdd: (food: MealIngredient) => void;
+  onToggleFavorite: (food: MealIngredient) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div>
+      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{title}</p>
+      <div className="space-y-2">
+        {foods.map((food) => {
+          const m = scaledMacros(food);
+          const starred = favoriteKeys.has(food.name.trim().toLowerCase());
+          return (
+            <div
+              key={food.name}
+              className="glass flex items-center gap-1 rounded-2xl py-1 pl-4 pr-1"
+            >
+              <button
+                onClick={() => onOpen(food)}
+                className="min-w-0 flex-1 py-2 text-left active:opacity-70"
+              >
+                <p className="truncate text-[15px] font-semibold">{food.name}</p>
+                <p className="tabular text-[12px] text-muted-foreground">
+                  {food.grams}g · {m.calories} kcal
+                </p>
+              </button>
+              <button
+                onClick={() => {
+                  haptic(10);
+                  onToggleFavorite(food);
+                }}
+                aria-pressed={starred}
+                aria-label={
+                  starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)
+                }
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary active:scale-90"
+              >
+                <Star className="size-4" fill={starred ? "currentColor" : "none"} />
+              </button>
+              <button
+                onClick={() => onQuickAdd(food)}
+                aria-label={t.addFood.quickAdd(food.name, food.grams)}
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+              >
+                <Plus className="size-5" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
