@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, Check, Keyboard, Plus, ScanBarcode, Star } from "lucide-react";
-import { BarcodeScanner } from "./BarcodeScanner";
+import { AlertTriangle, Check, Keyboard, Plus, ScanBarcode, Star } from "lucide-react";
+import { FoodScanner, type FoodScannerStatus } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
@@ -112,7 +112,8 @@ export function AddFoodSheet({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>("start");
-  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerStatus, setScannerStatus] = useState<FoodScannerStatus>("scanning");
   /** Which flow the "scanning" step's loading copy below belongs to. */
   const [scanKind, setScanKind] = useState<"label" | "barcode">("label");
   const [scanError, setScanError] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export function AddFoodSheet({
 
   const reset = () => {
     setStep("start");
-    setBarcodeScannerOpen(false);
+    setScannerOpen(false);
     setScanError(null);
     setName("");
     setMeal(mealForTime(new Date().toISOString()));
@@ -224,16 +225,17 @@ export function AddFoodSheet({
     setStep("review");
   };
 
+  /** One scanner for both paths — see FoodScanner. */
   const startScan = () => {
     haptic(15);
     setScanError(null);
-    fileInputRef.current?.click();
+    setScannerStatus("scanning");
+    setScannerOpen(true);
   };
 
-  const startBarcodeScan = () => {
-    haptic(15);
-    setScanError(null);
-    setBarcodeScannerOpen(true);
+  const choosePhoto = () => {
+    setScannerOpen(false);
+    fileInputRef.current?.click();
   };
 
   /** Fills the review form from a label scan or a barcode lookup — both
@@ -269,23 +271,30 @@ export function AddFoodSheet({
     }
   };
 
+  // The camera stays open during the lookup: if the product isn't in the
+  // database the user is already pointing at the package, so the next step
+  // is one shutter tap on its label rather than starting over.
   const onBarcodeDetected = async (barcode: string) => {
-    setBarcodeScannerOpen(false);
-    setScanKind("barcode");
-    setStep("scanning");
+    setScannerStatus("lookingUp");
     try {
       const result = await lookupBarcode(barcode);
       if (!result) {
-        setScanError(t.addFood.barcodeNotFound);
-        setStep("start");
+        setScannerStatus("notFound");
         return;
       }
+      setScannerOpen(false);
       applyScanResult(result);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
+      setScannerOpen(false);
       setScanError(t.addFood.barcodeLookupError(detail));
       setStep("start");
     }
+  };
+
+  const onPhotoCaptured = (photo: Blob) => {
+    setScannerOpen(false);
+    void onFileSelected(new File([photo], "label.jpg", { type: photo.type || "image/jpeg" }));
   };
 
   const gramsNum = parseDecimal(grams) || 0;
@@ -361,7 +370,6 @@ export function AddFoodSheet({
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -401,20 +409,10 @@ export function AddFoodSheet({
               onClick={startScan}
               className="glow flex min-h-[64px] w-full items-center gap-3 rounded-2xl bg-primary px-5 text-left text-primary-foreground active:scale-[0.985]"
             >
-              <Camera className="size-6 shrink-0" />
+              <ScanBarcode className="size-6 shrink-0" />
               <div>
-                <p className="text-[16px] font-bold">{t.addFood.scanLabel}</p>
-                <p className="text-[13px] opacity-80">{t.addFood.scanLabelDesc}</p>
-              </div>
-            </button>
-            <button
-              onClick={startBarcodeScan}
-              className="glass flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-5 text-left active:scale-[0.985]"
-            >
-              <ScanBarcode className="size-6 shrink-0 text-primary" />
-              <div>
-                <p className="text-[16px] font-bold">{t.addFood.scanBarcode}</p>
-                <p className="text-[13px] text-muted-foreground">{t.addFood.scanBarcodeDesc}</p>
+                <p className="text-[16px] font-bold">{t.addFood.scanFood}</p>
+                <p className="text-[13px] opacity-80">{t.addFood.scanFoodDesc}</p>
               </div>
             </button>
             <button
@@ -631,10 +629,13 @@ export function AddFoodSheet({
         ) : null}
       </BottomSheet>
 
-      <BarcodeScanner
-        open={barcodeScannerOpen}
-        onClose={() => setBarcodeScannerOpen(false)}
-        onDetected={(barcode) => void onBarcodeDetected(barcode)}
+      <FoodScanner
+        open={scannerOpen}
+        status={scannerStatus}
+        onClose={() => setScannerOpen(false)}
+        onBarcode={(barcode) => void onBarcodeDetected(barcode)}
+        onPhoto={onPhotoCaptured}
+        onChoosePhoto={choosePhoto}
       />
     </>
   );
