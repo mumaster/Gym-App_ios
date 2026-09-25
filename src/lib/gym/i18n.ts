@@ -211,6 +211,10 @@ const en = {
     restComplete: "Rest complete — go!",
     restSeconds: (n: number) => `${n}s rest`,
     upNext: "Up next:",
+    restNextSet: (n: number, total: number) => `Next: set ${n} of ${total}`,
+    restNextExercise: (name: string) => `Next: ${name}`,
+    addRest: "+30 s",
+    undoSet: "Undo",
     outstandingTitle: "Outstanding — you went beyond the plan!",
     outstandingBody:
       "You didn't just finish the session, you added an extra exercise on top and closed every single set. That is exactly the kind of effort that builds real strength. Be proud of this one — you earned every rep.",
@@ -979,6 +983,10 @@ const nl: Dict = {
     restComplete: "Rust voorbij — aan de bak!",
     restSeconds: (n: number) => `${n}s rust`,
     upNext: "Hierna:",
+    restNextSet: (n: number, total: number) => `Hierna: set ${n} van ${total}`,
+    restNextExercise: (name: string) => `Hierna: ${name}`,
+    addRest: "+30 s",
+    undoSet: "Ongedaan maken",
     outstandingTitle: "Uitzonderlijk — je ging verder dan het plan!",
     outstandingBody:
       "Je hebt niet alleen de sessie afgemaakt, je hebt er ook nog een extra oefening bovenop gedaan en elke set afgemaakt. Dat is precies het soort inzet dat echte kracht opbouwt. Wees trots op deze — je hebt elke rep verdiend.",

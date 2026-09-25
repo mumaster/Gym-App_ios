@@ -103,9 +103,12 @@ function SessionScreen() {
     profiles,
     activeProfileId,
     avoidedExerciseIds,
+    removeSetAt,
   } = useGym();
 
   const [pos, setPos] = useState({ block: 0, slot: 0, round: 1 });
+  /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
+  const [restNext, setRestNext] = useState<string | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState<"normal" | "big" | null>(null);
   const [finishedSummary, setFinishedSummary] = useState<PlannedExercise[] | null>(null);
@@ -436,6 +439,13 @@ function SessionScreen() {
         willComplete && blockIndex < blocks.length - 1
           ? () => setPos({ block: blockIndex + 1, slot: 0, round: 1 })
           : null;
+      setRestNext(
+        !willComplete
+          ? t.session.restNextSet(loggedWorking(planIndex) + 2, planned?.target_sets ?? 0)
+          : upNext
+            ? t.session.restNextExercise(upNext)
+            : null,
+      );
       startRest(restFor(planIndex));
       return;
     }
@@ -456,12 +466,33 @@ function SessionScreen() {
     }
 
     const nextSlot = remaining(0) > 0 ? 0 : remaining(1) > 0 ? 1 : -1;
+    const nextSlotName =
+      nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
+    setRestNext(nextSlotName ? t.session.restNextExercise(nextSlotName) : null);
     afterRest.current = () => {
       if (nextSlot >= 0) setPos((p) => ({ ...p, slot: nextSlot, round: p.round + 1 }));
       else if (blockIndex < blocks.length - 1) setPos({ block: blockIndex + 1, slot: 0, round: 1 });
     };
     // The pair rest lives on slot B.
     startRest(restFor(block.indices[block.indices.length - 1]!));
+  };
+
+  /** Undo from the rest bar: removes the set that started this rest and
+   *  stops the rest silently, without advancing to the next exercise. */
+  const undoLastSet = () => {
+    if (!activeWorkout?.completed_sets.length) return;
+    haptic(20);
+    afterRest.current = null;
+    rest.cancel();
+    void cancelRestNotification();
+    removeSetAt(activeWorkout.completed_sets.length - 1);
+    setRestNext(null);
+  };
+
+  const extendRest = () => {
+    haptic(10);
+    rest.extend(30);
+    if (notifyEnabled) void scheduleRestNotification(rest.secondsLeft + 30);
   };
 
   return (
@@ -511,6 +542,9 @@ function SessionScreen() {
         <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-5 pt-2">
           <div
             className={`glass-strong mt-16 flex min-w-[220px] flex-col gap-2 rounded-3xl px-5 py-3 shadow-[var(--shadow-float)] ${restDone ? "flash" : ""}`}
+            // More opaque than plain glass: the bar now carries small text
+            // (what's next) that busy content scrolling underneath drowned out.
+            style={{ backgroundColor: "color-mix(in oklch, var(--background) 88%, transparent)" }}
           >
             <div className="flex items-center gap-3">
               <Flame className="size-5 text-primary" />
@@ -535,6 +569,25 @@ function SessionScreen() {
                 }}
               />
             </div>
+            {resting ? (
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+                  {restNext}
+                </p>
+                <button
+                  onClick={extendRest}
+                  className="pointer-events-auto min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
+                >
+                  {t.session.addRest}
+                </button>
+                <button
+                  onClick={undoLastSet}
+                  className="pointer-events-auto min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
+                >
+                  {t.session.undoSet}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

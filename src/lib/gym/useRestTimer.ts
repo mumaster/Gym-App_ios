@@ -23,6 +23,11 @@ export interface RestTimer {
   duration: number;
   start: (durationSec: number) => void;
   skip: () => void;
+  /** Stops the rest silently — no end cue, no dismiss callback (e.g. the
+   *  set that started it was undone). */
+  cancel: () => void;
+  /** Adds seconds to a running countdown. */
+  extend: (seconds: number) => void;
 }
 
 /**
@@ -107,10 +112,36 @@ export function useRestTimer(opts: {
     setNow(Date.now());
   }, []);
 
+  const cancel = useCallback(() => {
+    setMachine((m) => {
+      if (m.phase !== "idle") {
+        cuedFor.current = m.endsAt;
+        dismissedFor.current = m.endsAt;
+      }
+      return { phase: "idle", endsAt: 0, duration: 0 };
+    });
+  }, []);
+
+  const extend = useCallback((seconds: number) => {
+    setMachine((m) =>
+      m.phase === "counting"
+        ? { ...m, endsAt: m.endsAt + seconds * 1000, duration: m.duration + seconds }
+        : m,
+    );
+  }, []);
+
   const secondsLeft =
     machine.phase === "idle" || machine.skipped
       ? 0
       : Math.max(0, Math.ceil((machine.endsAt - now) / 1000));
 
-  return { phase: machine.phase, secondsLeft, duration: machine.duration, start, skip };
+  return {
+    phase: machine.phase,
+    secondsLeft,
+    duration: machine.duration,
+    start,
+    skip,
+    cancel,
+    extend,
+  };
 }
