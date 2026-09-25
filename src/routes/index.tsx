@@ -15,6 +15,7 @@ import {
   Snowflake,
   Trophy,
   Zap,
+  CalendarClock,
 } from "lucide-react";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -33,6 +34,7 @@ import {
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
 import { READINESS_EMOJI, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
+import { overdueDays } from "../lib/gym/schedule";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
@@ -164,6 +166,11 @@ function HomeScreen() {
     heroSub = program.name === templateLabel ? templateLabel : `${program.name} · ${templateLabel}`;
     heroCta = t.home.continueCta;
     heroTarget = "/generate";
+    if (overdueDays(program) > 0) {
+      heroIcon = CalendarClock;
+      heroEyebrow = t.schedule.homeMissed(programDayLabel);
+      heroCta = t.schedule.catchUp;
+    }
   } else if (weeklyScheme && schemeSlot) {
     heroIcon = Flame;
     heroEyebrow = splitTemplateById(weeklyScheme.templateId).label;
@@ -171,6 +178,11 @@ function HomeScreen() {
     heroSub = null;
     heroCta = t.home.continueCta;
     heroTarget = "/generate";
+    if (overdueDays(weeklyScheme) > 0) {
+      heroIcon = CalendarClock;
+      heroEyebrow = t.schedule.homeMissed(schemeDayLabel);
+      heroCta = t.schedule.catchUp;
+    }
   }
   const HeroIcon = heroIcon;
 

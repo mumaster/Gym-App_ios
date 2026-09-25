@@ -21,10 +21,13 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
+import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
+import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
@@ -47,6 +50,7 @@ import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
+import { plannedDate } from "../lib/gym/schedule";
 import { musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
@@ -104,6 +108,7 @@ function WorkoutHome() {
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [programSheetOpen, setProgramSheetOpen] = useState(false);
+  const [adjustWeekOpen, setAdjustWeekOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
   /**
@@ -555,35 +560,25 @@ function WorkoutHome() {
               ))}
             </div>
 
-            <div className="mt-3 flex justify-between gap-1">
-              {program.schedule.map((slot, i) => {
-                const isNext = i === program.cyclePosition;
-                const label = splitDayLabel(program.templateId, slot.dayId);
-                return (
-                  <div
-                    key={i}
-                    className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
-                      isNext ? "bg-primary/20" : "bg-muted"
-                    }`}
-                  >
-                    <p
-                      className={`text-[10px] font-bold uppercase tracking-wide ${
-                        isNext ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    >
-                      {t.common.dow[slot.dow]}
-                    </p>
-                    <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
-                  </div>
-                );
-              })}
-            </div>
+            <RotationWeekStrip rotation={program} templateId={program.templateId} />
+            <MissedSessionBanner
+              kind="program"
+              rotation={program}
+              dayLabel={programDayLabel}
+              onDoToday={startProgramDay}
+            />
 
             <button
               onClick={startProgramDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
             >
               <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
+            </button>
+            <button
+              onClick={() => setAdjustWeekOpen(true)}
+              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+            >
+              <CalendarClock className="size-3.5" /> {t.schedule.adjustWeek}
             </button>
           </>
         ) : weeklyScheme ? (
@@ -598,7 +593,9 @@ function WorkoutHome() {
                 </p>
                 {scheduledSlot ? (
                   <p className="text-[13px] text-muted-foreground">
-                    {t.generate.suggestedDay(t.common.dow[scheduledSlot.dow]!)}
+                    {t.generate.suggestedDay(
+                      t.common.dow[plannedDate(weeklyScheme, weeklyScheme.cyclePosition).getDay()]!,
+                    )}
                   </p>
                 ) : null}
               </div>
@@ -611,35 +608,25 @@ function WorkoutHome() {
               </button>
             </div>
 
-            <div className="mt-3 flex justify-between gap-1">
-              {weeklyScheme.schedule.map((slot, i) => {
-                const isNext = i === weeklyScheme.cyclePosition;
-                const label = splitDayLabel(weeklyScheme.templateId, slot.dayId);
-                return (
-                  <div
-                    key={i}
-                    className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
-                      isNext ? "bg-primary/20" : "bg-muted"
-                    }`}
-                  >
-                    <p
-                      className={`text-[10px] font-bold uppercase tracking-wide ${
-                        isNext ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    >
-                      {t.common.dow[slot.dow]}
-                    </p>
-                    <p className="truncate px-0.5 text-[11px] font-semibold">{label}</p>
-                  </div>
-                );
-              })}
-            </div>
+            <RotationWeekStrip rotation={weeklyScheme} templateId={weeklyScheme.templateId} />
+            <MissedSessionBanner
+              kind="weeklyScheme"
+              rotation={weeklyScheme}
+              dayLabel={scheduledDayLabel}
+              onDoToday={startScheduledDay}
+            />
 
             <button
               onClick={startScheduledDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
             >
               <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
+            </button>
+            <button
+              onClick={() => setAdjustWeekOpen(true)}
+              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+            >
+              <CalendarClock className="size-3.5" /> {t.schedule.adjustWeek}
             </button>
             <button
               onClick={() => setProgramSheetOpen(true)}
@@ -1059,6 +1046,16 @@ function WorkoutHome() {
 
       <WeeklyPlanSheet open={planSheetOpen} onClose={() => setPlanSheetOpen(false)} />
       <ProgramBuilderSheet open={programSheetOpen} onClose={() => setProgramSheetOpen(false)} />
+      <AdjustWeekSheet
+        open={adjustWeekOpen}
+        onClose={() => setAdjustWeekOpen(false)}
+        kind={program ? "program" : "weeklyScheme"}
+        onEditUsualDays={() => {
+          setAdjustWeekOpen(false);
+          if (program) setProgramSheetOpen(true);
+          else setPlanSheetOpen(true);
+        }}
+      />
       <WorkoutTemplatesSheet
         open={templatesOpen || savingTemplate}
         onClose={() => {

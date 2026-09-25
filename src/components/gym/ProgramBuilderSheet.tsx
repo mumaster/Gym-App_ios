@@ -30,7 +30,8 @@ const EVEN_SPREAD: Record<number, number[]> = {
 type Mode = "manage" | "template" | "days" | "weeks";
 
 export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { program, setProgram, updateProgramSlotDow, clearProgram } = useGym();
+  const { program, setProgram, updateProgramSlotDow, updateProgramSchedule, clearProgram } =
+    useGym();
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [name, setName] = useState("Program");
@@ -38,10 +39,14 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
   const [presetId, setPresetId] = useState<string>(PROGRAM_PRESETS[1]!.id);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  // True while re-planning the existing program's split/days (keeps its
+  // weeks and current week) rather than building a new one from scratch.
+  const [editingExisting, setEditingExisting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setEditingSlot(null);
+    setEditingExisting(false);
     setMode(program ? "manage" : "template");
   }, [open, program]);
 
@@ -78,6 +83,13 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       anchor: anchorFor(preview, 0),
     };
     setProgram(next);
+    onClose();
+  };
+
+  const saveScheduleChanges = () => {
+    if (!preview.length) return;
+    haptic([20, 30]);
+    updateProgramSchedule(templateId, preview);
     onClose();
   };
 
@@ -185,7 +197,21 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
 
           <div className="flex flex-col gap-2 pt-1">
             <button
-              onClick={() => setMode("template")}
+              onClick={() => {
+                setTemplateId(program.templateId);
+                setDows(program.schedule.map((s) => s.dow));
+                setEditingExisting(true);
+                setMode("days");
+              }}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+            >
+              {t.programBuilder.changeDaysKeepProgress}
+            </button>
+            <button
+              onClick={() => {
+                setEditingExisting(false);
+                setMode("template");
+              }}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
             >
               {t.programBuilder.startNewProgram}
@@ -276,12 +302,15 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             <p className="text-[14px] text-muted-foreground">{t.programBuilder.pickOneDay}</p>
           )}
 
+          {editingExisting ? (
+            <p className="text-[13px] text-muted-foreground">{t.programBuilder.keepProgressHint}</p>
+          ) : null}
           <button
-            onClick={() => setMode("weeks")}
+            onClick={editingExisting ? saveScheduleChanges : () => setMode("weeks")}
             disabled={!preview.length}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
           >
-            {t.programBuilder.nextPickWave}
+            {editingExisting ? t.programBuilder.saveChanges : t.programBuilder.nextPickWave}
           </button>
         </div>
       ) : (

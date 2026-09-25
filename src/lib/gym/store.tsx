@@ -26,8 +26,22 @@ import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import { advanceProgram, type Program } from "./programs";
-import { advanceRotation, anchorFor, resortRotation, weekIndex, type Rotation } from "./schedule";
-import type { WeeklyScheme } from "./splits";
+import {
+  advanceRotation,
+  anchorFor,
+  moveSession,
+  parseDayKey,
+  resortRotation,
+  shiftRemaining,
+  weekIndex,
+  type Rotation,
+} from "./schedule";
+import {
+  initialCyclePosition,
+  type ScheduleSlot,
+  type SplitTemplateId,
+  type WeeklyScheme,
+} from "./splits";
 import type {
   AccentId,
   ColorScheme,
@@ -174,6 +188,17 @@ function renumber(sets: LoggedSet[]): LoggedSet[] {
   });
 }
 
+export type RotationKind = "program" | "weeklyScheme";
+
+function updateRotation(
+  s: GymState,
+  kind: RotationKind,
+  fn: <R extends Rotation>(r: R) => R,
+): GymState {
+  if (kind === "program") return s.program ? { ...s, program: fn(s.program) } : s;
+  return s.weeklyScheme ? { ...s, weeklyScheme: fn(s.weeklyScheme) } : s;
+}
+
 /** Older saves may lack warmup_sets or carry a non-kg unit. */
 function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
@@ -287,6 +312,15 @@ interface Ctx extends GymState {
   setProgram: (program: Program) => void;
   updateProgramSlotDow: (index: number, dow: number) => void;
   clearProgram: () => void;
+  /** Replaces the program's split/days while keeping its wave progress. */
+  updateProgramSchedule: (templateId: SplitTemplateId, schedule: ScheduleSlot[]) => void;
+  /** This-cycle-only calendar adjustments for whichever rotation `kind`
+   *  names — see lib/gym/schedule.ts. Skipping advances the rotation (and a
+   *  program's week, on wrap) exactly like finishing the session would. */
+  skipScheduledSession: (kind: RotationKind) => void;
+  shiftScheduledSessions: (kind: RotationKind, delta: number) => void;
+  moveScheduledSession: (kind: RotationKind, index: number, dateKey: string) => void;
+  resetScheduledWeek: (kind: RotationKind) => void;
   saveWorkoutTemplate: (
     name: string,
     plan: PlannedExercise[],
@@ -834,6 +868,40 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, program: resortRotation({ ...s.program, schedule }) };
         }),
       clearProgram: () => setState((s) => ({ ...s, program: null })),
+      updateProgramSchedule: (templateId, schedule) =>
+        setState((s) => {
+          if (!s.program) return s;
+          const cyclePosition = initialCyclePosition(schedule);
+          return {
+            ...s,
+            program: {
+              ...s.program,
+              templateId,
+              schedule,
+              cyclePosition,
+              anchor: anchorFor(schedule, cyclePosition),
+              dayOverrides: undefined,
+            },
+          };
+        }),
+      skipScheduledSession: (kind) =>
+        setState((s) =>
+          kind === "program"
+            ? s.program
+              ? { ...s, program: advanceProgram(s.program) }
+              : s
+            : s.weeklyScheme
+              ? { ...s, weeklyScheme: advanceRotation(s.weeklyScheme).rotation }
+              : s,
+        ),
+      shiftScheduledSessions: (kind, delta) =>
+        setState((s) => updateRotation(s, kind, (r) => shiftRemaining(r, delta))),
+      moveScheduledSession: (kind, index, dateKey) =>
+        setState((s) =>
+          updateRotation(s, kind, (r) => moveSession(r, index, parseDayKey(dateKey))),
+        ),
+      resetScheduledWeek: (kind) =>
+        setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 
       saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles) =>
         setState((s) => ({
