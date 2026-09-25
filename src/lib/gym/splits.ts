@@ -3,6 +3,7 @@ import { recommendedMuscles } from "./recommendations";
 import type { Rotation } from "./schedule";
 import { weekIndex } from "./schedule";
 import type { Muscle, Workout } from "./types";
+import type { FocusGroup } from "./volume";
 
 export type SplitTemplateId = "full_body" | "upper_lower" | "push_pull_legs" | "bro_split";
 
@@ -118,10 +119,11 @@ export function musclesForSlot(
   templateId: SplitTemplateId,
   slot: ScheduleSlot,
   workouts: Workout[],
+  focus: FocusGroup[] = [],
 ): Muscle[] {
   const template = splitTemplateById(templateId);
   const day = template.days.find((d) => d.id === slot.dayId);
   if (!day) return [];
   if (day.muscles.length) return day.muscles;
-  return recommendedMuscles(MUSCLES, workouts, 3).map((r) => r.muscle);
+  return recommendedMuscles(MUSCLES, workouts, 3, focus).map((r) => r.muscle);
 }

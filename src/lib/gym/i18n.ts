@@ -157,7 +157,9 @@ const en = {
     recommendedToday: "Recommended today",
     neverTrained: (muscle: string) => `${muscle} (never trained)`,
     daysAgo: (muscle: string, days: number) => `${muscle} (${days}d ago)`,
-    recommendedTodayDesc: "These groups have gone longest without a working set.",
+    recommendedTodayDesc: "Furthest below their weekly set target.",
+    setsThisWeek: (muscle: string, done: number, target: number) =>
+      `${muscle} ${done}/${target} sets`,
     use: "Use",
     muscleMap: "Muscle map",
     pairSuggestion: (a: string, b: string, extra: string) => `Pair ${a} with ${b}${extra}?`,
@@ -633,6 +635,23 @@ const en = {
     keepProgressHint: "Your program keeps its current week — only the days change.",
     saveChanges: "Save changes",
   },
+  volume: {
+    growTitle: "Muscles to grow",
+    growDesc:
+      "Picked groups aim for 20 sets a week instead of 10, and the generator gives them more exercises and extra sets.",
+    groups: {
+      chest: "Chest",
+      back: "Back",
+      shoulders: "Shoulders",
+      arms: "Arms",
+      legs: "Legs",
+      core: "Core",
+    } as Record<"chest" | "back" | "shoulders" | "arms" | "legs" | "core", string>,
+    thisWeek: "Sets this week",
+    setsOf: (done: number, target: number) => `${done}/${target}`,
+    source:
+      "Targets: 10 sets/week (Schoenfeld et al. 2017, ACSM 2026), 20 for muscles to grow (Baz-Valle et al. 2022). A set counts 1 for the main muscle and ½ for helpers (Pelland et al. 2024).",
+  },
   schedule: {
     missedTitle: (day: string, weekday: string) => `You missed ${day} on ${weekday}`,
     behindTitle: (day: string, n: number) => `${day} is ${n} days overdue`,
@@ -884,7 +903,9 @@ const nl: Dict = {
     recommendedToday: "Vandaag aanbevolen",
     neverTrained: (muscle: string) => `${muscle} (nog nooit getraind)`,
     daysAgo: (muscle: string, days: number) => `${muscle} (${days}d geleden)`,
-    recommendedTodayDesc: "Deze groepen zijn het langst geleden getraind met een werkset.",
+    recommendedTodayDesc: "Het verst onder hun wekelijkse setdoel.",
+    setsThisWeek: (muscle: string, done: number, target: number) =>
+      `${muscle} ${String(done).replace(".", ",")}/${target} sets`,
     use: "Gebruik",
     muscleMap: "Spierkaart",
     pairSuggestion: (a: string, b: string, extra: string) => `${a} combineren met ${b}${extra}?`,
@@ -1364,6 +1385,23 @@ const nl: Dict = {
     changeDaysKeepProgress: "Schema of trainingsdagen wijzigen",
     keepProgressHint: "Je programma blijft in de huidige week — alleen de dagen veranderen.",
     saveChanges: "Wijzigingen opslaan",
+  },
+  volume: {
+    growTitle: "Spieren om te laten groeien",
+    growDesc:
+      "Gekozen groepen mikken op 20 sets per week in plaats van 10, en de generator geeft ze meer oefeningen en extra sets.",
+    groups: {
+      chest: "Borst",
+      back: "Rug",
+      shoulders: "Schouders",
+      arms: "Armen",
+      legs: "Benen",
+      core: "Core",
+    },
+    thisWeek: "Sets deze week",
+    setsOf: (done: number, target: number) => `${String(done).replace(".", ",")}/${target}`,
+    source:
+      "Doelen: 10 sets/week (Schoenfeld e.a. 2017, ACSM 2026), 20 voor spieren om te laten groeien (Baz-Valle e.a. 2022). Een set telt 1 voor de hoofdspier en ½ voor hulpspieren (Pelland e.a. 2024).",
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `Je hebt ${day} gemist op ${weekday}`,

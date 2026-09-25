@@ -92,7 +92,12 @@ function Silhouette() {
 function Glow({ regionIds, color }: { regionIds: RegionId[]; color: string }) {
   if (!regionIds.length) return null;
   return (
-    <g className="pointer-events-none" style={{ filter: "url(#soft-blur)" }} fill={color} opacity={0.4}>
+    <g
+      className="pointer-events-none"
+      style={{ filter: "url(#soft-blur)" }}
+      fill={color}
+      opacity={0.4}
+    >
       {regionIds.map((id) => (
         <g key={id}>
           {SHAPES[id]!.map((s, i) => (
@@ -226,7 +231,13 @@ export function AnatomyMap({
             <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.95" />
             <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.55" />
           </linearGradient>
-          <pattern id="muscle-hint" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <pattern
+            id="muscle-hint"
+            width="7"
+            height="7"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
             <rect width="7" height="7" fill="var(--secondary)" />
             <rect width="3" height="7" fill={SUGGESTED_COLOR} fillOpacity="0.75" />
           </pattern>

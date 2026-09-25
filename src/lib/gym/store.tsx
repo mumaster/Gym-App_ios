@@ -26,6 +26,7 @@ import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
+import type { FocusGroup } from "./volume";
 import {
   advanceRotation,
   anchorFor,
@@ -85,6 +86,9 @@ interface GymState {
   /** Which character represents the user in the profile/settings icon. */
   avatarId: AvatarId;
   supersetsEnabled: boolean;
+  /** Muscle groups the user wants to grow — they get the higher weekly set
+   *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
+  growthFocus: FocusGroup[];
   supersetRounds: number;
   /** Exercise ids the user "loved" — always forced into a generated plan. */
   lovedExerciseIds: string[];
@@ -152,6 +156,7 @@ const initialState: GymState = {
   language: "en",
   avatarId: DEFAULT_AVATAR_ID,
   supersetsEnabled: false,
+  growthFocus: [],
   supersetRounds: 3,
   lovedExerciseIds: [],
   avoidedExerciseIds: [],
@@ -262,6 +267,7 @@ function migrate(raw: Partial<GymState>): GymState {
     language: raw.language ?? "en",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     supersetsEnabled: raw.supersetsEnabled ?? false,
+    growthFocus: raw.growthFocus ?? [],
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
     avoidedExerciseIds: raw.avoidedExerciseIds ?? [],

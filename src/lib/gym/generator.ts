@@ -2,10 +2,12 @@ import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
 import { roundToStep, suggestWeight } from "./progression";
+import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
 import type {
   EquipmentId,
   EquipmentProfile,
   Exercise,
+  Muscle,
   PlannedExercise,
   TargetMuscle,
   Workout,
@@ -34,6 +36,11 @@ const WARMUP_SET_SECONDS = 30;
 const WARMUP_REST_SECONDS = 40;
 /** Walking to the next station, adjusting the machine, etc. */
 const TRANSITION_SECONDS = 45;
+
+/** True when any muscle's fractional sets in `plan` pass the per-session
+ *  point of no detectable extra benefit (see volume.ts). */
+const overSessionCap = (plan: PlannedExercise[]) =>
+  Object.values(planSets(plan)).some((n) => n > MAX_SESSION_SETS_PER_MUSCLE);
 
 export function estimateSeconds(plan: PlannedExercise[]): number {
   let total = 0;
@@ -82,7 +89,16 @@ interface Shape {
  * maximal-strength work is for 1–3RM training, which these rep ranges
  * aren't), and the one value that also fits 2009's 1–2 min for assistance
  * exercises. Using 3 min for longer sessions was tried and made a 60-min
- * session fit fewer exercises than a 45-min one. Superset
+ * session fit fewer exercises than a 45-min one.
+ *
+ * Sets and reps: 2–4 working sets per exercise, fitted to the time budget,
+ * with a muscle's weekly total — not any one session — the number that
+ * matters (see volume.ts). Rep ranges sit inside the 6–30 reps Schoenfeld
+ * et al.'s repetition-continuum review (Sports 2021) found build muscle
+ * similarly when sets are taken close to failure, with compounds kept at
+ * the heavier 5–10 end, where strength gains are larger. Warm-up set counts
+ * (0–2 on compounds) have no published dose — they're a convention, not
+ * evidence. Superset
  * pairs keep their own round rest (pairRestFor) — each muscle already rests
  * for its partner's set plus that round rest, which lands in the same
  * 2–3 min window.
@@ -188,6 +204,10 @@ interface GenerateArgs {
    *  budget (so fitting can't add the sets back) — a Program's deload week,
    *  which is meant to be a shorter, lighter session. Defaults to 1. */
   volumeMultiplier?: number;
+  /** Muscles the user wants to grow (see volume.ts): their targets are
+   *  picked twice as often — matching the 20-vs-10 weekly set targets — and
+   *  get spare time for extra sets first. */
+  focusMuscles?: Muscle[];
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -319,7 +339,14 @@ export function generateWorkout({
   profile,
   intensityMultiplier = 1,
   volumeMultiplier = 1,
+  focusMuscles = [],
 }: GenerateArgs): PlannedExercise[] {
+  const focus = new Set(focusMuscles);
+  const isFocusTarget = (t: TargetMuscle) => focus.has(TARGET_MUSCLE_GROUP[t]);
+  const isFocusEntry = (p: PlannedExercise) => {
+    const m = EXERCISES.find((e) => e.id === p.exercise_id)?.primary_muscle;
+    return m ? focus.has(m) : false;
+  };
   const withVolume = (list: PlannedExercise[]) =>
     volumeMultiplier === 1
       ? list
@@ -405,11 +432,19 @@ export function generateWorkout({
     if (t) hits.set(t, hits.get(t)! + 1);
   }
   const dry = new Set<TargetMuscle>(); // targets with no remaining candidates
+  // A focus target's exercises count half, so it's served twice as often.
+  const load = (m: TargetMuscle) => hits.get(m)! * (isFocusTarget(m) ? 0.5 : 1);
   const pickTarget = (): TargetMuscle | undefined => {
     let best: TargetMuscle | undefined;
     for (const m of targets) {
       if (dry.has(m)) continue;
-      if (best === undefined || hits.get(m)! < hits.get(best)!) best = m;
+      if (
+        best === undefined ||
+        load(m) < load(best) ||
+        (load(m) === load(best) && isFocusTarget(m) && !isFocusTarget(best))
+      ) {
+        best = m;
+      }
     }
     return best;
   };
@@ -425,9 +460,16 @@ export function generateWorkout({
       i--; // retry with the next-least-served target
       continue;
     }
+    const entry = makeEntry(choice, choice.compound);
+    // Past ~11 fractional sets for one muscle in a session Pelland et al.
+    // found no detectable extra benefit (volume.ts) — stop serving it.
+    if (overSessionCap([...plan, entry])) {
+      dry.add(target);
+      i--;
+      continue;
+    }
     hits.set(target, hits.get(target)! + 1);
 
-    const entry = makeEntry(choice, choice.compound);
     const candidatePlan = [...plan, entry];
     const projected = estimateSeconds(candidatePlan);
     // always keep a minimum of 2 exercises, otherwise respect the budget
@@ -441,13 +483,20 @@ export function generateWorkout({
   let guard = 0;
   // short sessions stay lean: at most 3 exercises, capped at 3 working sets
   const setCap = duration <= 15 ? 3 : 6;
+  // Focus exercises get spare time first; no muscle goes past the per-session
+  // point Pelland et al. found no detectable extra benefit (volume.ts).
+  const order = [
+    ...plan.map((p, i) => ({ p, i })).filter(({ p }) => isFocusEntry(p)),
+    ...plan.map((p, i) => ({ p, i })).filter(({ p }) => !isFocusEntry(p)),
+  ].map(({ i }) => i);
   while (estimateSeconds(plan) < budget * 0.9 && plan.length && guard < 24) {
     guard++;
-    const idx = guard % plan.length;
+    const idx = order[guard % order.length]!;
     const entry = plan[idx]!;
     if (entry.target_sets >= setCap) continue;
     const bumped = { ...entry, target_sets: entry.target_sets + 1 };
     const next = plan.map((p, i) => (i === idx ? bumped : p));
+    if (overSessionCap(next)) continue;
     if (estimateSeconds(next) > budget * 1.04) break;
     plan[idx] = bumped;
   }

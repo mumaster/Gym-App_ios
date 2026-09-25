@@ -1,5 +1,6 @@
 import { exerciseById } from "./data";
 import type { Muscle, Workout } from "./types";
+import { focusMuscles, weeklySets, weeklyTarget, type FocusGroup } from "./volume";
 
 function daysAgo(iso: string): number {
   const then = new Date(iso);
@@ -27,16 +28,33 @@ export function daysSinceTrained(muscle: Muscle, workouts: Workout[]): number | 
 export interface MuscleRecommendation {
   muscle: Muscle;
   daysSince: number | null;
+  /** Fractional sets done this week and the weekly target (see volume.ts). */
+  done: number;
+  target: number;
 }
 
-/** Muscle groups sorted least-recently-trained first (never-trained ranks highest). */
+/** Muscle groups furthest below their weekly set target first (focus
+ *  muscles have a higher target, so they come up more often); ties go to
+ *  whichever was trained least recently. */
 export function recommendedMuscles(
   muscles: Muscle[],
   workouts: Workout[],
   top = 2,
+  focus: FocusGroup[] = [],
 ): MuscleRecommendation[] {
+  const done = weeklySets(workouts, null);
+  const focusSet = focusMuscles(focus);
   return muscles
-    .map((muscle) => ({ muscle, daysSince: daysSinceTrained(muscle, workouts) }))
-    .sort((a, b) => (b.daysSince ?? Infinity) - (a.daysSince ?? Infinity))
+    .map((muscle) => ({
+      muscle,
+      daysSince: daysSinceTrained(muscle, workouts),
+      done: Math.round((done[muscle] ?? 0) * 10) / 10,
+      target: weeklyTarget(muscle, focusSet),
+    }))
+    .sort(
+      (a, b) =>
+        a.done / a.target - b.done / b.target ||
+        (b.daysSince ?? Infinity) - (a.daysSince ?? Infinity),
+    )
     .slice(0, top);
 }

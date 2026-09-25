@@ -32,7 +32,8 @@ export function WheelPicker({
           if (timer.current) clearTimeout(timer.current);
           timer.current = setTimeout(() => {
             const idx = Math.max(0, Math.min(values.length - 1, Math.round(top / ITEM)));
-            const v = values[idx]; if (v !== undefined && v !== value) onChange(v);
+            const v = values[idx];
+            if (v !== undefined && v !== value) onChange(v);
           }, 90);
         }}
         className="no-scrollbar h-full snap-y snap-mandatory overflow-y-scroll py-[44px]"

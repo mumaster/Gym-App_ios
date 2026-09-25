@@ -31,6 +31,7 @@ import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
+import { WeeklyVolumeCard } from "../components/gym/WeeklyVolumeCard";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
@@ -53,6 +54,7 @@ import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
 import { musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
+import { focusMuscles } from "../lib/gym/volume";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 
 export const Route = createFileRoute("/generate")({
@@ -89,6 +91,7 @@ function WorkoutHome() {
     startWorkout,
     hydrated,
     supersetsEnabled,
+    growthFocus,
     lovedExerciseIds,
     toggleLovedExercise,
     avoidedExerciseIds,
@@ -206,6 +209,7 @@ function WorkoutHome() {
         targets,
         variation: nextVariation,
         supersets: supersetsEnabled,
+        focusMuscles: [...focusMuscles(growthFocus)],
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
         history: workouts,
@@ -253,7 +257,7 @@ function WorkoutHome() {
 
   // Muscles that have gone longest without a logged working set — nudges toward
   // a sane weekly split instead of always training the same favourites.
-  const recommended = recommendedMuscles(MUSCLES, workouts);
+  const recommended = recommendedMuscles(MUSCLES, workouts, 2, growthFocus);
   const applyRecommendation = () => {
     haptic([20, 30]);
     setCuratedSelection(true);
@@ -275,7 +279,12 @@ function WorkoutHome() {
     setCuratedSelection(true);
     setFollowingSchedule(true);
     setFollowingProgram(false);
-    const targetMuscles = musclesForSlot(weeklyScheme.templateId, scheduledSlot, workouts);
+    const targetMuscles = musclesForSlot(
+      weeklyScheme.templateId,
+      scheduledSlot,
+      workouts,
+      growthFocus,
+    );
     setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
   };
@@ -293,7 +302,12 @@ function WorkoutHome() {
     setCuratedSelection(true);
     setFollowingSchedule(false);
     setFollowingProgram(true);
-    const targetMuscles = musclesForSlot(program.templateId, scheduledProgramSlot, workouts);
+    const targetMuscles = musclesForSlot(
+      program.templateId,
+      scheduledProgramSlot,
+      workouts,
+      growthFocus,
+    );
     setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
     setProposal(null);
   };
@@ -667,6 +681,8 @@ function WorkoutHome() {
         )}
       </Card>
 
+      {hydrated ? <WeeklyVolumeCard /> : null}
+
       {hydrated && workoutTemplates.length > 0 ? (
         <div className="mb-4">
           <SectionLabel>{t.generate.savedTemplates}</SectionLabel>
@@ -703,11 +719,7 @@ function WorkoutHome() {
               </p>
               <p className="mt-1 text-[15px] leading-snug">
                 {recommended
-                  .map((r) =>
-                    r.daysSince === null
-                      ? t.generate.neverTrained(r.muscle)
-                      : t.generate.daysAgo(r.muscle, r.daysSince),
-                  )
+                  .map((r) => t.generate.setsThisWeek(r.muscle, r.done, r.target))
                   .join(" · ")}
               </p>
               <p className="mt-1 text-[13px] text-muted-foreground">
