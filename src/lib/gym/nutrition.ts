@@ -262,6 +262,47 @@ export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
   return { calories, protein, carbs, fat, fiber, salt };
 }
 
+/** Share of training-day calories a rest day drops, taken entirely from
+ *  carbs — protein, fat, fiber and salt stay the same on both day types. */
+export const REST_DAY_CALORIE_CUT = 0.12;
+
+/** Rest-day limits auto-derived from the training-day ones. */
+export function deriveRestDayGoals(training: NutritionGoals): NutritionGoals {
+  const rest: NutritionGoals = { ...training };
+  if (training.calories != null) {
+    const cut = training.calories * REST_DAY_CALORIE_CUT;
+    rest.calories = Math.round(training.calories - cut);
+    if (training.carbs != null) rest.carbs = Math.max(0, Math.round(training.carbs - cut / 4));
+  }
+  return rest;
+}
+
+/** Rest-day limits: derived from training-day ones, with any field the user
+ *  set by hand taking precedence. */
+export const restDayGoals = (
+  training: NutritionGoals,
+  overrides: NutritionGoals,
+): NutritionGoals => ({
+  ...deriveRestDayGoals(training),
+  ...overrides,
+});
+
+/** Turns one average daily target into training-day limits such that, with
+ *  rest days derived via deriveRestDayGoals, the weekly average calories
+ *  still land on the original target. The extra calories go to carbs. */
+export function trainingDayGoalsFromAverage(
+  average: NutritionGoals,
+  trainingDaysPerWeek: number,
+): NutritionGoals {
+  if (average.calories == null) return average;
+  const n = Math.min(7, Math.max(0, trainingDaysPerWeek));
+  const trainingCalories = (7 * average.calories) / (n + (1 - REST_DAY_CALORIE_CUT) * (7 - n));
+  const extra = trainingCalories - average.calories;
+  const training: NutritionGoals = { ...average, calories: Math.round(trainingCalories) };
+  if (average.carbs != null) training.carbs = Math.round(average.carbs + extra / 4);
+  return training;
+}
+
 export type NutrientStatus = "none" | "ok" | "near" | "over";
 
 /** How close `consumed` is to `limit` — drives the overview meter's color/copy. */

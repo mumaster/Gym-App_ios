@@ -10,6 +10,8 @@ import {
   Settings2,
   Trash2,
   X,
+  Dumbbell,
+  Moon,
 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
@@ -33,6 +35,7 @@ import {
   type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
+import { useDayNutrition } from "../lib/gym/dayNutrition";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { haptic, useGym } from "../lib/gym/store";
@@ -61,7 +64,6 @@ function NutritionScreen() {
   const locale = useLocale();
   const {
     foodEntries,
-    nutritionGoals,
     mealTemplates,
     recipes,
     waterEntries,
@@ -91,7 +93,9 @@ function NutritionScreen() {
     [foodEntries, selectedKey],
   );
   const totals = useMemo(() => dailyTotals(selectedEntries), [selectedEntries]);
-  const hasGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
+  const dayNutrition = useDayNutrition(selectedDate);
+  const dayGoals = dayNutrition.goals;
+  const hasGoals = NUTRIENT_ORDER.some((k) => dayGoals[k] != null);
   const isToday = dayOffset === 0;
 
   const selectedWaterEntries = useMemo(
@@ -155,8 +159,20 @@ function NutritionScreen() {
       </div>
 
       <div className="mb-1.5 mt-4 flex items-center justify-between px-1">
-        <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {isToday ? t.nutrition.todaysOverview : t.nutrition.thatDaysOverview}
+        <p className="flex min-w-0 items-center gap-2 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="truncate">
+            {isToday ? t.nutrition.todaysOverview : t.nutrition.thatDaysOverview}
+          </span>
+          {dayNutrition.byDayType ? (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] normal-case tracking-normal text-primary">
+              {dayNutrition.dayType === "training" ? (
+                <Dumbbell className="size-3" />
+              ) : (
+                <Moon className="size-3" />
+              )}
+              {dayNutrition.dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
+            </span>
+          ) : null}
         </p>
         <button
           onClick={() => {
@@ -171,12 +187,7 @@ function NutritionScreen() {
       </div>
       <Card className="space-y-4 p-4">
         {NUTRIENT_ORDER.map((key) => (
-          <NutrientMeter
-            key={key}
-            nutrientKey={key}
-            consumed={totals[key]}
-            limit={nutritionGoals[key]}
-          />
+          <NutrientMeter key={key} nutrientKey={key} consumed={totals[key]} limit={dayGoals[key]} />
         ))}
         {!hasGoals ? (
           <button

@@ -110,6 +110,14 @@ interface GymState {
   foodEntries: FoodEntry[];
   /** Daily nutrition limits the user set for themselves — see NutritionGoalsSheet. */
   nutritionGoals: NutritionGoals;
+  /** When on, `nutritionGoals` are the training-day limits and rest days use
+   *  `restDayGoals()` (derived, plus `restDayGoalOverrides`) instead — see
+   *  lib/gym/dayNutrition.ts. Off by default so existing single limits keep
+   *  behaving exactly as before. */
+  nutritionByDayType: boolean;
+  /** Rest-day limits the user set by hand; any nutrient missing here is
+   *  auto-derived from the training-day limit. */
+  restDayGoalOverrides: NutritionGoals;
   /** Last questionnaire answers used to suggest nutritionGoals, so reopening
    *  the questionnaire prefills instead of starting blank. Not itself used
    *  for anything besides that — editing nutritionGoals directly doesn't
@@ -155,6 +163,8 @@ const initialState: GymState = {
   program: null,
   foodEntries: [],
   nutritionGoals: {},
+  nutritionByDayType: false,
+  restDayGoalOverrides: {},
   nutritionProfile: null,
   mealTemplates: [],
   workoutTemplates: [],
@@ -250,6 +260,8 @@ function migrate(raw: Partial<GymState>): GymState {
     weeklyScheme: fixRotation(raw.weeklyScheme),
     program: fixRotation(raw.program),
     nutritionGoals: raw.nutritionGoals ?? {},
+    nutritionByDayType: raw.nutritionByDayType ?? false,
+    restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     workoutTemplates: raw.workoutTemplates ?? [],

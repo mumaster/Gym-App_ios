@@ -16,6 +16,7 @@ import {
   Trophy,
   Zap,
   CalendarClock,
+  Moon,
 } from "lucide-react";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -34,7 +35,8 @@ import {
 import { currentProgramWeek } from "../lib/gym/programs";
 import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
 import { READINESS_EMOJI, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
-import { overdueDays } from "../lib/gym/schedule";
+import { useDayNutrition } from "../lib/gym/dayNutrition";
+import { overdueDays, type DayType } from "../lib/gym/schedule";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { bestStreak, currentStreak } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
@@ -69,7 +71,6 @@ function HomeScreen() {
     weeklyScheme,
     program,
     foodEntries,
-    nutritionGoals,
     waterEntries,
     waterGoalMl,
     avatarId,
@@ -96,8 +97,11 @@ function HomeScreen() {
     () => entriesForDay(waterEntries, todayKey).reduce((sum, e) => sum + e.ml, 0),
     [waterEntries, todayKey],
   );
-  const hasNutritionGoals = NUTRIENT_ORDER.some((k) => nutritionGoals[k] != null);
-  const calorieGoal = nutritionGoals.calories;
+  const today = useMemo(() => new Date(), []);
+  const dayNutrition = useDayNutrition(today);
+  const dayGoals = dayNutrition.goals;
+  const hasNutritionGoals = NUTRIENT_ORDER.some((k) => dayGoals[k] != null);
+  const calorieGoal = dayGoals.calories;
   const calorieStatus = nutrientStatus(todayTotals.calories, calorieGoal);
   const caloriePct = calorieGoal ? Math.min(100, (todayTotals.calories / calorieGoal) * 100) : 0;
 
@@ -256,7 +260,8 @@ function HomeScreen() {
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
             totals={todayTotals}
-            goals={nutritionGoals}
+            goals={dayGoals}
+            dayType={dayNutrition.byDayType ? dayNutrition.dayType : null}
             calorieStatus={calorieStatus}
             caloriePct={caloriePct}
             onClick={() => navigate({ to: "/nutrition" })}
@@ -328,6 +333,7 @@ function NutritionTile({
   goals,
   calorieStatus,
   caloriePct,
+  dayType,
   onClick,
 }: {
   active: boolean;
@@ -336,6 +342,8 @@ function NutritionTile({
   goals: NutritionGoals;
   calorieStatus: NutrientStatus;
   caloriePct: number;
+  /** Shown as a small label when day-type limits are on; null hides it. */
+  dayType: DayType | null;
   onClick: () => void;
 }) {
   const t = useTranslation();
@@ -373,7 +381,19 @@ function NutritionTile({
             </span>
           </span>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+          {dayType ? (
+            <>
+              {dayType === "training" ? (
+                <Dumbbell className="size-3" />
+              ) : (
+                <Moon className="size-3" />
+              )}
+              {dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
+            </>
+          ) : null}
+          <ChevronRight className="size-4" />
+        </span>
       </div>
 
       {hasGoals && goals.calories ? (

@@ -328,6 +328,8 @@ const en = {
     today: "Today",
     yesterday: "Yesterday",
     todaysOverview: "Today's overview",
+    trainingDay: "Training day",
+    restDay: "Rest day",
     thatDaysOverview: "That day's overview",
     setDailyLimits: "Set daily nutrition limits",
     setDailyLimitsToTrack: "Set daily limits to track progress",
@@ -540,6 +542,12 @@ const en = {
     suggestMyLimitsDesc: "Answer a few quick questions and we'll pre-fill these for you.",
     noLimit: "No limit",
     clearAll: "Clear all",
+    byDayType: "Different limits on rest days",
+    byDayTypeDesc:
+      "Rest days drop about 12% of calories, all from carbs — protein and fat stay the same.",
+    trainingDay: "Training day",
+    restDay: "Rest day",
+    restHint: "Blank fields follow your training-day limits automatically.",
   },
   nutritionQuestionnaire: {
     title: "Suggest my limits",
@@ -1034,6 +1042,8 @@ const nl: Dict = {
     today: "Vandaag",
     yesterday: "Gisteren",
     todaysOverview: "Overzicht van vandaag",
+    trainingDay: "Trainingsdag",
+    restDay: "Rustdag",
     thatDaysOverview: "Overzicht van die dag",
     setDailyLimits: "Dagelijkse voedingslimieten instellen",
     setDailyLimitsToTrack: "Stel dagelijkse limieten in om voortgang bij te houden",
@@ -1248,6 +1258,12 @@ const nl: Dict = {
     suggestMyLimitsDesc: "Beantwoord een paar korte vragen en wij vullen dit voor je in.",
     noLimit: "Geen limiet",
     clearAll: "Alles wissen",
+    byDayType: "Andere limieten op rustdagen",
+    byDayTypeDesc:
+      "Rustdagen hebben zo'n 12% minder calorieën, allemaal uit koolhydraten — eiwit en vet blijven gelijk.",
+    trainingDay: "Trainingsdag",
+    restDay: "Rustdag",
+    restHint: "Lege velden volgen automatisch je limieten voor trainingsdagen.",
   },
   nutritionQuestionnaire: {
     title: "Stel mijn limieten voor",
