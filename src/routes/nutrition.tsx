@@ -35,6 +35,7 @@ import {
   type FoodEntry,
   type NutrientKey,
 } from "../lib/gym/nutrition";
+import { BodyweightCard } from "../components/gym/BodyweightCard";
 import { useDayNutrition } from "../lib/gym/dayNutrition";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
@@ -390,6 +391,13 @@ function NutritionScreen() {
           >
             <Plus className="size-4" /> {t.nutrition.newRecipe}
           </button>
+        </>
+      ) : null}
+
+      {isToday ? (
+        <>
+          <SectionLabel>{t.bodyweight.title}</SectionLabel>
+          <BodyweightCard />
         </>
       ) : null}
 

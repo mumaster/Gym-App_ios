@@ -635,6 +635,24 @@ const en = {
     keepProgressHint: "Your program keeps its current week — only the days change.",
     saveChanges: "Save changes",
   },
+  bodyweight: {
+    title: "Bodyweight",
+    inputLabel: "Today's weight",
+    log: "Log",
+    trend: "Trend:",
+    perWeek: (kg: string, pct: string) => `${kg} kg a week (${pct}%)`,
+    needMore: (entries: number, days: number, have: number) =>
+      `Weigh in at least ${entries} times over ${days} days to see a trend (${have} so far). Same time of day is best.`,
+    target: (kg: string) => `Your target is ${kg} kg a week.`,
+    onTrack: "You're on track — no change needed.",
+    suggest: (kcal: string, delta: string) =>
+      `Suggested: ${kcal} kcal a day (${delta}), all from carbs.`,
+    apply: "Apply to my limits",
+    needProfile: "Answer “Suggest my limits” to compare this with a goal.",
+    remove: "Remove weigh-in",
+    source:
+      "Trend is a line through the last 4 weeks, since daily weight swings about 0.5% (PMC10653631). Target rates: Helms et al. 2014 (cut), Iraki et al. 2019 (bulk); 7700 kcal per kg.",
+  },
   volume: {
     growTitle: "Muscles to grow",
     growDesc:
@@ -1385,6 +1403,24 @@ const nl: Dict = {
     changeDaysKeepProgress: "Schema of trainingsdagen wijzigen",
     keepProgressHint: "Je programma blijft in de huidige week — alleen de dagen veranderen.",
     saveChanges: "Wijzigingen opslaan",
+  },
+  bodyweight: {
+    title: "Lichaamsgewicht",
+    inputLabel: "Gewicht van vandaag",
+    log: "Opslaan",
+    trend: "Trend:",
+    perWeek: (kg: string, pct: string) => `${kg} kg per week (${pct}%)`,
+    needMore: (entries: number, days: number, have: number) =>
+      `Weeg jezelf minstens ${entries} keer over ${days} dagen om een trend te zien (${have} tot nu toe). Liefst op hetzelfde moment van de dag.`,
+    target: (kg: string) => `Je doel is ${kg} kg per week.`,
+    onTrack: "Je zit op koers — geen aanpassing nodig.",
+    suggest: (kcal: string, delta: string) =>
+      `Voorstel: ${kcal} kcal per dag (${delta}), allemaal uit koolhydraten.`,
+    apply: "Toepassen op mijn limieten",
+    needProfile: "Beantwoord „Stel mijn limieten voor” om dit met een doel te vergelijken.",
+    remove: "Weging verwijderen",
+    source:
+      "De trend is een lijn door de laatste 4 weken, omdat je gewicht dagelijks zo'n 0,5% schommelt (PMC10653631). Doeltempo's: Helms e.a. 2014 (afvallen), Iraki e.a. 2019 (aankomen); 7700 kcal per kg.",
   },
   volume: {
     growTitle: "Spieren om te laten groeien",

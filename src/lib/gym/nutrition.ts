@@ -187,12 +187,12 @@ export type NutritionPace = "mild" | "moderate" | "aggressive";
  * by lean people, so real loss can run a bit faster than the target — the
  * questionnaire tells the user to check their weekly weight and adjust.
  */
-const LOSS_RATE_PER_WEEK: Record<NutritionPace, number> = {
+export const LOSS_RATE_PER_WEEK: Record<NutritionPace, number> = {
   mild: 0.005,
   moderate: 0.0075,
   aggressive: 0.01,
 };
-const KCAL_PER_KG = 7700;
+export const KCAL_PER_KG = 7700;
 
 /** Bulking: a 10–20% energy surplus (Iraki, Fitschen, Espinar & Helms,
  *  Sports 2019, for a gain of ~0.25–0.5% bodyweight per week), with

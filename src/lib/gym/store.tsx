@@ -27,6 +27,7 @@ import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
+import type { WeightEntry } from "./bodyweight";
 import {
   advanceRotation,
   anchorFor,
@@ -135,6 +136,8 @@ interface GymState {
   recipes: Recipe[];
   /** Logged water, newest first. */
   waterEntries: WaterEntry[];
+  /** Bodyweight weigh-ins, oldest first (see lib/gym/bodyweight.ts). */
+  weightLog: WeightEntry[];
   /** Daily water target in ml, or null if the user hasn't set one. */
   waterGoalMl: number | null;
 }
@@ -175,6 +178,7 @@ const initialState: GymState = {
   workoutTemplates: [],
   recipes: [],
   waterEntries: [],
+  weightLog: [],
   waterGoalMl: null,
 };
 
@@ -285,6 +289,7 @@ function migrate(raw: Partial<GymState>): GymState {
     workoutTemplates: raw.workoutTemplates ?? [],
     recipes: raw.recipes ?? [],
     waterEntries: raw.waterEntries ?? [],
+    weightLog: raw.weightLog ?? [],
     waterGoalMl: raw.waterGoalMl ?? null,
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
@@ -375,6 +380,9 @@ interface Ctx extends GymState {
   logRecipe: (id: string, servings: number, meal: MealType) => void;
   logWater: (ml: number) => void;
   removeWaterEntry: (id: string) => void;
+  /** Logs a weigh-in; a second one on the same day replaces the first. */
+  logWeight: (kg: number) => void;
+  removeWeightEntry: (id: string) => void;
 }
 
 const GymContext = createContext<Ctx | null>(null);
@@ -1018,6 +1026,20 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ...s.waterEntries,
           ],
         })),
+      logWeight: (kg) =>
+        setState((s) => {
+          const now = new Date();
+          const today = dayKey(now.toISOString());
+          return {
+            ...s,
+            weightLog: [
+              ...s.weightLog.filter((e) => dayKey(e.date) !== today),
+              { id: crypto.randomUUID(), date: now.toISOString(), kg },
+            ],
+          };
+        }),
+      removeWeightEntry: (id) =>
+        setState((s) => ({ ...s, weightLog: s.weightLog.filter((e) => e.id !== id) })),
       removeWaterEntry: (id) =>
         setState((s) => ({ ...s, waterEntries: s.waterEntries.filter((e) => e.id !== id) })),
     };

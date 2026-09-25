@@ -42,13 +42,14 @@ export function useSessionShape(): { minutes: number; met: number } {
  *  subtracts (see lib/gym/nutrition.ts for the sources). Null without a
  *  bodyweight from the questionnaire, since the estimate needs one. */
 export function useSessionEnergy(): SessionEnergy | null {
-  const { nutritionProfile } = useGym();
+  const { nutritionProfile, weightLog } = useGym();
   const { minutes, met } = useSessionShape();
   return useMemo(() => {
-    const weightKg = nutritionProfile?.weightKg;
+    // The latest weigh-in beats the questionnaire's one-off answer.
+    const weightKg = weightLog.at(-1)?.kg ?? nutritionProfile?.weightKg;
     if (!weightKg) return null;
     return { kcal: sessionEnergyKcal(weightKg, minutes, met), weightKg, minutes, met };
-  }, [nutritionProfile, minutes, met]);
+  }, [nutritionProfile, weightLog, minutes, met]);
 }
 
 /** Whether `date` is a training or rest day, and the nutrition limits that
