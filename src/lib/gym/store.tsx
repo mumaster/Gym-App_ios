@@ -348,6 +348,8 @@ interface Ctx extends GymState {
   /** Moves these plan entries (one exercise, or both halves of a superset)
    *  to the end of the running workout, keeping their order. */
   moveActiveToEnd: (indices: number[]) => void;
+  /** Drops these plan entries from the running workout. */
+  removeActivePlanEntries: (indices: number[]) => void;
   /** Sets (or, with null, clears) a finished workout's session RPE. */
   rateWorkout: (workoutId: string, rpe: number | null) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
@@ -857,6 +859,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return rpe == null ? rest : { ...rest, session_rpe: rpe };
           }),
         })),
+      removeActivePlanEntries: (indices) =>
+        setState((s) => {
+          if (!s.activeWorkout) return s;
+          const drop = new Set(indices);
+          return withPlan(
+            s,
+            s.activeWorkout.plan.filter((_, i) => !drop.has(i)),
+          );
+        }),
       moveActiveToEnd: (indices) =>
         setState((s) => {
           if (!s.activeWorkout) return s;

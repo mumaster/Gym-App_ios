@@ -32,7 +32,7 @@ import { PlateHint } from "../components/gym/PlateHint";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
-import { availableExercises } from "../lib/gym/generator";
+import { availableExercises, estimateSeconds } from "../lib/gym/generator";
 import { useTranslation } from "../lib/gym/i18n";
 import {
   DECIMAL_INPUT_RE,
@@ -121,6 +121,7 @@ function SessionScreen() {
     moveActiveToEnd,
     rateWorkout,
     toggleAvoidedExercise,
+    removeActivePlanEntries,
     profiles,
     activeProfileId,
     avoidedExerciseIds,
@@ -136,6 +137,8 @@ function SessionScreen() {
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   /** Plan index whose "Hurts" sheet is open. */
   const [painIndex, setPainIndex] = useState<number | null>(null);
+  /** "Keep going" on the time check hides it for the rest of the session. */
+  const [overtimeDismissed, setOvertimeDismissed] = useState(false);
   const [celebrate, setCelebrate] = useState<"normal" | "big" | null>(null);
   const [finishedSummary, setFinishedSummary] = useState<PlannedExercise[] | null>(null);
   const [listOpen, setListOpen] = useState(false);
@@ -416,6 +419,41 @@ function SessionScreen() {
   const bonusOptions = availableExercises(profile.active_equipment_ids, avoidedExerciseIds).filter(
     (e) => !planIds.has(e.id),
   );
+
+  // Time check: projected finish = time so far + the generator's own
+  // estimate for what's left (estimateSeconds — the model the planned
+  // length was fitted with). No fixed "minutes over" threshold: it shows
+  // once the projection passes the length the user chose, offering to drop
+  // the last exercise not started yet (an accessory where possible).
+  const overtime = (() => {
+    if (!activeWorkout || overtimeDismissed || !block) return null;
+    const warmDone = (id: string) =>
+      activeWorkout.completed_sets.filter((x) => x.exercise_id === id && x.set_type === "warmup")
+        .length;
+    const remaining = plan
+      .map((p, i) => ({
+        ...p,
+        target_sets: Math.max(0, p.target_sets - loggedWorking(i)),
+        warmup_sets: Math.max(0, p.warmup_sets - warmDone(p.exercise_id)),
+      }))
+      .filter((p) => p.target_sets > 0);
+    const projected = Math.round(elapsed / 60 + estimateSeconds(remaining) / 60);
+    const plannedMin = activeWorkout.duration_minutes;
+    if (projected <= plannedMin) return null;
+    const unstarted = blocks
+      .map((b, i) => ({ b, i }))
+      .filter(({ b, i }) => i > blockIndex && b.indices.every((x) => loggedWorking(x) === 0));
+    const isAccessory = ({ b }: { b: Block }) =>
+      b.indices.every((x) => !exerciseById(plan[x]!.exercise_id)?.compound);
+    const pick = [...unstarted].reverse().find(isAccessory) ?? unstarted.at(-1);
+    if (!pick) return null;
+    const saves = Math.max(
+      1,
+      Math.round(estimateSeconds(pick.b.indices.map((x) => plan[x]!)) / 60),
+    );
+    const name = exerciseById(plan[pick.b.indices[0]!]!.exercise_id)?.name ?? "";
+    return { projected, plannedMin, indices: pick.b.indices, saves, name };
+  })();
 
   const upNext = (() => {
     const nextBlock = blocks[blockIndex + 1];
@@ -740,6 +778,38 @@ function SessionScreen() {
             );
           })}
         </div>
+
+        {overtime ? (
+          <div className="rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3">
+            <p className="text-[14px] leading-snug">
+              {t.session.overtime(
+                overtime.projected,
+                overtime.plannedMin,
+                overtime.name,
+                overtime.saves,
+              )}
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => {
+                  haptic(15);
+                  removeActivePlanEntries(overtime.indices);
+                  setToast(t.session.dropped(overtime.name));
+                }}
+                className="relative min-h-[40px] flex-1 rounded-xl bg-primary text-[13px] font-bold text-primary-foreground active:scale-95"
+              >
+                <HapticSwitch />
+                {t.session.dropIt(overtime.name)}
+              </button>
+              <button
+                onClick={() => setOvertimeDismissed(true)}
+                className="min-h-[40px] rounded-xl bg-secondary px-4 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+              >
+                {t.session.keepGoing}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {upNext ? (
           <p className="rounded-2xl bg-muted px-4 py-3 text-[14px] text-muted-foreground">

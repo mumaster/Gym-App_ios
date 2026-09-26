@@ -288,6 +288,11 @@ const en = {
     addNote: "Note",
     doLater: "Do later",
     hurts: "Hurts",
+    overtime: (projected: number, planned: number, name: string, saves: number) =>
+      `At this pace you'll finish around ${projected} min — past your planned ${planned}. Dropping ${name} saves about ${saves} min.`,
+    dropIt: (name: string) => `Drop ${name}`,
+    keepGoing: "Keep going",
+    dropped: (name: string) => `${name} dropped`,
     painTitle: "Something hurts?",
     painBody: (name: string) =>
       `Stop ${name} for today. Pick a replacement that doesn't hurt — or keep ${name} off your future workouts too.`,
@@ -1118,6 +1123,11 @@ const nl: Dict = {
     addNote: "Notitie",
     doLater: "Later doen",
     hurts: "Doet pijn",
+    overtime: (projected: number, planned: number, name: string, saves: number) =>
+      `In dit tempo ben je rond ${projected} min klaar — later dan je geplande ${planned}. ${name} overslaan scheelt ongeveer ${saves} min.`,
+    dropIt: (name: string) => `${name} overslaan`,
+    keepGoing: "Doorgaan",
+    dropped: (name: string) => `${name} overgeslagen`,
     painTitle: "Doet er iets pijn?",
     painBody: (name: string) =>
       `Stop vandaag met ${name}. Kies een vervanger die geen pijn doet — of laat ${name} ook uit je toekomstige trainingen.`,
