@@ -21,6 +21,7 @@ import {
   Youtube,
   X,
   StickyNote,
+  CornerDownRight,
 } from "lucide-react";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
@@ -115,6 +116,7 @@ function SessionScreen() {
     notifyEnabled,
     swapActiveExercise,
     appendBonusExercise,
+    moveActiveToEnd,
     profiles,
     activeProfileId,
     avoidedExerciseIds,
@@ -535,6 +537,17 @@ function SessionScreen() {
     startRest(restFor(block.indices[block.indices.length - 1]!));
   };
 
+  /** "Do later" (a machine is taken): the current exercise — both halves of
+   *  a superset — moves to the end, and the next one comes up in its place. */
+  const doLater = () => {
+    if (!block) return;
+    haptic(15);
+    const name = exerciseById(plan[block.indices[0]!]!.exercise_id)?.name ?? "";
+    moveActiveToEnd(block.indices);
+    setPos({ block: blockIndex, slot: 0, round: 1 });
+    setToast(t.session.movedToEnd(name));
+  };
+
   /** Undo from the rest bar: removes the set that started this rest and
    *  stops the rest silently, without advancing to the next exercise. */
   const undoLastSet = () => {
@@ -689,6 +702,7 @@ function SessionScreen() {
                 flash={(!isSuperset || s === slot) && cardFlash}
                 cardRef={s === slot ? activeCardRef : undefined}
                 onSwap={() => setSwapIndex(idx)}
+                {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
                 complete={doneSets >= p.target_sets}
               />
@@ -968,6 +982,7 @@ function ExerciseBlock({
   restForThisExercise,
   cardRef,
   onSwap,
+  onDoLater,
   onLogged,
   complete: exerciseComplete,
 }: {
@@ -985,6 +1000,8 @@ function ExerciseBlock({
   restForThisExercise: number;
   cardRef?: React.MutableRefObject<HTMLElement | null> | undefined;
   onSwap: () => void;
+  /** Present when there's a later exercise to swap places with. */
+  onDoLater?: (() => void) | undefined;
   onLogged: (type: SetType) => void;
   complete: boolean;
 }) {
@@ -1269,6 +1286,15 @@ function ExerciseBlock({
           >
             <StickyNote className="size-3.5" />
             {t.session.addNote}
+          </button>
+        ) : null}
+        {onDoLater ? (
+          <button
+            onClick={onDoLater}
+            className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+          >
+            <CornerDownRight className="size-3.5" />
+            {t.session.doLater}
           </button>
         ) : null}
       </div>

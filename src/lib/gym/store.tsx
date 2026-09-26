@@ -345,6 +345,9 @@ interface Ctx extends GymState {
   finishWorkout: () => void;
   cancelWorkout: () => void;
   reorderActivePlan: (from: number, to: number) => void;
+  /** Moves these plan entries (one exercise, or both halves of a superset)
+   *  to the end of the running workout, keeping their order. */
+  moveActiveToEnd: (indices: number[]) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
   appendBonusExercise: (exerciseId: string) => void;
   toggleLovedExercise: (exerciseId: string) => void;
@@ -839,6 +842,16 @@ export function GymProvider({ children }: { children: ReactNode }) {
           const [moved] = plan.splice(from, 1);
           plan.splice(to, 0, moved!);
           return withPlan(s, plan);
+        }),
+      moveActiveToEnd: (indices) =>
+        setState((s) => {
+          if (!s.activeWorkout) return s;
+          const picked = new Set(indices);
+          const plan = s.activeWorkout.plan;
+          return withPlan(s, [
+            ...plan.filter((_, i) => !picked.has(i)),
+            ...plan.filter((_, i) => picked.has(i)),
+          ]);
         }),
       swapActiveExercise: (index, nextExerciseId) =>
         setState((s) => {
