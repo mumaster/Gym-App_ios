@@ -1,6 +1,7 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Apple, Dumbbell, CalendarDays, Home, type LucideIcon, Search } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
+import { HapticSwitch } from "./HapticSwitch";
 
 // Equipment moved into Settings (see settings.tsx) — it's a setup/config
 // screen someone visits rarely after their first session, not a daily
@@ -31,12 +32,13 @@ function TabButton({
   icon: LucideIcon;
   active: boolean;
 }) {
+  const navigate = useNavigate();
   return (
     <Link
       to={to}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className="flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 pt-3 active:scale-95"
+      className="relative flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 pt-3 active:scale-95"
     >
       {/* pt-3 on the row (rather than centering with no offset) sits this
           icon+dot cluster below the bar's own vertical center line — icon
@@ -50,6 +52,10 @@ function TabButton({
       {/* Fixed-size dot, always rendered (just transparent when inactive)
           so a tab switching active state never shifts the row's height. */}
       <span className={`size-1 rounded-full ${active ? "bg-primary" : "bg-transparent"}`} />
+      {/* Real iPhone haptic tick on tap — see HapticSwitch.tsx. <Link>
+          cancels its click to navigate in-app, which would also cancel the
+          switch, so the overlay navigates itself instead. */}
+      <HapticSwitch onTap={() => void navigate({ to })} />
     </Link>
   );
 }
@@ -57,6 +63,7 @@ function TabButton({
 export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const t = useTranslation();
+  const navigate = useNavigate();
   if (pathname.startsWith("/session")) return null;
   const homeActive = pathname === "/";
 
@@ -86,7 +93,7 @@ export function TabBar() {
             to="/"
             aria-label={t.tabbar.home}
             aria-current={homeActive ? "page" : undefined}
-            className="flex min-h-[54px] flex-1 items-center justify-center active:scale-95"
+            className="relative flex min-h-[54px] flex-1 items-center justify-center active:scale-95"
           >
             {/* Solid bg-primary/text-primary-foreground, always — the one
                 permanently-emphasized action on this bar, so (unlike the
@@ -103,6 +110,7 @@ export function TabBar() {
             <span className="glow flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)]">
               <Home className="size-6" strokeWidth={2.2} />
             </span>
+            <HapticSwitch onTap={() => void navigate({ to: "/" })} />
           </Link>
           {RIGHT_TABS.map(({ labelKey, ...tab }) => (
             <TabButton
