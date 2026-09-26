@@ -583,6 +583,13 @@
   }
 }
 
+/* A disabled control doesn't tick: its haptic-switch overlay (HapticSwitch
+   or the app-wide one from tapFeedback.ts) is hidden while it's disabled. */
+:disabled > [data-haptic-switch],
+[aria-disabled="true"] > [data-haptic-switch] {
+  display: none;
+}
+
 [data-tap-confirm] {
   animation: tap-confirm 360ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }

@@ -29,7 +29,7 @@ import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
-import { canVibrate, pulseTappedControl, switchTick } from "./tapFeedback";
+import { canVibrate, markHaptic, pulseTappedControl, switchTick } from "./tapFeedback";
 import {
   advanceRotation,
   anchorFor,
@@ -1140,6 +1140,7 @@ export function useGym() {
  *  whether the tick was felt. */
 export const haptic = (pattern: number | number[] = 30) => {
   if (canVibrate()) {
+    markHaptic();
     navigator.vibrate(pattern);
     return;
   }

@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { readColorSchemeCookie } from "../lib/colorSchemeCookie.server";
 import { GymProvider } from "../lib/gym/store";
 import { loadCachedCatalog, refreshCatalog } from "../lib/gym/catalog";
+import { installAppWideHaptics } from "../lib/gym/tapFeedback";
 import { registerServiceWorker } from "../pwa";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
@@ -512,6 +513,8 @@ function RootComponent() {
     loadCachedCatalog();
     void refreshCatalog();
     registerServiceWorker();
+    // A haptic on every button, not only those carrying a HapticSwitch.
+    installAppWideHaptics();
     // A real mount means the stale-shell auto-reload above (if it fired)
     // did its job — clear its attempt counter so a later, unrelated
     // failure starts its own fresh retry budget instead of inheriting
