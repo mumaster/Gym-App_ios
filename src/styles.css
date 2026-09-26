@@ -551,3 +551,51 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Page transitions (router.tsx's defaultViewTransition): a quick crossfade
+   with a slight rise for the incoming page. The tab bar gets its own
+   view-transition-name so it's snapshotted separately and swapped without
+   animating — it stays solid while the page underneath changes, instead of
+   flickering through its own crossfade. */
+@utility view-transition-tab-bar {
+  view-transition-name: tab-bar;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+::view-transition-old(root) {
+  animation: page-out 140ms ease-in both;
+}
+
+::view-transition-new(root) {
+  animation: page-in 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+::view-transition-group(tab-bar),
+::view-transition-old(tab-bar),
+::view-transition-new(tab-bar) {
+  animation: none;
+}
+
+::view-transition-old(tab-bar) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

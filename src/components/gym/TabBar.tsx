@@ -61,7 +61,7 @@ export function TabBar() {
   const homeActive = pathname === "/";
 
   return (
-    <nav className="safe-bottom-tab fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
+    <nav className="safe-bottom-tab view-transition-tab-bar fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
       <div className="mx-auto max-w-md">
         <div className="glass-strong flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]">
           {LEFT_TABS.map(({ labelKey, ...tab }) => (
