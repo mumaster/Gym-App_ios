@@ -27,6 +27,12 @@ export interface WeightTrend {
   latestKg: number;
   entries: number;
   days: number;
+  /** The fitted line's ends, for drawing it: first and last weigh-in in
+   *  the window, as epoch ms and the line's kg at those instants. */
+  startMs: number;
+  endMs: number;
+  startKg: number;
+  endKg: number;
 }
 
 export function weightTrend(entries: WeightEntry[], today = new Date()): WeightTrend | null {
@@ -46,12 +52,19 @@ export function weightTrend(entries: WeightEntry[], today = new Date()): WeightT
     pts.reduce((s, p) => s + (p.t - mt) ** 2, 0);
   const kgPerWeek = slopePerMs * 7 * DAY_MS;
   const latestKg = pts[n - 1]!.kg;
+  const startMs = pts[0]!.t;
+  const endMs = pts[n - 1]!.t;
+  const at = (t: number) => mk + slopePerMs * (t - mt);
   return {
     kgPerWeek,
     pctPerWeek: kgPerWeek / latestKg,
     latestKg,
     entries: n,
     days: Math.round(days),
+    startMs,
+    endMs,
+    startKg: at(startMs),
+    endKg: at(endMs),
   };
 }
 

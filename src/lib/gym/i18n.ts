@@ -663,6 +663,9 @@ const en = {
     apply: "Apply to my limits",
     needProfile: "Answer “Suggest my limits” to compare this with a goal.",
     remove: "Remove weigh-in",
+    chartLabel: "Bodyweight over the last 8 weeks",
+    chartWeighIns: "Weigh-ins",
+    chartTrend: "4-week trend",
     source:
       "Trend is a line through the last 4 weeks, since daily weight swings about 0.5% (PMC10653631). Target rates: Helms et al. 2014 (cut), Iraki et al. 2019 (bulk); 7700 kcal per kg.",
   },
@@ -1447,6 +1450,9 @@ const nl: Dict = {
     apply: "Toepassen op mijn limieten",
     needProfile: "Beantwoord „Stel mijn limieten voor” om dit met een doel te vergelijken.",
     remove: "Weging verwijderen",
+    chartLabel: "Lichaamsgewicht over de laatste 8 weken",
+    chartWeighIns: "Wegingen",
+    chartTrend: "Trend over 4 weken",
     source:
       "De trend is een lijn door de laatste 4 weken, omdat je gewicht dagelijks zo'n 0,5% schommelt (PMC10653631). Doeltempo's: Helms e.a. 2014 (afvallen), Iraki e.a. 2019 (aankomen); 7700 kcal per kg.",
   },

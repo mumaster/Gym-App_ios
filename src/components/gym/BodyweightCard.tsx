@@ -11,6 +11,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import { Card } from "./Screen";
+import { WeightChart } from "./WeightChart";
 
 const fmt = (n: number, digits: number, locale: string) =>
   n.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -96,6 +97,8 @@ export function BodyweightCard() {
           {t.bodyweight.needMore(MIN_TREND_ENTRIES, MIN_TREND_DAYS, weightLog.length)}
         </p>
       )}
+
+      <WeightChart entries={weightLog} trend={trend} />
 
       {trend && target !== null && adjustment !== null && calories != null ? (
         <div className="rounded-2xl bg-primary/10 p-3">

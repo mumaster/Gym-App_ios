@@ -22,6 +22,9 @@ describe("weightTrend", () => {
     const t = weightTrend(entries(kgs, 3.5), today)!;
     expect(t.kgPerWeek).toBeCloseTo(-0.5, 1);
     expect(t.days).toBe(25);
+    // The drawn line's ends agree with the slope.
+    const weeks = (t.endMs - t.startMs) / (7 * 86_400_000);
+    expect((t.endKg - t.startKg) / weeks).toBeCloseTo(t.kgPerWeek, 6);
   });
 
   it("ignores weigh-ins older than four weeks", () => {
@@ -33,6 +36,7 @@ describe("weightTrend", () => {
 
 describe("adaptive calories", () => {
   const profile = { goal: "lose", pace: "moderate" } as NutritionProfile;
+  const base = { latestKg: 80, entries: 6, days: 20, startMs: 0, endMs: 1, startKg: 80, endKg: 80 };
 
   it("targets the same rates as the calorie calculator", () => {
     expect(targetKgPerWeek(profile, 80)).toBeCloseTo(-0.6);
@@ -41,13 +45,13 @@ describe("adaptive calories", () => {
   });
 
   it("suggests eating less when losing slower than the target", () => {
-    const trend = { kgPerWeek: -0.2, pctPerWeek: -0.0025, latestKg: 80, entries: 6, days: 20 };
+    const trend = { ...base, kgPerWeek: -0.2, pctPerWeek: -0.0025 };
     // (−0.6 − −0.2) × 7700 / 7 = −440
     expect(calorieAdjustment(trend, -0.6)).toBe(-440);
   });
 
   it("suggests eating more when losing faster than the target", () => {
-    const trend = { kgPerWeek: -1, pctPerWeek: -0.0125, latestKg: 80, entries: 6, days: 20 };
+    const trend = { ...base, kgPerWeek: -1, pctPerWeek: -0.0125 };
     expect(calorieAdjustment(trend, -0.6)).toBe(440);
   });
 });
