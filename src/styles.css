@@ -494,8 +494,15 @@
    layered with spark-flash — the combination is what makes the strike read
    as forceful rather than a handful of stray flecks. */
 @keyframes spark-ring {
+  /* Invisible at 0%: with fill-mode both this state also applies during the
+     animation-delay, and at 0.9 it showed as two stray dots at the bar ends
+     from the very first frame, long before any impact. */
   0% {
     transform: scale(0.3);
+    opacity: 0;
+  }
+  2% {
+    transform: scale(0.35);
     opacity: 0.9;
   }
   100% {
@@ -506,4 +513,61 @@
 
 @utility animate-spark-ring {
   animation: spark-ring 460ms cubic-bezier(0.25, 0.65, 0.4, 1) both;
+}
+
+/* SplashScreen: the badge takes each plate strike — a quick squash and a
+   flash of brightness, then a springy recovery — so the landings read as
+   heavy. Each thud is its own wrapper with --forge-thud-delay set to that
+   cluster's impact instant (same CSS timeline as the sparks). */
+@keyframes forge-thud {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  28% {
+    transform: scale(0.94);
+    filter: brightness(1.45);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@utility animate-forge-thud {
+  animation: forge-thud 300ms cubic-bezier(0.3, 1.5, 0.5, 1) var(--forge-thud-delay, 0ms) both;
+}
+
+/* SplashScreen: each FORGE letter strikes in — from slightly large, low and
+   blurred to sharp — staggered via --forge-letter-delay. A CSS animation
+   (not a React-state transition) so it shares the sparks' timeline: both
+   start when styles.css applies, whereas a setTimeout only starts after
+   hydration and drifted later on slow loads. */
+@keyframes forge-letter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(1.25);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@utility animate-forge-letter {
+  animation: forge-letter 420ms cubic-bezier(0.16, 1, 0.3, 1) var(--forge-letter-delay, 0ms) both;
+}
+
+/* "Reduce Motion": skip the choreography and show the finished splash at
+   once — every animation jumps to its end state (sparks end invisible,
+   plates end assembled, letters end visible). */
+@media (prefers-reduced-motion: reduce) {
+  #forge-boot,
+  #forge-boot * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }
