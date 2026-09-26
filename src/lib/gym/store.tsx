@@ -28,6 +28,7 @@ import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
+import { canVibrate, pulseTappedControl } from "./tapFeedback";
 import {
   advanceRotation,
   anchorFor,
@@ -1071,6 +1072,9 @@ export function useGym() {
   return ctx;
 }
 
+/** Vibrates where the device can; elsewhere (every iPhone — see
+ *  tapFeedback.ts) the tapped control plays a visual pulse instead. */
 export const haptic = (pattern: number | number[] = 30) => {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(pattern);
+  if (canVibrate()) navigator.vibrate(pattern);
+  else pulseTappedControl();
 };
