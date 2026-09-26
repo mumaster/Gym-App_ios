@@ -82,7 +82,7 @@ const en = {
     latestPr: "Latest PR",
     noPrYet: "No PR yet — beat an earlier best",
     prWhen: (days: number) => (days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`),
-    e1rm: (kg: number) => `≈${kg} kg 1RM (Epley)`,
+    e1rm: (kg: number) => `≈${kg} kg est. 1RM`,
     today: "Today",
     tomorrow: "Tomorrow",
     weekStripAria: "This week: trained and planned days",
@@ -92,6 +92,40 @@ const en = {
     waterAriaLabel: "Water intake today",
     addWater: (ml: number) => `Add ${ml}ml of water`,
     howAreYouFeeling: "How are you feeling today?",
+  },
+  sources: {
+    title: "Sources",
+    row: "Sources",
+    rowDesc: "The research behind the app's numbers",
+    intro:
+      "Every fixed number the app uses for training and nutrition comes from published research or guidelines. They're listed here instead of on every screen.",
+    note: "Checked through search summaries; journal sites weren't reachable when these were added.",
+    groups: { training: "Training", tracking: "Progress and tracking", nutrition: "Nutrition" },
+    uses: {
+      rest: "2 minutes of rest between sets",
+      progression:
+        "When to add weight (two sessions in a row at the top of the range), and by how much (2.5% upper body, 5% lower body)",
+      repRanges: "Rep ranges",
+      rpe: "Target effort RPE 7–9, and adjusting weight 4% per RPE point",
+      warmup: "Warm-up sets of 6 at 40% and 80% of your working weight",
+      volume: "Weekly sets per muscle (10, or 20 for muscles to grow), and at most 11 per session",
+      deload: "A deload week every 4–6 weeks: half the sets at 90% of the weight",
+      sessionRpe: "Session effort (0–10) × minutes as training load",
+      loadSpike: "The hint when a week's load is over 1.5× your usual — a link that's disputed",
+      e1rm: "Estimated 1-rep max",
+      streak: "Week streak: 2+ training days a week",
+      weightTrend: "Weight trend needing 2+ weeks of weigh-ins, and 7700 kcal per kg",
+      bmr: "Energy you burn at rest",
+      activity: "Daily activity levels",
+      sessionEnergy: "Energy of a training session",
+      cut: "Cutting pace: 0.5–1% of bodyweight a week",
+      bulk: "Bulking surplus of 10–20%",
+      protein: "Protein: 1.6 g/kg, 2.2 g/kg on a cut",
+      fat: "Fat: 25–27.5% of calories",
+      fiberSalt: "Fiber (14 g per 1000 kcal) and salt (under 5 g)",
+      calorieFloor: "Minimum calories (1200 women, 1500 men)",
+      restDayCarbs: "Fewer carbs on rest days, protein and fat unchanged",
+    },
   },
   settings: {
     title: "Settings",
@@ -154,7 +188,7 @@ const en = {
     planYourTrainingDesc:
       "A weekly split repeats forever; a program adds planned progression and a deload.",
     deloadExplain:
-      "Deload week: half the usual sets at 90% of the weight, so you recover before the next cycle (Bell et al. 2023–2025).",
+      "Deload week: half the usual sets at 90% of the weight, so you recover before the next cycle.",
     weeklyPlan: "Weekly plan",
     program: "Program",
     savedTemplates: "Saved templates",
@@ -285,7 +319,7 @@ const en = {
     rpeAriaLabel: (n: number) => `Rate of perceived exertion ${n}`,
     rpeTarget: (lo: number, hi: number) => `Aim for ${lo}–${hi} (1–3 reps left)`,
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
-      `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point (Helms et al. 2018).`,
+      `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point.`,
     resting: "Resting…",
     repeat: (load: string, reps: number) => `Repeat  ${load} × ${reps}`,
     bw: "BW",
@@ -310,8 +344,6 @@ const en = {
     editNote: "Edit note",
     warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
       `Warm-up ${n} of ${of}: ${reps} × ${load} (${pct}% of ${working}).`,
-    warmupSource:
-      "Two sets of 6 at 40% and 80% of the working weight improved the sets after (Ribeiro et al. 2014, 2020).",
     bodyweightHint: "0 = bodyweight. + adds weight (belt, vest), − is assistance (band, machine).",
     logSet: "Log set",
     lastPerformance: (load: string, reps: number) => `Last: ${load} × ${reps}`,
@@ -339,11 +371,10 @@ const en = {
     streak: "Streak",
     weekStreak: "Week streak",
     best: "Best",
-    streakSource:
-      "A week counts with 2+ training days — the WHO's 2020 guidelines recommend strength training on 2 or more days a week. Rest days never break it.",
+    streakSource: "A week counts with 2+ training days. Rest days never break it.",
     volumePerMuscle: "Volume per muscle (kg)",
     progressFor: (name: string) => `Progress · ${name}`,
-    estimated1rm: "Estimated 1-rep max per session (Epley formula)",
+    estimated1rm: "Estimated 1-rep max per session",
     est1rm: "Est. 1RM",
     sessionN: (n: string | number) => `Session ${n}`,
     personalRecords: "Personal records · est. 1RM",
@@ -598,8 +629,6 @@ const en = {
       `Rest days leave out the energy of your usual session — about ${kcal} kcal (${minutes} min at ${met} METs, ${kg} kg), taken from carbs. Protein and fat stay the same.`,
     byDayTypeNeedsWeight:
       "Answer “Suggest my limits” first — the rest-day estimate needs your bodyweight. Until then, rest days use your training-day limits.",
-    byDayTypeSource:
-      "Session energy: 2024 Adult Compendium of Physical Activities (resistance training 3.5 METs, supersets 5.8 METs). Carbs scale with training and protein stays daily: ACSM joint position on nutrition and athletic performance (2016), ISSN protein position stand (2017).",
     trainingDay: "Training day",
     restDay: "Rest day",
     restHint: "Blank fields follow your training-day limits automatically.",
@@ -628,8 +657,6 @@ const en = {
     gainAggressiveDesc: "Eat about 20% above maintenance",
     checkWeeklyWeight:
       "Weigh yourself weekly and adjust — calorie estimates are averages, and real weight change can run faster or slower than the target.",
-    sources:
-      "Sources: Mifflin-St Jeor (energy at rest), FAO/WHO/UNU 2004 (daily activity), 2024 Compendium of Physical Activities (training), Helms et al. 2014 (cutting rate, fat), Iraki et al. 2019 (bulking surplus, fat), Morton et al. 2018 (protein), US Dietary Guidelines (fiber), WHO (salt), AHA/ACC/TOS 2013 (calorie floor).",
     goalDesc: "What's your goal?",
     paceDesc: "How fast?",
     reviewDesc:
@@ -697,8 +724,6 @@ const en = {
     chartLabel: "Bodyweight over the last 8 weeks",
     chartWeighIns: "Weigh-ins",
     chartTrend: "4-week trend",
-    source:
-      "Trend is a line through the last 4 weeks, since daily weight swings about 0.5% (PMC10653631). Target rates: Helms et al. 2014 (cut), Iraki et al. 2019 (bulk); 7700 kcal per kg.",
   },
   volume: {
     growTitle: "Muscles to grow",
@@ -714,8 +739,6 @@ const en = {
     } as Record<"chest" | "back" | "shoulders" | "arms" | "legs" | "core", string>,
     thisWeek: "Sets this week",
     setsOf: (done: number, target: number) => `${done}/${target}`,
-    source:
-      "Targets: 10 sets/week (Schoenfeld et al. 2017, ACSM 2026), 20 for muscles to grow (Baz-Valle et al. 2022). A set counts 1 for the main muscle and ½ for helpers (Pelland et al. 2024).",
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `You missed ${day} on ${weekday}`,
@@ -860,9 +883,8 @@ const en = {
     empty:
       "Rate how hard each session was when you finish (or on a session in History) to see your weekly load.",
     spike:
-      "This week is over 1.5× your usual. In team sports, jumps like this were linked to more injuries (Gabbett 2016) — though that link is disputed (Impellizzeri et al. 2020) and wasn't studied in lifters. Worth a lighter session if you feel run down.",
-    source:
-      "Load = how hard the session was (0–10) × minutes, the session-RPE method (Foster et al. 2001).",
+      "This week is over 1.5× your usual. Big jumps in load have been linked to injuries, though the evidence is mixed. Worth a lighter session if you feel run down.",
+    source: "Load = how hard the session was (0–10) × minutes.",
     sessionEffort: "Session effort",
     sessionLoadLine: (rpe: number, minutes: number, load: number) =>
       `${rpe} × ${minutes} min = ${load} load`,
@@ -939,7 +961,7 @@ const nl: Dict = {
     noPrYet: "Nog geen PR — verbeter een eerder record",
     prWhen: (days: number) =>
       days <= 0 ? "vandaag" : days === 1 ? "gisteren" : `${days} dagen geleden`,
-    e1rm: (kg: number) => `≈${kg} kg 1RM (Epley)`,
+    e1rm: (kg: number) => `≈${kg} kg geschat 1RM`,
     today: "Vandaag",
     tomorrow: "Morgen",
     weekStripAria: "Deze week: getrainde en geplande dagen",
@@ -949,6 +971,42 @@ const nl: Dict = {
     waterAriaLabel: "Waterinname vandaag",
     addWater: (ml: number) => `${ml}ml water toevoegen`,
     howAreYouFeeling: "Hoe voel je je vandaag?",
+  },
+  sources: {
+    title: "Bronnen",
+    row: "Bronnen",
+    rowDesc: "Het onderzoek achter de getallen in de app",
+    intro:
+      "Elk vast getal dat de app gebruikt voor training en voeding komt uit gepubliceerd onderzoek of richtlijnen. Ze staan hier in plaats van op elk scherm.",
+    note: "Gecontroleerd via zoeksamenvattingen; websites van tijdschriften waren niet bereikbaar toen deze werden toegevoegd.",
+    groups: { training: "Training", tracking: "Voortgang en bijhouden", nutrition: "Voeding" },
+    uses: {
+      rest: "2 minuten rust tussen sets",
+      progression:
+        "Wanneer je gewicht toevoegt (twee sessies op rij bovenin de range) en hoeveel (2,5% bovenlichaam, 5% onderlichaam)",
+      repRanges: "Herhalingsbereiken",
+      rpe: "Doelinspanning RPE 7–9, en het gewicht 4% per RPE-punt aanpassen",
+      warmup: "Opwarmsets van 6 op 40% en 80% van je werkgewicht",
+      volume:
+        "Sets per spier per week (10, of 20 voor spieren om te laten groeien), en maximaal 11 per sessie",
+      deload: "Elke 4–6 weken een deloadweek: de helft van de sets op 90% van het gewicht",
+      sessionRpe: "Sessie-inspanning (0–10) × minuten als trainingsbelasting",
+      loadSpike:
+        "De hint als een week meer dan 1,5× je gebruikelijke belasting is — een omstreden verband",
+      e1rm: "Geschat 1RM",
+      streak: "Weken op rij: 2+ trainingsdagen per week",
+      weightTrend: "Gewichtstrend na 2+ weken wegen, en 7700 kcal per kg",
+      bmr: "Energie die je in rust verbruikt",
+      activity: "Dagelijkse activiteitsniveaus",
+      sessionEnergy: "Energie van een trainingssessie",
+      cut: "Afvaltempo: 0,5–1% van je lichaamsgewicht per week",
+      bulk: "Overschot van 10–20% bij aankomen",
+      protein: "Eiwit: 1,6 g/kg, 2,2 g/kg tijdens afvallen",
+      fat: "Vet: 25–27,5% van de calorieën",
+      fiberSalt: "Vezels (14 g per 1000 kcal) en zout (minder dan 5 g)",
+      calorieFloor: "Minimum aantal calorieën (1200 vrouwen, 1500 mannen)",
+      restDayCarbs: "Minder koolhydraten op rustdagen, eiwit en vet gelijk",
+    },
   },
   settings: {
     title: "Instellingen",
@@ -1011,7 +1069,7 @@ const nl: Dict = {
     planYourTrainingDesc:
       "Een weekschema herhaalt zich eindeloos; een programma voegt geplande progressie en een deload toe.",
     deloadExplain:
-      "Deloadweek: de helft van de gebruikelijke sets op 90% van het gewicht, zodat je herstelt voor de volgende cyclus (Bell e.a. 2023–2025).",
+      "Deloadweek: de helft van de gebruikelijke sets op 90% van het gewicht, zodat je herstelt voor de volgende cyclus.",
     weeklyPlan: "Weekplan",
     program: "Programma",
     savedTemplates: "Opgeslagen sjablonen",
@@ -1142,7 +1200,7 @@ const nl: Dict = {
     rpeAriaLabel: (n: number) => `Ervaren inspanning ${n}`,
     rpeTarget: (lo: number, hi: number) => `Mik op ${lo}–${hi} (nog 1–3 reps over)`,
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
-      `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt (Helms e.a. 2018).`,
+      `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt.`,
     resting: "Rusten…",
     repeat: (load: string, reps: number) => `Herhaal  ${load} × ${reps}`,
     bw: "LG",
@@ -1167,8 +1225,6 @@ const nl: Dict = {
     editNote: "Notitie bewerken",
     warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
       `Warming-up ${n} van ${of}: ${reps} × ${load} (${pct}% van ${working}).`,
-    warmupSource:
-      "Twee sets van 6 op 40% en 80% van het werkgewicht verbeterden de sets erna (Ribeiro e.a. 2014, 2020).",
     bodyweightHint:
       "0 = lichaamsgewicht. + is extra gewicht (riem, vest), − is ondersteuning (band, machine).",
     logSet: "Log set",
@@ -1198,11 +1254,10 @@ const nl: Dict = {
     streak: "Reeks",
     weekStreak: "Weken op rij",
     best: "Beste",
-    streakSource:
-      "Een week telt met 2+ trainingsdagen — de WHO-richtlijnen van 2020 raden krachttraining aan op 2 of meer dagen per week. Rustdagen breken de reeks nooit.",
+    streakSource: "Een week telt met 2+ trainingsdagen. Rustdagen breken de reeks nooit.",
     volumePerMuscle: "Volume per spiergroep (kg)",
     progressFor: (name: string) => `Voortgang · ${name}`,
-    estimated1rm: "Geschat 1RM per sessie (Epley-formule)",
+    estimated1rm: "Geschat 1RM per sessie",
     est1rm: "Gesch. 1RM",
     sessionN: (n: string | number) => `Sessie ${n}`,
     personalRecords: "Persoonlijke records · gesch. 1RM",
@@ -1461,8 +1516,6 @@ const nl: Dict = {
       `Rustdagen laten de energie van je gebruikelijke training weg — zo'n ${kcal} kcal (${minutes} min bij ${String(met).replace(".", ",")} MET, ${String(kg).replace(".", ",")} kg), uit koolhydraten. Eiwit en vet blijven gelijk.`,
     byDayTypeNeedsWeight:
       "Vul eerst „Stel mijn limieten voor” in — de schatting voor rustdagen heeft je lichaamsgewicht nodig. Tot die tijd gelden op rustdagen je limieten voor trainingsdagen.",
-    byDayTypeSource:
-      "Trainingsenergie: 2024 Adult Compendium of Physical Activities (krachttraining 3,5 MET, supersets 5,8 MET). Koolhydraten volgen de training, eiwit blijft dagelijks gelijk: ACSM joint position on nutrition and athletic performance (2016), ISSN-positiestandpunt over eiwit (2017).",
     trainingDay: "Trainingsdag",
     restDay: "Rustdag",
     restHint: "Lege velden volgen automatisch je limieten voor trainingsdagen.",
@@ -1491,8 +1544,6 @@ const nl: Dict = {
     gainAggressiveDesc: "Eet zo'n 20% boven onderhoud",
     checkWeeklyWeight:
       "Weeg jezelf wekelijks en stel bij — calorieschattingen zijn gemiddelden, en je gewicht kan sneller of langzamer veranderen dan het doel.",
-    sources:
-      "Bronnen: Mifflin-St Jeor (energie in rust), FAO/WHO/UNU 2004 (dagelijkse activiteit), 2024 Compendium of Physical Activities (training), Helms e.a. 2014 (afvaltempo, vet), Iraki e.a. 2019 (overschot bij aankomen, vet), Morton e.a. 2018 (eiwit), Amerikaanse voedingsrichtlijnen (vezels), WHO (zout), AHA/ACC/TOS 2013 (calorieminimum).",
     goalDesc: "Wat is je doel?",
     paceDesc: "Hoe snel?",
     reviewDesc:
@@ -1561,8 +1612,6 @@ const nl: Dict = {
     chartLabel: "Lichaamsgewicht over de laatste 8 weken",
     chartWeighIns: "Wegingen",
     chartTrend: "Trend over 4 weken",
-    source:
-      "De trend is een lijn door de laatste 4 weken, omdat je gewicht dagelijks zo'n 0,5% schommelt (PMC10653631). Doeltempo's: Helms e.a. 2014 (afvallen), Iraki e.a. 2019 (aankomen); 7700 kcal per kg.",
   },
   volume: {
     growTitle: "Spieren om te laten groeien",
@@ -1578,8 +1627,6 @@ const nl: Dict = {
     },
     thisWeek: "Sets deze week",
     setsOf: (done: number, target: number) => `${String(done).replace(".", ",")}/${target}`,
-    source:
-      "Doelen: 10 sets/week (Schoenfeld e.a. 2017, ACSM 2026), 20 voor spieren om te laten groeien (Baz-Valle e.a. 2022). Een set telt 1 voor de hoofdspier en ½ voor hulpspieren (Pelland e.a. 2024).",
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `Je hebt ${day} gemist op ${weekday}`,
@@ -1727,9 +1774,8 @@ const nl: Dict = {
     empty:
       "Geef na elke sessie aan hoe zwaar hij was (of bij een sessie in Geschiedenis) om je weekbelasting te zien.",
     spike:
-      "Deze week is meer dan 1,5× je gebruikelijke belasting. In teamsporten hingen zulke sprongen samen met meer blessures (Gabbett 2016) — al is dat omstreden (Impellizzeri e.a. 2020) en niet bij krachtsporters onderzocht. Een lichtere sessie kan verstandig zijn als je je moe voelt.",
-    source:
-      "Belasting = hoe zwaar de sessie was (0–10) × minuten, de sessie-RPE-methode (Foster e.a. 2001).",
+      "Deze week is meer dan 1,5× je gebruikelijke belasting. Grote sprongen worden in verband gebracht met blessures, al is het bewijs wisselend. Een lichtere sessie kan verstandig zijn als je je moe voelt.",
+    source: "Belasting = hoe zwaar de sessie was (0–10) × minuten.",
     sessionEffort: "Sessie-inspanning",
     sessionLoadLine: (rpe: number, minutes: number, load: number) =>
       `${rpe} × ${minutes} min = ${load} belasting`,

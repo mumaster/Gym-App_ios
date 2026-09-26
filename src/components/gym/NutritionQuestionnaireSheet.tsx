@@ -419,9 +419,6 @@ export function NutritionQuestionnaireSheet({
                 </div>
               ))}
             </div>
-            <p className="text-[11.5px] text-muted-foreground">
-              {t.nutritionQuestionnaire.sources}
-            </p>
           </div>
         ) : null}
 

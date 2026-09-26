@@ -1583,8 +1583,7 @@ function ExerciseBlock({
                   Math.round(warmup.fraction * 100),
                   load(workingRef),
                 )}
-              </span>{" "}
-              {t.session.warmupSource}
+              </span>
             </p>
           ) : null}
 

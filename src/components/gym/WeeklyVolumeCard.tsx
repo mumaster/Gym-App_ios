@@ -84,7 +84,6 @@ export function WeeklyVolumeCard() {
           );
         })}
       </div>
-      <p className="text-[11.5px] text-muted-foreground">{t.volume.source}</p>
     </Card>
   );
 }

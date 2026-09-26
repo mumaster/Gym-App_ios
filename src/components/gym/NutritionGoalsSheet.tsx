@@ -163,11 +163,6 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
           {showingRest ? (
             <p className="text-[12.5px] text-muted-foreground">{t.nutritionGoals.restHint}</p>
           ) : null}
-          {byDayType ? (
-            <p className="text-[11.5px] text-muted-foreground">
-              {t.nutritionGoals.byDayTypeSource}
-            </p>
-          ) : null}
 
           <div className="space-y-2">
             {NUTRIENT_ORDER.map((key) => (

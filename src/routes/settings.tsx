@@ -1,11 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronRight, Cloud, CloudOff, LayoutGrid, LogOut, RefreshCw } from "lucide-react";
+import {
+  BookMarked,
+  ChevronRight,
+  Cloud,
+  CloudOff,
+  LayoutGrid,
+  LogOut,
+  RefreshCw,
+} from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SourcesSheet } from "../components/gym/SourcesSheet";
 import { ThemePicker } from "../components/gym/ThemePicker";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
@@ -29,6 +38,7 @@ function SettingsScreen() {
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   const handleForceUpdate = () => {
     haptic(15);
@@ -133,6 +143,24 @@ function SettingsScreen() {
       </Card>
 
       <SectionLabel>{t.settings.about}</SectionLabel>
+      <button
+        onClick={() => {
+          haptic(10);
+          setSourcesOpen(true);
+        }}
+        className="glass mb-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <BookMarked className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">{t.sources.row}</p>
+            <p className="truncate text-[12.5px] text-muted-foreground">{t.sources.rowDesc}</p>
+          </div>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      </button>
       <Card className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="text-[15px] font-semibold">{t.settings.forceUpdate}</p>
@@ -149,6 +177,7 @@ function SettingsScreen() {
       </Card>
 
       <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
+      <SourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
     </Screen>
   );
 }

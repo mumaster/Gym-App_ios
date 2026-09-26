@@ -152,7 +152,6 @@ export function BodyweightCard() {
             ))}
         </div>
       ) : null}
-      <p className="text-[11.5px] text-muted-foreground">{t.bodyweight.source}</p>
     </Card>
   );
 }
