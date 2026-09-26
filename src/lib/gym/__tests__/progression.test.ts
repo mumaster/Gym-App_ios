@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { repRange, rpeAdjustedWeight, suggestWeight } from "../progression";
+import { latestPr } from "../progress";
 import type { Workout } from "../types";
 
 const session = (id: string, exercise: string, reps: number[], weight = 100): Workout => ({
@@ -107,5 +108,60 @@ describe("bodyweight exercises (external load: 0 = bodyweight, − = assistance)
     // RPE 10 on 0 kg added at 80 kg body: 80 × 0.96 = 76.8 → −3.2 → −2.5.
     expect(rpeAdjustedWeight(0, 10, 2.5, 80)).toEqual({ weight: -2.5, direction: "down" });
     expect(rpeAdjustedWeight(0, 10, 2.5)).toBeNull();
+  });
+});
+
+describe("latest PR", () => {
+  const day = (n: number) => new Date(2026, 8, n, 18).toISOString();
+  const session = (n: number, ex: string, sets: [number, number][]): Workout => ({
+    id: `s${n}-${ex}`,
+    date: day(n),
+    duration_minutes: 45,
+    target_muscles: [],
+    plan: [],
+    finished: true,
+    unit: "kg",
+    completed_sets: sets.map(([weight, reps], i) => ({
+      exercise_id: ex,
+      set_number: i + 1,
+      set_type: "working" as const,
+      weight,
+      reps,
+      completed_at: day(n),
+    })),
+  });
+  const notBw = () => false;
+
+  it("is never a first-ever session", () => {
+    expect(latestPr([session(1, "bb-bench", [[80, 8]])], notBw)).toBeNull();
+  });
+
+  it("is the newest session that beat an earlier best (Epley)", () => {
+    const ws = [
+      session(1, "bb-bench", [[80, 8]]),
+      session(2, "bb-squat", [[100, 5]]),
+      session(4, "bb-bench", [
+        [82.5, 8],
+        [80, 6],
+      ]),
+      session(6, "bb-squat", [[100, 4]]),
+    ];
+    const pr = latestPr(ws, notBw);
+    expect(pr?.exercise_id).toBe("bb-bench");
+    expect(pr?.weight).toBe(82.5);
+    expect(pr?.e1rm).toBe(104.5);
+  });
+
+  it("counts more reps at the same load for a bodyweight exercise without a bodyweight", () => {
+    const ws = [session(1, "pullup", [[0, 8]]), session(3, "pullup", [[0, 10]])];
+    const pr = latestPr(ws, () => true);
+    expect(pr?.reps).toBe(10);
+    expect(pr?.e1rm).toBeNull();
+  });
+
+  it("uses bodyweight + load when bodyweight is known", () => {
+    const ws = [session(1, "pullup", [[-20, 12]]), session(3, "pullup", [[-15, 10]])];
+    // 60×1.4 = 84 vs 65×(1+10/30) ≈ 86.7
+    expect(latestPr(ws, () => true, 80)?.weight).toBe(-15);
   });
 });

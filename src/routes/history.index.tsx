@@ -18,7 +18,7 @@ import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { e1rmTrend, personalRecords } from "../lib/gym/progress";
-import { bestStreak, currentStreak, recentCalendar } from "../lib/gym/streak";
+import { bestWeekStreak, currentWeekStreak, recentCalendar } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
 import type { Muscle } from "../lib/gym/types";
 
@@ -62,8 +62,8 @@ function HistoryScreen() {
 
   const prs = useMemo(() => personalRecords(workouts).slice(0, 6), [workouts]);
 
-  const streak = useMemo(() => currentStreak(workouts), [workouts]);
-  const longestStreak = useMemo(() => bestStreak(workouts), [workouts]);
+  const streak = useMemo(() => currentWeekStreak(workouts), [workouts]);
+  const longestStreak = useMemo(() => bestWeekStreak(workouts), [workouts]);
   const calendarColumns = useMemo(() => recentCalendar(workouts, 12), [workouts]);
 
   /** Session-by-session estimated-1RM trend for your top lift, when there's enough data. */
@@ -101,7 +101,7 @@ function HistoryScreen() {
                 <div>
                   <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    {t.history.dayStreak}
+                    {t.history.weekStreak}
                   </p>
                 </div>
               </div>
@@ -116,6 +116,9 @@ function HistoryScreen() {
             <div className="mt-3">
               <StreakCalendar columns={calendarColumns} />
             </div>
+            <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+              {t.history.streakSource}
+            </p>
           </Card>
         </>
       ) : null}

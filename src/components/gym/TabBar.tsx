@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Apple, Dumbbell, CalendarDays, Home, type LucideIcon, Search } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Apple, BookOpen, Dumbbell, CalendarDays, Home, type LucideIcon } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { HapticSwitch } from "./HapticSwitch";
 
@@ -9,15 +10,15 @@ import { HapticSwitch } from "./HapticSwitch";
 // literal center, split off from the other four tabs entirely rather than
 // just widened among them — two on each side keep their prior relative
 // order (Workout/History before it, Exercises/Nutrition after). Labels are
-// translation keys, not display text — the tabs are icon-only visually
-// (see TabButton below), but aria-label still needs the localized name for
-// screen readers.
+// translation keys; each tab shows its label under the icon (Apple's HIG
+// gives every tab a label). Exercises uses a book rather than a magnifying
+// glass, which read as "search".
 const LEFT_TABS = [
   { to: "/generate", labelKey: "workout", icon: Dumbbell },
   { to: "/history", labelKey: "history", icon: CalendarDays },
 ] as const;
 const RIGHT_TABS = [
-  { to: "/exercises", labelKey: "exercises", icon: Search },
+  { to: "/exercises", labelKey: "exercises", icon: BookOpen },
   { to: "/nutrition", labelKey: "nutrition", icon: Apple },
 ] as const;
 
@@ -38,20 +39,24 @@ function TabButton({
       to={to}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className="relative flex min-h-[54px] flex-1 flex-col items-center justify-center gap-1.5 pt-3 active:scale-95"
+      className="relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] pt-1 active:scale-95"
     >
-      {/* pt-3 on the row (rather than centering with no offset) sits this
-          icon+dot cluster below the bar's own vertical center line — icon
-          and dot themselves are unchanged in size, just shifted down as a
-          group, so they read closer to the Home badge's own lower visual
-          weight instead of floating noticeably higher than it. */}
       <Icon
         className={`size-[22px] ${active ? "text-primary" : "text-muted-foreground"}`}
         strokeWidth={active ? 2.4 : 1.9}
       />
-      {/* Fixed-size dot, always rendered (just transparent when inactive)
-          so a tab switching active state never shifts the row's height. */}
-      <span className={`size-1 rounded-full ${active ? "bg-primary" : "bg-transparent"}`} />
+      <span
+        aria-hidden
+        className={`max-w-full truncate text-[10px] font-semibold leading-3 tracking-[-0.01em] ${
+          active ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {label}
+      </span>
+      {/* Placeholder for the active dot, always present so the row never
+          shifts. The visible dot is one element in TabBar that slides to
+          whichever placeholder is active. */}
+      <span data-tab-dot={active ? "active" : ""} className="size-1" />
       {/* Real iPhone haptic tick on tap — see HapticSwitch.tsx. <Link>
           cancels its click to navigate in-app, which would also cancel the
           switch, so the overlay navigates itself instead. */}
@@ -60,17 +65,55 @@ function TabButton({
   );
 }
 
+/** Where the sliding dot sits (relative to the row), and whether it should
+ *  animate there: only when moving from one visible tab to another, so it
+ *  doesn't fly in from the corner on first paint or when leaving Home. */
+function useSlidingDot(pathname: string) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [dot, setDot] = useState({ x: 0, y: 0, visible: false, animate: false });
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const measure = () => {
+      const el = row.querySelector<HTMLElement>('[data-tab-dot="active"]');
+      if (!el) {
+        setDot((d) => ({ ...d, visible: false, animate: false }));
+        return;
+      }
+      // offsetLeft/Top ignore transforms, so a tab still pressed in
+      // (active:scale-95) doesn't skew the measurement.
+      let x = 0;
+      let y = 0;
+      for (let n: HTMLElement | null = el; n && n !== row;) {
+        x += n.offsetLeft;
+        y += n.offsetTop;
+        n = n.offsetParent as HTMLElement | null;
+      }
+      setDot((d) => ({ x, y, visible: true, animate: d.visible }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, [pathname]);
+  return { rowRef, dot };
+}
+
 export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const t = useTranslation();
   const navigate = useNavigate();
+  const { rowRef, dot } = useSlidingDot(pathname);
   if (pathname.startsWith("/session")) return null;
   const homeActive = pathname === "/";
 
   return (
     <nav className="safe-bottom-tab view-transition-tab-bar fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
       <div className="mx-auto max-w-md">
-        <div className="glass-strong flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]">
+        <div
+          ref={rowRef}
+          className="glass-strong relative flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]"
+        >
           {LEFT_TABS.map(({ labelKey, ...tab }) => (
             <TabButton
               key={tab.to}
@@ -93,7 +136,7 @@ export function TabBar() {
             to="/"
             aria-label={t.tabbar.home}
             aria-current={homeActive ? "page" : undefined}
-            className="relative flex min-h-[54px] flex-1 items-center justify-center active:scale-95"
+            className="relative flex min-h-[54px] w-14 shrink-0 items-center justify-center active:scale-95"
           >
             {/* Solid bg-primary/text-primary-foreground, always — the one
                 permanently-emphasized action on this bar, so (unlike the
@@ -107,7 +150,16 @@ export function TabBar() {
                 to that same height so rounded-full still yields a true
                 circle (same radius top/bottom/left/right) instead of
                 stretching into a pill/oval shape. */}
-            <span className="glow flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)]">
+            {/* shrink-0 rather than flex-1: the cell is only as wide as its
+                circle, which leaves the four labelled tabs room for their
+                labels (Dutch "Oefeningen" was truncating at 390pt). */}
+            {/* The glow only while Home is the current screen: always-on,
+                it read as the selected tab from every other screen too. */}
+            <span
+              className={`flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] transition-shadow duration-300 ${
+                homeActive ? "glow" : ""
+              }`}
+            >
               <Home className="size-6" strokeWidth={2.2} />
             </span>
             <HapticSwitch onTap={() => void navigate({ to: "/" })} />
@@ -120,6 +172,20 @@ export function TabBar() {
               active={pathname.startsWith(tab.to)}
             />
           ))}
+          {/* One dot for the whole bar, sliding between tabs with a slight
+              overshoot. Fades out on screens that aren't a tab (Home,
+              Settings, Equipment). */}
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute left-0 top-0 size-1 rounded-full bg-primary motion-reduce:transition-none ${
+              dot.visible ? "opacity-100" : "opacity-0"
+            } ${
+              dot.animate
+                ? "transition-[transform,opacity] duration-[380ms] ease-[cubic-bezier(0.34,1.4,0.64,1)]"
+                : "transition-opacity duration-200"
+            }`}
+            style={{ transform: `translate(${dot.x}px, ${dot.y}px)` }}
+          />
         </div>
       </div>
     </nav>

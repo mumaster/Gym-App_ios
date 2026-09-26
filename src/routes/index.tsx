@@ -3,15 +3,13 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   Apple,
-  CalendarDays,
+  Check,
   ChevronRight,
   Droplet,
   Dumbbell,
   Flame,
-  LayoutGrid,
   type LucideIcon,
   Play,
-  Search,
   Snowflake,
   Trophy,
   Zap,
@@ -34,12 +32,24 @@ import {
   type NutritionGoals,
 } from "../lib/gym/nutrition";
 import { currentProgramWeek } from "../lib/gym/programs";
-import { personalRecords, type PersonalRecord } from "../lib/gym/progress";
+import { exerciseById } from "../lib/gym/data";
+import { dayKey, dayKeyFromDate as keyOf } from "../lib/gym/date";
+import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
+import { latestPr, type LatestPr } from "../lib/gym/progress";
 import { READINESS_EMOJI, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
 import { useDayNutrition } from "../lib/gym/dayNutrition";
-import { overdueDays, type DayType } from "../lib/gym/schedule";
+import {
+  daysBetween,
+  hasPlannedSession,
+  mondayOf,
+  overdueDays,
+  plannedDate,
+  type DayType,
+  type Rotation,
+} from "../lib/gym/schedule";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
-import { bestStreak, currentStreak } from "../lib/gym/streak";
+import { addDays } from "../lib/gym/date";
+import { bestWeekStreak, currentWeekStreak, trainingDaysThisWeek } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
 
 export const Route = createFileRoute("/")({
@@ -78,18 +88,23 @@ function HomeScreen() {
     logWater,
     readinessLog,
     setTodayReadiness,
+    weightLog,
+    nutritionProfile,
   } = useGym();
   const [readinessEditing, setReadinessEditing] = useState(false);
   const todayCheckIn = todaysCheckIn(readinessLog);
 
-  const streak = useMemo(() => currentStreak(workouts), [workouts]);
-  const longestStreak = useMemo(() => bestStreak(workouts), [workouts]);
-  const sessionsThisWeek = useMemo(() => {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return workouts.filter((w) => new Date(w.date).getTime() >= cutoff).length;
-  }, [workouts]);
+  const streak = useMemo(() => currentWeekStreak(workouts), [workouts]);
+  const longestStreak = useMemo(() => bestWeekStreak(workouts), [workouts]);
+  // Monday–Sunday, the same weeks the streak, the week strip and History's
+  // training-load card use (it used to be a rolling 7 days).
+  const daysThisWeek = useMemo(() => trainingDaysThisWeek(workouts), [workouts]);
 
-  const topPr = useMemo(() => personalRecords(workouts)[0] ?? null, [workouts]);
+  const bodyKg = latestBodyKg(weightLog, nutritionProfile);
+  const pr = useMemo(
+    () => latestPr(workouts, (id) => isBodyweightExercise(exerciseById(id)), bodyKg),
+    [workouts, bodyKg],
+  );
 
   const todayKey = useMemo(() => dayKeyFromDate(new Date()), []);
   const todayEntries = useMemo(() => entriesForDay(foodEntries, todayKey), [foodEntries, todayKey]);
@@ -99,6 +114,11 @@ function HomeScreen() {
     [waterEntries, todayKey],
   );
   const today = useMemo(() => new Date(), []);
+  const trainedKeys = useMemo(() => {
+    const keys = new Set(workouts.map((w) => dayKey(w.date)));
+    if (activeWorkout) keys.add(dayKey(activeWorkout.date));
+    return keys;
+  }, [workouts, activeWorkout]);
   const dayNutrition = useDayNutrition(today);
   const dayGoals = dayNutrition.goals;
   const hasNutritionGoals = NUTRIENT_ORDER.some((k) => dayGoals[k] != null);
@@ -123,12 +143,6 @@ function HomeScreen() {
     if (hour < 22) return t.home.greetingEvening;
     return t.home.greetingNight;
   };
-
-  const QUICK_LINKS = [
-    { to: "/equipment" as const, label: t.home.quickLinkEquipment, icon: LayoutGrid },
-    { to: "/exercises" as const, label: t.home.quickLinkExercises, icon: Search },
-    { to: "/history" as const, label: t.home.quickLinkHistory, icon: CalendarDays },
-  ];
 
   const dateLabel = useMemo(
     () => new Date().toLocaleDateString(locale, t.home.dateFormat).toUpperCase(),
@@ -189,7 +203,22 @@ function HomeScreen() {
       heroCta = t.schedule.catchUp;
     }
   }
+  // When the next scheduled session is planned — the hero said "Next: Push"
+  // without saying whether that's today or on Monday.
+  const rotation: Rotation | null = program ?? weeklyScheme ?? null;
+  const whenLabel = (() => {
+    if (!rotation || activeWorkout || overdueDays(rotation) > 0) return null;
+    if (!rotation.schedule[rotation.cyclePosition]) return null;
+    const date = plannedDate(rotation, rotation.cyclePosition);
+    const days = daysBetween(today, date);
+    if (days <= 0) return t.home.today;
+    if (days === 1) return t.home.tomorrow;
+    const name = date.toLocaleDateString(locale, { weekday: "long" });
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  })();
+  if (whenLabel) heroSub = heroSub ? `${whenLabel} · ${heroSub}` : whenLabel;
   const HeroIcon = heroIcon;
+  const readinessOpen = !todayCheckIn || readinessEditing;
 
   if (!hydrated) return <div className="fixed inset-0 bg-background" />;
 
@@ -197,9 +226,27 @@ function HomeScreen() {
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
       <header className="safe-top shrink-0 flex items-center justify-between gap-3 px-5 pb-1">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
-            {dateLabel}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
+              {dateLabel}
+            </p>
+            {/* Once answered, the check-in shrinks to this chip so its tile
+                gives its row back to the rest of the grid. Tapping it
+                reopens the picker. */}
+            {todayCheckIn && !readinessEditing ? (
+              <button
+                onClick={() => {
+                  haptic(10);
+                  setReadinessEditing(true);
+                }}
+                aria-label={t.home.readinessChipAria(t.readiness[todayCheckIn.score])}
+                className="-my-0.5 flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold leading-[16px] text-secondary-foreground active:scale-95"
+              >
+                <span aria-hidden>{READINESS_EMOJI[todayCheckIn.score]}</span>
+                {t.readiness[todayCheckIn.score]}
+              </button>
+            ) : null}
+          </div>
           <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
             {greeting()}
           </h1>
@@ -256,7 +303,13 @@ function HomeScreen() {
           ) : null}
         </button>
 
-        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-[0.76fr_0.8fr_0.68fr_0.33fr_0.33fr] gap-2.5">
+        <div
+          className={`grid min-h-0 flex-1 grid-cols-2 gap-2.5 ${
+            readinessOpen
+              ? "grid-rows-[0.84fr_0.76fr_0.64fr_0.33fr_0.38fr]"
+              : "grid-rows-[0.95fr_0.95fr_0.44fr_0.5fr]"
+          }`}
+        >
           <NutritionTile
             active={todayEntries.length > 0}
             hasGoals={hasNutritionGoals}
@@ -278,46 +331,37 @@ function HomeScreen() {
             onOpen={() => navigate({ to: "/nutrition" })}
           />
 
-          <ReadinessTile
-            checkIn={todayCheckIn}
-            editing={readinessEditing}
-            onEdit={() => {
-              haptic(12);
-              setReadinessEditing(true);
-            }}
-            onPick={(score) => {
-              haptic([15, 25]);
-              setTodayReadiness(score);
-              setReadinessEditing(false);
-            }}
-          />
+          {readinessOpen ? (
+            <ReadinessTile
+              current={todayCheckIn?.score ?? null}
+              onPick={(score) => {
+                haptic([15, 25]);
+                setTodayReadiness(score);
+                setReadinessEditing(false);
+              }}
+            />
+          ) : null}
 
           <ActivityTile
             streak={streak}
             longestStreak={longestStreak}
-            sessionsThisWeek={sessionsThisWeek}
+            daysThisWeek={daysThisWeek}
             totalWorkouts={workouts.length}
             onClick={() => navigate({ to: "/history" })}
           />
 
-          <BestLiftTile pr={topPr} onClick={() => navigate({ to: "/history" })} />
+          <LatestPrTile pr={pr} today={today} onClick={() => navigate({ to: "/history" })} />
         </div>
 
-        <div className="grid shrink-0 grid-cols-3 gap-2.5">
-          {QUICK_LINKS.map(({ to, label, icon: Icon }) => (
-            <button
-              key={to}
-              onClick={() => {
-                haptic(10);
-                navigate({ to });
-              }}
-              className="glass flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl active:scale-95"
-            >
-              <Icon className="size-[18px] text-primary" />
-              <span className="text-[11px] font-semibold">{label}</span>
-            </button>
-          ))}
-        </div>
+        <WeekStrip
+          today={today}
+          rotation={rotation}
+          trainedKeys={trainedKeys}
+          onClick={() => {
+            haptic(10);
+            navigate({ to: rotation ? "/generate" : "/history" });
+          }}
+        />
       </main>
     </div>
   );
@@ -358,53 +402,49 @@ function NutritionTile({
         onClick();
       }}
       aria-label={t.home.nutritionAriaLabel}
-      className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
     >
-      <Apple
-        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          active ? "text-primary/[0.06]" : "text-foreground/[0.03]"
-        }`}
-        strokeWidth={1.5}
-      />
-      <div className="relative flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-              active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            <Apple className="size-3.5" />
-          </span>
-          <span className="tabular truncate text-[19px] font-bold leading-none">
-            {totals.calories}
-            <span className="text-[12px] font-medium text-muted-foreground">
-              {goals.calories ? ` /${goals.calories}` : ""} kcal
+      <div className="relative flex flex-col gap-2">
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span
+              className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+                active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              <Apple className="size-3.5" />
             </span>
+            <span className="tabular truncate text-[19px] font-bold leading-none">
+              {Math.round(totals.calories)}
+              <span className="text-[12px] font-medium text-muted-foreground">
+                {goals.calories ? ` / ${goals.calories}` : ""} kcal
+              </span>
+            </span>
+          </div>
+          <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+            {dayType ? (
+              <>
+                {dayType === "training" ? (
+                  <Dumbbell className="size-3" />
+                ) : (
+                  <Moon className="size-3" />
+                )}
+                {dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
+              </>
+            ) : null}
+            <ChevronRight className="size-4" />
           </span>
         </div>
-        <span className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-muted-foreground">
-          {dayType ? (
-            <>
-              {dayType === "training" ? (
-                <Dumbbell className="size-3" />
-              ) : (
-                <Moon className="size-3" />
-              )}
-              {dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
-            </>
-          ) : null}
-          <ChevronRight className="size-4" />
-        </span>
-      </div>
 
-      {hasGoals && goals.calories ? (
-        <div className="relative -mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full ${barClass(calorieStatus)}`}
-            style={{ width: `${caloriePct}%` }}
-          />
-        </div>
-      ) : null}
+        {hasGoals && goals.calories ? (
+          <div className="relative -mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full ${barClass(calorieStatus)}`}
+              style={{ width: `${caloriePct}%` }}
+            />
+          </div>
+        ) : null}
+      </div>
 
       <div className="relative grid grid-cols-3 gap-2">
         {(["protein", "carbs", "fat"] as const).map((key) => {
@@ -412,14 +452,17 @@ function NutritionTile({
           const status = nutrientStatus(totals[key], goal);
           const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
           return (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1.5">
-              <p className="tabular text-[15px] font-bold leading-none">
-                {totals[key]}
-                <span className="text-[10px] font-medium text-muted-foreground">g</span>
+            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1">
+              {/* Whole grams: a food label's own precision, and 14.2 next
+                  to 75 read as inconsistent. */}
+              <p className="tabular truncate text-[15px] font-bold leading-none">
+                {Math.round(totals[key])}
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  {goal != null ? ` / ${Math.round(goal)} g` : " g"}
+                </span>
               </p>
               <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {key === "protein" ? t.home.protein : key === "carbs" ? t.home.carbs : t.home.fat}
-                {goal != null ? `/${goal}` : ""}
               </p>
               {goal != null ? (
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
@@ -457,13 +500,13 @@ function NutritionTile({
 function ActivityTile({
   streak,
   longestStreak,
-  sessionsThisWeek,
+  daysThisWeek,
   totalWorkouts,
   onClick,
 }: {
   streak: number;
   longestStreak: number;
-  sessionsThisWeek: number;
+  daysThisWeek: number;
   totalWorkouts: number;
   onClick: () => void;
 }) {
@@ -476,6 +519,7 @@ function ActivityTile({
       }}
       className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-3 text-left active:scale-[0.97]"
     >
+      {/* Weeks, not days — see streak.ts for why and the WHO source. */}
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <span
           className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
@@ -489,11 +533,11 @@ function ActivityTile({
             {streak}
             <span className="text-[11px] font-medium text-muted-foreground">
               {" "}
-              {t.home.dayStreak}
+              {t.home.weekStreak(streak)}
             </span>
           </p>
           <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
-            {longestStreak > streak ? t.home.best(longestStreak) : t.home.keepItGoing}
+            {longestStreak > streak ? t.home.best(longestStreak) : t.home.streakRule}
           </p>
         </div>
       </div>
@@ -503,7 +547,7 @@ function ActivityTile({
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <span
           className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
-            sessionsThisWeek > 0
+            daysThisWeek > 0
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground"
           }`}
@@ -512,14 +556,14 @@ function ActivityTile({
         </span>
         <div className="min-w-0">
           <p className="tabular truncate text-[17px] font-bold leading-none">
-            {sessionsThisWeek}
+            {daysThisWeek}
             <span className="text-[11px] font-medium text-muted-foreground">
               {" "}
-              {t.home.thisWeek}
+              {t.home.trainingDays(daysThisWeek)}
             </span>
           </p>
           <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
-            {t.home.total(totalWorkouts)}
+            {t.home.thisWeek} · {t.home.total(totalWorkouts)}
           </p>
         </div>
       </div>
@@ -527,19 +571,24 @@ function ActivityTile({
   );
 }
 
-/** Full-width (col-span-2) like NutritionTile, but a single compact row
- *  rather than a stacked block — a PR's exercise name is the one piece of
- *  text on this whole screen with genuinely unpredictable length, and a
- *  horizontal layout gives it the full tile width to run into before
- *  `truncate` ever has to kick in, instead of the ~1/3-width column it had
- *  when this was a fourth cell in a square bento grid. Deliberately the
- *  lowest-emphasis tile on the screen now — smaller padding/icon/type than
- *  its own original size, trading its row's height to WaterTile below,
- *  since a PR is checked far less often day-to-day than water intake. Still
- *  sized against the catalog's longest exercise name (35 characters) at
- *  this smaller scale, not just at the old, larger one. */
-function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () => void }) {
+/** The most recent personal record (see progress.ts's `latestPr`), shown as
+ *  the set actually lifted. It used to show the all-time highest Epley
+ *  estimate across every exercise, which was always the same heavy lift and
+ *  read as a weight lifted when it was an estimate; the estimate is now a
+ *  small, labelled caption. Single compact row: the exercise name is the one
+ *  text here with unpredictable length (up to 35 characters in the catalog),
+ *  so it gets the middle and may wrap to two lines rather than truncate. */
+function LatestPrTile({
+  pr,
+  today,
+  onClick,
+}: {
+  pr: LatestPr | null;
+  today: Date;
+  onClick: () => void;
+}) {
   const t = useTranslation();
+  const days = pr ? daysBetween(new Date(pr.date), today) : 0;
   return (
     <button
       onClick={() => {
@@ -556,8 +605,9 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
         <Trophy className="size-3.5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {t.home.bestLift}
+        <p className="truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.home.latestPr}
+          {pr ? ` · ${t.home.prWhen(days)}` : ""}
         </p>
         {pr ? (
           <p className="line-clamp-2 text-[13px] font-bold leading-tight">{pr.name}</p>
@@ -566,9 +616,16 @@ function BestLiftTile({ pr, onClick }: { pr: PersonalRecord | null; onClick: () 
         )}
       </div>
       {pr ? (
-        <span className="tabular shrink-0 rounded-full bg-primary px-2.5 py-1 text-[13px] font-bold text-primary-foreground">
-          {pr.e1rm} kg
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <span className="tabular rounded-full bg-primary px-2.5 py-1 text-[13px] font-bold leading-none text-primary-foreground">
+            {formatLoad(pr.weight, pr.bodyweight, t.session.bw)} × {pr.reps}
+          </span>
+          {pr.e1rm != null ? (
+            <span className="tabular text-[9.5px] text-muted-foreground">
+              {t.home.e1rm(Math.round(pr.e1rm))}
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </button>
   );
@@ -604,46 +661,42 @@ function WaterTile({
 
   return (
     <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
-      <Droplet
-        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          active ? "text-primary/[0.08]" : "text-foreground/[0.03]"
-        }`}
-        strokeWidth={1.5}
-      />
-      <button
-        onClick={() => {
-          haptic(10);
-          onOpen();
-        }}
-        aria-label={t.home.waterAriaLabel}
-        className="relative flex items-center justify-between gap-3 text-left"
-      >
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
-              active ? "bg-sky-400/15 text-sky-400" : "bg-muted text-muted-foreground"
-            }`}
-          >
-            <Droplet className="size-3.5" />
-          </span>
-          <span className="tabular truncate text-[19px] font-bold leading-none">
-            {formatLiters(totalMl)}
-            {goalMl ? (
-              <span className="text-[12px] font-medium text-muted-foreground">
-                {" "}
-                / {formatLiters(goalMl)}
-              </span>
-            ) : null}
-          </span>
-        </div>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-      </button>
+      <div className="relative flex flex-col gap-2">
+        <button
+          onClick={() => {
+            haptic(10);
+            onOpen();
+          }}
+          aria-label={t.home.waterAriaLabel}
+          className="relative flex items-center justify-between gap-3 text-left"
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span
+              className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+                active ? "bg-sky-400/15 text-sky-400" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              <Droplet className="size-3.5" />
+            </span>
+            <span className="tabular truncate text-[19px] font-bold leading-none">
+              {formatLiters(totalMl)}
+              {goalMl ? (
+                <span className="text-[12px] font-medium text-muted-foreground">
+                  {" "}
+                  / {formatLiters(goalMl)}
+                </span>
+              ) : null}
+            </span>
+          </div>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </button>
 
-      {goalMl ? (
-        <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-        </div>
-      ) : null}
+        {goalMl ? (
+          <div className="relative h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          </div>
+        ) : null}
+      </div>
 
       <div className="relative grid grid-cols-4 gap-1.5">
         {WATER_QUICK_ADD.map((ml) => (
@@ -651,7 +704,7 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={t.home.addWater(ml)}
-            className="relative flex min-h-[36px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
+            className="relative flex min-h-[36px] items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-foreground active:scale-95"
           >
             <HapticSwitch />+{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
@@ -680,73 +733,118 @@ function WaterTile({
  *  picker's buttons are sized to fit within it rather than assumed to have
  *  the generator page's own unbounded vertical room. */
 function ReadinessTile({
-  checkIn,
-  editing,
-  onEdit,
+  current,
   onPick,
 }: {
-  checkIn: { score: ReadinessScore } | undefined;
-  editing: boolean;
-  onEdit: () => void;
+  /** Today's answer when reopened from the header chip, highlighted. */
+  current: ReadinessScore | null;
   onPick: (score: ReadinessScore) => void;
 }) {
   const t = useTranslation();
-  const answered = checkIn && !editing;
+  return (
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
+      <div className="relative flex min-w-0 items-center gap-2.5">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Activity className="size-3.5" />
+        </span>
+        <span className="truncate text-[12.5px] font-semibold text-muted-foreground">
+          {t.home.howAreYouFeeling}
+        </span>
+      </div>
+      <div className="relative grid grid-cols-5 gap-1.5">
+        {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
+          <button
+            key={score}
+            onClick={() => onPick(score)}
+            aria-label={t.readiness[score]}
+            aria-pressed={current === score}
+            className={`flex min-h-[38px] items-center justify-center rounded-full text-[17px] leading-none active:scale-95 ${
+              current === score ? "bg-primary/25 ring-2 ring-primary" : "bg-muted"
+            }`}
+          >
+            {READINESS_EMOJI[score]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** This Monday–Sunday week at a glance: a check on days trained, a ring on
+ *  days a remaining session of the program/weekly plan is planned (from
+ *  schedule.ts, so moved sessions show where they actually are), today's
+ *  letter highlighted. Replaced a quick-links row whose Exercises and History
+ *  links duplicated the tab bar. */
+function WeekStrip({
+  today,
+  rotation,
+  trainedKeys,
+  onClick,
+}: {
+  today: Date;
+  rotation: Rotation | null;
+  trainedKeys: Set<string>;
+  onClick: () => void;
+}) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const monday = mondayOf(today);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(monday, i);
+    const key = keyOf(date);
+    const trained = trainedKeys.has(key);
+    const future = daysBetween(today, date) >= 0;
+    const planned = !trained && future && rotation != null && hasPlannedSession(rotation, date);
+    return {
+      date,
+      key,
+      isToday: daysBetween(today, date) === 0,
+      state: trained ? ("trained" as const) : planned ? ("planned" as const) : ("rest" as const),
+    };
+  });
 
   return (
-    <div
-      className={`glass relative col-span-2 flex min-h-0 flex-col overflow-hidden rounded-3xl p-3.5 ${
-        answered ? "justify-center" : "justify-between gap-1.5"
-      }`}
+    <button
+      onClick={onClick}
+      aria-label={t.home.weekStripAria}
+      className="glass grid shrink-0 grid-cols-7 rounded-2xl px-2 py-1 active:scale-[0.98]"
     >
-      <Activity
-        className={`pointer-events-none absolute -bottom-5 -right-5 size-20 ${
-          checkIn ? "text-primary/[0.08]" : "text-foreground/[0.03]"
-        }`}
-        strokeWidth={1.5}
-      />
-      {answered ? (
-        <button
-          onClick={onEdit}
-          aria-label={t.home.todaysReadiness}
-          className="relative flex items-center justify-between gap-3 text-left"
-        >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Activity className="size-3.5" />
+      {days.map((d) => {
+        const name = t.common.dow[d.date.getDay()] ?? "";
+        return (
+          <span
+            key={d.key}
+            role="img"
+            aria-label={t.home.weekDayAria(
+              d.date.toLocaleDateString(locale, { weekday: "long" }),
+              d.state,
+              d.isToday,
+            )}
+            className={`flex flex-col items-center gap-0.5 rounded-xl py-0.5 ${
+              d.isToday ? "bg-foreground/[0.06]" : ""
+            }`}
+          >
+            <span
+              className={`text-[10px] font-bold leading-none ${
+                d.isToday ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {name.charAt(0).toUpperCase()}
             </span>
-            <span className="truncate text-[14px] font-bold leading-none">
-              {READINESS_EMOJI[checkIn.score]} {t.readiness[checkIn.score]}
+            <span className="flex size-5 items-center justify-center">
+              {d.state === "trained" ? (
+                <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <Check className="size-3" strokeWidth={3.2} />
+                </span>
+              ) : d.state === "planned" ? (
+                <span className="size-[18px] rounded-full border-2 border-primary" />
+              ) : (
+                <span className="size-1.5 rounded-full bg-muted-foreground/30" />
+              )}
             </span>
-          </div>
-          <span className="shrink-0 rounded-full bg-secondary px-3 py-1.5 text-[11.5px] font-bold text-secondary-foreground">
-            {t.home.change}
           </span>
-        </button>
-      ) : (
-        <>
-          <div className="relative flex min-w-0 items-center gap-2.5">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Activity className="size-3.5" />
-            </span>
-            <span className="truncate text-[12.5px] font-semibold text-muted-foreground">
-              {t.home.howAreYouFeeling}
-            </span>
-          </div>
-          <div className="relative grid grid-cols-5 gap-1.5">
-            {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
-              <button
-                key={score}
-                onClick={() => onPick(score)}
-                aria-label={t.readiness[score]}
-                className="flex min-h-[38px] items-center justify-center rounded-full bg-muted text-[17px] leading-none active:scale-95"
-              >
-                {READINESS_EMOJI[score]}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        );
+      })}
+    </button>
   );
 }
