@@ -34,10 +34,12 @@ const CLUSTER2_DELAY_MS = CLUSTER1_DELAY_MS + 130;
 const IMPACT1_MS = CLUSTER1_DELAY_MS + FLIGHT_MS;
 const IMPACT2_MS = CLUSTER2_DELAY_MS + FLIGHT_MS;
 
-/** A forceful burst of sparks flying outward from (x, y) — the point where a
+/** A small spray of metal-on-metal sparks from (x, y) — the point where a
  *  weight-plate cluster lands on the bar — along the given angles (degrees,
- *  SVG convention: 0 = +x, 90 = +y/down), plus a bright flash and expanding
- *  shockwave ring at the impact point itself. Fires once, delayMs after
+ *  SVG convention: 0 = +x, 90 = +y/down), plus a tiny contact glint. Kept
+ *  deliberately small (a few thin, short, fast streaks that drop slightly
+ *  as they cool): an earlier version with 8 thick sparks, a large flash and
+ *  a shockwave ring read as an explosion rather than a strike. Fires once, delayMs after
  *  mount — see the FLIGHT_MS comment above for why this is a CSS delay
  *  rather than a React-side animation-end listener. The flash/spark
  *  keyframes themselves pop to full brightness within a couple of ms of
@@ -60,18 +62,11 @@ function SparkBurst({
 }) {
   return (
     <g transform={`translate(${x} ${y})`}>
+      {/* A small, brief contact glint — metal striking metal, not a blast. */}
       <circle
-        r={2.4}
+        r={1.1}
         fill={FLASH_COLOR}
         className="animate-spark-flash"
-        style={{ animationDelay: `${delayMs}ms`, filter: "blur(0.3px)" } as CSSProperties}
-      />
-      <circle
-        r={1.6}
-        fill="none"
-        stroke={FLASH_COLOR}
-        strokeWidth={0.6}
-        className="animate-spark-ring"
         style={{ animationDelay: `${delayMs}ms` } as CSSProperties}
       />
       {angles.map((angle, i) => {
@@ -79,9 +74,12 @@ function SparkBurst({
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
         const color = SPARK_COLORS[i % SPARK_COLORS.length];
-        const reach = 10 + ((i * 5) % 8);
-        const length = 1.8 + ((i * 3) % 5) * 0.35;
-        const width = 1.2 + (i % 3) * 0.45;
+        // Long enough to clear the plate outline (so the sparks are seen
+        // against the dark badge, not lost on the green plates), still
+        // short of reaching the badge's edge.
+        const reach = 8 + ((i * 3) % 5);
+        const length = 1.3 + ((i * 3) % 4) * 0.3;
+        const width = 0.6 + (i % 3) * 0.2;
         return (
           <line
             key={angle}
@@ -97,8 +95,8 @@ function SparkBurst({
               {
                 "--spark-dx": `${cos * reach}px`,
                 "--spark-dy": `${sin * reach}px`,
-                animationDelay: `${delayMs + i * 9}ms`,
-                filter: `drop-shadow(0 0 3px ${color})`,
+                animationDelay: `${delayMs + i * 12}ms`,
+                filter: `drop-shadow(0 0 1px ${color})`,
               } as CSSProperties
             }
           />
@@ -262,19 +260,19 @@ export function SplashScreen() {
                 {/* Each burst fires exactly at its cluster's own impact instant —
               --dumbbell-cluster-delay + FLIGHT_MS (dumbbell-flight's real
               travel time, whose 100% keyframe IS the contact point, not the
-              cosmetic recoil bounce that plays after it). Wide 8-spark
-              cones (each pointing away from the icon's center) for a
-              forceful, full-blown strike rather than a light scatter. */}
+              cosmetic recoil bounce that plays after it). Five thin
+              sparks in a cone pointing away from the icon's center — a
+              metal strike, not a blast. */}
                 <SparkBurst
                   x={14.4}
                   y={9.6}
-                  angles={[-95, -74, -53, -32, -11, 10, 31, 50]}
+                  angles={[-82, -61, -38, -17, 4]}
                   delayMs={IMPACT1_MS}
                 />
                 <SparkBurst
                   x={9.6}
                   y={14.4}
-                  angles={[85, 106, 127, 148, 169, 190, 211, 230]}
+                  angles={[98, 119, 142, 163, 184]}
                   delayMs={IMPACT2_MS}
                 />
               </svg>
