@@ -108,6 +108,7 @@
   --shadow-float: 0 18px 50px oklch(0 0 0 / 65%);
 }
 
+
 /* Accent themes — applied as a class on <html>. */
 .accent-green {
   --primary: oklch(0.88 0.24 145);
@@ -352,14 +353,8 @@
 }
 
 @keyframes sheet-up {
-  from {
-    transform: translateY(16px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* DumbbellLoader: the weight-plate clusters slide off along the bar's own
@@ -425,10 +420,7 @@
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
   80% {
-    transform: translate(
-      calc(var(--dumbbell-slide-x) * 0.06),
-      calc(var(--dumbbell-slide-y) * 0.06)
-    );
+    transform: translate(calc(var(--dumbbell-slide-x) * 0.06), calc(var(--dumbbell-slide-y) * 0.06));
     animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1);
   }
   100% {
