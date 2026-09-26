@@ -30,6 +30,7 @@ import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { RecapShare } from "../components/gym/RecapShare";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises, estimateSeconds } from "../lib/gym/generator";
@@ -343,6 +344,11 @@ function SessionScreen() {
                 onChange={(n) => rateWorkout(finishedWorkout.id, n)}
               />
               <p className="text-[12px] text-muted-foreground">{t.trainingLoad.rateHint}</p>
+            </div>
+          ) : null}
+          {finishedWorkout ? (
+            <div className="mb-6">
+              <RecapShare workout={finishedWorkout} />
             </div>
           ) : null}
           <div className="space-y-2">

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { RecapShare } from "../components/gym/RecapShare";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -184,6 +185,8 @@ function SessionDetailScreen() {
           </Card>
         ))}
       </div>
+      <SectionLabel>{t.recap.title}</SectionLabel>
+      <RecapShare workout={workout} />
     </Screen>
   );
 }
