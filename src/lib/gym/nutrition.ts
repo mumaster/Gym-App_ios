@@ -414,3 +414,46 @@ export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macro
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, salt: 0 },
   );
 }
+
+/**
+ * Protein per meal: 0.4 g per kg of bodyweight. Schoenfeld & Aragon's review
+ * (J Int Soc Sports Nutr 2018) concludes that, to maximise muscle building,
+ * protein should be eaten at a target of 0.4 g/kg per meal across at least
+ * four meals, reaching at least 1.6 g/kg a day (the same daily figure as the
+ * protein target above). Confirmed through web search results. Shown as a
+ * check on a meal in the food log — a nudge, never a limit.
+ */
+export const PROTEIN_PER_MEAL_G_PER_KG = 0.4;
+
+export function proteinPerMealTarget(bodyKg: number | null): number | null {
+  return bodyKg ? Math.round(PROTEIN_PER_MEAL_G_PER_KG * bodyKg) : null;
+}
+
+export interface WeekDayIntake {
+  key: string;
+  calories: number;
+  goal: number | undefined;
+  logged: boolean;
+}
+
+/**
+ * Average calories over a week's finished, logged days against the average
+ * of those same days' limits. Today is left out while it's still going (a
+ * half-logged day would drag the average down), as are days with nothing
+ * logged — a missing log isn't a zero-calorie day. Null with no such day.
+ * When cutting, the weekly average is what moves weight, not any one day.
+ */
+export function weeklyAverage(
+  days: WeekDayIntake[],
+  todayKey: string,
+): { calories: number; goal: number | null; days: number } | null {
+  const counted = days.filter((d) => d.logged && d.key < todayKey);
+  if (!counted.length) return null;
+  const calories = Math.round(counted.reduce((s, d) => s + d.calories, 0) / counted.length);
+  const withGoal = counted.filter((d) => d.goal != null);
+  const goal =
+    withGoal.length === counted.length
+      ? Math.round(withGoal.reduce((s, d) => s + d.goal!, 0) / withGoal.length)
+      : null;
+  return { calories, goal, days: counted.length };
+}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Keyboard, Plus, ScanBarcode, Star } from "lucide-react";
+import { AlertTriangle, Check, Keyboard, Plus, ScanBarcode, Star, Trash2 } from "lucide-react";
 import { FoodScanner, type FoodScannerStatus } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
@@ -9,7 +9,9 @@ import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
   MEAL_ORDER,
+  dailyTotals,
   mealForTime,
+  recipePerServing,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   scaledMacros,
@@ -91,6 +93,9 @@ export function AddFoodSheet({
   onClose,
   editEntry = null,
   onIngredientCaptured,
+  initialMeal,
+  onCreateMeal,
+  onCreateRecipe,
 }: {
   open: boolean;
   onClose: () => void;
@@ -103,9 +108,28 @@ export function AddFoodSheet({
    * for a standalone ingredient).
    */
   onIngredientCaptured?: (ingredient: MealIngredient) => void;
+  /** Meal to add to, e.g. from a meal's "+" in the log; else by time of day. */
+  initialMeal?: MealType | undefined;
+  /** Open the meal/recipe builders. The parent closes this sheet first, so
+   *  two overlays are never stacked. Without them the sections are hidden
+   *  (the meal builder's own ingredient picker). */
+  onCreateMeal?: () => void;
+  onCreateRecipe?: () => void;
 }) {
-  const { addFoodEntry, updateFoodEntry, foodEntries, favoriteFoods, toggleFavoriteFood } =
-    useGym();
+  const {
+    addFoodEntry,
+    updateFoodEntry,
+    removeFoodEntry,
+    foodEntries,
+    favoriteFoods,
+    toggleFavoriteFood,
+    mealTemplates,
+    recipes,
+    logMealTemplate,
+    logRecipe,
+    deleteMealTemplate,
+    deleteRecipe,
+  } = useGym();
   const t = useTranslation();
   const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
     (key) => ({ key, label: t.nutrients[key], unit: NUTRIENT_UNITS[key] }),
@@ -125,6 +149,14 @@ export function AddFoodSheet({
   const [suggestedGrams, setSuggestedGrams] = useState<number | null>(null);
   const [per100, setPer100] = useState<Record<MacroKey, string>>(emptyPer100);
   const [unmatched, setUnmatched] = useState<Set<MacroKey>>(new Set());
+  const [editingSaved, setEditingSaved] = useState(false);
+
+  // A new entry goes to the meal it was opened for (a meal's "+"), else the
+  // one the time of day suggests.
+  useEffect(() => {
+    if (open && !editEntry) setMeal(initialMeal ?? mealForTime(new Date().toISOString()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMeal]);
 
   const reset = () => {
     setStep("start");
@@ -137,6 +169,7 @@ export function AddFoodSheet({
     setSuggestedGrams(null);
     setPer100(emptyPer100);
     setUnmatched(new Set());
+    setEditingSaved(false);
   };
 
   const close = () => {
@@ -197,7 +230,7 @@ export function AddFoodSheet({
         id: crypto.randomUUID(),
         name: food.name,
         logged_at: new Date().toISOString(),
-        meal: mealForTime(new Date().toISOString()),
+        meal,
         grams: food.grams,
         per100: food.per100,
       });
@@ -217,7 +250,6 @@ export function AddFoodSheet({
   const startFromRecent = (entry: MealIngredient) => {
     haptic(15);
     setName(entry.name);
-    setMeal(mealForTime(new Date().toISOString()));
     setGrams(String(entry.grams));
     setGramsTouched(true);
     setPer100(per100ToDraft(entry.per100));
@@ -354,6 +386,23 @@ export function AddFoodSheet({
     close();
   };
 
+  /** Delete from the edit screen — the path that doesn't need a swipe. */
+  const deleteEntry = () => {
+    if (!editEntry) return;
+    haptic(15);
+    removeFoodEntry(editEntry.id);
+    reset();
+    onClose();
+  };
+
+  const openBuilder = (openIt: () => void) => {
+    haptic(15);
+    reset();
+    openIt();
+  };
+
+  const showSaved = !onIngredientCaptured && !editEntry;
+
   return (
     <>
       <BottomSheet
@@ -380,12 +429,36 @@ export function AddFoodSheet({
         />
 
         {step === "start" ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {scanError ? (
               <p className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-[14px] text-destructive">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {scanError}
               </p>
             ) : null}
+            {onIngredientCaptured ? null : (
+              <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
+            )}
+            {/* Scan and manual side by side, first: they used to sit under
+                every list, a long scroll down once meals and recipes moved
+                into this sheet. */}
+            <div className="grid grid-cols-[1.7fr_1fr] gap-2">
+              <button
+                onClick={startScan}
+                className="glow flex min-h-[60px] items-center gap-2.5 rounded-2xl bg-primary px-4 text-left text-primary-foreground active:scale-[0.985]"
+              >
+                <ScanBarcode className="size-6 shrink-0" />
+                <span className="text-[14.5px] font-bold leading-tight">{t.addFood.scanFood}</span>
+              </button>
+              <button
+                onClick={startManual}
+                className="glass flex min-h-[60px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
+              >
+                <Keyboard className="size-5 shrink-0 text-primary" />
+                <span className="text-[14px] font-bold leading-tight">
+                  {t.addFood.enterManually}
+                </span>
+              </button>
+            </div>
             {favoriteFoods.length ? (
               <FoodList
                 title={t.addFood.favorites}
@@ -406,26 +479,56 @@ export function AddFoodSheet({
                 onToggleFavorite={toggleFavoriteFood}
               />
             ) : null}
-            <button
-              onClick={startScan}
-              className="glow flex min-h-[64px] w-full items-center gap-3 rounded-2xl bg-primary px-5 text-left text-primary-foreground active:scale-[0.985]"
-            >
-              <ScanBarcode className="size-6 shrink-0" />
-              <div>
-                <p className="text-[16px] font-bold">{t.addFood.scanFood}</p>
-                <p className="text-[13px] opacity-80">{t.addFood.scanFoodDesc}</p>
-              </div>
-            </button>
-            <button
-              onClick={startManual}
-              className="glass flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-5 text-left active:scale-[0.985]"
-            >
-              <Keyboard className="size-6 shrink-0 text-primary" />
-              <div>
-                <p className="text-[16px] font-bold">{t.addFood.enterManually}</p>
-                <p className="text-[13px] text-muted-foreground">{t.addFood.enterManuallyDesc}</p>
-              </div>
-            </button>
+            {showSaved && onCreateMeal ? (
+              <SavedList
+                title={t.nutrition.meals}
+                empty={t.nutrition.mealsEmpty}
+                newLabel={t.nutrition.newMeal}
+                editing={editingSaved}
+                onToggleEdit={() => setEditingSaved((v) => !v)}
+                onNew={() => openBuilder(onCreateMeal)}
+                items={mealTemplates.map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  detail: `${t.nutrition.ingredientCount(m.ingredients.length)} · ${t.nutrition.kcal(dailyTotals(m.ingredients).calories)}`,
+                  logLabel: t.nutrition.logTemplate(m.name),
+                }))}
+                onLog={(id) => {
+                  haptic([20, 30]);
+                  logMealTemplate(id, meal);
+                  close();
+                }}
+                onDelete={(id) => {
+                  haptic(15);
+                  deleteMealTemplate(id);
+                }}
+              />
+            ) : null}
+            {showSaved && onCreateRecipe ? (
+              <SavedList
+                title={t.nutrition.recipes}
+                empty={t.nutrition.recipesEmpty}
+                newLabel={t.nutrition.newRecipe}
+                editing={editingSaved}
+                onToggleEdit={() => setEditingSaved((v) => !v)}
+                onNew={() => openBuilder(onCreateRecipe)}
+                items={recipes.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  detail: `${t.nutrition.servingCount(r.servings)} · ${t.nutrition.kcalPerServing(recipePerServing(r).calories)}`,
+                  logLabel: t.nutrition.logServing(r.name),
+                }))}
+                onLog={(id) => {
+                  haptic([20, 30]);
+                  logRecipe(id, 1, meal);
+                  close();
+                }}
+                onDelete={(id) => {
+                  haptic(15);
+                  deleteRecipe(id);
+                }}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -492,31 +595,7 @@ export function AddFoodSheet({
             </div>
 
             {onIngredientCaptured ? null : (
-              <div>
-                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                  {t.addFood.meal}
-                </p>
-                <div className="flex gap-2">
-                  {MEAL_ORDER.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        haptic(10);
-                        setMeal(m);
-                      }}
-                      aria-pressed={meal === m}
-                      className={`min-h-[40px] flex-1 rounded-2xl text-[14px] font-semibold ${
-                        meal === m
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-secondary-foreground"
-                      }`}
-                    >
-                      {t.mealTypes[m]}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <MealPicker label={t.addFood.meal} meal={meal} onPick={setMeal} />
             )}
 
             {suggestedGrams && !gramsTouched ? (
@@ -616,7 +695,14 @@ export function AddFoodSheet({
               second, redundant way to do the same thing. New entries keep
               an explicit button too, as the primary/expected action, even
               though Done now saves them as well. */}
-            {editEntry && !onIngredientCaptured ? null : (
+            {editEntry && !onIngredientCaptured ? (
+              <button
+                onClick={deleteEntry}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-semibold text-destructive active:scale-[0.985]"
+              >
+                <Trash2 className="size-4" /> {t.addFood.deleteFromLog}
+              </button>
+            ) : (
               <button
                 onClick={save}
                 disabled={!canSave}
@@ -704,6 +790,127 @@ function FoodList({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function MealPicker({
+  label,
+  meal,
+  onPick,
+}: {
+  label: string;
+  meal: MealType;
+  onPick: (meal: MealType) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div>
+      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{label}</p>
+      <div className="flex gap-2">
+        {MEAL_ORDER.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => {
+              haptic(10);
+              onPick(m);
+            }}
+            aria-pressed={meal === m}
+            className={`min-h-[40px] flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
+              meal === m
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-secondary-foreground"
+            }`}
+          >
+            {t.mealTypes[m]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Saved meals or recipes: one tap on "+" logs to the chosen meal. "Edit"
+ *  swaps the "+" for a delete button — deleting had no way in at all
+ *  before these moved here from the Nutrition screen. */
+function SavedList({
+  title,
+  empty,
+  newLabel,
+  items,
+  editing,
+  onToggleEdit,
+  onNew,
+  onLog,
+  onDelete,
+}: {
+  title: string;
+  empty: string;
+  newLabel: string;
+  items: { id: string; name: string; detail: string; logLabel: string }[];
+  editing: boolean;
+  onToggleEdit: () => void;
+  onNew: () => void;
+  onLog: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[13px] font-semibold text-muted-foreground">{title}</p>
+        <div className="flex items-center gap-1">
+          {items.length ? (
+            <button
+              onClick={onToggleEdit}
+              className="rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
+            >
+              {editing ? t.common.done : t.common.edit}
+            </button>
+          ) : null}
+          <button
+            onClick={onNew}
+            className="flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
+          >
+            <Plus className="size-3.5" /> {newLabel}
+          </button>
+        </div>
+      </div>
+      {items.length === 0 ? (
+        <p className="rounded-2xl bg-muted/60 px-4 py-3 text-[12.5px] leading-snug text-muted-foreground">
+          {empty}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="glass flex items-center gap-1 rounded-2xl py-1 pl-4 pr-1">
+              <div className="min-w-0 flex-1 py-2">
+                <p className="truncate text-[15px] font-semibold">{item.name}</p>
+                <p className="tabular text-[12px] text-muted-foreground">{item.detail}</p>
+              </div>
+              {editing ? (
+                <button
+                  onClick={() => onDelete(item.id)}
+                  aria-label={t.addFood.deleteMeal(item.name)}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive active:scale-90"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => onLog(item.id)}
+                  aria-label={item.logLabel}
+                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+                >
+                  <HapticSwitch />
+                  <Plus className="size-5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

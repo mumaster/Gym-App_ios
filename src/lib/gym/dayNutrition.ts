@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { dayKeyFromDate } from "./date";
 import {
   RESISTANCE_TRAINING_MET,
@@ -52,15 +52,15 @@ export function useSessionEnergy(): SessionEnergy | null {
   }, [nutritionProfile, weightLog, minutes, met]);
 }
 
-/** Whether `date` is a training or rest day, and the nutrition limits that
- *  apply to it. With day-type limits off (or no bodyweight to estimate a
- *  session from), every day uses `nutritionGoals` unchanged. The rotation
- *  consulted is the program when one exists, else the weekly plan — the
- *  same precedence the plan cards use. */
-export function useDayNutrition(date: Date): {
+/** Resolves the day type and limits for any date — the week strip on
+ *  `/nutrition` needs seven at once, which a per-date hook can't give. With
+ *  day-type limits off (or no bodyweight to estimate a session from), every
+ *  day uses `nutritionGoals` unchanged. The rotation consulted is the
+ *  program when one exists, else the weekly plan — the same precedence the
+ *  plan cards use. */
+export function useDayGoalsResolver(): (date: Date) => {
   dayType: DayType;
   goals: NutritionGoals;
-  byDayType: boolean;
 } {
   const {
     nutritionGoals,
@@ -72,27 +72,43 @@ export function useDayNutrition(date: Date): {
     activeWorkout,
   } = useGym();
   const session = useSessionEnergy();
-  const key = dayKeyFromDate(date);
-  return useMemo(() => {
-    const dayType = dayTypeFor(parseDayKey(key), {
-      rotation: program ?? weeklyScheme,
+  return useCallback(
+    (date: Date) => {
+      const dayType = dayTypeFor(parseDayKey(dayKeyFromDate(date)), {
+        rotation: program ?? weeklyScheme,
+        workouts,
+        activeWorkout,
+      });
+      const goals =
+        nutritionByDayType && dayType === "rest"
+          ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
+          : nutritionGoals;
+      return { dayType, goals };
+    },
+    [
+      program,
+      weeklyScheme,
       workouts,
       activeWorkout,
-    });
-    const goals =
-      nutritionByDayType && dayType === "rest"
-        ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
-        : nutritionGoals;
-    return { dayType, goals, byDayType: nutritionByDayType };
-  }, [
-    key,
-    program,
-    weeklyScheme,
-    workouts,
-    activeWorkout,
-    nutritionByDayType,
-    nutritionGoals,
-    restDayGoalOverrides,
-    session,
-  ]);
+      nutritionByDayType,
+      nutritionGoals,
+      restDayGoalOverrides,
+      session,
+    ],
+  );
+}
+
+/** Whether `date` is a training or rest day, and the limits that apply. */
+export function useDayNutrition(date: Date): {
+  dayType: DayType;
+  goals: NutritionGoals;
+  byDayType: boolean;
+} {
+  const { nutritionByDayType } = useGym();
+  const resolve = useDayGoalsResolver();
+  const key = dayKeyFromDate(date);
+  return useMemo(
+    () => ({ ...resolve(parseDayKey(key)), byDayType: nutritionByDayType }),
+    [resolve, key, nutritionByDayType],
+  );
 }

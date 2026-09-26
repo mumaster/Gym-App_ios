@@ -105,7 +105,9 @@ export function BodyweightCard() {
       {trend && target !== null && adjustment !== null && calories != null ? (
         <div className="rounded-2xl bg-primary/10 p-3">
           <p className="text-[13px]">
-            {t.bodyweight.target(`${target > 0 ? "+" : ""}${fmt(target, 2, locale)}`)}{" "}
+            {target === 0
+              ? t.bodyweight.maintainTarget
+              : t.bodyweight.target(`${target > 0 ? "+" : ""}${fmt(target, 2, locale)}`)}{" "}
             {adjustment === 0
               ? t.bodyweight.onTrack
               : t.bodyweight.suggest(

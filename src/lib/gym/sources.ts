@@ -38,7 +38,8 @@ export type SourceId =
   | "fat"
   | "fiberSalt"
   | "calorieFloor"
-  | "restDayCarbs";
+  | "restDayCarbs"
+  | "proteinPerMeal";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -143,6 +144,11 @@ export const SOURCES: SourceEntry[] = [
     id: "fiberSalt",
     group: "nutrition",
     refs: ["US Dietary Guidelines (fiber)", "WHO sodium guideline (salt)"],
+  },
+  {
+    id: "proteinPerMeal",
+    group: "nutrition",
+    refs: ["Schoenfeld & Aragon, J Int Soc Sports Nutr 2018"],
   },
   { id: "calorieFloor", group: "nutrition", refs: ["AHA/ACC/TOS obesity guideline (2013)"] },
   {
