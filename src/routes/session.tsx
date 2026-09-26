@@ -20,6 +20,7 @@ import {
   Trophy,
   Youtube,
   X,
+  StickyNote,
 } from "lucide-react";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
@@ -999,9 +1000,18 @@ function ExerciseBlock({
     activeProfileId,
     weightLog,
     nutritionProfile,
+    exerciseNotes,
+    setExerciseNote,
   } = useGym();
   const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
+  const note = exerciseNotes[planned.exercise_id] ?? "";
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
+  const saveNote = () => {
+    if (noteDraft === null) return;
+    setExerciseNote(planned.exercise_id, noteDraft);
+    setNoteDraft(null);
+  };
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const step = exercise ? plateStep(exercise, profile) : 0.5;
   /** Bodyweight exercise: the weight field is external load (+ added, − assisted). */
@@ -1216,6 +1226,51 @@ function ExerciseBlock({
             <Youtube className="size-4 text-primary" />
           </a>
         </div>
+      </div>
+
+      {noteDraft !== null ? (
+        <div className="mt-3 flex items-start gap-2">
+          <textarea
+            autoFocus
+            rows={2}
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onBlur={saveNote}
+            placeholder={t.session.notePlaceholder}
+            aria-label={t.session.noteLabel}
+            className="min-w-0 flex-1 resize-none rounded-xl bg-muted px-3 py-2 text-[16px] leading-snug outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+          />
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={saveNote}
+            className="min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
+          >
+            {t.common.save}
+          </button>
+        </div>
+      ) : note ? (
+        <button
+          onClick={() => setNoteDraft(note)}
+          aria-label={t.session.editNote}
+          className="mt-3 flex w-full items-start gap-2 rounded-xl bg-muted px-3 py-2 text-left active:scale-[0.99]"
+        >
+          <StickyNote className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 whitespace-pre-wrap text-[14px] leading-snug">
+            {note}
+          </span>
+        </button>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {!note && noteDraft === null ? (
+          <button
+            onClick={() => setNoteDraft("")}
+            className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+          >
+            <StickyNote className="size-3.5" />
+            {t.session.addNote}
+          </button>
+        ) : null}
       </div>
 
       {exerciseComplete ? (

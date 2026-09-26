@@ -134,6 +134,9 @@ interface GymState {
   mealTemplates: MealTemplate[];
   /** Starred foods for one-tap logging (name, usual portion, per-100g). */
   favoriteFoods: MealIngredient[];
+  /** A note per exercise id ("seat on 4", "narrow grip"), shown every time
+   *  that exercise comes up in a workout. */
+  exerciseNotes: Record<string, string>;
   /** Named, reusable workout plans the user can start exactly as saved. */
   workoutTemplates: WorkoutTemplate[];
   /** Saved recipes (ingredients + serving count) — see lib/gym/nutrition.ts's Recipe. */
@@ -180,6 +183,7 @@ const initialState: GymState = {
   nutritionProfile: null,
   mealTemplates: [],
   favoriteFoods: [],
+  exerciseNotes: {},
   workoutTemplates: [],
   recipes: [],
   waterEntries: [],
@@ -292,6 +296,7 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     favoriteFoods: raw.favoriteFoods ?? [],
+    exerciseNotes: raw.exerciseNotes ?? {},
     workoutTemplates: raw.workoutTemplates ?? [],
     recipes: raw.recipes ?? [],
     waterEntries: raw.waterEntries ?? [],
@@ -379,6 +384,8 @@ interface Ctx extends GymState {
   saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
   /** Stars or un-stars a food, matched by name (case-insensitive). */
   toggleFavoriteFood: (food: MealIngredient) => void;
+  /** Sets an exercise's note; blank removes it. */
+  setExerciseNote: (exerciseId: string, note: string) => void;
   deleteMealTemplate: (id: string) => void;
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
   logMealTemplate: (id: string, meal: MealType) => void;
@@ -981,6 +988,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
 
+      setExerciseNote: (exerciseId, note) =>
+        setState((s) => {
+          const exerciseNotes = { ...s.exerciseNotes };
+          const text = note.trim();
+          if (text) exerciseNotes[exerciseId] = text;
+          else delete exerciseNotes[exerciseId];
+          return { ...s, exerciseNotes };
+        }),
       toggleFavoriteFood: (food) =>
         setState((s) => {
           const key = food.name.trim().toLowerCase();

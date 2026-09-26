@@ -285,6 +285,10 @@ const en = {
     resting: "Resting…",
     repeat: (load: string, reps: number) => `Repeat  ${load} × ${reps}`,
     bw: "BW",
+    addNote: "Note",
+    noteLabel: "Note for this exercise",
+    notePlaceholder: "e.g. seat on 4, narrow grip",
+    editNote: "Edit note",
     warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
       `Warm-up ${n} of ${of}: ${reps} × ${load} (${pct}% of ${working}).`,
     warmupSource:
@@ -1073,6 +1077,10 @@ const nl: Dict = {
     resting: "Rusten…",
     repeat: (load: string, reps: number) => `Herhaal  ${load} × ${reps}`,
     bw: "LG",
+    addNote: "Notitie",
+    noteLabel: "Notitie bij deze oefening",
+    notePlaceholder: "bijv. stoel op 4, smalle grip",
+    editNote: "Notitie bewerken",
     warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
       `Warming-up ${n} van ${of}: ${reps} × ${load} (${pct}% van ${working}).`,
     warmupSource:
