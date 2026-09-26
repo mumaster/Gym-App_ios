@@ -11,6 +11,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import { Card } from "./Screen";
+import { HapticSwitch } from "./HapticSwitch";
 import { WeightChart } from "./WeightChart";
 
 const fmt = (n: number, digits: number, locale: string) =>
@@ -78,8 +79,9 @@ export function BodyweightCard() {
         </label>
         <button
           onClick={submit}
-          className="min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
+          className="relative min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
         >
+          <HapticSwitch />
           {t.bodyweight.log}
         </button>
       </div>

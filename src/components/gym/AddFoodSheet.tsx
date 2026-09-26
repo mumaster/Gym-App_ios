@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Keyboard, Plus, ScanBarcode, Star } from "lucide-
 import { FoodScanner, type FoodScannerStatus } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
+import { HapticSwitch } from "./HapticSwitch";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
 import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
@@ -694,8 +695,9 @@ function FoodList({
               <button
                 onClick={() => onQuickAdd(food)}
                 aria-label={t.addFood.quickAdd(food.name, food.grams)}
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
               >
+                <HapticSwitch />
                 <Plus className="size-5" />
               </button>
             </div>

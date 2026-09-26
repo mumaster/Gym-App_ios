@@ -36,6 +36,7 @@ import {
   type NutrientKey,
 } from "../lib/gym/nutrition";
 import { BodyweightCard } from "../components/gym/BodyweightCard";
+import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useDayNutrition } from "../lib/gym/dayNutrition";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
@@ -266,8 +267,9 @@ function NutritionScreen() {
                   haptic(15);
                   logWater(ml);
                 }}
-                className="glass flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
+                className="glass relative flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
               >
+                <HapticSwitch />
                 <Droplet className="size-4 text-primary" />
                 <span className="text-[12px] font-semibold">
                   +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}

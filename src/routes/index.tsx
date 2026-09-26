@@ -19,6 +19,7 @@ import {
   Moon,
 } from "lucide-react";
 import { ProfileAvatar } from "../components/gym/ProfileAvatar";
+import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
   NUTRIENT_ORDER,
@@ -650,9 +651,9 @@ function WaterTile({
             key={ml}
             onClick={() => onAdd(ml)}
             aria-label={t.home.addWater(ml)}
-            className="flex min-h-[36px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
+            className="relative flex min-h-[36px] items-center justify-center rounded-full bg-primary text-[12px] font-bold text-primary-foreground active:scale-95"
           >
-            +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
+            <HapticSwitch />+{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
           </button>
         ))}
       </div>

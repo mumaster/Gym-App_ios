@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
+import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
 import { exerciseById } from "../lib/gym/data";
@@ -556,8 +557,9 @@ function SessionScreen() {
                   haptic();
                   rest.skip();
                 }}
-                className="pointer-events-auto ml-2 min-h-[44px] rounded-full bg-primary px-5 text-[15px] font-bold text-primary-foreground"
+                className="pointer-events-auto relative ml-2 min-h-[44px] rounded-full bg-primary px-5 text-[15px] font-bold text-primary-foreground"
               >
+                <HapticSwitch />
                 {t.session.skipRest}
               </button>
             </div>
@@ -576,14 +578,16 @@ function SessionScreen() {
                 </p>
                 <button
                   onClick={extendRest}
-                  className="pointer-events-auto min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
+                  className="pointer-events-auto relative min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
                 >
+                  <HapticSwitch />
                   {t.session.addRest}
                 </button>
                 <button
                   onClick={undoLastSet}
-                  className="pointer-events-auto min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
+                  className="pointer-events-auto relative min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
                 >
+                  <HapticSwitch />
                   {t.session.undoSet}
                 </button>
               </div>
@@ -1372,19 +1376,20 @@ function ExerciseBlock({
             <button
               onClick={repeatLast}
               disabled={!active || locked}
-              className={`min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
+              className={`relative min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
                 !active || locked
                   ? "bg-secondary text-muted-foreground opacity-50"
                   : "bg-primary text-primary-foreground"
               }`}
             >
+              <HapticSwitch disabled={!active || locked} />
               {locked ? t.session.resting : t.session.repeat(lastLogged.weight, lastLogged.reps)}
             </button>
           ) : null}
           <button
             onClick={logCurrent}
             disabled={!active || locked}
-            className={`min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
+            className={`relative min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
               !active || locked
                 ? "bg-secondary text-muted-foreground opacity-50"
                 : lastLogged
@@ -1392,6 +1397,7 @@ function ExerciseBlock({
                   : "bg-primary text-primary-foreground"
             }`}
           >
+            <HapticSwitch disabled={!active || locked} />
             {locked ? t.session.resting : t.session.logSet}
           </button>
         </div>
