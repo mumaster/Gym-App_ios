@@ -42,6 +42,12 @@ import {
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
+import {
+  clearSessionResume,
+  loadSessionResume,
+  saveSessionResume,
+  type SessionPos,
+} from "../lib/gym/sessionResume";
 import { haptic, useGym } from "../lib/gym/store";
 import type { LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
 
@@ -107,7 +113,7 @@ function SessionScreen() {
     removeSetAt,
   } = useGym();
 
-  const [pos, setPos] = useState({ block: 0, slot: 0, round: 1 });
+  const [pos, setPos] = useState<SessionPos>({ block: 0, slot: 0, round: 1 });
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
   const [restNext, setRestNext] = useState<string | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
@@ -118,7 +124,9 @@ function SessionScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const wasComplete = useRef(false);
-  const afterRest = useRef<(() => void) | null>(null);
+  /** Where to move once the running rest finishes — a position rather than
+   *  a callback, so it can be saved and survive the app being closed. */
+  const afterRest = useRef<SessionPos | null>(null);
 
   // Keep the phone awake for the whole session (lifting benefits too).
   useWakeLock(true);
@@ -179,9 +187,9 @@ function SessionScreen() {
       }
     },
     onDismiss: () => {
-      const cb = afterRest.current;
+      const target = afterRest.current;
       afterRest.current = null;
-      cb?.();
+      if (target) setPos(target);
     },
   });
   /** Rest Mode: countdown running, before the "rest complete" phase. */
@@ -206,6 +214,34 @@ function SessionScreen() {
   // session screen goes away (workout finished/cancelled/navigated off) —
   // otherwise a push could still land for a rest that's no longer running.
   useEffect(() => () => void cancelRestNotification(), []);
+
+  // Pick up where the session was if the app was closed mid-workout: the
+  // exercise/round, and a rest still counting (or one that ran out while
+  // closed, which then moves on as it would have).
+  const restoredFor = useRef<string | null>(null);
+  useEffect(() => {
+    const id = activeWorkout?.id;
+    if (!id || restoredFor.current === id) return;
+    restoredFor.current = id;
+    const saved = loadSessionResume(id);
+    if (!saved) return;
+    setPos(saved.pos);
+    afterRest.current = saved.afterRest;
+    setRestNext(saved.restNext);
+    if (saved.rest) rest.resume(saved.rest.endsAt, saved.rest.duration);
+  }, [activeWorkout?.id, rest]);
+
+  useEffect(() => {
+    const id = activeWorkout?.id;
+    if (!id || restoredFor.current !== id) return;
+    saveSessionResume({
+      workoutId: id,
+      pos,
+      rest: rest.endsAt ? { endsAt: rest.endsAt, duration: rest.duration } : null,
+      afterRest: rest.endsAt ? afterRest.current : null,
+      restNext,
+    });
+  }, [activeWorkout?.id, pos, rest.endsAt, rest.duration, restNext]);
 
   const plan = useMemo(() => activeWorkout?.plan ?? [], [activeWorkout]);
   const blocks = useMemo(() => buildBlocks(plan), [plan]);
@@ -386,6 +422,7 @@ function SessionScreen() {
     setCelebrate(plan.some((p) => p.bonus) ? "big" : "normal");
     const planSnapshot = plan;
     setTimeout(() => {
+      clearSessionResume();
       finishWorkout();
       setFinishedSummary(planSnapshot);
     }, 1800);
@@ -427,6 +464,7 @@ function SessionScreen() {
   const confirmCancelWorkout = () => {
     haptic([40, 60, 40]);
     setCancelConfirmOpen(false);
+    clearSessionResume();
     cancelWorkout();
     navigate({ to: "/" });
   };
@@ -438,7 +476,7 @@ function SessionScreen() {
       const willComplete = loggedWorking(planIndex) + 1 >= (planned?.target_sets ?? 0);
       afterRest.current =
         willComplete && blockIndex < blocks.length - 1
-          ? () => setPos({ block: blockIndex + 1, slot: 0, round: 1 })
+          ? { block: blockIndex + 1, slot: 0, round: 1 }
           : null;
       setRestNext(
         !willComplete
@@ -470,10 +508,12 @@ function SessionScreen() {
     const nextSlotName =
       nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
     setRestNext(nextSlotName ? t.session.restNextExercise(nextSlotName) : null);
-    afterRest.current = () => {
-      if (nextSlot >= 0) setPos((p) => ({ ...p, slot: nextSlot, round: p.round + 1 }));
-      else if (blockIndex < blocks.length - 1) setPos({ block: blockIndex + 1, slot: 0, round: 1 });
-    };
+    afterRest.current =
+      nextSlot >= 0
+        ? { block: blockIndex, slot: nextSlot, round: pos.round + 1 }
+        : blockIndex < blocks.length - 1
+          ? { block: blockIndex + 1, slot: 0, round: 1 }
+          : null;
     // The pair rest lives on slot B.
     startRest(restFor(block.indices[block.indices.length - 1]!));
   };

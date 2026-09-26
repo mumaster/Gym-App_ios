@@ -28,6 +28,12 @@ export interface RestTimer {
   cancel: () => void;
   /** Adds seconds to a running countdown. */
   extend: (seconds: number) => void;
+  /** Wall-clock ms the countdown ends at (0 when idle) — for persisting. */
+  endsAt: number;
+  /** Picks a countdown back up from a saved end time (after the app was
+   *  closed mid-rest). If it already ran out, it ends the normal way — the
+   *  cue only plays if it ran out within the last few seconds. */
+  resume: (endsAt: number, durationSec: number) => void;
 }
 
 /**
@@ -122,6 +128,13 @@ export function useRestTimer(opts: {
     });
   }, []);
 
+  const resume = useCallback((endsAt: number, durationSec: number) => {
+    cuedFor.current = -1;
+    dismissedFor.current = -1;
+    setNow(Date.now());
+    setMachine({ phase: "counting", endsAt, duration: Math.max(1, Math.round(durationSec)) });
+  }, []);
+
   const extend = useCallback((seconds: number) => {
     setMachine((m) =>
       m.phase === "counting"
@@ -143,5 +156,7 @@ export function useRestTimer(opts: {
     skip,
     cancel,
     extend,
+    endsAt: machine.phase === "idle" || machine.skipped ? 0 : machine.endsAt,
+    resume,
   };
 }
