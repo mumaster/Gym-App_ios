@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -31,7 +31,7 @@ import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
-import { WeeklyVolumeCard } from "../components/gym/WeeklyVolumeCard";
+import { GrowthFocusCard } from "../components/gym/WeeklyVolume";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
@@ -172,20 +172,6 @@ function WorkoutHome() {
       else setProposal(null);
       return next;
     });
-  };
-
-  const toggleMuscle = (m: Muscle) => {
-    const owned = REGIONS.filter((r) => r.muscle === m).map((r) => r.id);
-    if (owned.some((id) => regions.includes(id))) {
-      haptic(12);
-      setCuratedSelection(false);
-      setFollowingSchedule(false);
-      setFollowingProgram(false);
-      setRegions((cur) => cur.filter((id) => !owned.includes(id)));
-      setProposal(null);
-      return;
-    }
-    toggleRegion(DEFAULT_REGION[m]);
   };
 
   const acceptProposal = () => {
@@ -520,12 +506,17 @@ function WorkoutHome() {
             </button>
           ))}
         </div>
-        <p className="mt-3 text-[13px] text-muted-foreground">
-          {profile.active_equipment_ids
-            .map((id) => EQUIPMENT.find((e) => e.id === id)?.label)
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
+        {/* One line, not the full gear list — that ran to a paragraph of
+            17 items. The profile's own screen lists and edits it. */}
+        <Link
+          to="/equipment"
+          className="mt-3 flex items-center justify-between gap-2 text-[13px] text-muted-foreground"
+        >
+          <span>{t.generate.equipmentSummary(profile.active_equipment_ids.length)}</span>
+          <span className="flex items-center gap-0.5 font-semibold text-foreground">
+            {t.generate.editEquipment} <ChevronRight className="size-4" />
+          </span>
+        </Link>
       </Card>
 
       <SectionLabel>{program ? t.generate.yourProgram : t.generate.thisWeek}</SectionLabel>
@@ -685,7 +676,7 @@ function WorkoutHome() {
         )}
       </Card>
 
-      {hydrated ? <WeeklyVolumeCard /> : null}
+      {hydrated ? <GrowthFocusCard /> : null}
 
       {hydrated && workoutTemplates.length > 0 ? (
         <div className="mb-4">
@@ -789,23 +780,6 @@ function WorkoutHome() {
         />
       </Card>
 
-      <SectionLabel>{t.generate.targetMuscles}</SectionLabel>
-      <div className="flex flex-wrap gap-2">
-        {MUSCLES.map((m) => (
-          <button
-            key={m}
-            onClick={() => toggleMuscle(m)}
-            className={`min-h-[44px] rounded-full px-5 text-[15px] font-semibold transition-colors ${
-              muscles.includes(m)
-                ? "bg-primary text-primary-foreground"
-                : "glass text-secondary-foreground"
-            }`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
       {focusGroups.length ? (
         <div className="mt-4">
           <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
@@ -900,10 +874,13 @@ function WorkoutHome() {
         </button>
       </div>
 
+      {/* Sticky: the form above is about three screens tall, so the button
+          stays in reach just above the tab bar (whose pill top sits
+          --tab-bar-clearance + 4rem up) until you scroll down to its place. */}
       <button
         onClick={generate}
         disabled={generating}
-        className="glow mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
+        className="glow sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
       >
         {generating ? (
           <>

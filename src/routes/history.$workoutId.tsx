@@ -6,6 +6,7 @@ import { RecapShare } from "../components/gym/RecapShare";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
+import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
 import { estimated1RM } from "../lib/gym/progress";
 import { useGym } from "../lib/gym/store";
 import type { LoggedSet } from "../lib/gym/types";
@@ -53,7 +54,8 @@ function SessionDetailScreen() {
 
   const sets = workout.completed_sets;
   const working = sets.filter((s) => s.set_type === "working");
-  const volume = sets.reduce((v, s) => v + s.weight * s.reps, 0);
+  // Assistance (a negative load on a bodyweight exercise) isn't volume.
+  const volume = sets.reduce((v, s) => v + Math.max(0, s.weight) * s.reps, 0);
 
   // Best estimated-1RM per exercise across all *other* sessions, to flag PRs
   // set here — the same definition progress.ts and the History tab use, so a
@@ -158,7 +160,7 @@ function SessionDetailScreen() {
                 <p className="text-[17px] font-semibold">{ex.name}</p>
                 <p className="text-[13px] text-muted-foreground">{ex.muscle}</p>
               </div>
-              {ex.isPR ? (
+              {ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary">
                   <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
                 </span>
@@ -174,7 +176,13 @@ function SessionDetailScreen() {
                   <span className="tabular text-[13px] font-bold text-primary">
                     {s.set_type === "warmup" ? "W" : s.set_number}
                   </span>
-                  <span className="tabular text-[15px] font-semibold">{s.weight} kg</span>
+                  <span className="tabular text-[15px] font-semibold">
+                    {formatLoad(
+                      s.weight,
+                      isBodyweightExercise(exerciseById(s.exercise_id)),
+                      t.session.bw,
+                    )}
+                  </span>
                   <span className="tabular text-right text-[15px] font-semibold">
                     {t.historyDetail.reps(s.reps)}
                     {s.rpe ? <span className="text-primary"> @{s.rpe}</span> : null}

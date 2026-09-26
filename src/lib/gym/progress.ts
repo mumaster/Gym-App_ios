@@ -141,3 +141,39 @@ export function latestPr(
   const { gain: _gain, ...pr } = latest;
   return pr;
 }
+
+/**
+ * One point per session for an exercise's progress chart, oldest first.
+ * A loaded lift plots the best set's Epley estimate. A bodyweight exercise
+ * (see load.ts) with no bodyweight on file plots its best reps instead —
+ * an estimate from the external load alone (0 for plain pull-ups) would be
+ * meaningless — and with a bodyweight it estimates from bodyweight + load.
+ */
+export function exerciseTrend(
+  exerciseId: string,
+  workouts: Workout[],
+  bodyweight: boolean,
+  bodyKg: number | null,
+): { kind: "e1rm" | "reps"; points: { date: string; value: number }[] } {
+  const kind = bodyweight && bodyKg == null ? "reps" : "e1rm";
+  const points: { date: string; value: number }[] = [];
+  const ordered = [...workouts].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+  for (const w of ordered) {
+    const sets = w.completed_sets.filter(
+      (s) => s.exercise_id === exerciseId && s.set_type === "working" && s.reps > 0,
+    );
+    if (!sets.length) continue;
+    const value =
+      kind === "reps"
+        ? Math.max(...sets.map((s) => s.reps))
+        : Math.max(
+            ...sets.map((s) =>
+              estimated1RM({ weight: s.weight + (bodyweight ? bodyKg! : 0), reps: s.reps }),
+            ),
+          );
+    points.push({ date: w.date, value });
+  }
+  return { kind, points };
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { repRange, rpeAdjustedWeight, suggestWeight } from "../progression";
-import { latestPr } from "../progress";
+import { exerciseTrend, latestPr } from "../progress";
 import type { Workout } from "../types";
 
 const session = (id: string, exercise: string, reps: number[], weight = 100): Workout => ({
@@ -163,5 +163,56 @@ describe("latest PR", () => {
     const ws = [session(1, "pullup", [[-20, 12]]), session(3, "pullup", [[-15, 10]])];
     // 60×1.4 = 84 vs 65×(1+10/30) ≈ 86.7
     expect(latestPr(ws, () => true, 80)?.weight).toBe(-15);
+  });
+});
+
+describe("exercise trend", () => {
+  const day = (n: number) => new Date(2026, 8, n, 18).toISOString();
+  const w = (n: number, ex: string, sets: [number, number][]): Workout => ({
+    id: `t${n}`,
+    date: day(n),
+    duration_minutes: 45,
+    target_muscles: [],
+    plan: [],
+    finished: true,
+    unit: "kg",
+    completed_sets: sets.map(([weight, reps], i) => ({
+      exercise_id: ex,
+      set_number: i + 1,
+      set_type: "working" as const,
+      weight,
+      reps,
+      completed_at: day(n),
+    })),
+  });
+  it("plots the best Epley estimate per session, oldest first", () => {
+    const r = exerciseTrend(
+      "bb-bench",
+      [
+        w(5, "bb-bench", [[82.5, 8]]),
+        w(1, "bb-bench", [
+          [80, 8],
+          [80, 6],
+        ]),
+      ],
+      false,
+      null,
+    );
+    expect(r.kind).toBe("e1rm");
+    expect(r.points.map((p) => p.value)).toEqual([101.3, 104.5]);
+  });
+  it("plots best reps for a bodyweight exercise without a bodyweight", () => {
+    const r = exerciseTrend(
+      "pullup",
+      [
+        w(1, "pullup", [
+          [0, 8],
+          [0, 10],
+        ]),
+      ],
+      true,
+      null,
+    );
+    expect(r).toEqual({ kind: "reps", points: [{ date: day(1), value: 10 }] });
   });
 });
