@@ -20,6 +20,8 @@ if (typeof document !== "undefined") {
   document.addEventListener(
     "click",
     (e) => {
+      // The hidden switch switchTick() clicks isn't a real tap.
+      if (e.target instanceof Element && e.target.closest("[data-switch-tick]")) return;
       const target = e.target instanceof Element ? e.target.closest(CONTROL) : null;
       current = target instanceof HTMLElement ? target : null;
       setTimeout(() => (current = null), 0);
@@ -29,6 +31,36 @@ if (typeof document !== "undefined") {
 }
 
 export const canVibrate = () => typeof navigator !== "undefined" && "vibrate" in navigator;
+
+/**
+ * A real haptic tick on iPhone, through a workaround rather than an API.
+ * Safari 17.4+ supports `<input type="checkbox" switch>`, and on iOS 18+
+ * toggling one plays the system's own switch haptic. Clicking a hidden
+ * one here borrows that tick — the same trick the ios-haptics library
+ * uses. Apple doesn't document it and could stop it in any release; it
+ * may only fire during a tap (a timer-driven call might be silent); and it
+ * is one fixed tick, so vibration patterns can't be reproduced. Where it
+ * does nothing, the visual pulse below still confirms the tap.
+ */
+export function switchTick() {
+  if (typeof document === "undefined") return;
+  try {
+    const label = document.createElement("label");
+    label.setAttribute("aria-hidden", "true");
+    label.setAttribute("data-switch-tick", "");
+    label.style.display = "none";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.setAttribute("switch", "");
+    input.tabIndex = -1;
+    label.appendChild(input);
+    document.head.appendChild(label);
+    label.click();
+    label.remove();
+  } catch {
+    // Never let feedback break the action it confirms.
+  }
+}
 
 /** Restart the pulse on the control the current click is on, if any. */
 export function pulseTappedControl() {

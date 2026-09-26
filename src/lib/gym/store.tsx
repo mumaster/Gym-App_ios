@@ -28,7 +28,7 @@ import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
-import { canVibrate, pulseTappedControl } from "./tapFeedback";
+import { canVibrate, pulseTappedControl, switchTick } from "./tapFeedback";
 import {
   advanceRotation,
   anchorFor,
@@ -1073,8 +1073,14 @@ export function useGym() {
 }
 
 /** Vibrates where the device can; elsewhere (every iPhone — see
- *  tapFeedback.ts) the tapped control plays a visual pulse instead. */
+ *  tapFeedback.ts) it tries the hidden-switch haptic tick and also plays a
+ *  visual pulse on the tapped control, since there's no way to tell
+ *  whether the tick was felt. */
 export const haptic = (pattern: number | number[] = 30) => {
-  if (canVibrate()) navigator.vibrate(pattern);
-  else pulseTappedControl();
+  if (canVibrate()) {
+    navigator.vibrate(pattern);
+    return;
+  }
+  pulseTappedControl();
+  switchTick();
 };
