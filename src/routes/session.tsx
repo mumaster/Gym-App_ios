@@ -48,6 +48,7 @@ import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
+import { warmupLoad } from "../lib/gym/warmup";
 import {
   clearSessionResume,
   loadSessionResume,
@@ -1083,9 +1084,33 @@ function ExerciseBlock({
     lastLogged?.set_type === "working" && setType === "working"
       ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step, bodyKg)
       : null;
+  // Working sets carry on from the last *working* set — after warm-ups the
+  // last logged set is a light one, which used to become the prefill.
+  const lastWorking = [...logged].reverse().find((s) => s.set_type === "working");
+  const workingRef = lastWorking?.weight ?? suggestion?.weight ?? previous?.weight ?? null;
+  const gear = exercise?.equipment_required ?? [];
+  const warmupCount = Math.max(planned.warmup_sets, 1);
+  // Sourced warm-up ramp (see warmup.ts); not for bodyweight exercises,
+  // where there's no lighter version of your own body to load.
+  const warmup =
+    setType === "warmup" && !bw
+      ? warmupLoad(
+          workingRef,
+          Math.min(warmupsLogged, warmupCount - 1),
+          warmupCount,
+          step,
+          gear.includes("barbell") || gear.includes("smith") ? profile.bar_weight : 0,
+        )
+      : null;
   const prefillWeight =
-    rpeAdjustment?.weight ?? lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
-  const prefillReps = bestReps || targetTopReps;
+    setType === "warmup"
+      ? (warmup?.weight ?? lastLogged?.weight ?? 0)
+      : (rpeAdjustment?.weight ??
+        lastWorking?.weight ??
+        suggestion?.weight ??
+        previous?.weight ??
+        0);
+  const prefillReps = warmup ? warmup.reps : bestReps || targetTopReps;
 
   if (!exercise) return null;
 
@@ -1323,6 +1348,21 @@ function ExerciseBlock({
                 : t.session.firstTime}
             </span>
           </div>
+          {warmup && workingRef ? (
+            <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {t.session.warmupHint(
+                  Math.min(warmupsLogged, warmupCount - 1) + 1,
+                  warmupCount,
+                  warmup.reps,
+                  load(warmup.weight),
+                  Math.round(warmup.fraction * 100),
+                  load(workingRef),
+                )}
+              </span>{" "}
+              {t.session.warmupSource}
+            </p>
+          ) : null}
 
           {!lastLogged && suggestion && suggestion.direction !== "same" ? (
             <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary">

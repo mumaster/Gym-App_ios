@@ -285,6 +285,10 @@ const en = {
     resting: "Resting…",
     repeat: (load: string, reps: number) => `Repeat  ${load} × ${reps}`,
     bw: "BW",
+    warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
+      `Warm-up ${n} of ${of}: ${reps} × ${load} (${pct}% of ${working}).`,
+    warmupSource:
+      "Two sets of 6 at 40% and 80% of the working weight improved the sets after (Ribeiro et al. 2014, 2020).",
     bodyweightHint: "0 = bodyweight. + adds weight (belt, vest), − is assistance (band, machine).",
     logSet: "Log set",
     lastPerformance: (load: string, reps: number) => `Last: ${load} × ${reps}`,
@@ -1069,6 +1073,10 @@ const nl: Dict = {
     resting: "Rusten…",
     repeat: (load: string, reps: number) => `Herhaal  ${load} × ${reps}`,
     bw: "LG",
+    warmupHint: (n: number, of: number, reps: number, load: string, pct: number, working: string) =>
+      `Warming-up ${n} van ${of}: ${reps} × ${load} (${pct}% van ${working}).`,
+    warmupSource:
+      "Twee sets van 6 op 40% en 80% van het werkgewicht verbeterden de sets erna (Ribeiro e.a. 2014, 2020).",
     bodyweightHint:
       "0 = lichaamsgewicht. + is extra gewicht (riem, vest), − is ondersteuning (band, machine).",
     logSet: "Log set",
