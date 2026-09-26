@@ -1261,8 +1261,9 @@ function ExerciseBlock({
             <button
               onClick={() => bumpWeight(-1)}
               aria-label={t.session.lessWeight}
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
+              <HapticSwitch />
               <Minus className="size-4" />
             </button>
             <div className="relative min-w-0 flex-1">
@@ -1286,8 +1287,9 @@ function ExerciseBlock({
             <button
               onClick={() => bumpWeight(1)}
               aria-label={t.session.moreWeight}
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
+              <HapticSwitch />
               <Plus className="size-4" />
             </button>
           </div>
@@ -1296,8 +1298,9 @@ function ExerciseBlock({
             <button
               onClick={() => bumpReps(-1)}
               aria-label={t.session.fewerReps}
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
+              <HapticSwitch />
               <Minus className="size-4" />
             </button>
             <div className="relative min-w-0 flex-1">
@@ -1321,8 +1324,9 @@ function ExerciseBlock({
             <button
               onClick={() => bumpReps(1)}
               aria-label={t.session.moreReps}
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
             >
+              <HapticSwitch />
               <Plus className="size-4" />
             </button>
           </div>
