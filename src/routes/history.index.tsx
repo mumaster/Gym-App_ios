@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
+import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { e1rmTrend, personalRecords } from "../lib/gym/progress";
@@ -116,6 +117,13 @@ function HistoryScreen() {
               <StreakCalendar columns={calendarColumns} />
             </div>
           </Card>
+        </>
+      ) : null}
+
+      {workouts.length ? (
+        <>
+          <SectionLabel>{t.trainingLoad.title}</SectionLabel>
+          <TrainingLoadCard />
         </>
       ) : null}
 

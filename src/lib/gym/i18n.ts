@@ -805,6 +805,34 @@ const en = {
     fiber: "Fiber",
     salt: "Salt",
   },
+  trainingLoad: {
+    question: "How hard was the whole session?",
+    rateHint: "Rate it as a whole, not your hardest set. You can change it later in History.",
+    rateAria: (n: number) => `Session effort ${n} out of 10`,
+    anchors: {
+      rest: "Rest",
+      veryVeryEasy: "Very, very easy",
+      easy: "Easy",
+      moderate: "Moderate",
+      somewhatHard: "Somewhat hard",
+      hard: "Hard",
+      veryHard: "Very hard",
+      maximal: "Maximal",
+    },
+    title: "Training load",
+    thisWeek: "This week",
+    units: "load",
+    vsAverage: (pct: number) => `${pct}% of your 4-week average`,
+    chartLabel: "Weekly training load, last 6 weeks",
+    empty: "Rate how hard each session was when you finish (or on a session in History) to see your weekly load.",
+    spike:
+      "This week is over 1.5× your usual. In team sports, jumps like this were linked to more injuries (Gabbett 2016) — though that link is disputed (Impellizzeri et al. 2020) and wasn't studied in lifters. Worth a lighter session if you feel run down.",
+    source:
+      "Load = how hard the session was (0–10) × minutes, the session-RPE method (Foster et al. 2001).",
+    sessionEffort: "Session effort",
+    sessionLoadLine: (rpe: number, minutes: number, load: number) =>
+      `${rpe} × ${minutes} min = ${load} load`,
+  },
   progression: {
     hitTop: (top: number) =>
       `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
@@ -1607,6 +1635,34 @@ const nl: Dict = {
     fat: "Vet",
     fiber: "Vezels",
     salt: "Zout",
+  },
+  trainingLoad: {
+    question: "Hoe zwaar was de hele sessie?",
+    rateHint: "Beoordeel het geheel, niet je zwaarste set. Je kunt het later aanpassen in Geschiedenis.",
+    rateAria: (n: number) => `Sessie-inspanning ${n} van 10`,
+    anchors: {
+      rest: "Rust",
+      veryVeryEasy: "Heel erg licht",
+      easy: "Licht",
+      moderate: "Matig",
+      somewhatHard: "Redelijk zwaar",
+      hard: "Zwaar",
+      veryHard: "Heel zwaar",
+      maximal: "Maximaal",
+    },
+    title: "Trainingsbelasting",
+    thisWeek: "Deze week",
+    units: "belasting",
+    vsAverage: (pct: number) => `${pct}% van je gemiddelde over 4 weken`,
+    chartLabel: "Trainingsbelasting per week, laatste 6 weken",
+    empty: "Geef na elke sessie aan hoe zwaar hij was (of bij een sessie in Geschiedenis) om je weekbelasting te zien.",
+    spike:
+      "Deze week is meer dan 1,5× je gebruikelijke belasting. In teamsporten hingen zulke sprongen samen met meer blessures (Gabbett 2016) — al is dat omstreden (Impellizzeri e.a. 2020) en niet bij krachtsporters onderzocht. Een lichtere sessie kan verstandig zijn als je je moe voelt.",
+    source:
+      "Belasting = hoe zwaar de sessie was (0–10) × minuten, de sessie-RPE-methode (Foster e.a. 2001).",
+    sessionEffort: "Sessie-inspanning",
+    sessionLoadLine: (rpe: number, minutes: number, load: number) =>
+      `${rpe} × ${minutes} min = ${load} belasting`,
   },
   progression: {
     hitTop: (top: number) =>

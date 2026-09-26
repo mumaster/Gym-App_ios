@@ -113,6 +113,11 @@ export interface Workout {
    * at most one scheduling source), but not enforced at the type level since
    * nothing reads both at once. */
   fromProgramDay?: boolean;
+  /** When the session was finished — with `date` (its start) this gives the
+   *  real length. Missing on sessions saved before it was recorded. */
+  finished_at?: string;
+  /** Session RPE, 0–10 on Foster's CR-10 scale — see trainingLoad.ts. */
+  session_rpe?: number;
 }
 
 /** A named, reusable plan the user can start exactly as saved, as an

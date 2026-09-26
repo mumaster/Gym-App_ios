@@ -348,6 +348,8 @@ interface Ctx extends GymState {
   /** Moves these plan entries (one exercise, or both halves of a superset)
    *  to the end of the running workout, keeping their order. */
   moveActiveToEnd: (indices: number[]) => void;
+  /** Sets (or, with null, clears) a finished workout's session RPE. */
+  rateWorkout: (workoutId: string, rpe: number | null) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
   appendBonusExercise: (exerciseId: string) => void;
   toggleLovedExercise: (exerciseId: string) => void;
@@ -815,7 +817,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
           s.activeWorkout
             ? {
                 ...s,
-                workouts: [{ ...s.activeWorkout, finished: true }, ...s.workouts],
+                workouts: [
+                  { ...s.activeWorkout, finished: true, finished_at: new Date().toISOString() },
+                  ...s.workouts,
+                ],
                 activeWorkout: null,
                 // Only advance the split's rotation for the session it actually
                 // scheduled — an off-schedule or repeated session shouldn't
@@ -843,6 +848,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
           plan.splice(to, 0, moved!);
           return withPlan(s, plan);
         }),
+      rateWorkout: (workoutId, rpe) =>
+        setState((s) => ({
+          ...s,
+          workouts: s.workouts.map((w) => {
+            if (w.id !== workoutId) return w;
+            const { session_rpe: _old, ...rest } = w;
+            return rpe == null ? rest : { ...rest, session_rpe: rpe };
+          }),
+        })),
       moveActiveToEnd: (indices) =>
         setState((s) => {
           if (!s.activeWorkout) return s;

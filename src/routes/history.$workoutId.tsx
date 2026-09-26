@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { estimated1RM } from "../lib/gym/progress";
@@ -28,7 +30,7 @@ export const Route = createFileRoute("/history/$workoutId")({
 
 function SessionDetailScreen() {
   const { workoutId } = useParams({ from: "/history/$workoutId" });
-  const { workouts, hydrated } = useGym();
+  const { workouts, hydrated, rateWorkout } = useGym();
   const t = useTranslation();
   const locale = useLocale();
   const workout = workouts.find((w) => w.id === workoutId);
@@ -107,7 +109,7 @@ function SessionDetailScreen() {
     >
       <Card className="grid grid-cols-3 gap-2 p-4 text-center">
         {[
-          [t.historyDetail.duration, `${workout.duration_minutes} min`],
+          [t.historyDetail.duration, `${sessionMinutes(workout)} min`],
           [t.session.statSets, t.historyDetail.workingSets(working.length)],
           [t.historyDetail.volume, `${volume.toLocaleString(locale)} kg`],
         ].map(([label, value]) => (
@@ -121,6 +123,24 @@ function SessionDetailScreen() {
       <p className="mt-3 px-1 text-[13px] text-muted-foreground">
         {workout.target_muscles.join(" · ") || t.generate.fullBody}
       </p>
+
+      <SectionLabel>{t.trainingLoad.sessionEffort}</SectionLabel>
+      <Card className="space-y-2 p-4">
+        <p className="text-[14px] font-semibold">{t.trainingLoad.question}</p>
+        <SessionRpePicker
+          value={workout.session_rpe}
+          onChange={(n) => rateWorkout(workout.id, n)}
+        />
+        {workout.session_rpe != null ? (
+          <p className="text-[12px] text-muted-foreground">
+            {t.trainingLoad.sessionLoadLine(
+              workout.session_rpe,
+              sessionMinutes(workout),
+              workout.session_rpe * sessionMinutes(workout),
+            )}
+          </p>
+        ) : null}
+      </Card>
 
       <SectionLabel>{t.historyDetail.exercises}</SectionLabel>
       {byExercise.length === 0 ? (

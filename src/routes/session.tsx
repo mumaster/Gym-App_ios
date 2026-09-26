@@ -28,6 +28,7 @@ import { Confetti } from "../components/gym/Confetti";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
+import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
@@ -117,6 +118,7 @@ function SessionScreen() {
     swapActiveExercise,
     appendBonusExercise,
     moveActiveToEnd,
+    rateWorkout,
     profiles,
     activeProfileId,
     avoidedExerciseIds,
@@ -316,6 +318,8 @@ function SessionScreen() {
   if (finishedSummary) {
     const summaryProfile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
     const uniqueIds = Array.from(new Set(finishedSummary.map((p) => p.exercise_id)));
+    // The session that just ended is the newest workout once the finish commits.
+    const finishedWorkout = workouts[0];
     return (
       <div className="safe-top min-h-[100dvh] bg-background px-4 pb-8">
         <div className="mx-auto w-full max-w-xl">
@@ -324,6 +328,16 @@ function SessionScreen() {
             <h1 className="text-2xl font-bold">{t.session.workoutComplete}</h1>
             <p className="text-[14px] text-muted-foreground">{t.session.workoutCompleteSub}</p>
           </div>
+          {finishedWorkout ? (
+            <div className="glass mb-4 space-y-2 rounded-2xl p-4">
+              <p className="text-[15px] font-semibold">{t.trainingLoad.question}</p>
+              <SessionRpePicker
+                value={finishedWorkout.session_rpe}
+                onChange={(n) => rateWorkout(finishedWorkout.id, n)}
+              />
+              <p className="text-[12px] text-muted-foreground">{t.trainingLoad.rateHint}</p>
+            </div>
+          ) : null}
           <div className="space-y-2">
             {uniqueIds.map((id) => {
               const ex = exerciseById(id);
