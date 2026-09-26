@@ -22,6 +22,7 @@ import {
   X,
   StickyNote,
   CornerDownRight,
+  Bandage,
 } from "lucide-react";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
@@ -119,6 +120,7 @@ function SessionScreen() {
     appendBonusExercise,
     moveActiveToEnd,
     rateWorkout,
+    toggleAvoidedExercise,
     profiles,
     activeProfileId,
     avoidedExerciseIds,
@@ -132,6 +134,8 @@ function SessionScreen() {
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
   const [restNext, setRestNext] = useState<string | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  /** Plan index whose "Hurts" sheet is open. */
+  const [painIndex, setPainIndex] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState<"normal" | "big" | null>(null);
   const [finishedSummary, setFinishedSummary] = useState<PlannedExercise[] | null>(null);
   const [listOpen, setListOpen] = useState(false);
@@ -551,6 +555,18 @@ function SessionScreen() {
     startRest(restFor(block.indices[block.indices.length - 1]!));
   };
 
+  /** From the "Hurts" sheet: close it, optionally put the exercise on the
+   *  avoid list (the generator and swap sheet already skip those), then
+   *  open the swap sheet for it — one sheet at a time. */
+  const painSwap = (avoid: boolean) => {
+    if (painIndex === null) return;
+    const id = plan[painIndex]?.exercise_id;
+    if (avoid && id && !avoidedExerciseIds.includes(id)) toggleAvoidedExercise(id);
+    const index = painIndex;
+    setPainIndex(null);
+    setSwapIndex(index);
+  };
+
   /** "Do later" (a machine is taken): the current exercise — both halves of
    *  a superset — moves to the end, and the next one comes up in its place. */
   const doLater = () => {
@@ -716,6 +732,7 @@ function SessionScreen() {
                 flash={(!isSuperset || s === slot) && cardFlash}
                 cardRef={s === slot ? activeCardRef : undefined}
                 onSwap={() => setSwapIndex(idx)}
+                onHurts={() => setPainIndex(idx)}
                 {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
                 complete={doneSets >= p.target_sets}
@@ -886,6 +903,33 @@ function SessionScreen() {
         </div>
       </nav>
 
+      <BottomSheet
+        open={painIndex !== null}
+        onClose={() => setPainIndex(null)}
+        title={t.session.painTitle}
+      >
+        <div className="space-y-3">
+          <p className="text-[14px] leading-snug">
+            {t.session.painBody(exerciseById(plan[painIndex ?? 0]?.exercise_id ?? "")?.name ?? "")}
+          </p>
+          <button
+            onClick={() => painSwap(false)}
+            className="relative min-h-[52px] w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.99]"
+          >
+            <HapticSwitch />
+            {t.session.painSwap}
+          </button>
+          <button
+            onClick={() => painSwap(true)}
+            className="relative min-h-[52px] w-full rounded-2xl bg-secondary text-[15px] font-semibold text-secondary-foreground active:scale-[0.99]"
+          >
+            <HapticSwitch />
+            {t.session.painSwapAvoid}
+          </button>
+          <p className="text-[12px] text-muted-foreground">{t.session.painNote}</p>
+        </div>
+      </BottomSheet>
+
       <SwapSheet
         exerciseId={swapIndex === null ? null : (plan[swapIndex]?.exercise_id ?? null)}
         partnerExerciseId={swapPartnerId}
@@ -996,6 +1040,7 @@ function ExerciseBlock({
   restForThisExercise,
   cardRef,
   onSwap,
+  onHurts,
   onDoLater,
   onLogged,
   complete: exerciseComplete,
@@ -1014,6 +1059,7 @@ function ExerciseBlock({
   restForThisExercise: number;
   cardRef?: React.MutableRefObject<HTMLElement | null> | undefined;
   onSwap: () => void;
+  onHurts: () => void;
   /** Present when there's a later exercise to swap places with. */
   onDoLater?: (() => void) | undefined;
   onLogged: (type: SetType) => void;
@@ -1302,6 +1348,13 @@ function ExerciseBlock({
             {t.session.addNote}
           </button>
         ) : null}
+        <button
+          onClick={onHurts}
+          className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+        >
+          <Bandage className="size-3.5" />
+          {t.session.hurts}
+        </button>
         {onDoLater ? (
           <button
             onClick={onDoLater}

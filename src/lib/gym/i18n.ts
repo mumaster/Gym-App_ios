@@ -287,6 +287,14 @@ const en = {
     bw: "BW",
     addNote: "Note",
     doLater: "Do later",
+    hurts: "Hurts",
+    painTitle: "Something hurts?",
+    painBody: (name: string) =>
+      `Stop ${name} for today. Pick a replacement that doesn't hurt — or keep ${name} off your future workouts too.`,
+    painSwap: "Swap for today",
+    painSwapAvoid: "Swap and avoid from now on",
+    painNote:
+      "You can undo avoiding it under Settings → Equipment profiles. Sharp pain, or pain that lasts, is worth getting checked.",
     movedToEnd: (name: string) => `${name} moved to the end`,
     noteLabel: "Note for this exercise",
     notePlaceholder: "e.g. seat on 4, narrow grip",
@@ -1109,6 +1117,14 @@ const nl: Dict = {
     bw: "LG",
     addNote: "Notitie",
     doLater: "Later doen",
+    hurts: "Doet pijn",
+    painTitle: "Doet er iets pijn?",
+    painBody: (name: string) =>
+      `Stop vandaag met ${name}. Kies een vervanger die geen pijn doet — of laat ${name} ook uit je toekomstige trainingen.`,
+    painSwap: "Vervang voor vandaag",
+    painSwapAvoid: "Vervang en voortaan vermijden",
+    painNote:
+      "Vermijden kun je terugdraaien onder Instellingen → Uitrustingsprofielen. Scherpe of aanhoudende pijn is het waard om te laten nakijken.",
     movedToEnd: (name: string) => `${name} verplaatst naar het einde`,
     noteLabel: "Notitie bij deze oefening",
     notePlaceholder: "bijv. stoel op 4, smalle grip",
