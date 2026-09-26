@@ -382,31 +382,41 @@
   animation: dumbbell-plates 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
-/* SplashScreen's entrance reveal: the reverse of dumbbell-plates above — the
-   weight clusters snap onto the bar once (from the same off-axis, faded
-   start) instead of looping, and hold the assembled end state rather than
-   resetting.
+/* SplashScreen's entrance reveal: each weight-plate cluster slams onto the
+   bar once and holds, modelled as a real metal strike so the sparks can
+   land on the actual moment of contact:
 
-   Split into two chained animations rather than one, because "the moment of
-   impact" and "the whole landing flourish" are NOT the same instant. A
-   single overshoot-and-settle animation (tried earlier) reaches the true
-   contact point around a third of the way through, then overshoots past it
-   and eases back — so anything synced to that animation's declared END
-   (its 100% keyframe) fires only after the overshoot AND the settle, well
-   after the metal actually touches the bar. That read as sparks arriving
-   for a "celebration" beat after the thud, not as part of it.
+   - 0% → 62.5% (the first 200ms, = FLIGHT_MS in SplashScreen.tsx): the
+     plate ACCELERATES into the bar (ease-in, fastest at contact) and
+     reaches its resting spot exactly at 62.5%. That keyframe is both the
+     moment of contact and the deepest point the plate ever reaches — the
+     sparks and the badge thud fire exactly there.
+   - 62.5% → 100%: a small rebound back OUT (away from the bar, 6% of the
+     travel) and settle. Never further in.
 
-   dumbbell-flight is the real travel — its 100% keyframe IS the contact
-   point, full stop, so anything hooked to its animationend (the spark
-   burst) fires at the exact instant of impact. dumbbell-recoil is a small,
-   purely cosmetic post-impact bounce chained right after (its own delay =
-   flight's duration, fill: forwards only — not "both" — so it doesn't
-   assert its resting transform during flight's own active phase and mask
-   the travel). Nothing waits on the recoil; it's flourish, not gating. */
-@keyframes dumbbell-flight {
+   It used to be two chained animations: an ease-out flight that covered
+   ~85% of the distance in its first 30ms and then crept, so the plate
+   visibly "landed" ~110ms before the sparks; then a recoil that pushed the
+   plate deeper past its rest point, putting the deepest point ~80ms after
+   them; plus a one-frame jump at the hand-over. Measured by sampling the
+   transform frame by frame, not eyeballed. One animation with an explicit
+   contact keyframe removes all three. */
+@keyframes dumbbell-strike {
   0% {
     transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
     opacity: 0;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.55);
+  }
+  20% {
+    opacity: 1;
+  }
+  62.5% {
+    transform: translate(0, 0);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  80% {
+    transform: translate(calc(var(--dumbbell-slide-x) * 0.06), calc(var(--dumbbell-slide-y) * 0.06));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1);
   }
   100% {
     transform: translate(0, 0);
@@ -414,30 +424,18 @@
   }
 }
 
-@keyframes dumbbell-recoil {
-  0% {
-    transform: translate(0, 0);
-  }
-  45% {
-    transform: translate(calc(var(--dumbbell-slide-x) * -0.09), calc(var(--dumbbell-slide-y) * -0.09));
-  }
-  100% {
-    transform: translate(0, 0);
-  }
-}
-
+/* 320ms = FLIGHT_MS (200) / 0.625, so contact lands exactly on the 62.5%
+   keyframe. Keep the three in sync. */
 @utility animate-dumbbell-assemble {
-  animation:
-    dumbbell-flight 200ms cubic-bezier(0.16, 1, 0.3, 1) var(--dumbbell-cluster-delay, 0ms) both,
-    dumbbell-recoil 200ms ease-out calc(var(--dumbbell-cluster-delay, 0ms) + 200ms) forwards;
+  animation: dumbbell-strike 320ms linear var(--dumbbell-cluster-delay, 0ms) both;
 }
 
 /* SplashScreen: the sparks thrown off when a weight plate strikes the
    metal bar — small, thin and short-lived, not an explosion. Each spark
    flies out along its own --spark-dx/-dy (SVG user units) and drops a
    little as it cools before fading, once. SparkBurst (in SplashScreen.tsx) fires on a CSS
-   animation-delay computed to land exactly on dumbbell-flight's real end
-   (not on dumbbell-flight's own animationend event — see the delayMs
+   animation-delay computed to land exactly on dumbbell-strike's contact
+   keyframe (not on an animationend event — see the delayMs
    comment on SparkBurst for why that's unreliable here). The
    overshoot-then-settle state lands at 3% rather than a slower fade-in —
    close enough to a single frame that the spark reads as an instant pop

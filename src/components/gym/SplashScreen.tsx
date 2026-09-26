@@ -9,17 +9,14 @@ const SPARK_COLORS = ["oklch(0.85 0.19 70)", "oklch(0.92 0.14 85)", "oklch(0.97 
 /** The flash/ring at the impact point itself uses the brightest, most
  *  white-hot tone — the sparks flying out of it are the cooling embers. */
 const FLASH_COLOR = "oklch(0.97 0.06 85)";
-/** dumbbell-flight's own declared duration in styles.css — the real travel,
- *  ending exactly at contact (see the comment on it there). A cluster's
- *  spark burst fires at its own --dumbbell-cluster-delay + this, which is
- *  the true, exact impact instant (not an approximation of one) since
- *  that's what dumbbell-flight's 100% keyframe IS by construction. This has
- *  to be a plain CSS animation-delay rather than firing off the CSS
- *  animation's own onAnimationEnd event: this splash paints from SSR'd
- *  markup, so the CSS animation can (and often does) finish playing before
- *  React finishes hydrating and attaching that listener, silently dropping
- *  the event for whichever cluster lands first — a real, reproduced bug,
- *  not a theoretical one. */
+/** Time from a cluster starting its move to the instant it strikes the bar
+ *  — dumbbell-strike's 62.5% keyframe in styles.css (320ms × 0.625), which
+ *  is both the moment of contact and the plate's deepest point, since it
+ *  accelerates into the bar and only rebounds outward after. Sparks and the
+ *  badge thud fire at cluster delay + this. It's a plain CSS
+ *  animation-delay rather than an animationend listener because this
+ *  splash paints from SSR'd markup and the animation can finish before
+ *  React hydrates and attaches listeners — a real, reproduced bug. */
 const FLIGHT_MS = 200;
 /** The badge (the glowing rounded square) finishes its own entrance at
  *  BADGE_MS — the bar and weight clusters don't start moving until after
@@ -258,9 +255,8 @@ export function SplashScreen() {
                 </g>
 
                 {/* Each burst fires exactly at its cluster's own impact instant —
-              --dumbbell-cluster-delay + FLIGHT_MS (dumbbell-flight's real
-              travel time, whose 100% keyframe IS the contact point, not the
-              cosmetic recoil bounce that plays after it). Five thin
+              --dumbbell-cluster-delay + FLIGHT_MS (dumbbell-strike's
+              contact keyframe — the plate's deepest point on the bar). Five thin
               sparks in a cone pointing away from the icon's center — a
               metal strike, not a blast. */}
                 <SparkBurst
