@@ -1,4 +1,5 @@
 import { exerciseById } from "./data";
+import { isBodyweightExercise } from "./load";
 import type { Muscle, Workout } from "./types";
 
 /** Translated copy this module needs but can't import directly (a plain lib
@@ -8,6 +9,8 @@ import type { Muscle, Workout } from "./types";
 export interface ProgressionCopy {
   hitTop: (top: number) => string;
   hitTopOnce: (top: number) => string;
+  /** hitTop for a bodyweight exercise: add load or take off assistance. */
+  hitTopBodyweight: (top: number) => string;
   matching: string;
 }
 
@@ -16,6 +19,8 @@ const DEFAULT_COPY: ProgressionCopy = {
     `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
   hitTopOnce: (top) =>
     `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
+  hitTopBodyweight: (top) =>
+    `You hit ${top}+ reps on every set in your last two sessions — add weight (belt or vest) or use less assistance.`,
   matching: "Matching your last session's weight — aim for one more rep.",
 };
 
@@ -79,6 +84,13 @@ const workingSets = (w: Workout, exerciseId: string) =>
  * actually achievable with the exercise's equipment and the user's owned
  * plates/dumbbells). Defaults to a plain 0.5kg round for callers that don't
  * have an `Exercise`/`EquipmentProfile` in scope to compute a real step.
+ *
+ * Bodyweight exercises (see load.ts) log *external* load — 0 is bodyweight,
+ * positive is added, negative is assistance — so any value is valid, and
+ * the same percentage increase applies to what is actually lifted:
+ * bodyweight plus that load, when `bodyKg` is known (else one step). The
+ * increase is then added to the external load, which for an assisted
+ * exercise means less assistance.
  */
 export function suggestWeight(
   exerciseId: string,
@@ -86,27 +98,32 @@ export function suggestWeight(
   targetReps: string,
   roundStep = 0.5,
   copy: ProgressionCopy = DEFAULT_COPY,
+  bodyKg: number | null = null,
 ): ProgressionSuggestion | null {
   const sessions = workouts.filter((w) => workingSets(w, exerciseId).length > 0).slice(0, 2);
   const sets = sessions[0] ? workingSets(sessions[0], exerciseId) : [];
   if (!sets.length) return null;
 
   const lastWeight = sets[sets.length - 1]!.weight;
-  if (lastWeight <= 0) return null;
+  const exercise = exerciseById(exerciseId);
+  const bodyweight = isBodyweightExercise(exercise);
+  if (lastWeight <= 0 && !bodyweight) return null;
+  // What's actually being lifted, for the percentage increase.
+  const moved = bodyweight ? (bodyKg ?? 0) + lastWeight : lastWeight;
 
   const [bottom, top] = repRange(targetReps);
   const hitTop = (w: Workout) => workingSets(w, exerciseId).every((s) => s.reps >= top);
   const hitTopLast = hitTop(sessions[0]!);
   const hitTopTwice = hitTopLast && sessions.length === 2 && hitTop(sessions[1]!);
   const minRepsLastTime = Math.min(...sets.map((s) => s.reps));
-  const primary = exerciseById(exerciseId)?.primary_muscle;
+  const primary = exercise?.primary_muscle;
   const increase = primary && LOWER_BODY.has(primary) ? LOWER_BODY_INCREASE : UPPER_BODY_INCREASE;
 
   const base = hitTopTwice
     ? {
-        weight: lastWeight + Math.max(roundStep, roundToStep(lastWeight * increase, roundStep)),
+        weight: lastWeight + Math.max(roundStep, roundToStep(moved * increase, roundStep)),
         reps: bottom,
-        reason: copy.hitTop(top),
+        reason: bodyweight ? copy.hitTopBodyweight(top) : copy.hitTop(top),
       }
     : hitTopLast
       ? { weight: lastWeight, reps: top, reason: copy.hitTopOnce(top) }
@@ -133,6 +150,10 @@ export function suggestWeight(
  * 2023; Robinson et al., Sports Med 2024), while strength gains barely
  * depend on it. Returns null when the RPE is inside the range or missing,
  * or when no loadable weight is close enough to the 4% change.
+ *
+ * For a bodyweight exercise pass `bodyKg`: the 4% applies to bodyweight plus
+ * the external load, and the result may go negative (assistance). Without
+ * a known bodyweight nothing is adjusted.
  */
 export const TARGET_RPE: [number, number] = [7, 9];
 const LOAD_CHANGE_PER_RPE_POINT = 0.04;
@@ -141,17 +162,19 @@ export function rpeAdjustedWeight(
   weight: number,
   rpe: number | undefined,
   roundStep: number,
+  bodyKg: number | null = null,
 ): { weight: number; direction: "up" | "down" } | null {
-  if (rpe == null || weight <= 0) return null;
+  const moved = weight + (bodyKg ?? 0);
+  if (rpe == null || moved <= 0 || (weight <= 0 && bodyKg == null)) return null;
   const [lo, hi] = TARGET_RPE;
   const off = rpe > hi ? rpe - hi : rpe < lo ? rpe - lo : 0;
   if (!off) return null;
-  const raw = weight * (1 - off * LOAD_CHANGE_PER_RPE_POINT);
+  const raw = moved * (1 - off * LOAD_CHANGE_PER_RPE_POINT) - (bodyKg ?? 0);
   // Rounded to a loadable weight. On light loads a single plate step can be
   // far more than 4%, in which case rounding lands back on the same weight
   // and no adjustment is made — forcing a whole step would overshoot the
   // source's 4% (e.g. 10 kg → 7.5 kg is −25%).
   const next = Number(roundToStep(raw, roundStep).toFixed(2));
   if (next === weight) return null;
-  return { weight: Math.max(0, next), direction: off > 0 ? "down" : "up" };
+  return { weight: bodyKg == null ? Math.max(0, next) : next, direction: off > 0 ? "down" : "up" };
 }

@@ -25,6 +25,10 @@ export function selectOnFocus(e: FocusEvent<HTMLInputElement>) {
 /** Only digits and a single decimal separator (comma or period). */
 export const DECIMAL_INPUT_RE = /^\d*([.,]\d*)?$/;
 
+/** DECIMAL_INPUT_RE plus an optional leading minus — for a bodyweight
+ *  exercise's assistance, logged as negative load. */
+export const SIGNED_DECIMAL_INPUT_RE = /^-?\d*([.,]\d*)?$/;
+
 /** Parses a DECIMAL_INPUT_RE-guarded string, comma or period alike. */
 export function parseDecimal(s: string): number {
   return Number(s.replace(",", "."));

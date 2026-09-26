@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { DEFAULT_AVATAR_ID, type AvatarId } from "./avatars";
-import { DEFAULT_PROFILES } from "./data";
+import { DEFAULT_PROFILES, EXERCISES } from "./data";
+import { isBodyweightExercise, latestBodyKg } from "./load";
 import { DEFAULT_PLATES } from "./plates";
 import {
   mealForTime,
@@ -889,8 +890,16 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // Ranked by estimated 1RM (Epley) so "best set" agrees with the PR
       // definition used everywhere else (progress.ts, history) — it used to
       // rank by raw weight*reps, a third, different notion of "best".
-      bestSet: (exerciseId) =>
-        allSets(exerciseId).sort((a, b) => estimated1RM(b) - estimated1RM(a))[0],
+      bestSet: (exerciseId) => {
+        // A bodyweight exercise's weight is external load, so rank by what
+        // was actually lifted (bodyweight + load); reps break ties, which
+        // matters when no bodyweight is on file and every set logs 0.
+        const body = isBodyweightExercise(EXERCISES.find((e) => e.id === exerciseId))
+          ? (latestBodyKg(state.weightLog, state.nutritionProfile) ?? 0)
+          : 0;
+        const e1 = (x: LoggedSet) => estimated1RM({ weight: x.weight + body, reps: x.reps });
+        return allSets(exerciseId).sort((a, b) => e1(b) - e1(a) || b.reps - a.reps)[0];
+      },
 
       setWeeklyScheme: (scheme) => setState((s) => ({ ...s, weeklyScheme: scheme })),
       updateScheduleSlotDow: (index, dow) =>

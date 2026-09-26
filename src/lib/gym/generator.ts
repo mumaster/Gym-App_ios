@@ -1,6 +1,7 @@
 import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
+import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
 import type {
@@ -196,6 +197,9 @@ interface GenerateArgs {
    *  suggested weights (see lib/gym/plates.ts's `plateStep`). Falls back to a
    *  plain 0.5kg round when omitted. */
   profile?: EquipmentProfile;
+  /** Latest bodyweight, for bodyweight exercises' progression (their
+   *  logged weight is external load — see load.ts). */
+  bodyKg?: number | null;
   /** Scales progressive-overload suggested weights on top of the per-exercise
    *  history-based suggestion — a Program's deload week. Defaults to 1 (no
    *  change); see lib/gym/programs.ts. */
@@ -337,6 +341,7 @@ export function generateWorkout({
   avoided = [],
   history = [],
   profile,
+  bodyKg = null,
   intensityMultiplier = 1,
   volumeMultiplier = 1,
   focusMuscles = [],
@@ -365,10 +370,22 @@ export function generateWorkout({
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
     const step = profile ? plateStep(choice, profile) : 0.5;
-    const suggestion = history.length ? suggestWeight(choice.id, history, target_reps, step) : null;
+    const bw = isBodyweightExercise(choice);
+    const suggestion = history.length
+      ? suggestWeight(choice.id, history, target_reps, step, undefined, bw ? bodyKg : null)
+      : null;
+    // A deload's intensity applies to what's actually lifted — for a
+    // bodyweight exercise that's bodyweight plus the external load, so
+    // without a known bodyweight it's left as is.
+    const scaled = (w: number) =>
+      !bw
+        ? w * intensityMultiplier
+        : bodyKg == null
+          ? w
+          : (bodyKg + w) * intensityMultiplier - bodyKg;
     const suggestedWeight =
       suggestion && intensityMultiplier !== 1
-        ? Number(roundToStep(suggestion.weight * intensityMultiplier, step).toFixed(2))
+        ? Number(roundToStep(scaled(suggestion.weight), step).toFixed(2))
         : suggestion?.weight;
     return {
       exercise_id: choice.id,

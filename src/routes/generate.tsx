@@ -54,6 +54,7 @@ import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
 import { musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
+import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles } from "../lib/gym/volume";
 import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 
@@ -100,6 +101,8 @@ function WorkoutHome() {
     workoutTemplates,
     readinessLog,
     avatarId,
+    weightLog,
+    nutritionProfile,
   } = useGym();
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
@@ -214,6 +217,7 @@ function WorkoutHome() {
         avoided: avoidedExerciseIds,
         history: workouts,
         profile,
+        bodyKg: latestBodyKg(weightLog, nutritionProfile),
         ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
       }),
     );
@@ -977,10 +981,14 @@ function WorkoutHome() {
                         · {p.rest_seconds ? t.generate.restSuffix(p.rest_seconds) : ""}
                         {ex.muscle_targets[0] ?? ex.primary_muscle}
                       </p>
-                      {p.suggested_weight ? (
+                      {p.suggested_weight != null &&
+                      (p.suggested_weight !== 0 || isBodyweightExercise(ex)) ? (
                         <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary">
                           <TrendingUp className="size-3.5" />{" "}
-                          {t.generate.suggestedWeight(p.suggested_weight, p.suggested_reps)}
+                          {t.generate.suggestedWeight(
+                            formatLoad(p.suggested_weight, isBodyweightExercise(ex), t.session.bw),
+                            p.suggested_reps,
+                          )}
                         </p>
                       ) : null}
                     </div>
@@ -1045,6 +1053,8 @@ function WorkoutHome() {
                     workouts,
                     p.target_reps,
                     plateStep(ex, profile),
+                    t.progression,
+                    isBodyweightExercise(ex) ? latestBodyKg(weightLog, nutritionProfile) : null,
                   );
                   return {
                     ...rest,

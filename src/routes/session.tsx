@@ -30,7 +30,12 @@ import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises } from "../lib/gym/generator";
 import { useTranslation } from "../lib/gym/i18n";
-import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
+import {
+  DECIMAL_INPUT_RE,
+  SIGNED_DECIMAL_INPUT_RE,
+  parseDecimal,
+  selectOnFocus,
+} from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
@@ -42,6 +47,7 @@ import {
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
+import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import {
   clearSessionResume,
   loadSessionResume,
@@ -111,7 +117,10 @@ function SessionScreen() {
     activeProfileId,
     avoidedExerciseIds,
     removeSetAt,
+    weightLog,
+    nutritionProfile,
   } = useGym();
+  const bodyKg = latestBodyKg(weightLog, nutritionProfile);
 
   const [pos, setPos] = useState<SessionPos>({ block: 0, slot: 0, round: 1 });
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
@@ -317,19 +326,25 @@ function SessionScreen() {
               const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
               if (!ex || !plannedEntry) return null;
               const step = plateStep(ex, summaryProfile);
+              const bw = isBodyweightExercise(ex);
               const suggestion = suggestWeight(
                 id,
                 workouts,
                 plannedEntry.target_reps,
                 step,
                 t.progression,
+                bw ? bodyKg : null,
               );
               return (
                 <div key={id} className="glass rounded-2xl p-3">
                   <p className="text-[15px] font-semibold">{ex.name}</p>
                   {suggestion ? (
                     <p className="text-[13px] text-muted-foreground">
-                      {t.session.nextTime(suggestion.weight, suggestion.reps, suggestion.reason)}
+                      {t.session.nextTime(
+                        formatLoad(suggestion.weight, bw, t.session.bw),
+                        suggestion.reps,
+                        suggestion.reason,
+                      )}
                     </p>
                   ) : (
                     <p className="text-[13px] text-muted-foreground">
@@ -981,11 +996,20 @@ function ExerciseBlock({
     bestSet,
     profiles,
     activeProfileId,
+    weightLog,
+    nutritionProfile,
   } = useGym();
   const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const step = exercise ? plateStep(exercise, profile) : 0.5;
+  /** Bodyweight exercise: the weight field is external load (+ added, − assisted). */
+  const bw = isBodyweightExercise(exercise);
+  const bodyKg = bw ? latestBodyKg(weightLog, nutritionProfile) : null;
+  const load = (kg: number) => formatLoad(kg, bw, t.session.bw);
+  /** Short form for the set table's kg column: "BW", "+10", "−15". */
+  const cell = (kg: number) =>
+    !bw ? String(kg) : kg === 0 ? t.session.bw : `${kg > 0 ? "+" : "−"}${Math.abs(kg)}`;
 
   const logged = useMemo(
     () =>
@@ -1032,8 +1056,16 @@ function ExerciseBlock({
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
-    () => suggestWeight(planned.exercise_id, workouts, planned.target_reps, step, t.progression),
-    [workouts, planned.exercise_id, planned.target_reps, step, t],
+    () =>
+      suggestWeight(
+        planned.exercise_id,
+        workouts,
+        planned.target_reps,
+        step,
+        t.progression,
+        bodyKg,
+      ),
+    [workouts, planned.exercise_id, planned.target_reps, step, t, bodyKg],
   );
 
   useEffect(() => {
@@ -1049,7 +1081,7 @@ function ExerciseBlock({
   // weight moves 4% per point (see progression.ts's rpeAdjustedWeight).
   const rpeAdjustment =
     lastLogged?.set_type === "working" && setType === "working"
-      ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step)
+      ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step, bodyKg)
       : null;
   const prefillWeight =
     rpeAdjustment?.weight ?? lastLogged?.weight ?? suggestion?.weight ?? previous?.weight ?? 0;
@@ -1075,19 +1107,20 @@ function ExerciseBlock({
     setRpe(null);
     onLogged(setType);
   };
+  /** The weight field as a number ("-" alone, mid-typing, reads as 0). */
+  const currentKg = parseDecimal(weight === "" ? String(prefillWeight) : weight) || 0;
   const logCurrent = () =>
-    submitSet(
-      parseDecimal(weight === "" ? String(prefillWeight) : weight),
-      parseDecimal(reps === "" ? String(prefillReps) : reps),
-      rpe ?? undefined,
-    );
+    submitSet(currentKg, parseDecimal(reps === "" ? String(prefillReps) : reps), rpe ?? undefined);
   const repeatLast = () =>
     lastLogged ? submitSet(lastLogged.weight, lastLogged.reps, rpe ?? undefined) : logCurrent();
 
   const bumpWeight = (dir: 1 | -1) => {
     haptic(10);
-    const cur = parseDecimal(weight === "" ? String(prefillWeight) : weight);
-    setWeight(String(Number(Math.max(0, cur + dir * step).toFixed(2))));
+    const cur = currentKg;
+    // Bodyweight exercises go below zero into assistance, never past the
+    // whole bodyweight (a machine can't take off more than you weigh).
+    const floor = bw ? -(bodyKg ?? 200) : 0;
+    setWeight(String(Number(Math.max(floor, cur + dir * step).toFixed(2))));
   };
   const bumpReps = (dir: 1 | -1) => {
     haptic(10);
@@ -1195,6 +1228,7 @@ function ExerciseBlock({
                     value={editW}
                     onChange={setEditW}
                     step={step}
+                    min={bw ? -(bodyKg ?? 200) : 0}
                     ariaLabel={t.session.weightAriaLabel}
                   />
                 </div>
@@ -1250,9 +1284,13 @@ function ExerciseBlock({
                 {s.set_type === "warmup" ? "W" : s.set_number}
               </span>
               <span className="tabular text-[13px] text-muted-foreground">
-                {previousSets[i] ? `${previousSets[i]!.weight} × ${previousSets[i]!.reps}` : "—"}
+                {previousSets[i]
+                  ? `${cell(previousSets[i]!.weight)} × ${previousSets[i]!.reps}`
+                  : "—"}
               </span>
-              <span className="tabular text-center text-[16px] font-semibold">{s.weight}</span>
+              <span className="tabular text-center text-[16px] font-semibold">
+                {cell(s.weight)}
+              </span>
               <span className="tabular text-center text-[16px] font-semibold">
                 {s.reps}
                 {s.rpe ? <span className="ml-1 text-[11px] text-primary">@{s.rpe}</span> : null}
@@ -1281,7 +1319,7 @@ function ExerciseBlock({
             </button>
             <span className="text-[12px] text-muted-foreground">
               {nextPrevious
-                ? t.session.lastTime(nextPrevious.weight, nextPrevious.reps)
+                ? t.session.lastTime(load(nextPrevious.weight), nextPrevious.reps)
                 : t.session.firstTime}
             </span>
           </div>
@@ -1293,7 +1331,11 @@ function ExerciseBlock({
               ) : (
                 <TrendingDown className="size-4 shrink-0" />
               )}{" "}
-              {t.session.suggestedInline(suggestion.weight, suggestion.reps, suggestion.reason)}
+              {t.session.suggestedInline(
+                load(suggestion.weight),
+                suggestion.reps,
+                suggestion.reason,
+              )}
             </p>
           ) : null}
 
@@ -1315,7 +1357,8 @@ function ExerciseBlock({
                 placeholder={`${prefillWeight}`}
                 onFocus={selectOnFocus}
                 onChange={(e) => {
-                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  const re = bw ? SIGNED_DECIMAL_INPUT_RE : DECIMAL_INPUT_RE;
+                  if (!re.test(e.target.value)) return;
                   setWeight(e.target.value);
                 }}
                 className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
@@ -1333,6 +1376,12 @@ function ExerciseBlock({
               <Plus className="size-4" />
             </button>
           </div>
+          {bw ? (
+            <p className="-mt-1 px-1 text-[12px] text-muted-foreground">
+              <span className="font-semibold text-foreground">{load(currentKg)}</span> ·{" "}
+              {t.session.bodyweightHint}
+            </p>
+          ) : null}
 
           <div className="flex items-center gap-1.5">
             <button
@@ -1427,7 +1476,9 @@ function ExerciseBlock({
               }`}
             >
               <HapticSwitch disabled={!active || locked} />
-              {locked ? t.session.resting : t.session.repeat(lastLogged.weight, lastLogged.reps)}
+              {locked
+                ? t.session.resting
+                : t.session.repeat(load(lastLogged.weight), lastLogged.reps)}
             </button>
           ) : null}
           <button
@@ -1449,13 +1500,13 @@ function ExerciseBlock({
 
       <p className="mt-2 text-right text-[13px] text-muted-foreground">
         {previous
-          ? t.session.lastPerformance(previous.weight, previous.reps)
+          ? t.session.lastPerformance(load(previous.weight), previous.reps)
           : t.session.noHistoryYet}
       </p>
 
       {isPR ? (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary">
-          <Trophy className="size-4" /> {t.session.prPace(best?.weight ?? 0, best?.reps ?? 0)}
+          <Trophy className="size-4" /> {t.session.prPace(load(best?.weight ?? 0), best?.reps ?? 0)}
         </p>
       ) : null}
 

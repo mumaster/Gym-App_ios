@@ -185,8 +185,8 @@ const en = {
       `Superset ${group}${slot} · ${rounds} rounds`,
     setsByReps: (sets: number, reps: string) => `${sets} × ${reps}`,
     restSuffix: (seconds: number) => `${seconds}s rest · `,
-    suggestedWeight: (weight: number, reps?: number) =>
-      `Suggested ${weight}kg${reps ? ` × ${reps}` : ""}`,
+    suggestedWeight: (load: string, reps?: number) =>
+      `Suggested ${load}${reps ? ` × ${reps}` : ""}`,
     moveUp: "Move up",
     moveDown: "Move down",
     swapExercise: "Swap exercise",
@@ -198,8 +198,8 @@ const en = {
   session: {
     workoutComplete: "Workout complete",
     workoutCompleteSub: "Here's what to aim for next time.",
-    nextTime: (weight: number, reps: number, reason: string) =>
-      `Next time: ${weight}kg × ${reps} — ${reason}`,
+    nextTime: (load: string, reps: number, reason: string) =>
+      `Next time: ${load} × ${reps} — ${reason}`,
     loggedNoSuggestion: "Logged — no suggestion yet.",
     viewHistory: "View history",
     noActiveSession: "No active session",
@@ -267,10 +267,10 @@ const en = {
     editSet: (n: number) => `Edit set ${n}`,
     warmupSetToggleOn: "Warm-up set — tap for working set",
     warmupSetToggleOff: "Working set — tap for warm-up",
-    lastTime: (weight: number, reps: number) => `Last time: ${weight} × ${reps}`,
+    lastTime: (load: string, reps: number) => `Last time: ${load} × ${reps}`,
     firstTime: "First time on this one",
-    suggestedInline: (weight: number, reps: number, reason: string) =>
-      `Suggested ${weight}kg × ${reps} — ${reason}`,
+    suggestedInline: (load: string, reps: number, reason: string) =>
+      `Suggested ${load} × ${reps} — ${reason}`,
     lessWeight: "Less weight",
     moreWeight: "More weight",
     weightAriaLabel: "Weight in kg",
@@ -283,11 +283,13 @@ const en = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point (Helms et al. 2018).`,
     resting: "Resting…",
-    repeat: (weight: number, reps: number) => `Repeat  ${weight} × ${reps}`,
+    repeat: (load: string, reps: number) => `Repeat  ${load} × ${reps}`,
+    bw: "BW",
+    bodyweightHint: "0 = bodyweight. + adds weight (belt, vest), − is assistance (band, machine).",
     logSet: "Log set",
-    lastPerformance: (weight: number, reps: number) => `Last: ${weight}kg × ${reps}`,
+    lastPerformance: (load: string, reps: number) => `Last: ${load} × ${reps}`,
     noHistoryYet: "No history yet",
-    prPace: (weight: number, reps: number) => `PR pace — above your best of ${weight}kg × ${reps}`,
+    prPace: (load: string, reps: number) => `PR pace — above your best of ${load} × ${reps}`,
     keyFormCues: "Key form cues",
     lessLabel: (label: string) => `Less ${label}`,
     moreLabel: (label: string) => `More ${label}`,
@@ -798,6 +800,8 @@ const en = {
       `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
     hitTopOnce: (top: number) =>
       `You hit ${top}+ reps on every set last time — do it once more at this weight, then add weight.`,
+    hitTopBodyweight: (top: number) =>
+      `You hit ${top}+ reps on every set in your last two sessions — add weight (belt or vest) or use less assistance.`,
     matching: "Matching your last session's weight — aim for one more rep.",
   },
 } satisfies Record<string, Record<string, unknown>>;
@@ -965,8 +969,8 @@ const nl: Dict = {
       `Superset ${group}${slot} · ${rounds} rondes`,
     setsByReps: (sets: number, reps: string) => `${sets} × ${reps}`,
     restSuffix: (seconds: number) => `${seconds}s rust · `,
-    suggestedWeight: (weight: number, reps?: number) =>
-      `Voorgesteld ${weight}kg${reps ? ` × ${reps}` : ""}`,
+    suggestedWeight: (load: string, reps?: number) =>
+      `Voorgesteld ${load}${reps ? ` × ${reps}` : ""}`,
     moveUp: "Omhoog verplaatsen",
     moveDown: "Omlaag verplaatsen",
     swapExercise: "Oefening wisselen",
@@ -978,8 +982,8 @@ const nl: Dict = {
   session: {
     workoutComplete: "Training voltooid",
     workoutCompleteSub: "Dit is waar je de volgende keer naar kunt streven.",
-    nextTime: (weight: number, reps: number, reason: string) =>
-      `Volgende keer: ${weight}kg × ${reps} — ${reason}`,
+    nextTime: (load: string, reps: number, reason: string) =>
+      `Volgende keer: ${load} × ${reps} — ${reason}`,
     loggedNoSuggestion: "Gelogd — nog geen suggestie.",
     viewHistory: "Bekijk historie",
     noActiveSession: "Geen actieve sessie",
@@ -1047,10 +1051,10 @@ const nl: Dict = {
     editSet: (n: number) => `Set ${n} bewerken`,
     warmupSetToggleOn: "Warming-up set — tik voor werkset",
     warmupSetToggleOff: "Werkset — tik voor warming-up",
-    lastTime: (weight: number, reps: number) => `Vorige keer: ${weight} × ${reps}`,
+    lastTime: (load: string, reps: number) => `Vorige keer: ${load} × ${reps}`,
     firstTime: "Eerste keer met deze oefening",
-    suggestedInline: (weight: number, reps: number, reason: string) =>
-      `Voorgesteld ${weight}kg × ${reps} — ${reason}`,
+    suggestedInline: (load: string, reps: number, reason: string) =>
+      `Voorgesteld ${load} × ${reps} — ${reason}`,
     lessWeight: "Minder gewicht",
     moreWeight: "Meer gewicht",
     weightAriaLabel: "Gewicht in kg",
@@ -1063,12 +1067,14 @@ const nl: Dict = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt (Helms e.a. 2018).`,
     resting: "Rusten…",
-    repeat: (weight: number, reps: number) => `Herhaal  ${weight} × ${reps}`,
+    repeat: (load: string, reps: number) => `Herhaal  ${load} × ${reps}`,
+    bw: "LG",
+    bodyweightHint:
+      "0 = lichaamsgewicht. + is extra gewicht (riem, vest), − is ondersteuning (band, machine).",
     logSet: "Log set",
-    lastPerformance: (weight: number, reps: number) => `Vorige: ${weight}kg × ${reps}`,
+    lastPerformance: (load: string, reps: number) => `Vorige: ${load} × ${reps}`,
     noHistoryYet: "Nog geen historie",
-    prPace: (weight: number, reps: number) =>
-      `PR-tempo — boven je record van ${weight}kg × ${reps}`,
+    prPace: (load: string, reps: number) => `PR-tempo — boven je record van ${load} × ${reps}`,
     keyFormCues: "Belangrijkste vormtips",
     lessLabel: (label: string) => `Minder ${label}`,
     moreLabel: (label: string) => `Meer ${label}`,
@@ -1587,6 +1593,8 @@ const nl: Dict = {
       `Je hebt in je laatste twee sessies bij elke set ${top}+ reps gehaald — tijd voor extra gewicht.`,
     hitTopOnce: (top: number) =>
       `Je hebt vorige keer bij elke set ${top}+ reps gehaald — doe dit nog één keer met dit gewicht, daarna meer gewicht.`,
+    hitTopBodyweight: (top: number) =>
+      `Je hebt in je laatste twee sessies bij elke set ${top}+ reps gehaald — voeg gewicht toe (riem of vest) of gebruik minder ondersteuning.`,
     matching: "Gelijk aan het gewicht van je vorige sessie — probeer één rep meer.",
   },
 };

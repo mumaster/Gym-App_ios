@@ -80,3 +80,32 @@ describe("rpeAdjustedWeight (Helms et al. 2018)", () => {
     expect(rpeAdjustedWeight(10, 10, 2.5)).toBeNull();
   });
 });
+
+describe("bodyweight exercises (external load: 0 = bodyweight, − = assistance)", () => {
+  const twice = (w: number) => [
+    session("2", "pullup", [12, 12, 12], w),
+    session("1", "pullup", [12, 12, 12], w),
+  ];
+
+  it("progresses from plain bodyweight, sizing the increase on bodyweight + load", () => {
+    // 80 kg body: 2.5% of 80 = 2 kg, rounded to the 2.5 kg step.
+    const s = suggestWeight("pullup", twice(0), "8-12", 2.5, undefined, 80);
+    expect(s).toMatchObject({ weight: 2.5, reps: 8, bumped: true });
+  });
+
+  it("takes assistance off rather than suggesting nothing", () => {
+    const s = suggestWeight("pullup", twice(-20), "8-12", 2.5, undefined, 80);
+    expect(s?.weight).toBe(-17.5);
+  });
+
+  it("falls back to one step when bodyweight is unknown", () => {
+    const s = suggestWeight("pullup", twice(0), "8-12", 2.5);
+    expect(s?.weight).toBe(2.5);
+  });
+
+  it("applies the RPE 4% to bodyweight + load, and can go into assistance", () => {
+    // RPE 10 on 0 kg added at 80 kg body: 80 × 0.96 = 76.8 → −3.2 → −2.5.
+    expect(rpeAdjustedWeight(0, 10, 2.5, 80)).toEqual({ weight: -2.5, direction: "down" });
+    expect(rpeAdjustedWeight(0, 10, 2.5)).toBeNull();
+  });
+});
