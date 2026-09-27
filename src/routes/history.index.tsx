@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { ChevronRight, Flame, Trophy } from "lucide-react";
+import { ChevronRight, Flame, HeartPulse, Trophy, Watch } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeeklySetsCard } from "../components/gym/WeeklyVolume";
+import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
@@ -103,6 +104,7 @@ function HistoryScreen() {
       }));
   }, [workouts]);
   const [weeksShown, setWeeksShown] = useState(4);
+  const [watchOpen, setWatchOpen] = useState(false);
 
   if (!hydrated) return <Screen title={t.history.title}>{null}</Screen>;
 
@@ -271,7 +273,18 @@ function HistoryScreen() {
         </>
       ) : null}
 
-      {workouts.length ? <SectionLabel>{t.history.sessions}</SectionLabel> : null}
+      {workouts.length ? (
+        <div className="flex items-end justify-between gap-2">
+          <SectionLabel>{t.history.sessions}</SectionLabel>
+          <button
+            onClick={() => setWatchOpen(true)}
+            className="mb-1.5 flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-semibold text-foreground active:scale-95"
+          >
+            <Watch className="size-4" /> {t.watch.importFromWatch}
+          </button>
+        </div>
+      ) : null}
+      <WatchImportSheet open={watchOpen} onClose={() => setWatchOpen(false)} />
       {/* Grouped by week: an ever-growing list of identical cards was the
           longest thing in the app (20 sessions ≈ 1,700px). */}
       <div className="space-y-4">
@@ -327,6 +340,15 @@ function HistoryScreen() {
                           )}
                         </p>
                       </div>
+                      {w.watch?.avgHr != null ? (
+                        <p
+                          className="tabular flex shrink-0 items-center gap-0.5 text-[13px] text-muted-foreground"
+                          aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
+                        >
+                          <HeartPulse className="size-3.5 text-primary" />
+                          {w.watch.avgHr}
+                        </p>
+                      ) : null}
                       <p className="tabular shrink-0 text-[13px] text-muted-foreground">
                         {t.history.minutesShort(sessionMinutes(w))}
                       </p>

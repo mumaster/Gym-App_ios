@@ -5,6 +5,7 @@ import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { HapticSwitch } from "./HapticSwitch";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
+import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
@@ -39,54 +40,6 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
-
-function readAsBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.slice(result.indexOf(",") + 1));
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-}
-
-/** Longest edge a scanned label photo gets downscaled to before upload — a
- *  label's fine print stays perfectly legible well below full camera
- *  resolution, and a smaller image means less to upload and fewer tiles for
- *  Gemini to process, so this is the main lever for a faster scan without
- *  spending anything. */
-const MAX_SCAN_DIMENSION = 1280;
-
-/** Downscales + re-encodes as JPEG (phone camera photos are routinely
- *  several MB at full resolution). Falls back to the original file untouched
- *  if resizing fails for any reason — a slower scan beats a broken one. */
-async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
-  try {
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const scale = Math.min(1, MAX_SCAN_DIMENSION / Math.max(bitmap.width, bitmap.height));
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("2D canvas context unavailable");
-    ctx.drawImage(bitmap, 0, 0, width, height);
-    bitmap.close();
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.85),
-    );
-    if (!blob) throw new Error("Canvas failed to encode JPEG");
-
-    return { base64: await readAsBase64(blob), mimeType: "image/jpeg" };
-  } catch {
-    return { base64: await readAsBase64(file), mimeType: file.type || "image/jpeg" };
-  }
-}
 
 export function AddFoodSheet({
   open,

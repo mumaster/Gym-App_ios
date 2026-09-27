@@ -39,7 +39,8 @@ export type SourceId =
   | "fiberSalt"
   | "calorieFloor"
   | "restDayCarbs"
-  | "proteinPerMeal";
+  | "proteinPerMeal"
+  | "watchCalories";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -107,6 +108,11 @@ export const SOURCES: SourceEntry[] = [
     id: "streak",
     group: "tracking",
     refs: ["WHO guidelines on physical activity (Bull et al., Br J Sports Med 2020)"],
+  },
+  {
+    id: "watchCalories",
+    group: "tracking",
+    refs: ["Shcherbina et al., J Pers Med 2017 (seven wrist devices vs. indirect calorimetry)"],
   },
   {
     id: "weightTrend",

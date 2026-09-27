@@ -55,6 +55,7 @@ import type {
   Muscle,
   PlannedExercise,
   Unit,
+  WatchData,
   Workout,
   WorkoutTemplate,
 } from "./types";
@@ -352,6 +353,8 @@ interface Ctx extends GymState {
   removeActivePlanEntries: (indices: number[]) => void;
   /** Sets (or, with null, clears) a finished workout's session RPE. */
   rateWorkout: (workoutId: string, rpe: number | null) => void;
+  /** Attach (or with null, remove) a watch's own record of a session. */
+  setWorkoutWatch: (workoutId: string, watch: WatchData | null) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
   appendBonusExercise: (exerciseId: string) => void;
   toggleLovedExercise: (exerciseId: string) => void;
@@ -857,6 +860,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
             if (w.id !== workoutId) return w;
             const { session_rpe: _old, ...rest } = w;
             return rpe == null ? rest : { ...rest, session_rpe: rpe };
+          }),
+        })),
+      setWorkoutWatch: (workoutId, watch) =>
+        setState((s) => ({
+          ...s,
+          workouts: s.workouts.map((w) => {
+            if (w.id !== workoutId) return w;
+            const { watch: _old, ...rest } = w;
+            return watch ? { ...rest, watch } : rest;
           }),
         })),
       removeActivePlanEntries: (indices) =>

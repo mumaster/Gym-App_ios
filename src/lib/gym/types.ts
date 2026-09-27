@@ -118,6 +118,47 @@ export interface Workout {
   finished_at?: string;
   /** Session RPE, 0–10 on Foster's CR-10 scale — see trainingLoad.ts. */
   session_rpe?: number;
+  /** What a sports watch recorded for this session, read from screenshots of
+   *  its app (see watch.ts / watchScan.ts). */
+  watch?: WatchData;
+}
+
+/** A sports watch's own summary of one session, read from screenshots of
+ *  its companion app (Huawei Health and the like). Only numbers the
+ *  screenshots print as text — nothing is read off a chart's curve — and
+ *  null wherever a value wasn't shown. Labels are kept as the app wrote
+ *  them (e.g. Dutch zone names), since each brand names these differently. */
+export interface WatchData {
+  /** "Huawei Health" */
+  source: string | null;
+  /** "HUAWEI WATCH GT 5 Pro" */
+  device: string | null;
+  /** The watch's activity name, e.g. "Kracht" (strength). */
+  activity: string | null;
+  /** Local start, "YYYY-MM-DDTHH:mm". */
+  start: string | null;
+  durationSeconds: number | null;
+  totalKcal: number | null;
+  activeKcal: number | null;
+  avgHr: number | null;
+  maxHr: number | null;
+  minHr: number | null;
+  /** Minutes per heart-rate zone, in the app's own order and names. */
+  hrZones: { name: string; minutes: number }[];
+  /** Training-effect style scores, e.g. aerobic training stress 1.7 "Recovery". */
+  trainingEffects: { label: string; value: number; rating: string | null }[];
+  recoveryHours: number | null;
+  /** Heart-rate recovery after the session: fell `drop` bpm from `startBpm`
+   *  to `endBpm` over `minutes`. */
+  hrRecovery: {
+    drop: number | null;
+    startBpm: number | null;
+    endBpm: number | null;
+    minutes: number | null;
+  } | null;
+  /** Anything else the screenshots printed (VO2max, steps, cadence…). */
+  otherMetrics: { label: string; value: string; unit: string | null }[];
+  importedAt: string;
 }
 
 /** A named, reusable plan the user can start exactly as saved, as an

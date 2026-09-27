@@ -1,8 +1,11 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ChevronLeft, Trophy } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, Trophy, Watch } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { RecapShare } from "../components/gym/RecapShare";
+import { WatchDataCard } from "../components/gym/WatchDataCard";
+import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -32,7 +35,8 @@ export const Route = createFileRoute("/history/$workoutId")({
 
 function SessionDetailScreen() {
   const { workoutId } = useParams({ from: "/history/$workoutId" });
-  const { workouts, hydrated, rateWorkout } = useGym();
+  const { workouts, hydrated, rateWorkout, setWorkoutWatch } = useGym();
+  const [watchOpen, setWatchOpen] = useState(false);
   const t = useTranslation();
   const locale = useLocale();
   const workout = workouts.find((w) => w.id === workoutId);
@@ -144,6 +148,39 @@ function SessionDetailScreen() {
           </p>
         ) : null}
       </Card>
+
+      <SectionLabel>{t.watch.title}</SectionLabel>
+      {workout.watch ? (
+        <Card className="space-y-4 p-4">
+          <WatchDataCard data={workout.watch} />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setWatchOpen(true)}
+              className="glass min-h-[44px] flex-1 rounded-2xl text-[14px] font-semibold"
+            >
+              {t.watch.replace}
+            </button>
+            <button
+              onClick={() => setWorkoutWatch(workout.id, null)}
+              className="min-h-[44px] flex-1 rounded-2xl bg-destructive/10 text-[14px] font-semibold text-destructive"
+            >
+              {t.watch.remove}
+            </button>
+          </div>
+        </Card>
+      ) : (
+        <button
+          onClick={() => setWatchOpen(true)}
+          className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
+        >
+          <Watch className="size-5 text-primary" /> {t.watch.add}
+        </button>
+      )}
+      <WatchImportSheet
+        open={watchOpen}
+        onClose={() => setWatchOpen(false)}
+        workoutId={workout.id}
+      />
 
       <SectionLabel>{t.historyDetail.exercises}</SectionLabel>
       {byExercise.length === 0 ? (
