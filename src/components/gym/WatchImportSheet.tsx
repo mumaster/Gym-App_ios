@@ -2,14 +2,17 @@ import { useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Footprints, ImagePlus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
+import { RouteMapView } from "./RouteMapView";
 import { WatchDataCard } from "./WatchDataCard";
 import { dayKey } from "../../lib/gym/date";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { screenshotToBase64Parts } from "../../lib/gym/imageUpload";
+import { extractRouteMap, partBoxToCrop, type RouteMap } from "../../lib/gym/routeMap";
+import { putRouteMap } from "../../lib/gym/routeMapStore";
 import { parseDayKey } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { WatchData } from "../../lib/gym/types";
-import { formatDuration, looksLikeCardio, matchWorkout } from "../../lib/gym/watch";
+import { cardioTargetId, formatDuration, looksLikeCardio, matchWorkout } from "../../lib/gym/watch";
 import { scanWatchWorkout } from "../../lib/gym/watchScan";
 
 type Step = "pick" | "reading" | "review" | "error";
@@ -45,12 +48,13 @@ export function WatchImportSheet({
 }) {
   const t = useTranslation();
   const locale = useLocale();
-  const { workouts, setWorkoutWatch, saveCardioSession } = useGym();
+  const { workouts, cardioSessions, setWorkoutWatch, saveCardioSession } = useGym();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("pick");
   const [error, setError] = useState<string | null>(null);
   const [scan, setScan] = useState<WatchData | null>(null);
   const [chosen, setChosen] = useState<Target | null>(null);
+  const [routeMap, setRouteMap] = useState<RouteMap | null>(null);
 
   const matched = useMemo(
     () => (scan && !workoutId && !cardioId ? matchWorkout(scan.start, workouts) : null),
@@ -78,13 +82,18 @@ export function WatchImportSheet({
     setError(null);
     setScan(null);
     setChosen(null);
+    setRouteMap(null);
   };
 
   const save = () => {
     if (!scan || !target) return;
     haptic([20, 30]);
     if (target.type === "workout") setWorkoutWatch(target.id, scan);
-    else saveCardioSession(scan, cardioId);
+    else {
+      const id = cardioTargetId(scan, cardioSessions, cardioId) ?? crypto.randomUUID();
+      saveCardioSession(id, scan, !!routeMap);
+      if (routeMap) void putRouteMap(id, routeMap);
+    }
     reset();
     onClose();
   };
@@ -104,11 +113,10 @@ export function WatchImportSheet({
     setStep("reading");
     setError(null);
     try {
-      const parts = await Promise.all(files.map(screenshotToBase64Parts));
-      const images = parts
-        .flat()
-        .map(({ base64, mimeType }) => ({ imageBase64: base64, mimeType }));
-      const result = await scanWatchWorkout({ data: { images } });
+      const perFile = await Promise.all(files.map(screenshotToBase64Parts));
+      const parts = perFile.flatMap((ps, fileIndex) => ps.map((p) => ({ ...p, fileIndex })));
+      const images = parts.map(({ base64, mimeType }) => ({ imageBase64: base64, mimeType }));
+      const { routeMap: mapAt, ...result } = await scanWatchWorkout({ data: { images } });
       const empty =
         result.durationSeconds == null &&
         result.avgHr == null &&
@@ -121,6 +129,13 @@ export function WatchImportSheet({
         setStep("error");
         return;
       }
+      // The route map, cut out of the full-size screenshot. Optional: a
+      // map that can't be found or read just isn't shown.
+      const part = mapAt ? parts[mapAt.image] : undefined;
+      const crop = part && mapAt ? partBoxToCrop(mapAt.box, part) : null;
+      setRouteMap(
+        part && crop ? await extractRouteMap(files[part.fileIndex]!, crop).catch(() => null) : null,
+      );
       setScan({ ...result, importedAt: new Date().toISOString() });
       setStep("review");
     } catch (e) {
@@ -195,6 +210,7 @@ export function WatchImportSheet({
 
       {step === "review" && scan ? (
         <div className="space-y-4">
+          {routeMap && target?.type === "cardio" ? <RouteMapView map={routeMap} /> : null}
           <WatchDataCard data={scan} />
 
           {cardioId ? null : (

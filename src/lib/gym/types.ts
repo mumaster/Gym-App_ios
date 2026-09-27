@@ -216,6 +216,9 @@ export interface CardioSession {
   watch: WatchData;
   /** Session RPE, 0–10 on Foster's CR-10 scale — counts toward training load. */
   session_rpe?: number;
+  /** A route map was saved for it (in IndexedDB, on this device — see
+   *  routeMapStore.ts). */
+  hasRouteMap?: boolean;
 }
 
 /** A named, reusable plan the user can start exactly as saved, as an

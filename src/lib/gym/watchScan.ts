@@ -59,6 +59,10 @@ Rules:
   shorter last split (e.g. "Less than 1 km 0'06"") as its own row with that text as label.
 - tables: every OTHER table printed as text (for example pace bands with ground-contact time),
   with its title, column headers and rows as the text shown.
+- routeMap: if a map of the workout's route is shown, which image shows it (0-based, in the
+  order the images were given) and the map's bounding box in that image as
+  [ymin, xmin, ymax, xmax] scaled 0–1000. Only the map itself: leave out the phone's status bar,
+  titles and text above it, and the card that overlaps its bottom edge. null when there's no map.
 - otherMetrics: every OTHER number printed about this workout that has no field of its own
   above (e.g. running dynamics such as ground-contact time, left/right balance and vertical
   oscillation; training load; sweat loss), as label/value/unit, with the app's verdict next to it
@@ -165,6 +169,15 @@ const RESPONSE_SCHEMA = {
         required: ["label", "paceSeconds", "avgHr", "cadence"],
       },
     },
+    routeMap: {
+      type: "object",
+      nullable: true,
+      properties: {
+        image: { type: "integer" },
+        box: { type: "array", items: { type: "number" } },
+      },
+      required: ["image", "box"],
+    },
     tables: {
       type: "array",
       items: {
@@ -214,6 +227,7 @@ const RESPONSE_SCHEMA = {
     "paceZones",
     "splits",
     "tables",
+    "routeMap",
   ],
 };
 
@@ -225,7 +239,11 @@ interface GeminiResponse {
   promptFeedback?: { blockReason?: string };
 }
 
-export type ScannedWatchWorkout = Omit<WatchData, "importedAt">;
+export type ScannedWatchWorkout = Omit<WatchData, "importedAt"> & {
+  /** Where the route map is, if any: the image part and a 0–1000 box. Used
+   *  once to cut the map out (routeMap.ts), not stored. */
+  routeMap?: { image: number; box: number[] } | null;
+};
 
 /** Reads one workout's screenshots from a watch's companion app. Server-only,
  *  like scanNutritionLabel, so GEMINI_API_KEY never reaches the browser. */

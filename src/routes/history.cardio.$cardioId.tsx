@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-r
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { CardioRouteMap } from "../components/gym/RouteMapView";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
@@ -73,7 +74,8 @@ function CardioDetailScreen() {
       })}
       action={back}
     >
-      <Card className="p-4">
+      <Card className="space-y-4 p-4">
+        {session.hasRouteMap ? <CardioRouteMap id={session.id} /> : null}
         <WatchDataCard data={session.watch} />
       </Card>
 

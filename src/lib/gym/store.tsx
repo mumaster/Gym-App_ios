@@ -69,6 +69,7 @@ import {
   signUp as authSignUp,
   type Session,
 } from "./auth";
+import { deleteRouteMap } from "./routeMapStore";
 import { cardioStartIso } from "./watch";
 
 interface GymState {
@@ -361,10 +362,9 @@ interface Ctx extends GymState {
   rateWorkout: (workoutId: string, rpe: number | null) => void;
   /** Attach (or with null, remove) a watch's own record of a session. */
   setWorkoutWatch: (workoutId: string, watch: WatchData | null) => void;
-  /** Saves a watch-only cardio session. With `replaceId`, replaces that
-   *  session's watch data; otherwise a session with the same start time is
-   *  replaced rather than duplicated. */
-  saveCardioSession: (watch: WatchData, replaceId?: string) => void;
+  /** Saves (or, for an existing id, replaces) a watch-only cardio session;
+   *  the caller picks the id with watch.ts's cardioTargetId. */
+  saveCardioSession: (id: string, watch: WatchData, hasRouteMap: boolean) => void;
   rateCardio: (id: string, rpe: number | null) => void;
   deleteCardioSession: (id: string) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
@@ -883,17 +883,19 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return watch ? { ...rest, watch } : rest;
           }),
         })),
-      saveCardioSession: (watch, replaceId) =>
+      saveCardioSession: (id, watch, hasRouteMap) =>
         setState((s) => {
-          const existing = replaceId
-            ? s.cardioSessions.find((c) => c.id === replaceId)
-            : watch.start && watch.start.length > 10
-              ? s.cardioSessions.find((c) => c.watch.start === watch.start)
-              : undefined;
+          const existing = s.cardioSessions.find((c) => c.id === id);
           const date = cardioStartIso(watch);
-          const next: CardioSession = existing
-            ? { ...existing, date, watch }
-            : { id: crypto.randomUUID(), date, watch };
+          // A re-import without a map keeps the map saved before.
+          const map = hasRouteMap || !!existing?.hasRouteMap;
+          const next: CardioSession = {
+            ...(existing ?? {}),
+            id,
+            date,
+            watch,
+            ...(map ? { hasRouteMap: true } : {}),
+          };
           const rest = s.cardioSessions.filter((c) => c.id !== next.id);
           return {
             ...s,
@@ -909,8 +911,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return rpe == null ? rest : { ...rest, session_rpe: rpe };
           }),
         })),
-      deleteCardioSession: (id) =>
-        setState((s) => ({ ...s, cardioSessions: s.cardioSessions.filter((c) => c.id !== id) })),
+      deleteCardioSession: (id) => {
+        void deleteRouteMap(id);
+        setState((s) => ({ ...s, cardioSessions: s.cardioSessions.filter((c) => c.id !== id) }));
+      },
       removeActivePlanEntries: (indices) =>
         setState((s) => {
           if (!s.activeWorkout) return s;

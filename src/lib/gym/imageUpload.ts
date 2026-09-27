@@ -43,17 +43,26 @@ export function screenshotParts(
   return out;
 }
 
+/** One part of a screenshot, and where it sits in the scaled screenshot
+ *  (`scale` = scaled / original), so a box found in it can be mapped back. */
+export interface ScreenshotPart {
+  base64: string;
+  mimeType: string;
+  top: number;
+  width: number;
+  height: number;
+  scale: number;
+}
+
 /** A screenshot at phone width, cut into overlapping JPEG parts (see above).
  *  Falls back to the original file as one image if that fails. */
-export async function screenshotToBase64Parts(
-  file: File,
-): Promise<{ base64: string; mimeType: string }[]> {
+export async function screenshotToBase64Parts(file: File): Promise<ScreenshotPart[]> {
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
     const scale = Math.min(1, SCREENSHOT_WIDTH / bitmap.width);
     const width = Math.round(bitmap.width * scale);
     const height = Math.round(bitmap.height * scale);
-    const out: { base64: string; mimeType: string }[] = [];
+    const out: ScreenshotPart[] = [];
     for (const [top, bottom] of screenshotParts(height)) {
       const canvas = document.createElement("canvas");
       canvas.width = width;
@@ -75,12 +84,29 @@ export async function screenshotToBase64Parts(
         canvas.toBlob(resolve, "image/jpeg", 0.85),
       );
       if (!blob) throw new Error("Canvas failed to encode JPEG");
-      out.push({ base64: await readAsBase64(blob), mimeType: "image/jpeg" });
+      out.push({
+        base64: await readAsBase64(blob),
+        mimeType: "image/jpeg",
+        top,
+        width,
+        height: bottom - top,
+        scale,
+      });
     }
     bitmap.close();
     return out;
   } catch {
-    return [{ base64: await readAsBase64(file), mimeType: file.type || "image/jpeg" }];
+    // Unknown size: a map box can't be mapped back, so no map is taken.
+    return [
+      {
+        base64: await readAsBase64(file),
+        mimeType: file.type || "image/jpeg",
+        top: 0,
+        width: 0,
+        height: 0,
+        scale: 1,
+      },
+    ];
   }
 }
 

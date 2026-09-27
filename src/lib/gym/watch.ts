@@ -75,3 +75,15 @@ export function cardioMinutes(c: CardioSession): number | null {
   const sec = c.watch.durationSeconds;
   return sec != null && sec > 0 ? Math.round(sec / 60) : null;
 }
+
+/** The cardio session a new import should overwrite: the one being replaced,
+ *  else one with the same start time (importing a run twice), else none. */
+export function cardioTargetId(
+  watch: Pick<WatchData, "start">,
+  sessions: CardioSession[],
+  replaceId?: string,
+): string | null {
+  if (replaceId) return replaceId;
+  if (!watch.start || watch.start.length <= 10) return null;
+  return sessions.find((c) => c.watch.start === watch.start)?.id ?? null;
+}

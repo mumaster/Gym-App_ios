@@ -7,6 +7,7 @@ import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeeklySetsCard } from "../components/gym/WeeklyVolume";
+import { RouteThumb } from "../components/gym/RouteMapView";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -14,6 +15,7 @@ import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
 import { personalRecords } from "../lib/gym/progress";
 import { mondayOf } from "../lib/gym/schedule";
 import { sessionLoad, sessionMinutes } from "../lib/gym/trainingLoad";
+import { useRouteMap } from "../lib/gym/routeMapStore";
 import { cardioMinutes, formatPace } from "../lib/gym/watch";
 import { bestWeekStreak, currentWeekStreak, recentCalendar } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
@@ -127,8 +129,11 @@ function HistoryScreen() {
   if (!hydrated) return <Screen title={t.history.title}>{null}</Screen>;
 
   return (
-    <Screen title={t.history.title} subtitle={t.history.completedSessions(workouts.length)}>
-      {workouts.length === 0 ? (
+    <Screen
+      title={t.history.title}
+      subtitle={t.history.completedSessions(workouts.length + cardioSessions.length)}
+    >
+      {workouts.length === 0 && cardioSessions.length === 0 ? (
         <Card className="p-6 text-center">
           <p className="text-[17px] font-semibold">{t.history.noSessionsYet}</p>
           <p className="mt-1 text-[14px] text-muted-foreground">{t.history.noSessionsYetDesc}</p>
@@ -402,6 +407,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
   const locale = useLocale();
   const { watch } = cardio;
   const minutes = cardioMinutes(cardio);
+  const map = useRouteMap(cardio.hasRouteMap ? cardio.id : null);
   const detail = [
     watch.distanceKm != null
       ? `${watch.distanceKm.toLocaleString(locale, { maximumFractionDigits: 2 })} km`
@@ -417,12 +423,15 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
         first ? "" : "border-t border-border"
       }`}
     >
+      {/* The route's shape, in the accent, when a map was imported. */}
+      {map ? <RouteThumb map={map} className="size-10" /> : null}
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[15px] font-semibold">
-          <Footprints className="size-4 shrink-0 text-primary" aria-hidden />
+          {map ? null : <Footprints className="size-4 shrink-0 text-primary" aria-hidden />}
           <span className="truncate">
+            {/* No weekday, unlike a strength row: with the route thumbnail
+                beside it, "Wed, Jun 10 · Buiten hardlopen" doesn't fit at 390pt. */}
             {new Date(cardio.date).toLocaleDateString(locale, {
-              weekday: "short",
               day: "numeric",
               month: "short",
             })}
@@ -443,7 +452,6 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
                 className="flex items-center gap-0.5"
                 aria-label={`${t.watch.avgHr} ${watch.avgHr} ${t.watch.bpm}`}
               >
-                {detail.length ? " · " : ""}
                 <HeartPulse className="size-3.5 text-primary" />
                 {watch.avgHr}
               </span>

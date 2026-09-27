@@ -156,6 +156,7 @@ const en = {
     deleteSession: "Delete session",
     confirmDelete: "Tap again to delete",
     notFound: "Cardio session not found",
+    routeMap: "Route map",
   },
   sources: {
     title: "Sources",
@@ -431,7 +432,7 @@ const en = {
   },
   history: {
     title: "History",
-    completedSessions: (n: number) => `${n} completed sessions`,
+    completedSessions: (n: number): string => `${n} completed ${n === 1 ? "session" : "sessions"}`,
     noSessionsYet: "No sessions yet",
     noSessionsYetDesc:
       "Finish your first workout and it will show up here with PRs and volume charts.",
@@ -446,7 +447,13 @@ const en = {
     progressEmpty: "Log an exercise in two sessions to see its progress here.",
     weekOf: (date: string) => `Week of ${date}`,
     weekSummary: (sessions: number, cardio: number, load: string | null): string =>
-      `${sessions} ${sessions === 1 ? "session" : "sessions"}${cardio ? ` · ${cardio} cardio` : ""}${load ? ` · load ${load}` : ""}`,
+      [
+        sessions || !cardio ? `${sessions} ${sessions === 1 ? "session" : "sessions"}` : null,
+        cardio ? `${cardio} cardio` : null,
+        load ? `load ${load}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
     showMore: "Show more",
     showProgress: (name: string) => `Show progress for ${name}`,
     est1rm: "Est. 1RM",
@@ -1125,6 +1132,7 @@ const nl: Dict = {
     deleteSession: "Sessie verwijderen",
     confirmDelete: "Tik nogmaals om te verwijderen",
     notFound: "Cardiosessie niet gevonden",
+    routeMap: "Routekaart",
   },
   sources: {
     title: "Bronnen",
@@ -1406,7 +1414,7 @@ const nl: Dict = {
   },
   history: {
     title: "Historie",
-    completedSessions: (n: number) => `${n} voltooide sessies`,
+    completedSessions: (n: number): string => `${n} voltooide ${n === 1 ? "sessie" : "sessies"}`,
     noSessionsYet: "Nog geen sessies",
     noSessionsYetDesc:
       "Rond je eerste training af en die verschijnt hier met PR's en volumegrafieken.",
@@ -1421,7 +1429,13 @@ const nl: Dict = {
     progressEmpty: "Log een oefening in twee sessies om hier de voortgang te zien.",
     weekOf: (date: string) => `Week van ${date}`,
     weekSummary: (sessions: number, cardio: number, load: string | null): string =>
-      `${sessions} ${sessions === 1 ? "sessie" : "sessies"}${cardio ? ` · ${cardio} cardio` : ""}${load ? ` · belasting ${load}` : ""}`,
+      [
+        sessions || !cardio ? `${sessions} ${sessions === 1 ? "sessie" : "sessies"}` : null,
+        cardio ? `${cardio} cardio` : null,
+        load ? `belasting ${load}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
     showMore: "Meer tonen",
     showProgress: (name: string) => `Toon voortgang van ${name}`,
     est1rm: "Gesch. 1RM",
