@@ -733,40 +733,52 @@ function WorkoutHome() {
 
       <SectionLabel>{t.generate.muscleMap}</SectionLabel>
 
+      {/* A pop-up pinned to the top of the screen, not a card in the page:
+          in the page it pushed the map (and everything under it) down when it
+          appeared and back up when dismissed. Above the sticky header (z-30),
+          below sheets (z-50); only the banner itself takes taps. */}
       {proposalPair ? (
-        <div
-          role="alert"
-          className="glass mb-3 animate-[sheet-up_0.25s_ease-out] rounded-2xl border p-3 shadow-xl backdrop-blur-xl"
-          style={{
-            borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
-            boxShadow: `0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="size-5 shrink-0" style={{ color: SUGGESTED_COLOR }} />
-            <p className="min-w-0 flex-1 text-[13.5px] leading-snug">
-              {t.generate.pairSuggestion(
-                regionById(proposal!).label,
-                regionById(proposalPair.with).label,
-                proposalPair.relation.includes("·")
-                  ? t.generate.pairSuggestionFor(proposalPair.relation.split("·")[1]!.trim())
-                  : "",
-              )}
-            </p>
+        <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4">
+          <div
+            role="status"
+            aria-live="polite"
+            className="pointer-events-auto flex w-full max-w-xl animate-[banner-down_0.25s_ease-out] flex-col gap-2 rounded-2xl border p-3 motion-reduce:animate-none"
+            style={{
+              // Solid: any translucency let the page title and cards
+              // underneath read through the sentence.
+              backgroundColor: "var(--background)",
+              borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
+              boxShadow: `0 8px 28px oklch(0 0 0 / 30%), 0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
+            }}
+          >
+            {/* Sentence and ✕ on one row, Add on its own: side by side, the
+                Dutch "+ Triceps toevoegen" squeezed the sentence to a word a line. */}
+            <div className="flex items-start gap-2.5">
+              <Sparkles className="mt-0.5 size-5 shrink-0" style={{ color: SUGGESTED_COLOR }} />
+              <p className="min-w-0 flex-1 pt-0.5 text-[13.5px] leading-snug">
+                {t.generate.pairSuggestion(
+                  regionById(proposal!).label,
+                  regionById(proposalPair.with).label,
+                  proposalPair.relation.includes("·")
+                    ? t.generate.pairSuggestionFor(proposalPair.relation.split("·")[1]!.trim())
+                    : "",
+                )}
+              </p>
+              <button
+                onClick={() => setProposal(null)}
+                aria-label={t.generate.dismissSuggestion}
+                className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
             <button
               onClick={acceptProposal}
-              className="flex min-h-[36px] shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-bold"
+              className="flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
               style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
             >
               <Plus className="size-3.5" strokeWidth={3} />
               {t.generate.addMuscle(regionById(proposalPair.with).label)}
-            </button>
-            <button
-              onClick={() => setProposal(null)}
-              aria-label={t.generate.dismissSuggestion}
-              className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
-            >
-              <X className="size-4" />
             </button>
           </div>
         </div>

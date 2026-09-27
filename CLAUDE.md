@@ -337,6 +337,7 @@ Schedules are now ordered **Monday-first** (`weekIndex(dow) = (dow + 6) % 7`), m
   - "Generate workout" is `sticky` at `bottom-[calc(var(--tab-bar-clearance)+4.625rem)]`, just above the tab bar pill. The form above it is about three screens tall, and the button used to sit only at the bottom. Once you scroll to it, it settles in place, above the generated plan.
   - The equipment profile shows one line ("14 items", "Edit ›" to `/equipment`) instead of every piece of gear as a paragraph.
   - The coarse "Target muscles" chip row is gone. It duplicated the muscle map's own region chips; `toggleMuscle` went with it.
+  - The muscle-pairing suggestion ("Pair Chest with Triceps…", shown after picking one region) is a pop-up pinned to the top of the screen (`fixed`, `z-40`: above the sticky header, below sheets), not a card in the page. In the page it pushed the map and everything under it down when it appeared and back up when dismissed. It's solid `--background` (any translucency let the page title read through), drops in with `banner-down`, and puts "+ Add" on its own row so Dutch's longer button doesn't squeeze the sentence. Verified in Chromium: the map card moves 0 px on show, add and dismiss (390 and 430 wide, both themes, en/nl); it stays pinned while scrolling.
 - **History** (`history.index.tsx`). Order:
   1. Streak.
   2. Training load.
