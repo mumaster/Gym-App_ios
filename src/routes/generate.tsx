@@ -31,18 +31,17 @@ import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
-import { GrowthFocusCard } from "../components/gym/WeeklyVolume";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import {
-  DEFAULT_REGION,
   PAIRINGS,
   REGIONS,
   musclesFromRegions,
   regionById,
+  regionsForMuscles,
   targetsFromRegions,
   type RegionId,
 } from "../lib/gym/anatomy";
@@ -52,7 +51,13 @@ import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
-import { musclesForSlot, splitDayLabel, splitTemplateById } from "../lib/gym/splits";
+import {
+  musclesForSlot,
+  splitDayLabel,
+  splitTemplateById,
+  type ScheduleSlot,
+  type SplitTemplateId,
+} from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles } from "../lib/gym/volume";
@@ -145,11 +150,16 @@ function WorkoutHome() {
   const regionTargets = targetsFromRegions(regions);
   const activeGroups = [...new Set(regionTargets.map((t) => TARGET_MUSCLE_GROUP[t]))];
   // per group: honour the user's focus picks, otherwise train the whole group
-  const targets: TargetMuscle[] = activeGroups.flatMap((g) => {
-    const inGroup = regionTargets.filter((t) => TARGET_MUSCLE_GROUP[t] === g);
-    const picked = inGroup.filter((t) => focus.includes(t));
-    return picked.length ? picked : inGroup;
-  });
+  const targetsFor = (rs: RegionId[], fs: TargetMuscle[]): TargetMuscle[] => {
+    const all = targetsFromRegions(rs);
+    const groups = [...new Set(all.map((t) => TARGET_MUSCLE_GROUP[t]))];
+    return groups.flatMap((g) => {
+      const inGroup = all.filter((t) => TARGET_MUSCLE_GROUP[t] === g);
+      const picked = inGroup.filter((t) => fs.includes(t));
+      return picked.length ? picked : inGroup;
+    });
+  };
+  const targets = targetsFor(regions, focus);
   // groups with more than one head to drill into, for the Focus chips
   const focusGroups = activeGroups
     .map((g) => ({ group: g, heads: regionTargets.filter((t) => TARGET_MUSCLE_GROUP[t] === g) }))
@@ -187,15 +197,47 @@ function WorkoutHome() {
   const todayCheckIn = todaysCheckIn(readinessLog);
   const todayReadiness = todayCheckIn?.score;
 
-  const build = (nextVariation: number) => {
+  /** What a plan was built from. A plan only shows while its inputs still
+   *  match: change the time, a muscle, the gear or supersets and it goes,
+   *  and the button goes back to Generate, so the plan on screen and the
+   *  "Start workout" under it always match what's selected above. */
+  const inputKey = (rs: RegionId[], fs: TargetMuscle[]) =>
+    JSON.stringify([
+      [...rs].sort(),
+      [...fs].sort(),
+      duration,
+      profile.id,
+      profile.active_equipment_ids.length,
+      supersetsEnabled,
+    ]);
+  const [planKey, setPlanKey] = useState<string | null>(null);
+  const shownPlan = plan && planKey === inputKey(regions, focus) ? plan : null;
+  const planRef = useRef<HTMLDivElement>(null);
+  const [scrollToPlan, setScrollToPlan] = useState(0);
+  useEffect(() => {
+    if (!scrollToPlan) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    planRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [scrollToPlan]);
+
+  /** Builds a plan from the current selection, or from `from` — a split day
+   *  sets its muscles and builds in the same tap, before state has caught up. */
+  const build = (
+    nextVariation: number,
+    from?: { regions: RegionId[]; followingProgram: boolean },
+  ) => {
     haptic(25);
     setVariation(nextVariation);
-    const week = followingProgram && program ? currentProgramWeek(program) : null;
+    const rs = from?.regions ?? regions;
+    const fs = from ? [] : focus;
+    const week =
+      (from?.followingProgram ?? followingProgram) && program ? currentProgramWeek(program) : null;
+    setPlanKey(inputKey(rs, fs));
     setPlan(
       generateWorkout({
         duration,
         equipment: profile.active_equipment_ids,
-        targets,
+        targets: targetsFor(rs, fs),
         variation: nextVariation,
         supersets: supersetsEnabled,
         focusMuscles: [...focusMuscles(growthFocus)],
@@ -217,15 +259,17 @@ function WorkoutHome() {
   const generateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => clearTimeout(generateTimeoutRef.current ?? undefined), []);
 
-  // first press builds; pressing "Regenerate" again advances to a fresh pick
-  const generate = () => {
+  // Builds, then brings the plan into view: it used to appear below the
+  // fold, and the button only changed its label, so nothing seemed to happen.
+  const generate = (from?: { regions: RegionId[]; followingProgram: boolean }) => {
     if (generating) return;
     haptic(15);
     setGenerating(true);
-    const nextVariation = plan ? variation + 1 : 0;
+    clearTimeout(generateTimeoutRef.current ?? undefined);
     generateTimeoutRef.current = setTimeout(() => {
-      build(nextVariation);
+      build(0, from);
       setGenerating(false);
+      setScrollToPlan((n) => n + 1);
     }, 1500);
   };
   const shuffle = () => build(variation + 1);
@@ -253,7 +297,7 @@ function WorkoutHome() {
     setCuratedSelection(true);
     setFollowingSchedule(false);
     setFollowingProgram(false);
-    setRegions(recommended.map((r) => DEFAULT_REGION[r.muscle]));
+    setRegions(regionsForMuscles(recommended.map((r) => r.muscle)));
     setProposal(null);
   };
 
@@ -263,20 +307,30 @@ function WorkoutHome() {
       ? splitDayLabel(weeklyScheme.templateId, scheduledSlot.dayId)
       : "";
 
+  /** A split day's button fills in its muscles and builds the plan in the
+   *  same tap, then shows it — it used to only tick muscles on the map,
+   *  off screen, so "Start Push day" seemed to do nothing. */
+  const buildSplitDay = (
+    templateId: SplitTemplateId,
+    slot: ScheduleSlot,
+    source: "program" | "weeklyScheme",
+  ) => {
+    setCuratedSelection(true);
+    setFollowingSchedule(source === "weeklyScheme");
+    setFollowingProgram(source === "program");
+    const rs = regionsForMuscles(
+      musclesForSlot(templateId, slot, workouts, growthFocus),
+      slot.dayId,
+    );
+    setRegions(rs);
+    setFocus([]);
+    setProposal(null);
+    generate({ regions: rs, followingProgram: source === "program" });
+  };
+
   const startScheduledDay = () => {
     if (!weeklyScheme || !scheduledSlot) return;
-    haptic([20, 30]);
-    setCuratedSelection(true);
-    setFollowingSchedule(true);
-    setFollowingProgram(false);
-    const targetMuscles = musclesForSlot(
-      weeklyScheme.templateId,
-      scheduledSlot,
-      workouts,
-      growthFocus,
-    );
-    setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
-    setProposal(null);
+    buildSplitDay(weeklyScheme.templateId, scheduledSlot, "weeklyScheme");
   };
 
   const programWeek = program ? currentProgramWeek(program) : null;
@@ -288,25 +342,14 @@ function WorkoutHome() {
 
   const startProgramDay = () => {
     if (!program || !scheduledProgramSlot) return;
-    haptic([20, 30]);
-    setCuratedSelection(true);
-    setFollowingSchedule(false);
-    setFollowingProgram(true);
-    const targetMuscles = musclesForSlot(
-      program.templateId,
-      scheduledProgramSlot,
-      workouts,
-      growthFocus,
-    );
-    setRegions(targetMuscles.map((m) => DEFAULT_REGION[m]));
-    setProposal(null);
+    buildSplitDay(program.templateId, scheduledProgramSlot, "program");
   };
 
   const start = () => {
-    if (!plan) return;
+    if (!shownPlan) return;
     haptic([20, 40, 20]);
     startWorkout({
-      plan,
+      plan: shownPlan,
       duration_minutes: duration,
       target_muscles: muscles,
       fromScheduledDay: followingSchedule,
@@ -342,183 +385,10 @@ function WorkoutHome() {
     navigate({ to: "/session" });
   };
 
-  return (
-    <Screen
-      title={t.generate.title}
-      subtitle={t.generate.subtitle}
-      action={
-        <button
-          onClick={() => {
-            haptic(12);
-            navigate({ to: "/settings" });
-          }}
-          aria-label={t.common.settings}
-          className="flex items-center justify-center rounded-full"
-        >
-          <ProfileAvatar avatarId={avatarId} size={40} />
-        </button>
-      }
-    >
-      {hydrated && activeWorkout ? (
-        <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
-                {t.generate.sessionInProgress}
-              </p>
-              <p className="mt-1 text-lg font-bold">
-                {t.generate.sessionTitle(
-                  activeWorkout.plan.length,
-                  activeWorkout.completed_sets.length,
-                )}
-              </p>
-            </div>
-            <ChevronRight className="size-6 text-primary" />
-          </div>
-        </Card>
-      ) : null}
-
-      {hydrated && !activeWorkout && workouts.length > 0 ? (
-        <div className="mb-4">
-          <Card className="p-4 glow" onClick={() => repeat(workouts[0]!)}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
-                  <Repeat className="size-3.5" /> {t.generate.repeatLastWorkout}
-                </p>
-                <p className="mt-1 truncate text-lg font-bold">
-                  {workouts[0]!.target_muscles.join(" · ") || t.generate.fullBody}
-                </p>
-                <p className="text-[13px] text-muted-foreground">
-                  {t.generate.exerciseCount(
-                    workouts[0]!.plan.length,
-                    estimateMinutes(workouts[0]!.plan),
-                  )}
-                </p>
-              </div>
-              <Play className="size-6 shrink-0 text-primary" />
-            </div>
-          </Card>
-          {workouts.length > 1 ? (
-            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-              {workouts.slice(1, 4).map((w) => (
-                <button
-                  key={w.id}
-                  onClick={() => repeat(w)}
-                  className="glass shrink-0 rounded-2xl px-4 py-2 text-left"
-                >
-                  <p className="text-[13px] font-semibold">
-                    {w.target_muscles.join(" · ") || t.generate.fullBody}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {t.generate.setsAndDate(
-                      w.completed_sets.filter((s) => s.set_type === "working").length,
-                      new Date(w.date).toLocaleDateString(locale, {
-                        month: "short",
-                        day: "numeric",
-                      }),
-                    )}
-                  </p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <SectionLabel>{t.generate.availableTime}</SectionLabel>
-      <Card className="p-4">
-        <div className="mb-3 flex justify-center gap-2 overflow-x-auto no-scrollbar">
-          {SHORTCUTS.map((d) => (
-            <button
-              key={d}
-              onClick={() => {
-                haptic(12);
-                setDuration(d);
-                setCustomInput(String(d));
-              }}
-              className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold transition-colors ${
-                duration === d
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {d}m
-            </button>
-          ))}
-        </div>
-        <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
-          <span className="text-[15px] font-semibold text-muted-foreground">
-            {t.generate.minutes}
-          </span>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={customInput}
-            onFocus={selectOnFocus}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (!DECIMAL_INPUT_RE.test(raw)) return;
-              setCustomInput(raw);
-              const n = Math.round(parseDecimal(raw));
-              if (raw !== "" && Number.isFinite(n) && n > 0) {
-                setDuration(Math.min(180, n));
-              }
-            }}
-            onBlur={() => {
-              const clamped = Math.max(
-                5,
-                Math.min(180, Math.round(parseDecimal(customInput) || 45)),
-              );
-              setDuration(clamped);
-              setCustomInput(String(clamped));
-            }}
-            className="tabular h-11 w-full min-w-0 flex-1 rounded-xl bg-background px-3 text-center text-lg font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
-        </label>
-        <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
-          <Timer className="size-4 text-primary" />
-          {duration <= 30
-            ? t.generate.durationShort
-            : duration <= 45
-              ? t.generate.durationMedium
-              : t.generate.durationLong}
-        </p>
-      </Card>
-
-      <SectionLabel>{t.generate.equipmentProfile}</SectionLabel>
-      <Card className="p-4">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {profiles.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                haptic(12);
-                update({ activeProfileId: p.id });
-              }}
-              className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold ${
-                p.id === profile.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
-        {/* One line, not the full gear list — that ran to a paragraph of
-            17 items. The profile's own screen lists and edits it. */}
-        <Link
-          to="/equipment"
-          className="mt-3 flex items-center justify-between gap-2 text-[13px] text-muted-foreground"
-        >
-          <span>{t.generate.equipmentSummary(profile.active_equipment_ids.length)}</span>
-          <span className="flex items-center gap-0.5 font-semibold text-foreground">
-            {t.generate.editEquipment} <ChevronRight className="size-4" />
-          </span>
-        </Link>
-      </Card>
-
+  const hasPlan = !!(program || weeklyScheme);
+  /** The program or weekly-plan card, or the prompt to set one up. */
+  const planCard = (
+    <>
       <SectionLabel>{program ? t.generate.yourProgram : t.generate.thisWeek}</SectionLabel>
       <Card className="mb-4 p-4">
         {program && programWeek ? (
@@ -675,8 +545,197 @@ function WorkoutHome() {
           </div>
         )}
       </Card>
+    </>
+  );
 
-      {hydrated ? <GrowthFocusCard /> : null}
+  return (
+    <Screen
+      title={t.generate.title}
+      subtitle={t.generate.subtitle}
+      action={
+        <button
+          onClick={() => {
+            haptic(12);
+            navigate({ to: "/settings" });
+          }}
+          aria-label={t.common.settings}
+          className="flex items-center justify-center rounded-full"
+        >
+          <ProfileAvatar avatarId={avatarId} size={40} />
+        </button>
+      }
+    >
+      {hydrated && activeWorkout ? (
+        <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+                {t.generate.sessionInProgress}
+              </p>
+              <p className="mt-1 text-lg font-bold">
+                {t.generate.sessionTitle(
+                  activeWorkout.plan.length,
+                  activeWorkout.completed_sets.length,
+                )}
+              </p>
+            </div>
+            <ChevronRight className="size-6 text-primary" />
+          </div>
+        </Card>
+      ) : null}
+
+      {/* With a program or weekly plan, today's session is the first thing
+          on the page; time and gear are settings under it. Without one the
+          page reads as the generator: time, gear, then the optional plan. */}
+      {hasPlan ? planCard : null}
+
+      {hydrated && !activeWorkout && workouts.length > 0 ? (
+        <div className="mb-4">
+          <Card className="p-4 glow" onClick={() => repeat(workouts[0]!)}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
+                  <Repeat className="size-3.5" /> {t.generate.repeatLastWorkout}
+                </p>
+                <p className="mt-1 truncate text-lg font-bold">
+                  {workouts[0]!.target_muscles.join(" · ") || t.generate.fullBody}
+                </p>
+                <p className="text-[13px] text-muted-foreground">
+                  {t.generate.exerciseCount(
+                    workouts[0]!.plan.length,
+                    estimateMinutes(workouts[0]!.plan),
+                  )}
+                </p>
+              </div>
+              <Play className="size-6 shrink-0 text-primary" />
+            </div>
+          </Card>
+          {workouts.length > 1 ? (
+            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+              {workouts.slice(1, 4).map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => repeat(w)}
+                  className="glass shrink-0 rounded-2xl px-4 py-2 text-left"
+                >
+                  <p className="text-[13px] font-semibold">
+                    {w.target_muscles.join(" · ") || t.generate.fullBody}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground">
+                    {t.generate.setsAndDate(
+                      w.completed_sets.filter((s) => s.set_type === "working").length,
+                      new Date(w.date).toLocaleDateString(locale, {
+                        month: "short",
+                        day: "numeric",
+                      }),
+                    )}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <SectionLabel>{t.generate.availableTime}</SectionLabel>
+      <Card className="p-4">
+        {/* One row — the shortcuts and your own number — instead of the
+            shortcuts above a full-width minutes field. */}
+        <div className="flex items-center gap-2">
+          {SHORTCUTS.map((d) => (
+            <button
+              key={d}
+              onClick={() => {
+                haptic(12);
+                setDuration(d);
+                setCustomInput(String(d));
+              }}
+              className={`min-h-[44px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+                duration === d
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground"
+              }`}
+            >
+              {d}m
+            </button>
+          ))}
+          <label
+            className={`flex min-h-[44px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+              SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
+            }`}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label={t.generate.minutes}
+              value={customInput}
+              onFocus={selectOnFocus}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (!DECIMAL_INPUT_RE.test(raw)) return;
+                setCustomInput(raw);
+                const n = Math.round(parseDecimal(raw));
+                if (raw !== "" && Number.isFinite(n) && n > 0) {
+                  setDuration(Math.min(180, n));
+                }
+              }}
+              onBlur={() => {
+                const clamped = Math.max(
+                  5,
+                  Math.min(180, Math.round(parseDecimal(customInput) || 45)),
+                );
+                setDuration(clamped);
+                setCustomInput(String(clamped));
+              }}
+              className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
+            />
+            <span className="text-[12px] font-semibold text-muted-foreground">min</span>
+          </label>
+        </div>
+        <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
+          <Timer className="size-4 text-primary" />
+          {duration <= 30
+            ? t.generate.durationShort
+            : duration <= 45
+              ? t.generate.durationMedium
+              : t.generate.durationLong}
+        </p>
+      </Card>
+
+      <SectionLabel>{t.generate.equipmentProfile}</SectionLabel>
+      <Card className="p-4">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => {
+                haptic(12);
+                update({ activeProfileId: p.id });
+              }}
+              className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold ${
+                p.id === profile.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        {/* One line, not the full gear list — that ran to a paragraph of
+            17 items. The profile's own screen lists and edits it. */}
+        <Link
+          to="/equipment"
+          className="mt-3 flex items-center justify-between gap-2 text-[13px] text-muted-foreground"
+        >
+          <span>{t.generate.equipmentSummary(profile.active_equipment_ids.length)}</span>
+          <span className="flex items-center gap-0.5 font-semibold text-foreground">
+            {t.generate.editEquipment} <ChevronRight className="size-4" />
+          </span>
+        </Link>
+      </Card>
+
+      {!hasPlan ? planCard : null}
 
       {hydrated && workoutTemplates.length > 0 ? (
         <div className="mb-4">
@@ -888,30 +947,40 @@ function WorkoutHome() {
 
       {/* Sticky: the form above is about three screens tall, so the button
           stays in reach just above the tab bar (whose pill top sits
-          --tab-bar-clearance + 4rem up) until you scroll down to its place. */}
-      <button
-        onClick={generate}
-        disabled={generating}
-        className="glow sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
-      >
-        {generating ? (
-          <>
-            <DumbbellLoader size={26} className="text-primary-foreground" />
-            {t.generate.buildingSession}
-          </>
-        ) : (
-          <>
-            <Zap className="size-5" />
-            {plan ? t.generate.regenerateWorkout : t.generate.generateWorkout}
-          </>
-        )}
-      </button>
+          --tab-bar-clearance + 4rem up) until you scroll down to its place.
+          Once a plan matches the selection, the Start bar below takes over. */}
+      {shownPlan ? null : (
+        <button
+          onClick={() => generate()}
+          disabled={generating}
+          // Floats only once there's a selection to build from: before that,
+          // on a program user's first screen it was a second big green button
+          // under "Build Push day", covering the card it sat over.
+          className={`glow ${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100`}
+        >
+          {generating ? (
+            <>
+              <DumbbellLoader size={26} className="text-primary-foreground" />
+              {t.generate.buildingSession}
+            </>
+          ) : (
+            <>
+              <Zap className="size-5" />
+              {t.generate.generateWorkout}
+            </>
+          )}
+        </button>
+      )}
 
-      {plan ? (
+      {shownPlan ? (
         <>
-          <div className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1">
+          <div
+            ref={planRef}
+            className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1"
+            style={{ scrollMarginTop: "calc(max(env(safe-area-inset-top), 0.75rem) + 5.5rem)" }}
+          >
             <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.yourPlan(estimateMinutes(plan), plan.length)}
+              {t.generate.yourPlan(estimateMinutes(shownPlan), shownPlan.length)}
             </p>
             <button
               onClick={() => {
@@ -924,7 +993,7 @@ function WorkoutHome() {
             </button>
           </div>
           <div className="space-y-2">
-            {plan.map((p, i) => {
+            {shownPlan.map((p, i) => {
               const ex = exerciseById(p.exercise_id);
               if (!ex) return null;
               const loved = lovedExerciseIds.includes(p.exercise_id);
@@ -992,7 +1061,7 @@ function WorkoutHome() {
                       </button>
                       <button
                         onClick={() => move(i, 1)}
-                        disabled={i === plan.length - 1}
+                        disabled={i === shownPlan.length - 1}
                         aria-label={t.generate.moveDown}
                         className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
@@ -1011,10 +1080,14 @@ function WorkoutHome() {
               );
             })}
           </div>
-          <div className="mt-4 flex gap-2">
+          {/* Last on the page, so as a sticky element it stays pinned just
+              above the tab bar from the top of the page to the bottom: Start
+              is always one tap away once a plan is ready. */}
+          <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex gap-2">
             <button
               onClick={shuffle}
-              className="glass flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
+              className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
+              style={{ backgroundColor: "var(--background)" }}
             >
               <RefreshCw className="size-5" /> {t.generate.shuffle}
             </button>
@@ -1079,8 +1152,8 @@ function WorkoutHome() {
           setSavingTemplate(false);
         }}
         draft={
-          savingTemplate && plan
-            ? { plan, duration_minutes: duration, target_muscles: muscles }
+          savingTemplate && shownPlan
+            ? { plan: shownPlan, duration_minutes: duration, target_muscles: muscles }
             : null
         }
         onStart={startTemplate}

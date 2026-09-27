@@ -29,7 +29,7 @@ export function GrowthFocusCard() {
   };
 
   return (
-    <Card className="mb-4 space-y-3 p-4">
+    <Card className="space-y-3 p-4">
       <div>
         <p className="text-[15px] font-semibold">{t.volume.growTitle}</p>
         <p className="text-[12.5px] text-muted-foreground">{t.volume.growDesc}</p>

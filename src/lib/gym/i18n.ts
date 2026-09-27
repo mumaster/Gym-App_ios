@@ -251,7 +251,7 @@ const en = {
     editWeeklyPlan: "Edit weekly plan",
     nextDay: (day: string) => `Next: ${day}`,
     suggestedDay: (day: string) => `Suggested ${day}`,
-    startDayType: (day: string) => `Start ${day} day`,
+    startDayType: (day: string) => `Build ${day} day`,
     buildProgramInstead: "Build a program instead",
     planYourTraining: "Plan your training",
     planYourTrainingDesc:
@@ -281,7 +281,6 @@ const en = {
     supersetsDesc: "Pair exercises back-to-back, rounds set by intensity",
     enableSupersets: "Enable supersets",
     buildingSession: "Building your session…",
-    regenerateWorkout: "Regenerate workout",
     generateWorkout: "Generate workout",
     yourPlan: (min: number, exercises: number) =>
       `Your plan · ~${min} min · ${exercises} exercises`,
@@ -1231,7 +1230,7 @@ const nl: Dict = {
     editWeeklyPlan: "Weekplan bewerken",
     nextDay: (day: string) => `Volgende: ${day}`,
     suggestedDay: (day: string) => `Voorgesteld ${day}`,
-    startDayType: (day: string) => `Start ${day}-dag`,
+    startDayType: (day: string) => `${day}-dag samenstellen`,
     buildProgramInstead: "Stel in plaats daarvan een programma samen",
     planYourTraining: "Plan je training",
     planYourTrainingDesc:
@@ -1261,7 +1260,6 @@ const nl: Dict = {
     supersetsDesc: "Combineer oefeningen achter elkaar, rondes bepaald door intensiteit",
     enableSupersets: "Supersets inschakelen",
     buildingSession: "Je sessie wordt samengesteld…",
-    regenerateWorkout: "Training opnieuw genereren",
     generateWorkout: "Genereer training",
     yourPlan: (min: number, exercises: number) =>
       `Jouw plan · ~${min} min · ${exercises} oefeningen`,

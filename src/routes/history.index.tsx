@@ -6,7 +6,7 @@ import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
-import { WeeklySetsCard } from "../components/gym/WeeklyVolume";
+import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
 import { RouteThumb } from "../components/gym/RouteMapView";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { exerciseById } from "../lib/gym/data";
@@ -185,6 +185,12 @@ function HistoryScreen() {
         <>
           <SectionLabel>{t.volume.thisWeek}</SectionLabel>
           <WeeklySetsCard />
+          {/* Picking which muscles to grow lives next to the weekly sets it
+              sets the targets for; on the Workout tab it sat in the middle
+              of building today's session. */}
+          <div className="mt-3">
+            <GrowthFocusCard />
+          </div>
         </>
       ) : null}
 

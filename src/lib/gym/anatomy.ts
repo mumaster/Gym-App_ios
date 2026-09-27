@@ -55,6 +55,30 @@ export const DEFAULT_REGION: Record<Muscle, RegionId> = {
   Calves: "calves",
 };
 
+/**
+ * Map regions for whole muscle groups, as a split day or a recommendation
+ * names them. Arms is the one group split over two regions with opposite
+ * jobs, so a single default (Biceps) was wrong half the time — a Push day
+ * highlighted Biceps. Pressing works the triceps and pulling the biceps, so
+ * a push day gets Triceps, a pull day Biceps, and anything else (an upper
+ * body day, an arms day, a recommendation) both.
+ */
+export function regionsForMuscles(muscles: Muscle[], dayId?: string): RegionId[] {
+  const out: RegionId[] = [];
+  for (const m of muscles) {
+    const ids: RegionId[] =
+      m !== "Arms"
+        ? [DEFAULT_REGION[m]]
+        : dayId === "push"
+          ? ["triceps"]
+          : dayId === "pull"
+            ? ["biceps"]
+            : ["biceps", "triceps"];
+    for (const id of ids) if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 export function musclesFromRegions(regions: RegionId[]): Muscle[] {
   const out: Muscle[] = [];
   for (const id of regions) {
