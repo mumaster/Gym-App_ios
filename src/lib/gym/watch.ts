@@ -1,5 +1,5 @@
 import { dayKey } from "./date";
-import type { Workout } from "./types";
+import type { CardioSession, WatchData, Workout } from "./types";
 
 /** How far apart a watch recording and a Forge session may start and still
  *  be treated as the same session. A matching aid, not a training number:
@@ -42,4 +42,36 @@ export function formatDuration(seconds: number): string {
   const sec = s % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
   return h ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+}
+
+/** A watch start ("YYYY-MM-DDTHH:mm", local, or a bare date) as an ISO
+ *  timestamp. A bare date becomes local noon so no time zone moves it to
+ *  another day; no start at all falls back to when it was imported. */
+export function cardioStartIso(watch: Pick<WatchData, "start" | "importedAt">): string {
+  const start = watch.start;
+  if (start && /^\d{4}-\d{2}-\d{2}/.test(start)) {
+    const d = new Date(start.length === 10 ? `${start}T12:00` : start);
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
+  return watch.importedAt;
+}
+
+/** Whether screenshots read as a cardio session (a run, walk, ride…) rather
+ *  than a strength one. Only the reader's own judgement or a distance counts. */
+export function looksLikeCardio(watch: Pick<WatchData, "kind" | "distanceKm">): boolean {
+  if (watch.kind === "cardio") return true;
+  if (watch.kind === "strength") return false;
+  return (watch.distanceKm ?? 0) > 0;
+}
+
+/** "5'42"" for a pace in seconds per km. */
+export function formatPace(seconds: number): string {
+  const s = Math.round(seconds);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, "0")}"`;
+}
+
+/** Whole minutes for a cardio session's training load, or null without a duration. */
+export function cardioMinutes(c: CardioSession): number | null {
+  const sec = c.watch.durationSeconds;
+  return sec != null && sec > 0 ? Math.round(sec / 60) : null;
 }

@@ -19,6 +19,7 @@ import { Route as SessionRouteImport } from './routes/session'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as HistoryIndexRouteImport } from './routes/history.index'
 import { Route as HistoryWorkoutIdRouteImport } from './routes/history.$workoutId'
+import { Route as HistoryCardioCardioIdRouteImport } from './routes/history.cardio.$cardioId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const HistoryWorkoutIdRoute = HistoryWorkoutIdRouteImport.update({
   path: '/$workoutId',
   getParentRoute: () => HistoryRoute,
 } as any)
+const HistoryCardioCardioIdRoute = HistoryCardioCardioIdRouteImport.update({
+  id: '/cardio/$cardioId',
+  path: '/cardio/$cardioId',
+  getParentRoute: () => HistoryRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history/': typeof HistoryIndexRoute
+  '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history': typeof HistoryIndexRoute
+  '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history/': typeof HistoryIndexRoute
+  '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/history/$workoutId'
     | '/history/'
+    | '/history/cardio/$cardioId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/history/$workoutId'
     | '/history'
+    | '/history/cardio/$cardioId'
   id:
     | '__root__'
     | '/'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/history/$workoutId'
     | '/history/'
+    | '/history/cardio/$cardioId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,17 +240,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryWorkoutIdRouteImport
       parentRoute: typeof HistoryRoute
     }
+    '/history/cardio/$cardioId': {
+      id: '/history/cardio/$cardioId'
+      path: '/cardio/$cardioId'
+      fullPath: '/history/cardio/$cardioId'
+      preLoaderRoute: typeof HistoryCardioCardioIdRouteImport
+      parentRoute: typeof HistoryRoute
+    }
   }
 }
 
 interface HistoryRouteChildren {
   HistoryWorkoutIdRoute: typeof HistoryWorkoutIdRoute
   HistoryIndexRoute: typeof HistoryIndexRoute
+  HistoryCardioCardioIdRoute: typeof HistoryCardioCardioIdRoute
 }
 
 const HistoryRouteChildren: HistoryRouteChildren = {
   HistoryWorkoutIdRoute: HistoryWorkoutIdRoute,
   HistoryIndexRoute: HistoryIndexRoute,
+  HistoryCardioCardioIdRoute: HistoryCardioCardioIdRoute,
 }
 
 const HistoryRouteWithChildren =

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { ChevronRight, Flame, HeartPulse, Trophy, Watch } from "lucide-react";
+import { ChevronRight, Flame, Footprints, HeartPulse, Trophy, Watch } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
@@ -14,9 +14,23 @@ import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
 import { personalRecords } from "../lib/gym/progress";
 import { mondayOf } from "../lib/gym/schedule";
 import { sessionLoad, sessionMinutes } from "../lib/gym/trainingLoad";
+import { cardioMinutes, formatPace } from "../lib/gym/watch";
 import { bestWeekStreak, currentWeekStreak, recentCalendar } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
-import type { Muscle } from "../lib/gym/types";
+import type { CardioSession, Muscle, Workout } from "../lib/gym/types";
+
+/** A row in the sessions list: a Forge strength session or watch-only cardio. */
+type SessionItem =
+  | { kind: "workout"; date: string; workout: Workout }
+  | { kind: "cardio"; date: string; cardio: CardioSession };
+
+function itemLoad(item: SessionItem): number | null {
+  if (item.kind === "workout") return sessionLoad(item.workout);
+  const minutes = cardioMinutes(item.cardio);
+  return item.cardio.session_rpe == null || minutes == null
+    ? null
+    : item.cardio.session_rpe * minutes;
+}
 
 export const Route = createFileRoute("/history/")({
   head: () => ({
@@ -38,7 +52,7 @@ export const Route = createFileRoute("/history/")({
 });
 
 function HistoryScreen() {
-  const { workouts, hydrated } = useGym();
+  const { workouts, cardioSessions, hydrated } = useGym();
   const t = useTranslation();
   const locale = useLocale();
 
@@ -89,12 +103,16 @@ function HistoryScreen() {
       : ((trackable.find((x) => x.id === prs[0]?.exercise_id) ?? trackable[0])?.id ?? null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  /** Sessions grouped by Monday–Sunday week, newest first. */
+  /** Sessions (strength and cardio) grouped by Monday–Sunday week, newest first. */
   const weeks = useMemo(() => {
-    const groups = new Map<number, typeof workouts>();
-    for (const w of workouts) {
-      const key = mondayOf(new Date(w.date)).getTime();
-      groups.set(key, [...(groups.get(key) ?? []), w]);
+    const groups = new Map<number, SessionItem[]>();
+    const items: SessionItem[] = [
+      ...workouts.map((w) => ({ kind: "workout" as const, date: w.date, workout: w })),
+      ...cardioSessions.map((c) => ({ kind: "cardio" as const, date: c.date, cardio: c })),
+    ];
+    for (const item of items) {
+      const key = mondayOf(new Date(item.date)).getTime();
+      groups.set(key, [...(groups.get(key) ?? []), item]);
     }
     return [...groups.entries()]
       .sort((a, b) => b[0] - a[0])
@@ -102,7 +120,7 @@ function HistoryScreen() {
         monday: new Date(monday),
         list: list.sort((a, b) => Date.parse(b.date) - Date.parse(a.date)),
       }));
-  }, [workouts]);
+  }, [workouts, cardioSessions]);
   const [weeksShown, setWeeksShown] = useState(4);
   const [watchOpen, setWatchOpen] = useState(false);
 
@@ -273,23 +291,24 @@ function HistoryScreen() {
         </>
       ) : null}
 
-      {workouts.length ? (
-        <div className="flex items-end justify-between gap-2">
-          <SectionLabel>{t.history.sessions}</SectionLabel>
-          <button
-            onClick={() => setWatchOpen(true)}
-            className="mb-1.5 flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-semibold text-foreground active:scale-95"
-          >
-            <Watch className="size-4" /> {t.watch.importFromWatch}
-          </button>
-        </div>
-      ) : null}
+      {/* Always shown: someone who only does cardio imports their first
+          session from here, before any Forge workout exists. */}
+      <div className="flex items-end justify-between gap-2">
+        <SectionLabel>{t.history.sessions}</SectionLabel>
+        <button
+          onClick={() => setWatchOpen(true)}
+          className="mb-1.5 flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-semibold text-foreground active:scale-95"
+        >
+          <Watch className="size-4" /> {t.watch.importFromWatch}
+        </button>
+      </div>
       <WatchImportSheet open={watchOpen} onClose={() => setWatchOpen(false)} />
       {/* Grouped by week: an ever-growing list of identical cards was the
           longest thing in the app (20 sessions ≈ 1,700px). */}
       <div className="space-y-4">
         {weeks.slice(0, weeksShown).map(({ monday, list }) => {
-          const loads = list.map(sessionLoad).filter((l): l is number => l != null);
+          const loads = list.map(itemLoad).filter((l): l is number => l != null);
+          const cardioCount = list.filter((x) => x.kind === "cardio").length;
           const load = loads.length ? loads.reduce((a, b) => a + b, 0) : null;
           return (
             <div key={monday.getTime()}>
@@ -301,13 +320,18 @@ function HistoryScreen() {
                 </p>
                 <p className="tabular text-[12px] text-muted-foreground">
                   {t.history.weekSummary(
-                    list.length,
+                    list.length - cardioCount,
+                    cardioCount,
                     load != null ? load.toLocaleString(locale) : null,
                   )}
                 </p>
               </div>
               <Card className="overflow-hidden p-0">
-                {list.map((w, i) => {
+                {list.map((item, i) => {
+                  if (item.kind === "cardio") {
+                    return <CardioRow key={item.cardio.id} cardio={item.cardio} first={i === 0} />;
+                  }
+                  const w = item.workout;
                   const volume = w.completed_sets.reduce(
                     (v, s) => v + Math.max(0, s.weight) * s.reps,
                     0,
@@ -370,5 +394,64 @@ function HistoryScreen() {
         </button>
       ) : null}
     </Screen>
+  );
+}
+
+function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const { watch } = cardio;
+  const minutes = cardioMinutes(cardio);
+  const detail = [
+    watch.distanceKm != null
+      ? `${watch.distanceKm.toLocaleString(locale, { maximumFractionDigits: 2 })} km`
+      : null,
+    watch.avgPaceSeconds != null ? `${formatPace(watch.avgPaceSeconds)}${t.watch.perKm}` : null,
+    minutes != null ? t.history.minutesShort(minutes) : null,
+  ].filter(Boolean);
+  return (
+    <Link
+      to="/history/cardio/$cardioId"
+      params={{ cardioId: cardio.id }}
+      className={`flex items-center gap-3 px-4 py-3 active:bg-foreground/5 ${
+        first ? "" : "border-t border-border"
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 text-[15px] font-semibold">
+          <Footprints className="size-4 shrink-0 text-primary" aria-hidden />
+          <span className="truncate">
+            {new Date(cardio.date).toLocaleDateString(locale, {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            })}
+            <span className="font-normal text-muted-foreground">
+              {" · "}
+              {watch.activity || t.watch.cardio}
+            </span>
+          </span>
+        </p>
+        {/* Minutes and heart rate sit on this line rather than at the right
+            (as on a strength row), so the activity name ("Buiten hardlopen")
+            fits on the first at 390pt. */}
+        {detail.length || watch.avgHr != null ? (
+          <p className="tabular mt-0.5 flex items-center gap-1 truncate text-[12.5px] text-muted-foreground">
+            {detail.join(" · ")}
+            {watch.avgHr != null ? (
+              <span
+                className="flex items-center gap-0.5"
+                aria-label={`${t.watch.avgHr} ${watch.avgHr} ${t.watch.bpm}`}
+              >
+                {detail.length ? " · " : ""}
+                <HeartPulse className="size-3.5 text-primary" />
+                {watch.avgHr}
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }

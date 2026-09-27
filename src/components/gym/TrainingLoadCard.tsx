@@ -2,17 +2,18 @@ import { useMemo } from "react";
 import { Activity } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
-import { LOAD_SPIKE_RATIO, loadRatio, weeklyLoads } from "../../lib/gym/trainingLoad";
+import { LOAD_SPIKE_RATIO, loadEntries, loadRatio, weeklyLoads } from "../../lib/gym/trainingLoad";
 import { Card } from "./Screen";
 
 /** Weekly session-RPE load for the last 6 weeks, and this week against the
  *  4-week average once there's enough rated history. See trainingLoad.ts. */
 export function TrainingLoadCard() {
-  const { workouts } = useGym();
+  const { workouts, cardioSessions } = useGym();
   const t = useTranslation();
   const locale = useLocale();
-  const weeks = useMemo(() => weeklyLoads(workouts, 6), [workouts]);
-  const ratio = useMemo(() => loadRatio(workouts), [workouts]);
+  const entries = useMemo(() => loadEntries(workouts, cardioSessions), [workouts, cardioSessions]);
+  const weeks = useMemo(() => weeklyLoads(entries, 6), [entries]);
+  const ratio = useMemo(() => loadRatio(entries), [entries]);
   const rated = weeks.reduce((n, w) => n + w.rated, 0);
   const max = Math.max(1, ...weeks.map((w) => w.load));
   const current = weeks[weeks.length - 1]!;

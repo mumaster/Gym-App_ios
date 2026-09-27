@@ -1,5 +1,6 @@
 import { mondayOf } from "./schedule";
-import type { Workout } from "./types";
+import type { CardioSession, Workout } from "./types";
+import { cardioMinutes } from "./watch";
 
 /**
  * Session-RPE training load (Foster et al., J Strength Cond Res 2001, "A new
@@ -41,6 +42,32 @@ export function sessionLoad(w: Workout): number | null {
   return w.session_rpe == null ? null : w.session_rpe * sessionMinutes(w);
 }
 
+/** One session as training load sees it. Session RPE isn't specific to any
+ *  kind of exercise — Foster's 2001 paper validated it against heart rate on
+ *  steady and interval cycling and on basketball practice, and called it
+ *  valid across a wide variety of exercise (confirmed through web search
+ *  results) — so a rated watch-only cardio session counts the same way a
+ *  strength session does. */
+export interface LoadEntry {
+  date: string;
+  minutes: number | null;
+  rpe: number | null;
+}
+
+/** Finished strength sessions plus watch-recorded cardio, as load entries. */
+export function loadEntries(workouts: Workout[], cardio: CardioSession[] = []): LoadEntry[] {
+  return [
+    ...workouts
+      .filter((w) => w.finished)
+      .map((w) => ({ date: w.date, minutes: sessionMinutes(w), rpe: w.session_rpe ?? null })),
+    ...cardio.map((c) => ({ date: c.date, minutes: cardioMinutes(c), rpe: c.session_rpe ?? null })),
+  ];
+}
+
+function entryLoad(e: LoadEntry): number | null {
+  return e.rpe == null || e.minutes == null ? null : e.rpe * e.minutes;
+}
+
 export interface WeekLoad {
   /** Monday of the week, as a Date at local midnight. */
   weekStart: Date;
@@ -51,7 +78,7 @@ export interface WeekLoad {
 }
 
 /** The last `weeks` Monday–Sunday weeks, oldest first, ending with this one. */
-export function weeklyLoads(workouts: Workout[], weeks = 6, today = new Date()): WeekLoad[] {
+export function weeklyLoads(entries: LoadEntry[], weeks = 6, today = new Date()): WeekLoad[] {
   const thisMonday = mondayOf(today);
   const out: WeekLoad[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
@@ -59,11 +86,11 @@ export function weeklyLoads(workouts: Workout[], weeks = 6, today = new Date()):
     start.setDate(start.getDate() - 7 * i);
     const end = new Date(start);
     end.setDate(end.getDate() + 7);
-    const inWeek = workouts.filter((w) => {
-      const t = new Date(w.date).getTime();
-      return w.finished && t >= start.getTime() && t < end.getTime();
+    const inWeek = entries.filter((e) => {
+      const t = new Date(e.date).getTime();
+      return t >= start.getTime() && t < end.getTime();
     });
-    const loads = inWeek.map(sessionLoad).filter((x): x is number => x != null);
+    const loads = inWeek.map(entryLoad).filter((x): x is number => x != null);
     out.push({
       weekStart: start,
       load: loads.reduce((a, b) => a + b, 0),
@@ -90,21 +117,21 @@ export const LOAD_SPIKE_RATIO = 1.5;
 const MIN_WEEKS_WITH_DATA = 3;
 
 export function loadRatio(
-  workouts: Workout[],
+  entries: LoadEntry[],
   today = new Date(),
 ): { acute: number; chronicWeekly: number; ratio: number } | null {
   const now = today.getTime();
   const within = (days: number) =>
-    workouts.filter((w) => {
-      const t = new Date(w.date).getTime();
-      return w.finished && t <= now && t > now - days * DAY_MS;
+    entries.filter((e) => {
+      const t = new Date(e.date).getTime();
+      return t <= now && t > now - days * DAY_MS;
     });
-  const sum = (ws: Workout[]) => ws.reduce((a, w) => a + (sessionLoad(w) ?? 0), 0);
+  const sum = (es: LoadEntry[]) => es.reduce((a, e) => a + (entryLoad(e) ?? 0), 0);
   const month = within(28);
   const weeksWithData = new Set(
     month
-      .filter((w) => w.session_rpe != null)
-      .map((w) => Math.floor((now - new Date(w.date).getTime()) / (7 * DAY_MS))),
+      .filter((e) => entryLoad(e) != null)
+      .map((e) => Math.floor((now - new Date(e.date).getTime()) / (7 * DAY_MS))),
   ).size;
   if (weeksWithData < MIN_WEEKS_WITH_DATA) return null;
   const acute = sum(within(7));

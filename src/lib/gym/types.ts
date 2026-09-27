@@ -156,9 +156,66 @@ export interface WatchData {
     endBpm: number | null;
     minutes: number | null;
   } | null;
-  /** Anything else the screenshots printed (VO2max, steps, cadence…). */
-  otherMetrics: { label: string; value: string; unit: string | null }[];
+  /** Anything else the screenshots printed (running dynamics, sweat loss…),
+   *  with the app's own verdict ("Normaal") when it gives one. */
+  otherMetrics: { label: string; value: string; unit: string | null; rating?: string | null }[];
   importedAt: string;
+  // Cardio fields, added with standalone cardio sessions (CardioSession).
+  // Optional because watch data saved before then doesn't have them.
+  /** What kind of session the screenshots show, as the reader judged it. */
+  kind?: "strength" | "cardio" | "other" | null;
+  distanceKm?: number | null;
+  /** Pace in seconds per km: the average, and the fastest the app prints. */
+  avgPaceSeconds?: number | null;
+  bestPaceSeconds?: number | null;
+  avgSpeedKmh?: number | null;
+  maxSpeedKmh?: number | null;
+  /** Steps (or strokes/revolutions) per minute. */
+  avgCadence?: number | null;
+  maxCadence?: number | null;
+  avgStrideCm?: number | null;
+  steps?: number | null;
+  ascentM?: number | null;
+  descentM?: number | null;
+  minElevationM?: number | null;
+  maxElevationM?: number | null;
+  vo2max?: number | null;
+  spo2Min?: number | null;
+  spo2Max?: number | null;
+  /** Minutes per pace zone, in the app's own order and names. */
+  paceZones?: { name: string; minutes: number }[];
+  /** Per-km (or per-lap) splits as printed; a short last one keeps its label. */
+  splits?: WatchSplit[];
+  /** Any other table the screenshots print, cell text as written. */
+  tables?: WatchTable[];
+}
+
+export interface WatchSplit {
+  /** "1", "2"… or the app's label for a partial last split. */
+  label: string;
+  /** Pace for the split, seconds per km. */
+  paceSeconds: number | null;
+  avgHr: number | null;
+  cadence: number | null;
+}
+
+export interface WatchTable {
+  title: string;
+  columns: string[];
+  rows: string[][];
+}
+
+/** A cardio session recorded only on a watch (a run, a walk, a ride), with
+ *  no Forge strength session to attach it to. Kept apart from `workouts` on
+ *  purpose: everything that reads workouts (streak, sets per muscle,
+ *  records, training-day nutrition) is about strength training. */
+export interface CardioSession {
+  id: string;
+  /** Start, ISO. */
+  date: string;
+  watch: WatchData;
+  /** Session RPE, 0–10 on Foster's CR-10 scale — counts toward training load. */
+  session_rpe?: number;
 }
 
 /** A named, reusable plan the user can start exactly as saved, as an

@@ -48,6 +48,7 @@ import {
 } from "./splits";
 import type {
   AccentId,
+  CardioSession,
   ColorScheme,
   EquipmentProfile,
   Language,
@@ -68,6 +69,7 @@ import {
   signUp as authSignUp,
   type Session,
 } from "./auth";
+import { cardioStartIso } from "./watch";
 
 interface GymState {
   profiles: EquipmentProfile[];
@@ -148,6 +150,8 @@ interface GymState {
   weightLog: WeightEntry[];
   /** Daily water target in ml, or null if the user hasn't set one. */
   waterGoalMl: number | null;
+  /** Watch-recorded cardio (runs, walks, rides), newest first — see types.ts. */
+  cardioSessions: CardioSession[];
 }
 
 const initialState: GymState = {
@@ -190,6 +194,7 @@ const initialState: GymState = {
   waterEntries: [],
   weightLog: [],
   waterGoalMl: null,
+  cardioSessions: [],
 };
 
 const KEY = "forge.gym.state.v2";
@@ -303,6 +308,7 @@ function migrate(raw: Partial<GymState>): GymState {
     waterEntries: raw.waterEntries ?? [],
     weightLog: raw.weightLog ?? [],
     waterGoalMl: raw.waterGoalMl ?? null,
+    cardioSessions: raw.cardioSessions ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -355,6 +361,12 @@ interface Ctx extends GymState {
   rateWorkout: (workoutId: string, rpe: number | null) => void;
   /** Attach (or with null, remove) a watch's own record of a session. */
   setWorkoutWatch: (workoutId: string, watch: WatchData | null) => void;
+  /** Saves a watch-only cardio session. With `replaceId`, replaces that
+   *  session's watch data; otherwise a session with the same start time is
+   *  replaced rather than duplicated. */
+  saveCardioSession: (watch: WatchData, replaceId?: string) => void;
+  rateCardio: (id: string, rpe: number | null) => void;
+  deleteCardioSession: (id: string) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
   appendBonusExercise: (exerciseId: string) => void;
   toggleLovedExercise: (exerciseId: string) => void;
@@ -871,6 +883,34 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return watch ? { ...rest, watch } : rest;
           }),
         })),
+      saveCardioSession: (watch, replaceId) =>
+        setState((s) => {
+          const existing = replaceId
+            ? s.cardioSessions.find((c) => c.id === replaceId)
+            : watch.start && watch.start.length > 10
+              ? s.cardioSessions.find((c) => c.watch.start === watch.start)
+              : undefined;
+          const date = cardioStartIso(watch);
+          const next: CardioSession = existing
+            ? { ...existing, date, watch }
+            : { id: crypto.randomUUID(), date, watch };
+          const rest = s.cardioSessions.filter((c) => c.id !== next.id);
+          return {
+            ...s,
+            cardioSessions: [next, ...rest].sort((a, b) => Date.parse(b.date) - Date.parse(a.date)),
+          };
+        }),
+      rateCardio: (id, rpe) =>
+        setState((s) => ({
+          ...s,
+          cardioSessions: s.cardioSessions.map((c) => {
+            if (c.id !== id) return c;
+            const { session_rpe: _old, ...rest } = c;
+            return rpe == null ? rest : { ...rest, session_rpe: rpe };
+          }),
+        })),
+      deleteCardioSession: (id) =>
+        setState((s) => ({ ...s, cardioSessions: s.cardioSessions.filter((c) => c.id !== id) })),
       removeActivePlanEntries: (indices) =>
         setState((s) => {
           if (!s.activeWorkout) return s;
