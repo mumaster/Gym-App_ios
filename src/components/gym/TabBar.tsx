@@ -39,7 +39,8 @@ function TabButton({
       to={to}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className="relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] pt-1 active:scale-95"
+      data-tab={active ? "active" : ""}
+      className="relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] active:scale-95"
     >
       <Icon
         className={`size-[22px] ${active ? "text-primary" : "text-muted-foreground"}`}
@@ -53,10 +54,6 @@ function TabButton({
       >
         {label}
       </span>
-      {/* Placeholder for the active dot, always present so the row never
-          shifts. The visible dot is one element in TabBar that slides to
-          whichever placeholder is active. */}
-      <span data-tab-dot={active ? "active" : ""} className="size-1" />
       {/* Real iPhone haptic tick on tap — see HapticSwitch.tsx. <Link>
           cancels its click to navigate in-app, which would also cancel the
           switch, so the overlay navigates itself instead. */}
@@ -65,55 +62,81 @@ function TabButton({
   );
 }
 
-/** Where the sliding dot sits (relative to the row), and whether it should
- *  animate there: only when moving from one visible tab to another, so it
- *  doesn't fly in from the corner on first paint or when leaving Home. */
-function useSlidingDot(pathname: string) {
+/** Where the selected tab's glass lozenge sits (relative to the row), and
+ *  whether it should animate there: only when moving from one visible tab
+ *  to another, so it doesn't fly in from the corner on first paint or when
+ *  leaving Home. */
+function useSelectionPlatter(pathname: string) {
   const rowRef = useRef<HTMLDivElement>(null);
-  const [dot, setDot] = useState({ x: 0, y: 0, visible: false, animate: false });
+  const [box, setBox] = useState({ x: 0, y: 0, w: 0, h: 0, visible: false, animate: false });
   useLayoutEffect(() => {
     const row = rowRef.current;
     if (!row) return;
     const measure = () => {
-      const el = row.querySelector<HTMLElement>('[data-tab-dot="active"]');
+      const el = row.querySelector<HTMLElement>('[data-tab="active"]');
       if (!el) {
-        setDot((d) => ({ ...d, visible: false, animate: false }));
+        setBox((d) => ({ ...d, visible: false, animate: false }));
         return;
       }
-      // offsetLeft/Top ignore transforms, so a tab still pressed in
-      // (active:scale-95) doesn't skew the measurement.
-      let x = 0;
-      let y = 0;
-      for (let n: HTMLElement | null = el; n && n !== row;) {
-        x += n.offsetLeft;
-        y += n.offsetTop;
-        n = n.offsetParent as HTMLElement | null;
-      }
-      setDot((d) => ({ x, y, visible: true, animate: d.visible }));
+      // offset* ignore transforms, so a tab still pressed in
+      // (active:scale-95) doesn't skew the measurement. Tabs are direct
+      // children of the (relative) row, so these are row coordinates.
+      setBox((d) => ({
+        x: el.offsetLeft,
+        y: el.offsetTop,
+        w: el.offsetWidth,
+        h: el.offsetHeight,
+        visible: true,
+        animate: d.visible,
+      }));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(row);
     return () => ro.disconnect();
   }, [pathname]);
-  return { rowRef, dot };
+  return { rowRef, box };
 }
 
 export function TabBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const t = useTranslation();
   const navigate = useNavigate();
-  const { rowRef, dot } = useSlidingDot(pathname);
+  const { rowRef, box } = useSelectionPlatter(pathname);
   if (pathname.startsWith("/session")) return null;
   const homeActive = pathname === "/";
 
   return (
     <nav className="safe-bottom-tab view-transition-tab-bar fixed inset-x-0 bottom-0 z-40 px-4 pt-2">
+      {/* Scroll edge effect: page content fades out as it passes under the
+          bar (see styles.css). It starts at the nav's own top, so buttons pinned
+          just above the bar (Generate, Start workout) aren't faded. */}
+      <div aria-hidden className="scroll-edge-bottom pointer-events-none absolute inset-0 -z-10" />
       <div className="mx-auto max-w-md">
         <div
           ref={rowRef}
-          className="glass-strong relative flex items-stretch gap-1 rounded-3xl px-2 py-1 shadow-[var(--shadow-float)]"
+          className="glass-bar relative flex items-stretch gap-1 rounded-full px-2 py-1"
         >
+          {/* The selected tab's glass lozenge, as on iOS 26's tab bar: one
+              element for the whole bar, sliding between tabs with a slight
+              overshoot. First in the row so it paints under the tabs. Fades
+              out on screens that aren't a tab (Home, Settings, Equipment) —
+              Home's own circle is its indicator. */}
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute left-0 top-0 rounded-full bg-foreground/[0.09] shadow-[inset_0_1px_0_oklch(1_0_0/12%)] motion-reduce:transition-none ${
+              box.visible ? "opacity-100" : "opacity-0"
+            } ${
+              box.animate
+                ? "transition-[transform,opacity] duration-[380ms] ease-[cubic-bezier(0.34,1.4,0.64,1)]"
+                : "transition-opacity duration-200"
+            }`}
+            style={{
+              width: box.w,
+              height: box.h,
+              transform: `translate(${box.x}px, ${box.y}px)`,
+            }}
+          />
           {LEFT_TABS.map(({ labelKey, ...tab }) => (
             <TabButton
               key={tab.to}
@@ -172,20 +195,6 @@ export function TabBar() {
               active={pathname.startsWith(tab.to)}
             />
           ))}
-          {/* One dot for the whole bar, sliding between tabs with a slight
-              overshoot. Fades out on screens that aren't a tab (Home,
-              Settings, Equipment). */}
-          <span
-            aria-hidden
-            className={`pointer-events-none absolute left-0 top-0 size-1 rounded-full bg-primary motion-reduce:transition-none ${
-              dot.visible ? "opacity-100" : "opacity-0"
-            } ${
-              dot.animate
-                ? "transition-[transform,opacity] duration-[380ms] ease-[cubic-bezier(0.34,1.4,0.64,1)]"
-                : "transition-opacity duration-200"
-            }`}
-            style={{ transform: `translate(${dot.x}px, ${dot.y}px)` }}
-          />
         </div>
       </div>
     </nav>

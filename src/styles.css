@@ -74,6 +74,12 @@
   --foreground: oklch(0.98 0 0);
   --surface: oklch(0.24 0.005 260 / 42%);
   --surface-strong: oklch(0.3 0.006 260 / 62%);
+  /* Tab bar glass (glass-bar): denser than --surface-strong, plus the
+     specular rim's three stops. */
+  --bar-surface: oklch(0.24 0.006 260 / 74%);
+  --bar-rim-strong: oklch(1 0 0 / 32%);
+  --bar-rim-faint: oklch(1 0 0 / 7%);
+  --bar-rim-soft: oklch(1 0 0 / 16%);
   --card: oklch(0.24 0.005 260 / 42%);
   /* Opaque stand-in for a .glass card as it renders over --background
      (the 42% surface composited onto black), for chart marks' surface
@@ -179,6 +185,12 @@
   --foreground: oklch(0.16 0.005 260);
   --surface: oklch(1 0 0 / 70%);
   --surface-strong: oklch(1 0 0 / 85%);
+  /* On a light page the rim is a white highlight fading to a faint dark
+     edge, which is what outlines the capsule against the off-white. */
+  --bar-surface: oklch(1 0 0 / 82%);
+  --bar-rim-strong: oklch(1 0 0 / 100%);
+  --bar-rim-faint: oklch(0 0 0 / 6%);
+  --bar-rim-soft: oklch(0 0 0 / 10%);
   --card: oklch(1 0 0 / 70%);
   --chart-surface: oklch(0.99 0.001 260);
   --card-foreground: oklch(0.16 0.005 260);
@@ -266,6 +278,46 @@
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid var(--border);
+}
+
+/* The tab bar, after iOS 26's Liquid Glass tab bar: a floating capsule of
+   blurred, saturated glass with a bright specular rim (strongest top-left,
+   where the light "comes from"), drawn as inset shadows: bright on the
+   top-left edge, softer bottom-right, faint all round. Denser than
+   .glass-strong so labels stay legible over busy content. What the web
+   can't copy is the lensing — the glass bending what's behind it — which
+   needs an SVG backdrop filter WebKit doesn't support. Reduce Transparency
+   and Increase Contrast make it solid and outlined, as iOS does. */
+@utility glass-bar {
+  background-color: var(--bar-surface);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  box-shadow:
+    inset 1px 1px 0 var(--bar-rim-strong),
+    inset -1px -1px 0 var(--bar-rim-soft),
+    inset 0 0 0 1px var(--bar-rim-faint),
+    var(--shadow-float);
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--chart-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  @media (prefers-contrast: more) {
+    background-color: var(--chart-surface);
+    outline: 1px solid var(--foreground);
+  }
+}
+
+/* iOS's "scroll edge effect" under a tab bar: content fades into the page
+   background as it passes beneath the bar, so the glass never sits on top
+   of full-strength text. Paired with glass-bar in TabBar.tsx. */
+@utility scroll-edge-bottom {
+  background: linear-gradient(
+    to top,
+    var(--background) 45%,
+    color-mix(in oklch, var(--background) 70%, transparent) 75%,
+    transparent
+  );
 }
 
 /* Used only by Screen.tsx's sticky page header. `--surface-strong` (what
