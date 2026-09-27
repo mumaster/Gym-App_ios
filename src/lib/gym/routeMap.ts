@@ -10,6 +10,10 @@
  * are both high — muted map colours, grey roads, white labels and even
  * Apple Maps' yellow motorways (chroma ≈ 140) fall below it — and only
  * connected pieces of real size are kept, which drops coloured map icons.
+ * A stretch the watch had no GPS for (a lift ride, a tunnel) is drawn
+ * differently: a straight dashed line in a muted grey, which colour alone
+ * can't tell from the map's own greys (roads, terrain, the km markers). Those
+ * dashes are found by shape instead — see dashedSegments.
  * These thresholds are image-processing choices tuned on Huawei Health
  * screenshots, not training numbers.
  */
@@ -26,6 +30,30 @@ export const ROUTE_MIN_PIECE_PX = 12;
 /** Less route than this in total means there's no route to show. */
 export const ROUTE_MIN_TOTAL_PX = 60;
 
+/** A dash's colour: muted (max − min channel at most this)… */
+export const DASH_MAX_CHROMA = 40;
+/** …and mid-grey (brightest channel in this range), so neither the dark map
+ *  nor white labels and roads. Huawei's dash measured ≈ (88, 84, 85). */
+export const DASH_MIN_BRIGHTNESS = 55;
+export const DASH_MAX_BRIGHTNESS = 170;
+/** A dash's size, as a share of width² (≈ 5–620 px at the stored 720 px
+ *  width): drops single specks and whole terrain patches. */
+export const DASH_MIN_AREA = 0.00001;
+export const DASH_MAX_AREA = 0.0012;
+/** A dash is at least this many times longer than it is wide; the round km
+ *  markers aren't. */
+export const DASH_MIN_ELONGATION = 2;
+/** Two dashes belong to one line when both point the same way, and along
+ *  the line joining them, within this many degrees… */
+export const DASH_MAX_ANGLE_DEG = 15;
+/** …and the gap between their centres is at most this many dash lengths. */
+export const DASH_MAX_SPACING = 3;
+/** A dashed line has at least this many dashes… */
+export const DASH_MIN_COUNT = 3;
+/** …all drawn the same length: each within this share of the row's median
+ *  (a road or a label broken into pieces isn't this regular). */
+export const DASH_LENGTH_TOLERANCE = 0.4;
+
 /** Stored per cardio session (routeMapStore.ts). */
 export interface RouteMap {
   /** Grey, dark-style map (light roads on dark), JPEG data URL. */
@@ -39,19 +67,14 @@ export interface RouteMap {
   height: number;
 }
 
-/** Route mask (1 = route) for RGBA pixels, with small pieces removed. */
-export function routeMask(rgba: Uint8ClampedArray, width: number, height: number): Uint8Array {
+/** Connected pieces (8-neighbour) of a mask, by flood fill: each pixel's
+ *  piece id (−1 outside the mask) and each piece's size. */
+function labelPieces(
+  raw: Uint8Array,
+  width: number,
+  height: number,
+): { label: Int32Array; sizes: number[] } {
   const n = width * height;
-  const raw = new Uint8Array(n);
-  for (let i = 0; i < n; i++) {
-    const r = rgba[i * 4]!;
-    const g = rgba[i * 4 + 1]!;
-    const b = rgba[i * 4 + 2]!;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    if (max - min >= ROUTE_MIN_CHROMA && max >= ROUTE_MIN_BRIGHTNESS) raw[i] = 1;
-  }
-  // Connected pieces (8-neighbour), by flood fill.
   const label = new Int32Array(n).fill(-1);
   const sizes: number[] = [];
   const stack: number[] = [];
@@ -82,6 +105,23 @@ export function routeMask(rgba: Uint8ClampedArray, width: number, height: number
     }
     sizes.push(size);
   }
+  return { label, sizes };
+}
+
+/** Route mask (1 = route) for RGBA pixels, with small pieces removed, plus
+ *  any dashed stretch that joins onto it. */
+export function routeMask(rgba: Uint8ClampedArray, width: number, height: number): Uint8Array {
+  const n = width * height;
+  const raw = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const r = rgba[i * 4]!;
+    const g = rgba[i * 4 + 1]!;
+    const b = rgba[i * 4 + 2]!;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (max - min >= ROUTE_MIN_CHROMA && max >= ROUTE_MIN_BRIGHTNESS) raw[i] = 1;
+  }
+  const { label, sizes } = labelPieces(raw, width, height);
   const largest = Math.max(0, ...sizes);
   const minSize = Math.max(ROUTE_MIN_PIECE_PX, largest * ROUTE_MIN_PIECE_SHARE);
   const out = new Uint8Array(n);
@@ -93,7 +133,149 @@ export function routeMask(rgba: Uint8ClampedArray, width: number, height: number
       total++;
     }
   }
-  return total >= ROUTE_MIN_TOTAL_PX ? out : new Uint8Array(n);
+  if (total < ROUTE_MIN_TOTAL_PX) return new Uint8Array(n);
+  const dashes = dashedSegments(rgba, out, width, height);
+  for (let i = 0; i < n; i++) if (dashes[i]) out[i] = 1;
+  return out;
+}
+
+interface Dash {
+  id: number;
+  cx: number;
+  cy: number;
+  /** Direction of the long axis, radians. */
+  angle: number;
+  length: number;
+}
+
+/** Smallest angle between two undirected lines, in degrees. */
+function lineAngleDeg(a: number, b: number): number {
+  const d = Math.abs(a - b) % Math.PI;
+  return (Math.min(d, Math.PI - d) * 180) / Math.PI;
+}
+
+/**
+ * The dashes of a dashed stretch (see top of file), as a mask. Candidates
+ * are muted mid-grey pieces of dash size that are clearly longer than wide;
+ * a candidate is kept only as part of a row of at least DASH_MIN_COUNT
+ * dashes that point the same way, lie on one line at a steady spacing, and
+ * reach the solid route at one end — which is what a road, a terrain patch
+ * or a km marker of the same grey doesn't do.
+ */
+export function dashedSegments(
+  rgba: Uint8ClampedArray,
+  route: Uint8Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  const n = width * height;
+  const raw = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    if (route[i]) continue;
+    const r = rgba[i * 4]!;
+    const g = rgba[i * 4 + 1]!;
+    const b = rgba[i * 4 + 2]!;
+    const max = Math.max(r, g, b);
+    if (
+      max - Math.min(r, g, b) <= DASH_MAX_CHROMA &&
+      max >= DASH_MIN_BRIGHTNESS &&
+      max <= DASH_MAX_BRIGHTNESS
+    ) {
+      raw[i] = 1;
+    }
+  }
+  const { label, sizes } = labelPieces(raw, width, height);
+  const minArea = Math.max(4, DASH_MIN_AREA * width * width);
+  const maxArea = DASH_MAX_AREA * width * width;
+  // Moments of each dash-sized piece: its centre, and from the spread, its
+  // long axis and length.
+  const m = sizes.map(() => ({ sx: 0, sy: 0, sxx: 0, syy: 0, sxy: 0 }));
+  for (let i = 0; i < n; i++) {
+    const l = label[i]!;
+    if (l < 0 || sizes[l]! < minArea || sizes[l]! > maxArea) continue;
+    const x = i % width;
+    const y = (i - x) / width;
+    const s = m[l]!;
+    s.sx += x;
+    s.sy += y;
+    s.sxx += x * x;
+    s.syy += y * y;
+    s.sxy += x * y;
+  }
+  const dashes: Dash[] = [];
+  sizes.forEach((size, id) => {
+    if (size < minArea || size > maxArea) return;
+    const s = m[id]!;
+    const cx = s.sx / size;
+    const cy = s.sy / size;
+    const vxx = s.sxx / size - cx * cx;
+    const vyy = s.syy / size - cy * cy;
+    const vxy = s.sxy / size - cx * cy;
+    const mid = (vxx + vyy) / 2;
+    const spread = Math.sqrt(((vxx - vyy) / 2) ** 2 + vxy ** 2);
+    // + 1/12: a pixel's own spread, so a one-pixel-wide line isn't infinitely thin.
+    const long = mid + spread + 1 / 12;
+    const short = Math.max(0, mid - spread) + 1 / 12;
+    if (Math.sqrt(long / short) < DASH_MIN_ELONGATION) return;
+    dashes.push({
+      id,
+      cx,
+      cy,
+      angle: Math.atan2(2 * vxy, vxx - vyy) / 2,
+      length: Math.sqrt(12 * long),
+    });
+  });
+
+  // Link dashes that continue each other, and group the links (union-find).
+  const parent = dashes.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)));
+  for (let i = 0; i < dashes.length; i++) {
+    for (let j = i + 1; j < dashes.length; j++) {
+      const a = dashes[i]!;
+      const b = dashes[j]!;
+      const dx = b.cx - a.cx;
+      const dy = b.cy - a.cy;
+      if (Math.hypot(dx, dy) > DASH_MAX_SPACING * Math.max(a.length, b.length)) continue;
+      if (lineAngleDeg(a.angle, b.angle) > DASH_MAX_ANGLE_DEG) continue;
+      const join = Math.atan2(dy, dx);
+      if (lineAngleDeg(join, a.angle) > DASH_MAX_ANGLE_DEG) continue;
+      if (lineAngleDeg(join, b.angle) > DASH_MAX_ANGLE_DEG) continue;
+      parent[find(i)] = find(j);
+    }
+  }
+  const groups = new Map<number, Dash[]>();
+  dashes.forEach((d, i) => {
+    const g = find(i);
+    groups.set(g, [...(groups.get(g) ?? []), d]);
+  });
+
+  const routePx: number[] = [];
+  for (let i = 0; i < n; i++) if (route[i]) routePx.push(i);
+  const nearRoute = (x: number, y: number, within: number) =>
+    routePx.some((p) => {
+      const px = p % width;
+      return Math.hypot(px - x, (p - px) / width - y) <= within;
+    });
+
+  const keep = new Set<number>();
+  for (const all of groups.values()) {
+    const lengths = all.map((d) => d.length).sort((a, b) => a - b);
+    const median = lengths[Math.floor(lengths.length / 2)]!;
+    const group = all.filter((d) => Math.abs(d.length - median) <= DASH_LENGTH_TOLERANCE * median);
+    if (group.length < DASH_MIN_COUNT) continue;
+    // The row's two ends, along its direction.
+    const angle = group[0]!.angle;
+    const along = (d: Dash) => d.cx * Math.cos(angle) + d.cy * Math.sin(angle);
+    const sorted = [...group].sort((a, b) => along(a) - along(b));
+    const reach = DASH_MAX_SPACING * median;
+    const first = sorted[0]!;
+    const last = sorted[sorted.length - 1]!;
+    if (!nearRoute(first.cx, first.cy, reach) && !nearRoute(last.cx, last.cy, reach)) continue;
+    for (const d of group) keep.add(d.id);
+  }
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) if (keep.has(label[i]!)) out[i] = 1;
+  return out;
 }
 
 /** Grows a mask by `r` pixels (a square neighbourhood), to close the

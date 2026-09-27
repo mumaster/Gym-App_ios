@@ -62,6 +62,64 @@ describe("route mask", () => {
   });
 });
 
+describe("dashed stretches (no GPS)", () => {
+  // Huawei draws a stretch without GPS as a straight line of muted grey
+  // dashes over its teal map; colours as measured on a real screenshot.
+  const w = 400;
+  const h = 120;
+  const teal: [number, number, number] = [18, 82, 84];
+  const dash: [number, number, number] = [88, 84, 85];
+  const orange: [number, number, number] = [255, 122, 0];
+  const route = (x: number, y: number) => y >= 10 && y <= 12 && x >= 5 && x < 150;
+  /** Three-pixel-high horizontal bars at y, from each [start, length]. */
+  const bars = (x: number, y: number, row: number, spans: [number, number][]) =>
+    y >= row && y <= row + 2 && spans.some(([s, l]) => x >= s && x < s + l);
+
+  it("adds a regular row of dashes that carries on from the route", () => {
+    const spans: [number, number][] = [160, 172, 184, 196, 208].map((s) => [s, 8]);
+    const px = image(w, h, teal, (x, y) =>
+      route(x, y) ? orange : bars(x, y, 10, spans) ? dash : null,
+    );
+    const mask = routeMask(px, w, h);
+    for (const [s] of spans) expect(mask[11 * w + s + 4]).toBe(1);
+    expect(mask[11 * w + 168]).toBe(0); // the gaps stay gaps
+  });
+
+  it("leaves the map's own greys alone", () => {
+    const px = image(w, h, teal, (x, y) => {
+      if (route(x, y)) return orange;
+      // A round km marker on the route.
+      if ((x - 60) ** 2 + (y - 18) ** 2 <= 36) return dash;
+      // A row near the route, but of uneven lengths (a road broken up by labels).
+      if (
+        bars(x, y, 20, [
+          [160, 4],
+          [168, 20],
+          [192, 7],
+          [203, 3],
+        ])
+      )
+        return dash;
+      // A regular row far from the route (map text, a hatched area).
+      if (
+        bars(
+          x,
+          y,
+          100,
+          [260, 272, 284, 296].map((s) => [s, 8] as [number, number]),
+        )
+      )
+        return dash;
+      return null;
+    });
+    const mask = routeMask(px, w, h);
+    expect(mask[18 * w + 60]).toBe(0);
+    expect(mask[21 * w + 175]).toBe(0);
+    expect(mask[101 * w + 264]).toBe(0);
+    expect(maskBounds(mask, w)).toEqual({ x: 5, y: 10, w: 145, h: 3 });
+  });
+});
+
 describe("mapping the reader's box back to the screenshot", () => {
   it("undoes the part's offset and scale", () => {
     // A 2160 px wide screenshot scaled by 0.5; the second part starts at 1640.
