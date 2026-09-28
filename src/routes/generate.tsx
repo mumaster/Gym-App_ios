@@ -949,27 +949,32 @@ function WorkoutHome() {
           stays in reach just above the tab bar (whose pill top sits
           --tab-bar-clearance + 4rem up) until you scroll down to its place.
           Once a plan matches the selection, the Start bar below takes over. */}
+      {/* Floats only once there's a selection to build from: before that,
+          on a program user's first screen it was a second big green button
+          under "Build Push day", covering the card it sat over. */}
       {shownPlan ? null : (
-        <button
-          onClick={() => generate()}
-          disabled={generating}
-          // Floats only once there's a selection to build from: before that,
-          // on a program user's first screen it was a second big green button
-          // under "Build Push day", covering the card it sat over.
-          className={`glow ${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100`}
+        <div
+          className={`${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3`}
         >
-          {generating ? (
-            <>
-              <DumbbellLoader size={26} className="text-primary-foreground" />
-              {t.generate.buildingSession}
-            </>
-          ) : (
-            <>
-              <Zap className="size-5" />
-              {t.generate.generateWorkout}
-            </>
-          )}
-        </button>
+          {regions.length || generating ? <div aria-hidden className="dock-backdrop" /> : null}
+          <button
+            onClick={() => generate()}
+            disabled={generating}
+            className="glow flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
+          >
+            {generating ? (
+              <>
+                <DumbbellLoader size={26} className="text-primary-foreground" />
+                {t.generate.buildingSession}
+              </>
+            ) : (
+              <>
+                <Zap className="size-5" />
+                {t.generate.generateWorkout}
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       {shownPlan ? (
@@ -1084,6 +1089,7 @@ function WorkoutHome() {
               above the tab bar from the top of the page to the bottom: Start
               is always one tap away once a plan is ready. */}
           <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex gap-2">
+            <div aria-hidden className="dock-backdrop" />
             <button
               onClick={shuffle}
               className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"

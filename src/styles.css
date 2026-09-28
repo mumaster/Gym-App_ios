@@ -320,6 +320,20 @@
   );
 }
 
+/* Behind a control pinned just above the tab bar (generate.tsx's Generate
+   button and Start workout bar): page content passing under it fades out,
+   the same scroll edge effect as the tab bar's, instead of reading through
+   around and beneath the button. Solid from just above the control down
+   into the tab bar (which paints over it); full width past main's 1rem
+   side padding. The parent must be positioned (it's sticky). */
+@utility dock-backdrop {
+  position: absolute;
+  inset: -1rem -1rem -2.5rem;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--background) 1rem);
+}
+
 /* Used only by Screen.tsx's sticky page header. `--surface-strong` (what
    .glass-strong uses) is a genuinely lighter, desaturated gray, not a
    tinted background color — combined with its own border, that read as a
