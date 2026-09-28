@@ -155,24 +155,63 @@ export type NutritionGoals = Partial<Record<NutrientKey, number>>;
 export type Sex = "male" | "female";
 
 /**
- * Daily-life activity, *not counting gym sessions* (those are added
- * separately — see suggestNutritionGoals). Physical activity levels (PAL,
- * total energy ÷ BMR) are the FAO/WHO/UNU 2004 Expert Consultation on Human
- * Energy Requirements' three lifestyle bands — sedentary/light 1.40–1.69,
- * active/moderately active 1.70–1.99, vigorous 2.00–2.40 — at each band's
- * midpoint (the report itself uses 1.55 for the sedentary band and 1.85 for
- * the moderately active one). These replace the old 1.2–1.9 multipliers,
- * which weren't tied to a source and started below FAO's lowest band.
- * Note FAO pairs PAL with Schofield BMR equations; this app uses
- * Mifflin-St Jeor for BMR, a small, knowing mismatch.
+ * Total daily energy need, from the US National Academies' Dietary Reference
+ * Intakes for Energy (2023): estimated energy requirement (EER) equations
+ * fitted to doubly labelled water measurements — measured total energy
+ * expenditure, the reference method — for adults 19+, by sex and one of four
+ * physical activity level (PAL) categories. The categories count *all*
+ * activity, workouts included, so gym sessions aren't added on top.
+ *
+ * Categories as the report describes them (PAL ranges 1.0–1.53, 1.53–1.68,
+ * 1.68–1.85, 1.85–2.50): inactive = typical daily living only; low active =
+ * plus 30–60 min of moderate activity a day; active = plus 60+ min a day;
+ * very active = plus 60 min moderate and another 60 min vigorous (or 120
+ * min moderate). The example in the questionnaire — a desk job plus 3–4
+ * strength sessions a week as "low active" — is the app's own reading: four
+ * 45-minute sessions average ~26 min a day, resistance training at 3.5 METs
+ * is moderate intensity (2024 Compendium), and daily walking fills the rest.
+ *
+ * These replace Mifflin-St Jeor × the FAO/WHO/UNU 2004 lifestyle PAL bands
+ * plus separately added session energy: that combination counted activity
+ * twice and landed at the top of the measured range — a 31-year-old man of
+ * 97 kg picking "active" got ~3,970 kcal, the 2023 "very active" value, while
+ * his PT suggested an intake matching "low active"/"active".
+ *
+ * Coefficients: EER = intercept − age·A + height·H(cm) + weight·W(kg), in
+ * kcal/day, confirmed through web search results quoting the report's tables
+ * (the report site isn't reachable from this environment).
  */
-export type ActivityLevel = "sedentary" | "active" | "vigorous";
+export type ActivityLevel = "inactive" | "lowActive" | "active" | "veryActive";
 
-export const ACTIVITY_LEVELS: { id: ActivityLevel; factor: number }[] = [
-  { id: "sedentary", factor: 1.55 },
-  { id: "active", factor: 1.85 },
-  { id: "vigorous", factor: 2.2 },
+type EerCoefficients = { intercept: number; age: number; height: number; weight: number };
+
+export const EER_2023: Record<Sex, Record<ActivityLevel, EerCoefficients>> = {
+  male: {
+    inactive: { intercept: 753.07, age: 10.83, height: 6.5, weight: 14.1 },
+    lowActive: { intercept: 581.47, age: 10.83, height: 8.3, weight: 14.94 },
+    active: { intercept: 1004.82, age: 10.83, height: 6.52, weight: 15.91 },
+    veryActive: { intercept: -517.88, age: 10.83, height: 15.61, weight: 19.11 },
+  },
+  female: {
+    inactive: { intercept: 584.9, age: 7.01, height: 5.72, weight: 11.71 },
+    lowActive: { intercept: 575.77, age: 7.01, height: 6.6, weight: 12.14 },
+    active: { intercept: 710.25, age: 7.01, height: 6.54, weight: 12.34 },
+    veryActive: { intercept: 511.83, age: 7.01, height: 9.07, weight: 12.56 },
+  },
+};
+
+export const ACTIVITY_LEVELS: { id: ActivityLevel }[] = [
+  { id: "inactive" },
+  { id: "lowActive" },
+  { id: "active" },
+  { id: "veryActive" },
 ];
+
+/** Estimated energy requirement (2023 DRI equations above), kcal/day. */
+export function estimatedEnergyRequirement(p: NutritionProfile): number {
+  const c = EER_2023[p.sex][p.activityLevel] ?? EER_2023[p.sex].lowActive;
+  return c.intercept - c.age * p.age + c.height * p.heightCm + c.weight * p.weightKg;
+}
 
 export type NutritionGoalType = "lose" | "maintain" | "gain";
 
@@ -250,36 +289,24 @@ export interface NutritionProfile {
   heightCm: number;
   weightKg: number;
   activityLevel: ActivityLevel;
-  /** Strength sessions a week — their energy is added on top of the
-   *  daily-life PAL. Missing on profiles saved before this was asked. */
+  /** Strength sessions a week — splits the week into training and rest
+   *  days (trainingDayGoalsFromAverage). Missing on profiles saved before
+   *  this was asked. */
   sessionsPerWeek?: number;
   goal: NutritionGoalType;
   /** Ignored when goal is "maintain". */
   pace: NutritionPace;
 }
 
-/** Mifflin-St Jeor resting energy expenditure, in kcal/day. */
-function basalMetabolicRate(p: NutritionProfile): number {
-  const base = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age;
-  return p.sex === "male" ? base + 5 : base - 161;
-}
-
 /**
  * Suggests daily limits from a short profile — a starting point to review
  * and adjust, not a prescription. Every constant above names its source.
- * Energy: Mifflin-St Jeor BMR × FAO daily-life PAL, plus the weekly gym
- * sessions' extra energy (Compendium METs, see sessionEnergyKcal) averaged
- * per day; then the goal's deficit/surplus; then the safety floor.
+ * Energy: the 2023 DRI estimated energy requirement for the chosen
+ * activity level (workouts included — see EER_2023); then the goal's
+ * deficit/surplus; then the safety floor.
  */
-export function suggestNutritionGoals(
-  p: NutritionProfile,
-  session: { minutes: number; met: number },
-): NutritionGoals {
-  const bmr = basalMetabolicRate(p);
-  const pal = ACTIVITY_LEVELS.find((a) => a.id === p.activityLevel)?.factor ?? 1.55;
-  const trainingPerDay =
-    ((p.sessionsPerWeek ?? 0) * sessionEnergyKcal(p.weightKg, session.minutes, session.met)) / 7;
-  const tdee = bmr * pal + trainingPerDay;
+export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
+  const tdee = estimatedEnergyRequirement(p);
   const target =
     p.goal === "lose"
       ? tdee - (LOSS_RATE_PER_WEEK[p.pace] * p.weightKg * KCAL_PER_KG) / 7

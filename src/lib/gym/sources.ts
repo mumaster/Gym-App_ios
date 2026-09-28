@@ -29,8 +29,7 @@ export type SourceId =
   | "e1rm"
   | "streak"
   | "weightTrend"
-  | "bmr"
-  | "activity"
+  | "energy"
   | "sessionEnergy"
   | "cut"
   | "bulk"
@@ -119,11 +118,10 @@ export const SOURCES: SourceEntry[] = [
     group: "tracking",
     refs: ["Body-mass variability study (PMC10653631)", "Hall, Int J Obes 2008"],
   },
-  { id: "bmr", group: "nutrition", refs: ["Mifflin-St Jeor equation (1990)"] },
   {
-    id: "activity",
+    id: "energy",
     group: "nutrition",
-    refs: ["FAO/WHO/UNU Human energy requirements (2004)"],
+    refs: ["National Academies, Dietary Reference Intakes for Energy (2023)"],
   },
   {
     id: "sessionEnergy",

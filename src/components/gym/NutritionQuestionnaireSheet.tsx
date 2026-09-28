@@ -16,7 +16,6 @@ import {
 } from "../../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
-import { useSessionShape } from "../../lib/gym/dayNutrition";
 import type { Workout } from "../../lib/gym/types";
 
 /** Average finished sessions a week over the last four weeks, or null
@@ -179,7 +178,6 @@ export function NutritionQuestionnaireSheet({
   const [pace, setPace] = useState<NutritionPace>("moderate");
   const [sessions, setSessions] = useState("");
   const PACES = pacesList(t, goal);
-  const sessionShape = useSessionShape();
 
   // Seed from the last saved profile every time the sheet opens.
   useEffect(() => {
@@ -189,8 +187,9 @@ export function NutritionQuestionnaireSheet({
     setAge(nutritionProfile ? String(nutritionProfile.age) : "");
     setHeightCm(nutritionProfile ? String(nutritionProfile.heightCm) : "");
     setWeightKg(nutritionProfile ? String(nutritionProfile.weightKg) : "");
-    // Profiles saved before the FAO-based levels used ids that no longer
-    // exist (and counted gym training inside them), so they re-ask.
+    // Profiles saved before the 2023 DRI levels used ids that no longer
+    // exist, so they re-ask. The old "active" id survives but meant daily
+    // life only, gym excluded; it's kept as a starting point to review.
     setActivityLevel(
       isActivityLevel(nutritionProfile?.activityLevel) ? nutritionProfile.activityLevel : null,
     );
@@ -238,7 +237,7 @@ export function NutritionQuestionnaireSheet({
         }
       : null;
 
-  const suggested = profile ? suggestNutritionGoals(profile, sessionShape) : null;
+  const suggested = profile ? suggestNutritionGoals(profile) : null;
 
   const close = () => {
     setStep(0);

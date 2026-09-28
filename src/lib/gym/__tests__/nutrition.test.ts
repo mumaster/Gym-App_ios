@@ -7,6 +7,7 @@ import {
   restDayGoals,
   sessionEnergyKcal,
   suggestNutritionGoals,
+  estimatedEnergyRequirement,
   trainingDayGoalsFromAverage,
   type NutritionProfile,
 } from "../nutrition";
@@ -16,12 +17,11 @@ const man: NutritionProfile = {
   age: 30,
   heightCm: 180,
   weightKg: 80,
-  activityLevel: "sedentary",
+  activityLevel: "lowActive",
   sessionsPerWeek: 4,
   goal: "maintain",
   pace: "moderate",
 };
-const session = { minutes: 45, met: 3.5 };
 
 describe("sessionEnergyKcal (Compendium: (MET − 1) × kg × h)", () => {
   it("computes the extra energy over resting", () => {
@@ -31,20 +31,46 @@ describe("sessionEnergyKcal (Compendium: (MET − 1) × kg × h)", () => {
 });
 
 describe("suggestNutritionGoals", () => {
-  it("adds training energy on top of BMR × FAO PAL", () => {
-    // Mifflin 1780 × 1.55 = 2759 + 4 × 150 / 7 ≈ 2845
-    expect(suggestNutritionGoals(man, session).calories).toBe(2845);
+  it("uses the 2023 DRI energy equation for the activity level, workouts included", () => {
+    // Low active man: 581.47 − 10.83·30 + 8.30·180 + 14.94·80 = 2945.8
+    expect(suggestNutritionGoals(man).calories).toBe(2946);
+    // Sessions no longer add energy on top: the level already counts them.
+    expect(suggestNutritionGoals({ ...man, sessionsPerWeek: 6 }).calories).toBe(2946);
+    expect(estimatedEnergyRequirement({ ...man, activityLevel: "inactive" })).toBeCloseTo(
+      753.07 - 10.83 * 30 + 6.5 * 180 + 14.1 * 80,
+      6,
+    );
+  });
+
+  it("matches the 2023 tables for women too", () => {
+    const woman: NutritionProfile = { ...man, sex: "female", heightCm: 165, weightKg: 62 };
+    // Active woman: 710.25 − 7.01·30 + 6.54·165 + 12.34·62 = 2344.3
+    expect(suggestNutritionGoals({ ...woman, activityLevel: "active" }).calories).toBe(2344);
+  });
+
+  it("gives the user's reported case a PT-comparable cut", () => {
+    // 31-year-old man, 97 kg, 190 cm, low active, moderate cut: the old
+    // BMR × FAO PAL + sessions model gave ~3,171 kcal; his PT suggested 2,575.
+    const g = suggestNutritionGoals({
+      ...man,
+      age: 31,
+      heightCm: 190,
+      weightKg: 97,
+      goal: "lose",
+    });
+    // 581.47 − 335.73 + 1577 + 1449.18 = 3271.9, minus 0.0075 · 97 · 7700 / 7 = 800.25
+    expect(g.calories).toBe(2472);
   });
 
   it("cuts by 0.75% bodyweight per week at 7700 kcal/kg for a moderate pace", () => {
-    const g = suggestNutritionGoals({ ...man, goal: "lose" }, session);
-    expect(g.calories).toBe(2845 - 660);
+    const g = suggestNutritionGoals({ ...man, goal: "lose" });
+    expect(g.calories).toBe(2946 - 660);
     expect(g.protein).toBe(176); // 2.2 g/kg
   });
 
   it("bulks with a 15% surplus and 1.6 g/kg protein", () => {
-    const g = suggestNutritionGoals({ ...man, goal: "gain" }, session);
-    const maintain = suggestNutritionGoals(man, session).calories!;
+    const g = suggestNutritionGoals({ ...man, goal: "gain" });
+    const maintain = suggestNutritionGoals(man).calories!;
     expect(Math.abs(g.calories! - maintain * 1.15)).toBeLessThanOrEqual(1);
     expect(g.protein).toBe(128);
   });
@@ -56,16 +82,17 @@ describe("suggestNutritionGoals", () => {
       age: 45,
       heightCm: 155,
       weightKg: 50,
+      activityLevel: "inactive",
       sessionsPerWeek: 0,
       goal: "lose",
       pace: "aggressive",
     };
-    expect(suggestNutritionGoals(small, session).calories).toBe(1200);
-    expect(suggestNutritionGoals({ ...small, sex: "male" }, session).calories).toBe(1500);
+    expect(suggestNutritionGoals(small).calories).toBe(1200);
+    expect(suggestNutritionGoals({ ...small, sex: "male" }).calories).toBe(1500);
   });
 
   it("uses the WHO salt limit and keeps macros adding up", () => {
-    const g = suggestNutritionGoals(man, session);
+    const g = suggestNutritionGoals(man);
     expect(g.salt).toBe(5);
     const kcal = g.protein! * 4 + g.carbs! * 4 + g.fat! * 9;
     expect(Math.abs(kcal - g.calories!)).toBeLessThan(10);

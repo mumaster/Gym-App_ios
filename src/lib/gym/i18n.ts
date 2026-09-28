@@ -180,8 +180,7 @@ const en = {
       e1rm: "Estimated 1-rep max",
       streak: "Week streak: 2+ training days a week",
       weightTrend: "Weight trend needing 2+ weeks of weigh-ins, and 7700 kcal per kg",
-      bmr: "Energy you burn at rest",
-      activity: "Daily activity levels",
+      energy: "Daily energy needs, from measured energy use by activity level",
       sessionEnergy: "Energy of a training session",
       cut: "Cutting pace: 0.5–1% of bodyweight a week",
       bulk: "Bulking surplus of 10–20%",
@@ -739,9 +738,10 @@ const en = {
     cm: "cm",
     weight: "Weight",
     kg: "kg",
-    activityDesc: "How active is your daily life, not counting the gym?",
+    activityDesc:
+      "How active are you on an average day, workouts included? Count walking, cycling, work on your feet and the gym, averaged over the week.",
     sessionsDesc:
-      "How many strength sessions do you do a week? Their energy is added separately, from your weight and session length.",
+      "How many strength sessions do you do a week? Used to split your limits between training and rest days.",
     sessionsLabel: "Sessions",
     perWeek: "/ week",
     loseMildDesc: "Lose about 0.5% of your bodyweight a week",
@@ -772,12 +772,17 @@ const en = {
     stepReview: "Review",
   },
   activityLevels: {
-    sedentaryLabel: "Sedentary or light",
-    sedentaryDesc: "Mostly sitting — desk job, driving or public transport, little walking",
+    inactiveLabel: "Inactive",
+    inactiveDesc: "Everyday tasks only — mostly sitting, little walking and no regular exercise",
+    lowActiveLabel: "Low active",
+    lowActiveDesc:
+      "30–60 minutes of activity a day on average — like a desk job plus 3–4 gym sessions a week",
     activeLabel: "Active",
-    activeDesc: "On your feet a lot, or walking or cycling for an hour most days",
-    vigorousLabel: "Vigorous",
-    vigorousDesc: "Heavy physical work most of the day, like construction or farming",
+    activeDesc:
+      "An hour or more a day — like on your feet at work, or training most days plus walking or cycling",
+    veryActiveLabel: "Very active",
+    veryActiveDesc:
+      "Two hours or more a day — like heavy physical work, or hard training plus daily sport",
   },
   programBuilder: {
     title: "Build a program",
@@ -1158,8 +1163,7 @@ const nl: Dict = {
       e1rm: "Geschat 1RM",
       streak: "Weken op rij: 2+ trainingsdagen per week",
       weightTrend: "Gewichtstrend na 2+ weken wegen, en 7700 kcal per kg",
-      bmr: "Energie die je in rust verbruikt",
-      activity: "Dagelijkse activiteitsniveaus",
+      energy: "Dagelijkse energiebehoefte, uit gemeten energieverbruik per activiteitsniveau",
       sessionEnergy: "Energie van een trainingssessie",
       cut: "Afvaltempo: 0,5–1% van je lichaamsgewicht per week",
       bulk: "Overschot van 10–20% bij aankomen",
@@ -1723,9 +1727,10 @@ const nl: Dict = {
     cm: "cm",
     weight: "Gewicht",
     kg: "kg",
-    activityDesc: "Hoe actief is je dagelijks leven, zonder de sportschool mee te tellen?",
+    activityDesc:
+      "Hoe actief ben je op een gemiddelde dag, trainingen meegeteld? Tel lopen, fietsen, staand werk en de sportschool mee, gemiddeld over de week.",
     sessionsDesc:
-      "Hoeveel krachttrainingen doe je per week? Hun energie wordt apart opgeteld, op basis van je gewicht en trainingsduur.",
+      "Hoeveel krachttrainingen doe je per week? Daarmee worden je limieten verdeeld over trainings- en rustdagen.",
     sessionsLabel: "Trainingen",
     perWeek: "/ week",
     loseMildDesc: "Verlies zo'n 0,5% van je lichaamsgewicht per week",
@@ -1756,13 +1761,17 @@ const nl: Dict = {
     stepReview: "Overzicht",
   },
   activityLevels: {
-    sedentaryLabel: "Zittend of licht",
-    sedentaryDesc: "Vooral zittend — kantoorbaan, auto of openbaar vervoer, weinig lopen",
+    inactiveLabel: "Inactief",
+    inactiveDesc: "Alleen dagelijkse bezigheden — vooral zittend, weinig lopen en niet sporten",
+    lowActiveLabel: "Licht actief",
+    lowActiveDesc:
+      "Gemiddeld 30–60 minuten beweging per dag — zoals een kantoorbaan plus 3–4 keer per week sportschool",
     activeLabel: "Actief",
-    activeDesc: "Veel op de been, of de meeste dagen een uur lopen of fietsen",
-    vigorousLabel: "Zwaar",
-    vigorousDesc:
-      "Het grootste deel van de dag zwaar lichamelijk werk, zoals in de bouw of landbouw",
+    activeDesc:
+      "Een uur of meer per dag — zoals staand werk, of bijna dagelijks trainen plus lopen of fietsen",
+    veryActiveLabel: "Zeer actief",
+    veryActiveDesc:
+      "Twee uur of meer per dag — zoals zwaar lichamelijk werk, of hard trainen plus dagelijks sporten",
   },
   programBuilder: {
     title: "Programma samenstellen",
