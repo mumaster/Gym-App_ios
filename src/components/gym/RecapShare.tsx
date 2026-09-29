@@ -48,7 +48,11 @@ export function RecapShare({ workout }: { workout: Workout }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const accent = getComputedStyle(document.documentElement).getPropertyValue("--primary");
+    // The image is always dark, so a custom accent uses its dark-theme fill
+    // (the light theme's variant can be a dark colour that vanishes on it).
+    const style = getComputedStyle(document.documentElement);
+    const accent =
+      style.getPropertyValue("--custom-fill-dark") || style.getPropertyValue("--primary");
     drawRecap(canvas, data, copy, accent);
     setPreview(canvas.toDataURL("image/png"));
   }, [data, copy]);

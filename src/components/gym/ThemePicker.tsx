@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
+import { readableInk } from "../../lib/gym/accentInk";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { AccentId } from "../../lib/gym/types";
 
@@ -58,7 +59,13 @@ export function ThemePicker() {
           }}
         >
           {accent === "custom" ? (
-            <Check className="size-5 text-primary-foreground" strokeWidth={3} />
+            // The swatch is the raw picked colour, not the per-theme fill
+            // --primary-foreground is paired with, so it gets its own ink.
+            <Check
+              className="size-5"
+              style={{ color: readableInk(customAccent) }}
+              strokeWidth={3}
+            />
           ) : null}
         </div>
         <input

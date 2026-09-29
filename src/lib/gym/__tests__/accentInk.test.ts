@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { DARK_INK, LIGHT_INK, readableAccentText, readableInk } from "../accentInk";
+import {
+  DARK_INK,
+  LIGHT_INK,
+  readableAccentText,
+  readableInk,
+  visibleAccentFill,
+} from "../accentInk";
 
 describe("readableInk", () => {
   it("puts white on dark colours", () => {
@@ -64,5 +70,58 @@ describe("readableAccentText", () => {
       4.5,
     );
     expect(readableAccentText("green", "dark")).toBe("green");
+  });
+});
+
+describe("visibleAccentFill", () => {
+  const lum = (hex: string) => {
+    const c = [1, 3, 5].map((i) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
+  };
+  const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  const darkSurface = lum("#1a1b1d");
+  const lightSurface = lum("#e6e7ea");
+
+  it("lifts a dark colour to 3:1 on the dark theme, but less than text does", () => {
+    const fill = visibleAccentFill("#0b5d1e", "dark");
+    expect(ratio(lum(fill), darkSurface)).toBeGreaterThanOrEqual(3);
+    // Closer to the picked colour than the 4.5:1 text variant.
+    expect(lum(fill)).toBeLessThan(lum(readableAccentText("#0b5d1e", "dark")));
+  });
+
+  it("darkens a pale colour to 3:1 on the light theme", () => {
+    const fill = visibleAccentFill("#fbbf24", "light");
+    expect(ratio(lum(fill), lightSurface)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("leaves colours that already show, and the ink follows the adjusted fill", () => {
+    expect(visibleAccentFill("#0b5d1e", "light")).toBe("#0b5d1e");
+    expect(visibleAccentFill("#34d399", "dark")).toBe("#34d399");
+    // A lightened dark green still takes white ink.
+    expect(readableInk(visibleAccentFill("#0b5d1e", "dark"))).toBe(LIGHT_INK);
+  });
+
+  it("always leaves the ink at least 4.5:1 on the adjusted fill, in both themes", () => {
+    const inkLum = (ink: string) => (ink === LIGHT_INK ? lum("#f8f8f8") : lum("#0b0f0a"));
+    for (const hex of [
+      "#0b5d1e",
+      "#fbbf24",
+      "#34d399",
+      "#1e3a8a",
+      "#e879f9",
+      "#7f1d1d",
+      "#808080",
+    ]) {
+      for (const theme of ["dark", "light"] as const) {
+        const fill = visibleAccentFill(hex, theme);
+        expect(
+          ratio(lum(fill), inkLum(readableInk(fill))),
+          `${hex} ${theme}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 });

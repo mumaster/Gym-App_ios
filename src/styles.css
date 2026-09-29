@@ -160,18 +160,23 @@
   --chart-1: oklch(0.88 0.18 95);
   --glow-primary: 0 0 32px oklch(0.88 0.18 95 / 30%);
 }
+/* A custom accent comes from the colour wheel, so it can be any colour:
+   GymProvider sets per-theme variants inline (accentInk.ts) — the fill/shape
+   colour lightened or darkened until it's visible against the page, the ink
+   on that fill, and the colour as text. The raw colour and near-black ink are
+   only the fallback before that runs. */
 .accent-custom {
-  --primary: var(--custom-primary, #34d399);
+  --primary: var(--custom-fill-dark, var(--custom-primary, #34d399));
+  --primary-foreground: var(--custom-ink-dark, oklch(0.16 0.02 145));
   --primary-text: var(--custom-text-dark, var(--primary));
-  /* Fallback until GymProvider sets --primary-foreground inline from the
-     chosen colour (accentInk.ts): white on dark colours, this on light ones. */
-  --primary-foreground: oklch(0.16 0.02 145);
   --ring: color-mix(in oklch, var(--primary) 55%, transparent);
   --chart-1: var(--primary);
   --glow-primary: 0 0 32px color-mix(in oklch, var(--primary) 28%, transparent);
 }
 
 .light.accent-custom {
+  --primary: var(--custom-fill-light, var(--custom-primary, #34d399));
+  --primary-foreground: var(--custom-ink-light, oklch(0.16 0.02 145));
   --primary-text: var(--custom-text-light, var(--primary));
 }
 

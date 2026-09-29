@@ -38,24 +38,32 @@ export function readableInk(hex: string): string {
 }
 
 /**
- * A custom accent used as *text* (labels, active tab names, small icons) sits
- * on the page, not on its own fill, so a dark green vanishes on the dark
- * theme's black and a pale yellow on the light theme's off-white. Blends the
- * colour towards white (dark theme) or black (light theme) in 4% steps until
- * it reaches the 4.5:1 contrast WCAG 2.x asks of normal-size text (SC 1.4.3,
- * AA), and leaves it untouched if it already does.
+ * A custom accent has to be seen against the page in two ways: as text
+ * (labels, active tab names, small icons) and as a shape (progress bars, the
+ * fill of buttons and badges, rings, chart lines, the map). A dark green
+ * vanishes on the dark theme's black, and a pale yellow on the light theme's
+ * off-white. `adjustAccent` blends the colour towards white (dark theme) or
+ * black (light theme) in 4% steps until it reaches the wanted contrast ratio
+ * (WCAG 2.x), and leaves it untouched if it already does:
  *
- * Measured against the palest/darkest surface text sits on rather than the
+ *  - TEXT_CONTRAST 4.5:1, SC 1.4.3 (AA, normal-size text);
+ *  - GRAPHIC_CONTRAST 3:1, SC 1.4.11 (AA, non-text contrast: the parts of a
+ *    control or chart needed to see it).
+ *
+ * Measured against the palest/darkest surface things sit on rather than the
  * page itself: cards are a little lighter than the black page in the dark
- * theme, and muted chips a little darker than the off-white one in the light
- * theme (styles.css: --chart-surface ≈ #1a1b1d, --muted over the page ≈
- * #e6e7ea), so it stays readable on those too.
+ * theme, and muted chips/tracks a little darker than the off-white one in the
+ * light theme (styles.css: --chart-surface ≈ #1a1b1d, --muted over the page ≈
+ * #e6e7ea), so it stays visible on those too.
  */
 export const TEXT_CONTRAST = 4.5;
+export const GRAPHIC_CONTRAST = 3;
 const DARK_SURFACE = luminance(26, 27, 29);
 const LIGHT_SURFACE = luminance(230, 231, 234);
 
-export function readableAccentText(hex: string, theme: "dark" | "light"): string {
+type Theme = "dark" | "light";
+
+function adjustAccent(hex: string, theme: Theme, ratio: number): string {
   const m = hex.trim().match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   if (!m) return hex;
   const rgb = [parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16)];
@@ -64,9 +72,18 @@ export function readableAccentText(hex: string, theme: "dark" | "light"): string
   for (let step = 0; step <= 25; step++) {
     const t = step * 0.04;
     const mixed = rgb.map((v) => Math.round(v + (target - v) * t));
-    if (contrast(luminance(mixed[0]!, mixed[1]!, mixed[2]!), surface) >= TEXT_CONTRAST) {
+    if (contrast(luminance(mixed[0]!, mixed[1]!, mixed[2]!), surface) >= ratio) {
       return `#${mixed.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
     }
   }
   return theme === "dark" ? "#ffffff" : "#000000";
 }
+
+/** The accent as text on the page (4.5:1). */
+export const readableAccentText = (hex: string, theme: Theme) =>
+  adjustAccent(hex, theme, TEXT_CONTRAST);
+
+/** The accent as a shape on the page (3:1) — what `--primary` is for a custom
+ *  accent, so bars, rings, fills and chart lines all stay visible. */
+export const visibleAccentFill = (hex: string, theme: Theme) =>
+  adjustAccent(hex, theme, GRAPHIC_CONTRAST);

@@ -71,7 +71,7 @@ import {
   type Session,
 } from "./auth";
 import { deleteRouteMap } from "./routeMapStore";
-import { readableAccentText, readableInk } from "./accentInk";
+import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso } from "./watch";
 
@@ -551,23 +551,32 @@ export function GymProvider({ children }: { children: ReactNode }) {
       if (c.startsWith("accent-")) root.classList.remove(c);
     });
     root.classList.add(`accent-${state.accent}`);
+    const CUSTOM_VARS = [
+      "--custom-primary",
+      "--custom-fill-dark",
+      "--custom-fill-light",
+      "--custom-ink-dark",
+      "--custom-ink-light",
+      "--custom-text-dark",
+      "--custom-text-light",
+    ];
     if (state.accent === "custom") {
+      // The wheel can give any colour, so what the app draws with it is
+      // adjusted per theme until it's visible (accentInk.ts): the fill/shape
+      // colour, the ink on that fill, and the colour as text. styles.css
+      // picks the set matching .dark/.light.
       root.style.setProperty("--custom-primary", state.customAccent);
-      // The wheel can give a dark colour, so the ink on it follows the colour
-      // (an inline style beats .accent-custom's fixed dark default).
-      root.style.setProperty("--primary-foreground", readableInk(state.customAccent));
-      // The same colour as text on the page: lightened or darkened per theme
-      // until it's readable (styles.css picks the one matching .dark/.light).
-      root.style.setProperty("--custom-text-dark", readableAccentText(state.customAccent, "dark"));
-      root.style.setProperty(
-        "--custom-text-light",
-        readableAccentText(state.customAccent, "light"),
-      );
+      for (const theme of ["dark", "light"] as const) {
+        const fill = visibleAccentFill(state.customAccent, theme);
+        root.style.setProperty(`--custom-fill-${theme}`, fill);
+        root.style.setProperty(`--custom-ink-${theme}`, readableInk(fill));
+        root.style.setProperty(
+          `--custom-text-${theme}`,
+          readableAccentText(state.customAccent, theme),
+        );
+      }
     } else {
-      root.style.removeProperty("--custom-primary");
-      root.style.removeProperty("--primary-foreground");
-      root.style.removeProperty("--custom-text-dark");
-      root.style.removeProperty("--custom-text-light");
+      CUSTOM_VARS.forEach((v) => root.style.removeProperty(v));
     }
   }, [state.accent, state.customAccent]);
 
