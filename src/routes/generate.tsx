@@ -61,7 +61,8 @@ import {
 import { haptic, useGym } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles } from "../lib/gym/volume";
-import type { Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
+import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
+import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 
 export const Route = createFileRoute("/generate")({
   head: () => ({
@@ -117,6 +118,8 @@ function WorkoutHome() {
   const [plan, setPlan] = useState<PlannedExercise[] | null>(null);
   const [variation, setVariation] = useState(0);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  /** Exercise whose page is open (tapped in the plan). */
+  const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [programSheetOpen, setProgramSheetOpen] = useState(false);
   const [adjustWeekOpen, setAdjustWeekOpen] = useState(false);
@@ -1008,9 +1011,13 @@ function WorkoutHome() {
                     <span className="tabular w-6 text-lg font-bold text-primary-text">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <p className="min-w-0 flex-1 text-[17px] font-semibold leading-tight">
+                        <button
+                          onClick={() => setInfoExercise(ex)}
+                          aria-label={t.exercises.openExercise(ex.name)}
+                          className="min-w-0 flex-1 text-left text-[17px] font-semibold leading-tight active:opacity-70"
+                        >
                           {ex.name}
-                        </p>
+                        </button>
                         <button
                           onClick={() => {
                             haptic(12);
@@ -1032,7 +1039,10 @@ function WorkoutHome() {
                           <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
                         </button>
                       </div>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      <p
+                        onClick={() => setInfoExercise(ex)}
+                        className="mt-0.5 cursor-pointer text-[13px] text-muted-foreground"
+                      >
                         {p.warmup_sets ? t.generate.warmupPrefix(p.warmup_sets) : ""}
                         {p.superset_group !== undefined
                           ? t.generate.supersetLabel(
@@ -1107,6 +1117,7 @@ function WorkoutHome() {
         </>
       ) : null}
 
+      <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
         onClose={() => setSwapIndex(null)}

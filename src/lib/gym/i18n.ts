@@ -548,6 +548,9 @@ const en = {
     importCsv: "Import from CSV",
     exportCsv: "Export as CSV",
     yourHistory: "Your history",
+    watchVideo: "Watch technique video",
+    videoSource: "YouTube · DeltaBolic demo",
+    openExercise: (name: string) => `Open ${name}`,
     noHistory: "You haven't logged this exercise yet.",
     historySummary: (sessions: number, last: string) =>
       `${sessions} ${sessions === 1 ? "session" : "sessions"} · last ${last}`,
@@ -1558,6 +1561,9 @@ const nl: Dict = {
     importCsv: "Importeren uit CSV",
     exportCsv: "Exporteren als CSV",
     yourHistory: "Jouw historie",
+    watchVideo: "Bekijk techniekvideo",
+    videoSource: "YouTube · DeltaBolic-demo",
+    openExercise: (name: string) => `${name} openen`,
     noHistory: "Je hebt deze oefening nog niet gelogd.",
     historySummary: (sessions: number, last: string) =>
       `${sessions} ${sessions === 1 ? "sessie" : "sessies"} · laatst ${last}`,

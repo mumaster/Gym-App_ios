@@ -61,7 +61,9 @@ import {
   type SessionPos,
 } from "../lib/gym/sessionResume";
 import { haptic, useGym } from "../lib/gym/store";
-import type { LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
+import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
+import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
+import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 
 export const Route = createFileRoute("/session")({
   head: () => ({
@@ -136,6 +138,8 @@ function SessionScreen() {
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
   const [restNext, setRestNext] = useState<string | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  /** Exercise whose page is open (tapped its title). */
+  const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
   /** Plan index whose "Hurts" sheet is open. */
   const [painIndex, setPainIndex] = useState<number | null>(null);
   /** "Keep going" on the time check hides it for the rest of the session. */
@@ -776,6 +780,7 @@ function SessionScreen() {
                 flash={(!isSuperset || s === slot) && cardFlash}
                 cardRef={s === slot ? activeCardRef : undefined}
                 onSwap={() => setSwapIndex(idx)}
+                onOpenInfo={setInfoExercise}
                 onHurts={() => setPainIndex(idx)}
                 {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
@@ -1006,6 +1011,7 @@ function SessionScreen() {
         </div>
       </BottomSheet>
 
+      <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet
         exerciseId={swapIndex === null ? null : (plan[swapIndex]?.exercise_id ?? null)}
         partnerExerciseId={swapPartnerId}
@@ -1118,6 +1124,7 @@ function ExerciseBlock({
   restForThisExercise,
   cardRef,
   onSwap,
+  onOpenInfo,
   onHurts,
   onDoLater,
   onLogged,
@@ -1137,6 +1144,8 @@ function ExerciseBlock({
   restForThisExercise: number;
   cardRef?: React.MutableRefObject<HTMLElement | null> | undefined;
   onSwap: () => void;
+  /** Opens the exercise's page (tapping its title). */
+  onOpenInfo: (exercise: Exercise) => void;
   onHurts: () => void;
   /** Present when there's a later exercise to swap places with. */
   onDoLater?: (() => void) | undefined;
@@ -1355,7 +1364,13 @@ function ExerciseBlock({
             {letter ? t.session.exerciseLetter(letter) : t.session.exerciseOf(index + 1, total)}
           </p>
           <h2 className="mt-1 text-[24px] font-bold leading-[1.1] tracking-tight">
-            {exercise.name}
+            <button
+              onClick={() => onOpenInfo(exercise)}
+              aria-label={t.exercises.openExercise(exercise.name)}
+              className="text-left active:opacity-70"
+            >
+              {exercise.name}
+            </button>
           </h2>
           <p className="mt-1.5 truncate text-[12px] text-muted-foreground">
             {planned.warmup_sets ? t.session.warmupPrefix(planned.warmup_sets) : ""}
@@ -1372,7 +1387,7 @@ function ExerciseBlock({
             <Repeat className="size-4" />
           </button>
           <a
-            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`DeltaBolic ${exercise.name}`)}`}
+            href={exerciseVideoUrl(exercise)}
             target="_blank"
             rel="noreferrer noopener"
             aria-label={t.session.watchDemo}

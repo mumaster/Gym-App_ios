@@ -421,6 +421,7 @@ Schedules are now ordered **Monday-first** (`weekIndex(dow) = (dow + 6) % 7`), m
   - Rows keep only the heart, plus a small "Avoided" badge when relevant. With avoid and edit also on the row, names were truncated ("Barbell Bench Pr…").
   - Tapping a row opens the detail sheet, which gained an edit button (it closes the sheet and opens the editor, one sheet at a time) and "Your history": sessions and last date, best set (`formatLoad`), the progress chart, and your saved exercise note.
   - New / Import / Export moved from three big buttons above the list into a "⋯" header menu sheet.
+- **The exercise page is shared** (`components/gym/ExerciseDetailSheet.tsx`): love/avoid, a "Watch technique video" link, your history, instructions, targets and cues. It opens from a row on Exercises (which also passes `onEdit`, the only place the editor lives), from an exercise's name or detail line in a generated plan on `/generate`, and from an exercise's title in `/session`. The video link comes from `lib/gym/exerciseVideo.ts`'s `exerciseVideoUrl`: a YouTube search for the exercise on DeltaBolic's channel, the link the session's YouTube button already used. It's a search, not one fixed video, because the catalog (Supabase) has no video column.
 
 ### Muscle map selector
 

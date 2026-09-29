@@ -4,7 +4,6 @@ import {
   Download,
   Heart,
   MoreHorizontal,
-  Pencil,
   Plus,
   Search,
   ShieldOff,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
-import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
+import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { Card, Screen } from "../components/gym/Screen";
 import {
   EQUIPMENT,
@@ -31,17 +30,14 @@ import {
   slugifyId,
   useExerciseCatalog,
 } from "../lib/gym/catalog";
-import { useLocale, useTranslation } from "../lib/gym/i18n";
-import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
+import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import type {
   EquipmentId,
   Exercise,
-  LoggedSet,
   MovementPattern,
   Muscle,
   TargetMuscle,
-  Workout,
 } from "../lib/gym/types";
 
 const PATTERNS: MovementPattern[] = ["push", "pull", "hinge", "squat", "carry", "core"];
@@ -80,18 +76,8 @@ export const Route = createFileRoute("/exercises")({
 
 function ExercisesScreen() {
   const t = useTranslation();
-  const {
-    profiles,
-    activeProfileId,
-    lovedExerciseIds,
-    toggleLovedExercise,
-    avoidedExerciseIds,
-    toggleAvoidedExercise,
-    workouts,
-    bestSet,
-    exerciseNotes,
-  } = useGym();
-  const locale = useLocale();
+  const { profiles, activeProfileId, lovedExerciseIds, toggleLovedExercise, avoidedExerciseIds } =
+    useGym();
   const [moreOpen, setMoreOpen] = useState(false);
   const exercises = useExerciseCatalog();
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
@@ -292,108 +278,15 @@ function ExercisesScreen() {
         })}
       </div>
 
-      <BottomSheet open={!!detail} onClose={() => setDetail(null)} title={detail?.name ?? ""}>
-        {detail ? (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  haptic(12);
-                  toggleLovedExercise(detail.id);
-                }}
-                className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
-                  lovedExerciseIds.includes(detail.id)
-                    ? "bg-primary text-primary-foreground"
-                    : "glass text-secondary-foreground"
-                }`}
-              >
-                <Heart
-                  className={`size-4 ${lovedExerciseIds.includes(detail.id) ? "fill-current" : ""}`}
-                />
-                {lovedExerciseIds.includes(detail.id)
-                  ? t.exercises.lovedThis
-                  : t.exercises.loveThis}
-              </button>
-              <button
-                onClick={() => {
-                  haptic(12);
-                  toggleAvoidedExercise(detail.id);
-                }}
-                className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
-                  avoidedExerciseIds.includes(detail.id)
-                    ? "bg-destructive text-destructive-foreground"
-                    : "glass text-secondary-foreground"
-                }`}
-              >
-                <ShieldOff className="size-4" />
-                {avoidedExerciseIds.includes(detail.id)
-                  ? t.exercises.avoided
-                  : t.exercises.avoidThis}
-              </button>
-              <button
-                onClick={() => {
-                  // One sheet at a time: close the details, open the editor.
-                  const e = detail;
-                  setDetail(null);
-                  setDraft({ value: { ...e }, isNew: false });
-                }}
-                aria-label={t.exercises.edit(detail.name)}
-                className="glass flex min-h-[44px] w-12 shrink-0 items-center justify-center rounded-2xl text-secondary-foreground"
-              >
-                <Pencil className="size-4" />
-              </button>
-            </div>
-            <ExerciseHistory
-              exerciseId={detail.id}
-              workouts={workouts}
-              best={bestSet(detail.id)}
-              note={exerciseNotes[detail.id]}
-              bodyweight={isBodyweightExercise(detail)}
-              locale={locale}
-            />
-            <p className="text-[15px] text-muted-foreground">{detail.instructions}</p>
-            <div>
-              <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t.exercises.targets}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {(detail.muscle_targets.length
-                  ? detail.muscle_targets
-                  : [detail.primary_muscle]
-                ).map((m, i) => (
-                  <span
-                    key={m}
-                    className={`rounded-full px-3 py-1.5 text-[13px] font-semibold ${
-                      i === 0
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-primary/15 text-primary-text"
-                    }`}
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[detail.primary_muscle, ...detail.secondary_muscles].map((m) => (
-                <span
-                  key={m}
-                  className="rounded-full bg-secondary px-3 py-1.5 text-[13px] font-semibold text-secondary-foreground"
-                >
-                  {m}
-                </span>
-              ))}
-            </div>
-            <ul className="space-y-1.5">
-              {detail.cues.map((c) => (
-                <li key={c} className="text-[15px]">
-                  • {c}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </BottomSheet>
+      <ExerciseDetailSheet
+        exercise={detail}
+        onClose={() => setDetail(null)}
+        onEdit={(e) => {
+          // One sheet at a time: close the details, open the editor.
+          setDetail(null);
+          setDraft({ value: { ...e }, isNew: false });
+        }}
+      />
 
       <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title={t.exercises.moreTitle}>
         <div className="space-y-2">
@@ -656,66 +549,5 @@ function ExerciseEditor({
         </div>
       ) : null}
     </BottomSheet>
-  );
-}
-
-/** The detail sheet's own history for one exercise: how often and when,
- *  the best set, the progress chart and your saved note. */
-function ExerciseHistory({
-  exerciseId,
-  workouts,
-  best,
-  note,
-  bodyweight,
-  locale,
-}: {
-  exerciseId: string;
-  workouts: Workout[];
-  best: LoggedSet | undefined;
-  note: string | undefined;
-  bodyweight: boolean;
-  locale: string;
-}) {
-  const t = useTranslation();
-  const sessions = workouts.filter((w) =>
-    w.completed_sets.some((s) => s.exercise_id === exerciseId && s.set_type === "working"),
-  );
-  return (
-    <div className="rounded-2xl bg-muted/50 p-3.5">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {t.exercises.yourHistory}
-      </p>
-      {sessions.length ? (
-        <div className="mt-1.5 space-y-2">
-          <p className="text-[14px]">
-            {t.exercises.historySummary(
-              sessions.length,
-              new Date(Math.max(...sessions.map((w) => Date.parse(w.date)))).toLocaleDateString(
-                locale,
-                { day: "numeric", month: "short" },
-              ),
-            )}
-          </p>
-          {best ? (
-            <p className="tabular text-[14px] font-semibold">
-              {t.exercises.bestSet(
-                `${formatLoad(best.weight, bodyweight, t.session.bw)} × ${best.reps}`,
-              )}
-            </p>
-          ) : null}
-          <ExerciseProgressChart exerciseId={exerciseId} height={120} />
-        </div>
-      ) : (
-        <p className="mt-1.5 text-[13px] text-muted-foreground">{t.exercises.noHistory}</p>
-      )}
-      {note ? (
-        <div className="mt-3">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {t.exercises.yourNote}
-          </p>
-          <p className="mt-1 text-[14px]">{note}</p>
-        </div>
-      ) : null}
-    </div>
   );
 }
