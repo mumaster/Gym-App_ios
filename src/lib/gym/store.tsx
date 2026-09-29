@@ -71,6 +71,7 @@ import {
   type Session,
 } from "./auth";
 import { deleteRouteMap } from "./routeMapStore";
+import { readableInk } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso } from "./watch";
 
@@ -552,8 +553,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
     root.classList.add(`accent-${state.accent}`);
     if (state.accent === "custom") {
       root.style.setProperty("--custom-primary", state.customAccent);
+      // The wheel can give a dark colour, so the ink on it follows the colour
+      // (an inline style beats .accent-custom's fixed dark default).
+      root.style.setProperty("--primary-foreground", readableInk(state.customAccent));
     } else {
       root.style.removeProperty("--custom-primary");
+      root.style.removeProperty("--primary-foreground");
     }
   }, [state.accent, state.customAccent]);
 

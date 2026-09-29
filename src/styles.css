@@ -160,6 +160,8 @@
 }
 .accent-custom {
   --primary: var(--custom-primary, #34d399);
+  /* Fallback until GymProvider sets --primary-foreground inline from the
+     chosen colour (accentInk.ts): white on dark colours, this on light ones. */
   --primary-foreground: oklch(0.16 0.02 145);
   --ring: color-mix(in oklch, var(--primary) 55%, transparent);
   --chart-1: var(--primary);
