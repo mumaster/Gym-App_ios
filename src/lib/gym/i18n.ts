@@ -522,8 +522,7 @@ const en = {
     nothingLoggedDay: "Nothing logged that day.",
     editEntry: (name: string) => `Edit ${name}`,
     removeEntry: (name: string) => `Remove ${name}`,
-    entryMacros: (grams: number, p: number, c: number, f: number) =>
-      `${grams} g · P ${p} · C ${c} · F ${f}`,
+    entryMacros: (p: number, c: number, f: number) => `P ${p} · C ${c} · F ${f}`,
     thisWeek: "This week",
     lastWeek: "Last week",
     previousWeek: "Previous week",
@@ -1657,8 +1656,7 @@ const nl: Dict = {
     nothingLoggedDay: "Niets gelogd die dag.",
     editEntry: (name: string) => `${name} bewerken`,
     removeEntry: (name: string) => `${name} verwijderen`,
-    entryMacros: (grams: number, p: number, c: number, f: number) =>
-      `${grams} g · E ${p} · K ${c} · V ${f}`,
+    entryMacros: (p: number, c: number, f: number) => `E ${p} · K ${c} · V ${f}`,
     thisWeek: "Deze week",
     lastWeek: "Vorige week",
     previousWeek: "Vorige week",

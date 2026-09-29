@@ -156,14 +156,7 @@ export function MealOverviewSheet({
                       <span className="block truncate text-[14.5px] font-semibold">
                         {entry.name}
                       </span>
-                      <span className="tabular block truncate text-[12px] text-muted-foreground">
-                        {t.nutrition.entryMacros(
-                          entry.grams,
-                          Math.round(m.protein),
-                          Math.round(m.carbs),
-                          Math.round(m.fat),
-                        )}
-                      </span>
+                      <PortionLine grams={entry.grams} macros={m} className="text-[12px]" />
                     </span>
                     <span className="tabular shrink-0 text-[14px] font-semibold">
                       {t.nutrition.kcal(m.calories)}
@@ -203,5 +196,37 @@ export function MealOverviewSheet({
         </div>
       ) : null}
     </BottomSheet>
+  );
+}
+
+/**
+ * A logged food's second line: its portion in grams as a small pill, so it
+ * stands out from the protein/carbs/fat that follow it (the two used to
+ * read as one run of numbers), then the macros. Used in the food log and
+ * a meal's overview.
+ */
+export function PortionLine({
+  grams,
+  macros,
+  className = "",
+}: {
+  grams: number;
+  macros: Pick<Macros, "protein" | "carbs" | "fat">;
+  className?: string;
+}) {
+  const t = useTranslation();
+  return (
+    <span className={`tabular mt-0.5 flex min-w-0 items-center gap-1.5 ${className}`}>
+      <span className="shrink-0 rounded-md bg-foreground/10 px-1.5 py-px font-semibold text-foreground">
+        {grams} g
+      </span>
+      <span className="truncate text-muted-foreground">
+        {t.nutrition.entryMacros(
+          Math.round(macros.protein),
+          Math.round(macros.carbs),
+          Math.round(macros.fat),
+        )}
+      </span>
+    </span>
   );
 }

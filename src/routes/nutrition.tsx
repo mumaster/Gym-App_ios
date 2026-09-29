@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
-import { MealOverviewSheet } from "../components/gym/MealOverviewSheet";
+import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
 import { CreateRecipeSheet } from "../components/gym/CreateRecipeSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
@@ -778,14 +778,7 @@ function MealGroup({
                   >
                     <div className="min-w-0">
                       <p className="truncate text-[15px] font-semibold">{entry.name}</p>
-                      <p className="tabular truncate text-[12.5px] text-muted-foreground">
-                        {t.nutrition.entryMacros(
-                          entry.grams,
-                          Math.round(m.protein),
-                          Math.round(m.carbs),
-                          Math.round(m.fat),
-                        )}
-                      </p>
+                      <PortionLine grams={entry.grams} macros={m} className="text-[12.5px]" />
                     </div>
                     <p className="tabular shrink-0 text-[14px] font-semibold">
                       {t.nutrition.kcal(m.calories)}
