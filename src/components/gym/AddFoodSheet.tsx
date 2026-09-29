@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Keyboard, Plus, ScanBarcode, Star, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Keyboard,
+  Plus,
+  ScanBarcode,
+  Search,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { FoodScanner, type FoodScannerStatus } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
@@ -9,6 +19,14 @@ import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
+  foldText,
+  loadNevoFoods,
+  matchesNevo,
+  nevoName,
+  searchNevoFoods,
+  type NevoFood,
+} from "../../lib/gym/nevoFoods";
+import {
   MEAL_ORDER,
   dailyTotals,
   mealForTime,
@@ -17,6 +35,7 @@ import {
   NUTRIENT_UNITS,
   scaledMacros,
   type FoodEntry,
+  type Macros,
   type MealIngredient,
   type MealType,
   type NutrientKey,
@@ -82,6 +101,7 @@ export function AddFoodSheet({
     logRecipe,
     deleteMealTemplate,
     deleteRecipe,
+    language,
   } = useGym();
   const t = useTranslation();
   const MACRO_FIELDS: { key: MacroKey; label: string; unit: string }[] = NUTRIENT_ORDER.map(
@@ -103,6 +123,24 @@ export function AddFoodSheet({
   const [per100, setPer100] = useState<Record<MacroKey, string>>(emptyPer100);
   const [unmatched, setUnmatched] = useState<Set<MacroKey>>(new Set());
   const [editingSaved, setEditingSaved] = useState(false);
+  /** Search over your own foods and NEVO's unpackaged ones (nevoFoods.ts). */
+  const [query, setQuery] = useState("");
+  const [nevoFoods, setNevoFoods] = useState<NevoFood[] | null>(null);
+  /** When the form holds a NEVO food: its codes and NEVO's own values, so
+   *  the entry keeps its NEVO mark only while the values are unchanged. */
+  const [nevoSource, setNevoSource] = useState<{ codes: number[]; per100: Macros } | null>(null);
+
+  // The NEVO table is a separate chunk, loaded the first time the sheet opens.
+  useEffect(() => {
+    if (!open || nevoFoods) return;
+    let alive = true;
+    loadNevoFoods()
+      .then((foods) => alive && setNevoFoods(foods))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [open, nevoFoods]);
 
   // A new entry goes to the meal it was opened for (a meal's "+"), else the
   // one the time of day suggests.
@@ -123,6 +161,8 @@ export function AddFoodSheet({
     setPer100(emptyPer100);
     setUnmatched(new Set());
     setEditingSaved(false);
+    setQuery("");
+    setNevoSource(null);
   };
 
   const close = () => {
@@ -148,6 +188,7 @@ export function AddFoodSheet({
     setSuggestedGrams(null);
     setPer100(per100ToDraft(editEntry.per100));
     setUnmatched(new Set());
+    setNevoSource(editEntry.nevo ? { codes: editEntry.nevo, per100: editEntry.per100 } : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editEntry?.id]);
 
@@ -166,11 +207,30 @@ export function AddFoodSheet({
       const key = foodKey(entry.name);
       if (!key || seen.has(key) || favoriteKeys.has(key)) continue;
       seen.add(key);
-      list.push({ name: entry.name, grams: entry.grams, per100: entry.per100 });
+      list.push({
+        name: entry.name,
+        grams: entry.grams,
+        per100: entry.per100,
+        ...(entry.nevo ? { nevo: entry.nevo } : {}),
+      });
       if (list.length >= RECENT_LIMIT) break;
     }
     return list;
   }, [foodEntries, favoriteKeys]);
+
+  const q = query.trim();
+  const searching = q.length > 0;
+  /** Your own foods matching the search come first: they carry your usual
+   *  portion, so they're a one-tap "+". */
+  const savedMatches = useMemo(() => {
+    if (!q) return [];
+    const f = foldText(q);
+    return [...favoriteFoods, ...recentFoods].filter((food) => foldText(food.name).includes(f));
+  }, [q, favoriteFoods, recentFoods]);
+  const nevoMatches = useMemo(
+    () => (q && nevoFoods ? searchNevoFoods(nevoFoods, q, language) : []),
+    [q, nevoFoods, language],
+  );
 
   /** The "+" on a favourite/recent row: logs it straight away with its usual
    *  portion (or, in the meal builder, adds it as an ingredient). */
@@ -186,6 +246,7 @@ export function AddFoodSheet({
         meal,
         grams: food.grams,
         per100: food.per100,
+        ...(food.nevo ? { nevo: food.nevo } : {}),
       });
     }
     close();
@@ -193,7 +254,9 @@ export function AddFoodSheet({
 
   const startManual = () => {
     haptic(15);
-    setName("");
+    // From a search with no match, the typed words become the name.
+    setName(query.trim());
+    setNevoSource(null);
     setPer100(emptyPer100);
     setUnmatched(new Set());
     setSuggestedGrams(null);
@@ -208,6 +271,23 @@ export function AddFoodSheet({
     setPer100(per100ToDraft(entry.per100));
     setUnmatched(new Set());
     setSuggestedGrams(null);
+    setNevoSource(entry.nevo ? { codes: entry.nevo, per100: entry.per100 } : null);
+    setQuery("");
+    setStep("review");
+  };
+
+  /** A NEVO food: its values per 100 g, and the grams left for you to fill
+   *  in (NEVO has no portion weights, so none is guessed). */
+  const startFromNevo = (food: NevoFood) => {
+    haptic(15);
+    setName(nevoName(food, language));
+    setGrams("");
+    setGramsTouched(false);
+    setPer100(per100ToDraft(food.per100));
+    setUnmatched(food.saltKnown ? new Set() : new Set<MacroKey>(["salt"]));
+    setSuggestedGrams(null);
+    setNevoSource({ codes: [food.code], per100: food.per100 });
+    setQuery("");
     setStep("review");
   };
 
@@ -236,6 +316,7 @@ export function AddFoodSheet({
     }
     setPer100(next);
     setUnmatched(missing);
+    setNevoSource(null);
     setName(result.name?.trim() || t.addFood.scannedFoodFallback);
     setSuggestedGrams(!gramsTouched ? result.servingSizeGrams : null);
     setStep("review");
@@ -306,11 +387,21 @@ export function AddFoodSheet({
     salt: parseDecimal(per100.salt) || 0,
   });
 
+  /** NEVO codes to keep on the entry: only while the values are NEVO's. */
+  const currentNevo = (): number[] | undefined =>
+    nevoSource && matchesNevo(draftPer100(), nevoSource.per100) ? nevoSource.codes : undefined;
+
   const persistEdits = () => {
     if (!canSave) return false;
     const per100Value = draftPer100();
+    const nevo = currentNevo();
     if (onIngredientCaptured) {
-      onIngredientCaptured({ name: name.trim(), grams: gramsNum, per100: per100Value });
+      onIngredientCaptured({
+        name: name.trim(),
+        grams: gramsNum,
+        per100: per100Value,
+        ...(nevo ? { nevo } : {}),
+      });
       return true;
     }
     if (editEntry) {
@@ -319,6 +410,7 @@ export function AddFoodSheet({
         meal,
         grams: gramsNum,
         per100: per100Value,
+        nevo: nevo ?? null,
       });
     } else {
       addFoodEntry({
@@ -328,6 +420,7 @@ export function AddFoodSheet({
         meal,
         grams: gramsNum,
         per100: per100Value,
+        ...(nevo ? { nevo } : {}),
       });
     }
     return true;
@@ -336,7 +429,10 @@ export function AddFoodSheet({
   const save = () => {
     if (!persistEdits()) return;
     haptic([20, 30]);
-    close();
+    // Not close(): that saves the open form too (for Done), which logged
+    // every "Add to log" twice.
+    reset();
+    onClose();
   };
 
   /** Delete from the edit screen — the path that doesn't need a swipe. */
@@ -391,97 +487,181 @@ export function AddFoodSheet({
             {onIngredientCaptured ? null : (
               <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
             )}
-            {/* Scan and manual side by side, first: they used to sit under
+            <label className="flex items-center gap-2 rounded-2xl bg-muted pl-4 pr-1.5">
+              <Search className="size-4 shrink-0 text-muted-foreground" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t.addFood.searchFoods}
+                enterKeyHint="search"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                className="h-12 w-full min-w-0 flex-1 bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label={t.addFood.clearSearch}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : null}
+            </label>
+            {searching ? (
+              <div className="space-y-4">
+                {savedMatches.length ? (
+                  <FoodList
+                    title={t.addFood.yourFoods}
+                    foods={savedMatches}
+                    favoriteKeys={favoriteKeys}
+                    onOpen={startFromRecent}
+                    onQuickAdd={quickAdd}
+                    onToggleFavorite={toggleFavoriteFood}
+                  />
+                ) : null}
+                {nevoMatches.length ? (
+                  <div>
+                    <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                      {t.addFood.foods}
+                    </p>
+                    <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+                      {nevoMatches.map(({ food, synonym }) => (
+                        <button
+                          key={food.code}
+                          onClick={() => startFromNevo(food)}
+                          className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
+                        >
+                          <p className="text-[15px] font-semibold leading-snug">
+                            {nevoName(food, language)}
+                          </p>
+                          <p className="tabular text-[12px] text-muted-foreground">
+                            {synonym ? `${synonym} · ` : ""}
+                            {t.addFood.per100kcal(food.per100.calories)}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {!savedMatches.length && !nevoMatches.length ? (
+                  <p className="px-1 text-[14px] text-muted-foreground">{t.addFood.noFoodMatch}</p>
+                ) : null}
+                <button
+                  onClick={startManual}
+                  className="glass flex min-h-[52px] w-full items-center gap-2 rounded-2xl px-4 text-left active:scale-[0.985]"
+                >
+                  <Keyboard className="size-5 shrink-0 text-primary" />
+                  <span className="min-w-0 truncate text-[14px] font-bold">
+                    {t.addFood.enterAsNew(q)}
+                  </span>
+                </button>
+                {nevoMatches.length ? (
+                  <p className="px-1 text-[11px] leading-snug text-muted-foreground">
+                    {t.nutrition.nevoReference}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                {/* Scan and manual side by side, first: they used to sit under
                 every list, a long scroll down once meals and recipes moved
                 into this sheet. */}
-            <div className="grid grid-cols-[1.7fr_1fr] gap-2">
-              <button
-                onClick={startScan}
-                className="glow flex min-h-[60px] items-center gap-2.5 rounded-2xl bg-primary px-4 text-left text-primary-foreground active:scale-[0.985]"
-              >
-                <ScanBarcode className="size-6 shrink-0" />
-                <span className="text-[14.5px] font-bold leading-tight">{t.addFood.scanFood}</span>
-              </button>
-              <button
-                onClick={startManual}
-                className="glass flex min-h-[60px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
-              >
-                <Keyboard className="size-5 shrink-0 text-primary" />
-                <span className="text-[14px] font-bold leading-tight">
-                  {t.addFood.enterManually}
-                </span>
-              </button>
-            </div>
-            {favoriteFoods.length ? (
-              <FoodList
-                title={t.addFood.favorites}
-                foods={favoriteFoods}
-                favoriteKeys={favoriteKeys}
-                onOpen={startFromRecent}
-                onQuickAdd={quickAdd}
-                onToggleFavorite={toggleFavoriteFood}
-              />
-            ) : null}
-            {recentFoods.length ? (
-              <FoodList
-                title={t.addFood.recent}
-                foods={recentFoods}
-                favoriteKeys={favoriteKeys}
-                onOpen={startFromRecent}
-                onQuickAdd={quickAdd}
-                onToggleFavorite={toggleFavoriteFood}
-              />
-            ) : null}
-            {showSaved && onCreateMeal ? (
-              <SavedList
-                title={t.nutrition.meals}
-                empty={t.nutrition.mealsEmpty}
-                newLabel={t.nutrition.newMeal}
-                editing={editingSaved}
-                onToggleEdit={() => setEditingSaved((v) => !v)}
-                onNew={() => openBuilder(onCreateMeal)}
-                items={mealTemplates.map((m) => ({
-                  id: m.id,
-                  name: m.name,
-                  detail: `${t.nutrition.ingredientCount(m.ingredients.length)} · ${t.nutrition.kcal(dailyTotals(m.ingredients).calories)}`,
-                  logLabel: t.nutrition.logTemplate(m.name),
-                }))}
-                onLog={(id) => {
-                  haptic([20, 30]);
-                  logMealTemplate(id, meal);
-                  close();
-                }}
-                onDelete={(id) => {
-                  haptic(15);
-                  deleteMealTemplate(id);
-                }}
-              />
-            ) : null}
-            {showSaved && onCreateRecipe ? (
-              <SavedList
-                title={t.nutrition.recipes}
-                empty={t.nutrition.recipesEmpty}
-                newLabel={t.nutrition.newRecipe}
-                editing={editingSaved}
-                onToggleEdit={() => setEditingSaved((v) => !v)}
-                onNew={() => openBuilder(onCreateRecipe)}
-                items={recipes.map((r) => ({
-                  id: r.id,
-                  name: r.name,
-                  detail: `${t.nutrition.servingCount(r.servings)} · ${t.nutrition.kcalPerServing(recipePerServing(r).calories)}`,
-                  logLabel: t.nutrition.logServing(r.name),
-                }))}
-                onLog={(id) => {
-                  haptic([20, 30]);
-                  logRecipe(id, 1, meal);
-                  close();
-                }}
-                onDelete={(id) => {
-                  haptic(15);
-                  deleteRecipe(id);
-                }}
-              />
-            ) : null}
+                <div className="grid grid-cols-[1.7fr_1fr] gap-2">
+                  <button
+                    onClick={startScan}
+                    className="glow flex min-h-[60px] items-center gap-2.5 rounded-2xl bg-primary px-4 text-left text-primary-foreground active:scale-[0.985]"
+                  >
+                    <ScanBarcode className="size-6 shrink-0" />
+                    <span className="text-[14.5px] font-bold leading-tight">
+                      {t.addFood.scanFood}
+                    </span>
+                  </button>
+                  <button
+                    onClick={startManual}
+                    className="glass flex min-h-[60px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
+                  >
+                    <Keyboard className="size-5 shrink-0 text-primary" />
+                    <span className="text-[14px] font-bold leading-tight">
+                      {t.addFood.enterManually}
+                    </span>
+                  </button>
+                </div>
+                {favoriteFoods.length ? (
+                  <FoodList
+                    title={t.addFood.favorites}
+                    foods={favoriteFoods}
+                    favoriteKeys={favoriteKeys}
+                    onOpen={startFromRecent}
+                    onQuickAdd={quickAdd}
+                    onToggleFavorite={toggleFavoriteFood}
+                  />
+                ) : null}
+                {recentFoods.length ? (
+                  <FoodList
+                    title={t.addFood.recent}
+                    foods={recentFoods}
+                    favoriteKeys={favoriteKeys}
+                    onOpen={startFromRecent}
+                    onQuickAdd={quickAdd}
+                    onToggleFavorite={toggleFavoriteFood}
+                  />
+                ) : null}
+                {showSaved && onCreateMeal ? (
+                  <SavedList
+                    title={t.nutrition.meals}
+                    empty={t.nutrition.mealsEmpty}
+                    newLabel={t.nutrition.newMeal}
+                    editing={editingSaved}
+                    onToggleEdit={() => setEditingSaved((v) => !v)}
+                    onNew={() => openBuilder(onCreateMeal)}
+                    items={mealTemplates.map((m) => ({
+                      id: m.id,
+                      name: m.name,
+                      detail: `${t.nutrition.ingredientCount(m.ingredients.length)} · ${t.nutrition.kcal(dailyTotals(m.ingredients).calories)}`,
+                      logLabel: t.nutrition.logTemplate(m.name),
+                    }))}
+                    onLog={(id) => {
+                      haptic([20, 30]);
+                      logMealTemplate(id, meal);
+                      close();
+                    }}
+                    onDelete={(id) => {
+                      haptic(15);
+                      deleteMealTemplate(id);
+                    }}
+                  />
+                ) : null}
+                {showSaved && onCreateRecipe ? (
+                  <SavedList
+                    title={t.nutrition.recipes}
+                    empty={t.nutrition.recipesEmpty}
+                    newLabel={t.nutrition.newRecipe}
+                    editing={editingSaved}
+                    onToggleEdit={() => setEditingSaved((v) => !v)}
+                    onNew={() => openBuilder(onCreateRecipe)}
+                    items={recipes.map((r) => ({
+                      id: r.id,
+                      name: r.name,
+                      detail: `${t.nutrition.servingCount(r.servings)} · ${t.nutrition.kcalPerServing(recipePerServing(r).calories)}`,
+                      logLabel: t.nutrition.logServing(r.name),
+                    }))}
+                    onLog={(id) => {
+                      haptic([20, 30]);
+                      logRecipe(id, 1, meal);
+                      close();
+                    }}
+                    onDelete={(id) => {
+                      haptic(15);
+                      deleteRecipe(id);
+                    }}
+                  />
+                ) : null}
+              </>
+            )}
           </div>
         ) : null}
 
@@ -502,7 +682,7 @@ export function AddFoodSheet({
             {unmatched.size > 0 ? (
               <p className="flex items-start gap-2 rounded-2xl bg-amber-400/10 px-4 py-3 text-[13px] text-amber-300">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />{" "}
-                {t.addFood.couldntRead(
+                {(nevoSource ? t.addFood.notInNevo : t.addFood.couldntRead)(
                   [...unmatched]
                     .map((k) => MACRO_FIELDS.find((f) => f.key === k)!.label)
                     .join(", "),
@@ -529,7 +709,13 @@ export function AddFoodSheet({
                   onClick={(e) => {
                     e.preventDefault();
                     haptic(10);
-                    toggleFavoriteFood({ name, grams: gramsNum || 100, per100: draftPer100() });
+                    const nevo = currentNevo();
+                    toggleFavoriteFood({
+                      name,
+                      grams: gramsNum || 100,
+                      per100: draftPer100(),
+                      ...(nevo ? { nevo } : {}),
+                    });
                   }}
                   aria-pressed={favoriteKeys.has(foodKey(name))}
                   aria-label={
@@ -577,6 +763,7 @@ export function AddFoodSheet({
                 inputMode="decimal"
                 type="text"
                 value={grams}
+                autoFocus={nevoSource !== null && grams === ""}
                 onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
@@ -625,6 +812,13 @@ export function AddFoodSheet({
                   </label>
                 ))}
               </div>
+              {/* RIVM's conditions: say the values are NEVO's, and mark the
+                  app's own addition (salt from sodium) as one. */}
+              {currentNevo() ? (
+                <p className="mt-2 px-1 text-[11px] leading-snug text-muted-foreground">
+                  {t.addFood.nevoSaltNote} {t.nutrition.nevoReference}
+                </p>
+              ) : null}
             </div>
 
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">

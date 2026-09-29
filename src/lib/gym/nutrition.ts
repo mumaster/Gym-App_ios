@@ -41,6 +41,10 @@ export interface FoodEntry {
     fiber: number;
     salt: number;
   };
+  /** NEVO codes the values come from (a NEVO food, or a recipe with NEVO
+   *  ingredients), so the NEVO reference shows where the day uses it.
+   *  Dropped once the user changes a value. */
+  nevo?: number[];
 }
 
 export interface Macros {
@@ -59,6 +63,8 @@ export interface MealIngredient {
   name: string;
   grams: number;
   per100: Macros;
+  /** See FoodEntry.nevo. */
+  nevo?: number[];
 }
 
 /** A named, reusable combo of ingredients (e.g. "Banana oatmeal") the user can log in one tap. */
@@ -483,4 +489,10 @@ export function weeklyAverage(
       ? Math.round(withGoal.reduce((s, d) => s + d.goal!, 0) / withGoal.length)
       : null;
   return { calories, goal, days: counted.length };
+}
+
+/** Distinct NEVO codes behind a list of foods, or undefined if none. */
+export function nevoCodes(foods: { nevo?: number[] }[]): number[] | undefined {
+  const codes = [...new Set(foods.flatMap((f) => f.nevo ?? []))];
+  return codes.length ? codes : undefined;
 }

@@ -181,6 +181,8 @@ const en = {
       streak: "Week streak: 2+ training days a week",
       weightTrend: "Weight trend needing 2+ weeks of weigh-ins, and 7700 kcal per kg",
       energy: "Daily energy needs, from measured energy use by activity level",
+      foodComposition:
+        "Nutrition values of unpackaged food (fruit, vegetables, meat…); salt from sodium",
       sessionEnergy: "Energy of a training session",
       cut: "Cutting pace: 0.5–1% of bodyweight a week",
       bulk: "Bulking surplus of 10–20%",
@@ -490,6 +492,8 @@ const en = {
     removeWaterEntry: (ml: number) => `Remove ${ml}ml water entry`,
     addFood: "Add food",
     meals: "Meals",
+    nevoReference:
+      "Based on data from NEVO online version 2025/9.0, RIVM, Bilthoven and other data sources.",
     mealsEmpty:
       'Save a combo of ingredients — like "Banana oatmeal" — to add it all in one tap next time.',
     ingredientCount: (n: number) => `${n} ingredient${n === 1 ? "" : "s"}`,
@@ -617,6 +621,15 @@ const en = {
     enterManually: "Enter manually",
     recent: "Recent",
     favorites: "Favourites",
+    searchFoods: "Search foods — banana, rice, eggs…",
+    clearSearch: "Clear search",
+    yourFoods: "Your foods",
+    foods: "Foods",
+    per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,
+    noFoodMatch: "No match. Check the spelling, or enter it yourself.",
+    enterAsNew: (q: string) => `Enter “${q}” manually`,
+    nevoSaltNote: "Salt is worked out from NEVO's sodium (× 2.5), an addition to NEVO.",
+    notInNevo: (fields: string) => `NEVO has no value for ${fields} — fill it in if you know it.`,
     addingTo: "Add to",
     deleteMeal: (name: string) => `Delete ${name}`,
     deleteFromLog: "Delete from log",
@@ -1164,6 +1177,8 @@ const nl: Dict = {
       streak: "Weken op rij: 2+ trainingsdagen per week",
       weightTrend: "Gewichtstrend na 2+ weken wegen, en 7700 kcal per kg",
       energy: "Dagelijkse energiebehoefte, uit gemeten energieverbruik per activiteitsniveau",
+      foodComposition:
+        "Voedingswaarden van onverpakt voedsel (fruit, groente, vlees…); zout uit natrium",
       sessionEnergy: "Energie van een trainingssessie",
       cut: "Afvaltempo: 0,5–1% van je lichaamsgewicht per week",
       bulk: "Overschot van 10–20% bij aankomen",
@@ -1476,6 +1491,8 @@ const nl: Dict = {
     removeWaterEntry: (ml: number) => `Verwijder ${ml}ml water-invoer`,
     addFood: "Voedsel toevoegen",
     meals: "Maaltijden",
+    nevoReference:
+      "Gebaseerd op gegevens van NEVO-online versie 2025/9.0, RIVM, Bilthoven en andere gegevens.",
     mealsEmpty:
       'Sla een combinatie van ingrediënten op — zoals "Havermout met banaan" — om die volgende keer in één tik toe te voegen.',
     ingredientCount: (n: number) => `${n} ingrediënt${n === 1 ? "" : "en"}`,
@@ -1604,6 +1621,16 @@ const nl: Dict = {
     enterManually: "Handmatig invoeren",
     recent: "Recent",
     favorites: "Favorieten",
+    searchFoods: "Zoek voedsel — banaan, rijst, ei…",
+    clearSearch: "Zoekopdracht wissen",
+    yourFoods: "Jouw voedsel",
+    foods: "Voedingsmiddelen",
+    per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,
+    noFoodMatch: "Geen resultaat. Controleer de spelling, of vul het zelf in.",
+    enterAsNew: (q: string) => `“${q}” zelf invullen`,
+    nevoSaltNote: "Zout is berekend uit het natrium van NEVO (× 2,5), een aanvulling op NEVO.",
+    notInNevo: (fields: string) =>
+      `NEVO heeft geen waarde voor ${fields} — vul het in als je het weet.`,
     addingTo: "Toevoegen aan",
     deleteMeal: (name: string) => `${name} verwijderen`,
     deleteFromLog: "Verwijderen uit log",

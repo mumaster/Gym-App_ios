@@ -30,6 +30,7 @@ export type SourceId =
   | "streak"
   | "weightTrend"
   | "energy"
+  | "foodComposition"
   | "sessionEnergy"
   | "cut"
   | "bulk"
@@ -122,6 +123,14 @@ export const SOURCES: SourceEntry[] = [
     id: "energy",
     group: "nutrition",
     refs: ["National Academies, Dietary Reference Intakes for Energy (2023)"],
+  },
+  {
+    id: "foodComposition",
+    group: "nutrition",
+    refs: [
+      "NEVO online version 2025/9.0, RIVM, Bilthoven",
+      "EU Regulation 1169/2011, Annex I (salt = sodium × 2.5)",
+    ],
   },
   {
     id: "sessionEnergy",

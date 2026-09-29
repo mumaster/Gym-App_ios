@@ -337,6 +337,15 @@ function NutritionScreen() {
         </>
       ) : null}
 
+      {/* RIVM's conditions of use require this reference on nutritional
+          output based on NEVO data — shown whenever the day's figures
+          include a NEVO food (see nevoFoods.ts). */}
+      {selectedEntries.some((e) => e.nevo?.length) ? (
+        <p className="mt-6 px-1 text-[11px] leading-snug text-muted-foreground">
+          {t.nutrition.nevoReference}
+        </p>
+      ) : null}
+
       <AddFoodSheet
         open={foodSheet !== null}
         editEntry={foodSheet && "id" in foodSheet ? foodSheet : null}

@@ -13,6 +13,7 @@ import { isBodyweightExercise, latestBodyKg } from "./load";
 import { DEFAULT_PLATES } from "./plates";
 import {
   mealForTime,
+  nevoCodes,
   recipePerServing,
   type FoodEntry,
   type MealIngredient,
@@ -399,7 +400,10 @@ interface Ctx extends GymState {
   addFoodEntry: (entry: FoodEntry) => void;
   updateFoodEntry: (
     id: string,
-    patch: Partial<Pick<FoodEntry, "name" | "meal" | "grams" | "per100">>,
+    /** `nevo: null` drops the NEVO mark (the values were changed). */
+    patch: Partial<Pick<FoodEntry, "name" | "meal" | "grams" | "per100">> & {
+      nevo?: number[] | null;
+    },
   ) => void;
   removeFoodEntry: (id: string) => void;
   setNutritionGoals: (goals: NutritionGoals) => void;
@@ -1076,7 +1080,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
       updateFoodEntry: (id, patch) =>
         setState((s) => ({
           ...s,
-          foodEntries: s.foodEntries.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+          foodEntries: s.foodEntries.map((e) => {
+            if (e.id !== id) return e;
+            const { nevo, ...rest } = patch;
+            const next: FoodEntry = { ...e, ...rest };
+            if (nevo === null) delete next.nevo;
+            else if (nevo) next.nevo = nevo;
+            return next;
+          }),
         })),
       removeFoodEntry: (id) =>
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
@@ -1123,6 +1134,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             meal,
             grams: ing.grams,
             per100: ing.per100,
+            ...(ing.nevo?.length ? { nevo: ing.nevo } : {}),
           }));
           return { ...s, foodEntries: [...entries, ...s.foodEntries] };
         }),
@@ -1151,6 +1163,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
             grams: Math.round(Math.max(0, servings) * 100),
             per100: recipePerServing(recipe),
           };
+          const nevo = nevoCodes(recipe.ingredients);
+          if (nevo) entry.nevo = nevo;
           return { ...s, foodEntries: [entry, ...s.foodEntries] };
         }),
 

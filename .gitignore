@@ -37,3 +37,10 @@ public/tesseract/
 *.njsproj
 *.sln
 *.sw?
+
+# NEVO (RIVM) raw dataset — never committed; scripts/build-nevo-foods.mjs
+# extracts what the app uses into src/lib/gym/nevoFoods.data.ts.
+data/nevo/
+NEVO*.csv
+NEVO*.xlsx
+NEVO*.zip
