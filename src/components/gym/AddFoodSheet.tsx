@@ -19,7 +19,6 @@ import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
-  foldText,
   loadNevoFoods,
   matchesNevo,
   nevoName,
@@ -41,6 +40,13 @@ import {
   type NutrientKey,
 } from "../../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
+import {
+  findByBarcode,
+  matchScore,
+  myFoodKey,
+  nameKey,
+  searchMyFoods,
+} from "../../lib/gym/myFoods";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
@@ -59,6 +65,10 @@ const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
+
+/** A row in a food list: a favourite or recent food, or one of "your
+ *  foods" (which may carry the barcode it was scanned from). */
+type ListFood = MealIngredient & { barcode?: string };
 
 export function AddFoodSheet({
   open,
@@ -95,6 +105,9 @@ export function AddFoodSheet({
     foodEntries,
     favoriteFoods,
     toggleFavoriteFood,
+    myFoods,
+    rememberFood,
+    forgetFood,
     mealTemplates,
     recipes,
     logMealTemplate,
@@ -129,6 +142,14 @@ export function AddFoodSheet({
   /** When the form holds a NEVO food: its codes and NEVO's own values, so
    *  the entry keeps its NEVO mark only while the values are unchanged. */
   const [nevoSource, setNevoSource] = useState<{ codes: number[]; per100: Macros } | null>(null);
+  /** Barcode the form's food was scanned from, saved with it in "your
+   *  foods" so the next scan of that product fills in your values. */
+  const [barcode, setBarcode] = useState<string | null>(null);
+  /** A barcode Open Food Facts didn't know: the label photographed next
+   *  belongs to it. */
+  const unknownBarcode = useRef<string | null>(null);
+  /** Edit mode of the "Your foods" search results (remove from the library). */
+  const [editingMine, setEditingMine] = useState(false);
 
   // The NEVO table is a separate chunk, loaded the first time the sheet opens.
   useEffect(() => {
@@ -163,6 +184,9 @@ export function AddFoodSheet({
     setEditingSaved(false);
     setQuery("");
     setNevoSource(null);
+    setBarcode(null);
+    unknownBarcode.current = null;
+    setEditingMine(false);
   };
 
   const close = () => {
@@ -189,6 +213,7 @@ export function AddFoodSheet({
     setPer100(per100ToDraft(editEntry.per100));
     setUnmatched(new Set());
     setNevoSource(editEntry.nevo ? { codes: editEntry.nevo, per100: editEntry.per100 } : null);
+    setBarcode(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editEntry?.id]);
 
@@ -222,11 +247,20 @@ export function AddFoodSheet({
   const searching = q.length > 0;
   /** Your own foods matching the search come first: they carry your usual
    *  portion, so they're a one-tap "+". */
-  const savedMatches = useMemo(() => {
+  const savedMatches = useMemo((): ListFood[] => {
     if (!q) return [];
-    const f = foldText(q);
-    return [...favoriteFoods, ...recentFoods].filter((food) => foldText(food.name).includes(f));
-  }, [q, favoriteFoods, recentFoods]);
+    const favorites = favoriteFoods.filter((food) => matchScore(food.name, q) !== null);
+    // Everything you scanned or typed in before (myFoods.ts), then recent
+    // NEVO foods, which carry your usual portion but aren't in the library.
+    const mine = searchMyFoods(myFoods, q).filter((food) => !favoriteKeys.has(nameKey(food.name)));
+    const mineKeys = new Set(mine.map((food) => nameKey(food.name)));
+    const recent = recentFoods.filter(
+      (food) =>
+        food.nevo?.length && !mineKeys.has(nameKey(food.name)) && matchScore(food.name, q) !== null,
+    );
+    return [...favorites, ...mine, ...recent];
+  }, [q, favoriteFoods, myFoods, favoriteKeys, recentFoods]);
+  const libraryKeys = useMemo(() => new Set(myFoods.map(myFoodKey)), [myFoods]);
   const nevoMatches = useMemo(
     () => (q && nevoFoods ? searchNevoFoods(nevoFoods, q, language) : []),
     [q, nevoFoods, language],
@@ -234,8 +268,15 @@ export function AddFoodSheet({
 
   /** The "+" on a favourite/recent row: logs it straight away with its usual
    *  portion (or, in the meal builder, adds it as an ingredient). */
-  const quickAdd = (food: MealIngredient) => {
+  const quickAdd = (row: ListFood) => {
     haptic([20, 30]);
+    const food: MealIngredient = {
+      name: row.name,
+      grams: row.grams,
+      per100: row.per100,
+      ...(row.nevo ? { nevo: row.nevo } : {}),
+    };
+    if (!food.nevo?.length) remember(food, row.barcode);
     if (onIngredientCaptured) {
       onIngredientCaptured(food);
     } else {
@@ -260,10 +301,11 @@ export function AddFoodSheet({
     setPer100(emptyPer100);
     setUnmatched(new Set());
     setSuggestedGrams(null);
+    setBarcode(null);
     setStep("review");
   };
 
-  const startFromRecent = (entry: MealIngredient) => {
+  const startFromRecent = (entry: ListFood) => {
     haptic(15);
     setName(entry.name);
     setGrams(String(entry.grams));
@@ -272,6 +314,7 @@ export function AddFoodSheet({
     setUnmatched(new Set());
     setSuggestedGrams(null);
     setNevoSource(entry.nevo ? { codes: entry.nevo, per100: entry.per100 } : null);
+    setBarcode(entry.barcode ?? null);
     setQuery("");
     setStep("review");
   };
@@ -287,6 +330,7 @@ export function AddFoodSheet({
     setUnmatched(food.saltKnown ? new Set() : new Set<MacroKey>(["salt"]));
     setSuggestedGrams(null);
     setNevoSource({ codes: [food.code], per100: food.per100 });
+    setBarcode(null);
     setQuery("");
     setStep("review");
   };
@@ -295,6 +339,7 @@ export function AddFoodSheet({
   const startScan = () => {
     haptic(15);
     setScanError(null);
+    unknownBarcode.current = null;
     setScannerStatus("scanning");
     setScannerOpen(true);
   };
@@ -306,7 +351,7 @@ export function AddFoodSheet({
 
   /** Fills the review form from a label scan or a barcode lookup — both
    *  return the same shape, so one path applies either result. */
-  const applyScanResult = (result: ScannedLabel) => {
+  const applyScanResult = (result: ScannedLabel, scannedBarcode: string | null) => {
     const missing = new Set<MacroKey>();
     const next: Record<MacroKey, string> = { ...emptyPer100 };
     for (const { key } of MACRO_FIELDS) {
@@ -317,6 +362,7 @@ export function AddFoodSheet({
     setPer100(next);
     setUnmatched(missing);
     setNevoSource(null);
+    setBarcode(scannedBarcode);
     setName(result.name?.trim() || t.addFood.scannedFoodFallback);
     setSuggestedGrams(!gramsTouched ? result.servingSizeGrams : null);
     setStep("review");
@@ -330,7 +376,7 @@ export function AddFoodSheet({
       const result = await scanNutritionLabel({
         data: { imageBase64, mimeType },
       });
-      applyScanResult(result);
+      applyScanResult(result, unknownBarcode.current);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       setScanError(t.addFood.scanReadError(detail));
@@ -341,16 +387,25 @@ export function AddFoodSheet({
   // The camera stays open during the lookup: if the product isn't in the
   // database the user is already pointing at the package, so the next step
   // is one shutter tap on its label rather than starting over.
-  const onBarcodeDetected = async (barcode: string) => {
+  const onBarcodeDetected = async (code: string) => {
+    // A product you've saved before: your own values, instantly and
+    // offline, corrections included. Open Food Facts only for new ones.
+    const saved = findByBarcode(myFoods, code);
+    if (saved) {
+      setScannerOpen(false);
+      startFromRecent(saved);
+      return;
+    }
     setScannerStatus("lookingUp");
     try {
-      const result = await lookupBarcode(barcode);
+      const result = await lookupBarcode(code);
       if (!result) {
+        unknownBarcode.current = code;
         setScannerStatus("notFound");
         return;
       }
       setScannerOpen(false);
-      applyScanResult(result);
+      applyScanResult(result, code);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       setScannerOpen(false);
@@ -391,10 +446,20 @@ export function AddFoodSheet({
   const currentNevo = (): number[] | undefined =>
     nevoSource && matchesNevo(draftPer100(), nevoSource.per100) ? nevoSource.codes : undefined;
 
+  /** Keeps a food in "your foods" — not a servings entry of a recipe
+   *  (logRecipe names it after the recipe), which isn't a food. */
+  const remember = (food: MealIngredient, foodBarcode?: string) => {
+    if (recipes.some((r) => nameKey(r.name) === nameKey(food.name))) return;
+    rememberFood(food, foodBarcode);
+  };
+
   const persistEdits = () => {
     if (!canSave) return false;
     const per100Value = draftPer100();
     const nevo = currentNevo();
+    // Unedited NEVO values stay NEVO's: the NEVO search already finds them.
+    if (!nevo)
+      remember({ name: name.trim(), grams: gramsNum, per100: per100Value }, barcode ?? undefined);
     if (onIngredientCaptured) {
       onIngredientCaptured({
         name: name.trim(),
@@ -521,6 +586,15 @@ export function AddFoodSheet({
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
                     onToggleFavorite={toggleFavoriteFood}
+                    removable={(food) =>
+                      !favoriteKeys.has(nameKey(food.name)) && libraryKeys.has(myFoodKey(food))
+                    }
+                    editing={editingMine}
+                    onToggleEdit={() => setEditingMine((v) => !v)}
+                    onRemove={(food) => {
+                      haptic(15);
+                      forgetFood(myFoodKey(food));
+                    }}
                   />
                 ) : null}
                 {nevoMatches.length ? (
@@ -875,6 +949,8 @@ export function AddFoodSheet({
   );
 }
 
+/** Favourite, recent or search-result foods. With `onRemove`, an "Edit"
+ *  toggle swaps the "+" of each `removable` row for a remove button. */
 function FoodList({
   title,
   foods,
@@ -882,25 +958,45 @@ function FoodList({
   onOpen,
   onQuickAdd,
   onToggleFavorite,
+  removable,
+  editing = false,
+  onToggleEdit,
+  onRemove,
 }: {
   title: string;
-  foods: MealIngredient[];
+  foods: ListFood[];
   favoriteKeys: Set<string>;
-  onOpen: (food: MealIngredient) => void;
-  onQuickAdd: (food: MealIngredient) => void;
+  onOpen: (food: ListFood) => void;
+  onQuickAdd: (food: ListFood) => void;
   onToggleFavorite: (food: MealIngredient) => void;
+  removable?: (food: ListFood) => boolean;
+  editing?: boolean;
+  onToggleEdit?: () => void;
+  onRemove?: (food: ListFood) => void;
 }) {
   const t = useTranslation();
+  const canEdit = !!onRemove && !!removable && foods.some(removable);
   return (
     <div>
-      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{title}</p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[13px] font-semibold text-muted-foreground">{title}</p>
+        {canEdit ? (
+          <button
+            onClick={onToggleEdit}
+            className="rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
+          >
+            {editing ? t.common.done : t.common.edit}
+          </button>
+        ) : null}
+      </div>
       <div className="space-y-2">
         {foods.map((food) => {
           const m = scaledMacros(food);
           const starred = favoriteKeys.has(food.name.trim().toLowerCase());
+          const removing = editing && canEdit && removable!(food);
           return (
             <div
-              key={food.name}
+              key={myFoodKey(food)}
               className="glass flex items-center gap-1 rounded-2xl py-1 pl-4 pr-1"
             >
               <button
@@ -925,14 +1021,24 @@ function FoodList({
               >
                 <Star className="size-4" fill={starred ? "currentColor" : "none"} />
               </button>
-              <button
-                onClick={() => onQuickAdd(food)}
-                aria-label={t.addFood.quickAdd(food.name, food.grams)}
-                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
-              >
-                <HapticSwitch />
-                <Plus className="size-5" />
-              </button>
+              {removing ? (
+                <button
+                  onClick={() => onRemove!(food)}
+                  aria-label={t.addFood.forgetFood(food.name)}
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive active:scale-90"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => onQuickAdd(food)}
+                  aria-label={t.addFood.quickAdd(food.name, food.grams)}
+                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+                >
+                  <HapticSwitch />
+                  <Plus className="size-5" />
+                </button>
+              )}
             </div>
           );
         })}

@@ -71,6 +71,7 @@ import {
   type Session,
 } from "./auth";
 import { deleteRouteMap } from "./routeMapStore";
+import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso } from "./watch";
 
 interface GymState {
@@ -139,6 +140,8 @@ interface GymState {
   mealTemplates: MealTemplate[];
   /** Starred foods for one-tap logging (name, usual portion, per-100g). */
   favoriteFoods: MealIngredient[];
+  /** Foods you scanned or entered yourself, kept for search — myFoods.ts. */
+  myFoods: MyFood[];
   /** A note per exercise id ("seat on 4", "narrow grip"), shown every time
    *  that exercise comes up in a workout. */
   exerciseNotes: Record<string, string>;
@@ -190,6 +193,7 @@ const initialState: GymState = {
   nutritionProfile: null,
   mealTemplates: [],
   favoriteFoods: [],
+  myFoods: [],
   exerciseNotes: {},
   workoutTemplates: [],
   recipes: [],
@@ -278,7 +282,7 @@ function migrate(raw: Partial<GymState>): GymState {
       : null;
 
   const profiles = (raw.profiles?.length ? raw.profiles : DEFAULT_PROFILES).map(fixProfile);
-  return {
+  const state: GymState = {
     ...initialState,
     ...raw,
     unit: "kg",
@@ -325,6 +329,12 @@ function migrate(raw: Partial<GymState>): GymState {
       profiles.find((p) => p.id === raw.activeProfileId)?.id ?? profiles[0]?.id ?? "full-gym",
     workouts: (raw.workouts ?? []).map((w) => fixWorkout(w)!),
     activeWorkout: fixWorkout(raw.activeWorkout ?? null),
+  };
+  // "Your foods" arrived after the food log: start it from what's already
+  // been logged, so older foods are searchable straight away.
+  return {
+    ...state,
+    myFoods: raw.myFoods ?? backfillMyFoods(state.foodEntries, state.mealTemplates, state.recipes),
   };
 }
 
@@ -410,6 +420,10 @@ interface Ctx extends GymState {
   saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
   /** Stars or un-stars a food, matched by name (case-insensitive). */
   toggleFavoriteFood: (food: MealIngredient) => void;
+  /** Adds a scanned or typed-in food to "your foods", or updates it. */
+  rememberFood: (food: MealIngredient, barcode?: string) => void;
+  /** Removes a food from "your foods" by myFoodKey; the log is untouched. */
+  forgetFood: (key: string) => void;
   /** Sets an exercise's note; blank removes it. */
   setExerciseNote: (exerciseId: string, note: string) => void;
   deleteMealTemplate: (id: string) => void;
@@ -1109,9 +1123,25 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ...s,
             favoriteFoods: has
               ? s.favoriteFoods.filter((f) => f.name.trim().toLowerCase() !== key)
-              : [{ ...food, name: food.name.trim() }, ...s.favoriteFoods],
+              : [
+                  // Only the food itself: a row from "your foods" also
+                  // carries its barcode and usage counts.
+                  {
+                    name: food.name.trim(),
+                    grams: food.grams,
+                    per100: food.per100,
+                    ...(food.nevo ? { nevo: food.nevo } : {}),
+                  },
+                  ...s.favoriteFoods,
+                ],
           };
         }),
+      rememberFood: (food, barcode) =>
+        setState((s) => ({
+          ...s,
+          myFoods: upsertMyFood(s.myFoods, food, barcode, new Date().toISOString()),
+        })),
+      forgetFood: (key) => setState((s) => ({ ...s, myFoods: removeMyFood(s.myFoods, key) })),
       saveMealTemplate: (name, ingredients) =>
         setState((s) => ({
           ...s,
