@@ -749,3 +749,41 @@
     animation: none !important;
   }
 }
+
+/* Muscle map: a selected panel pops in (AnatomyMap.tsx). */
+@keyframes muscle-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.045);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.muscle-pop {
+  animation: muscle-pop 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .muscle-pop {
+    animation: none;
+  }
+}
+
+/* Muscle map figure (AnatomyMap.tsx), derived from the page colours so it
+   follows the theme and the accent. Dark: lit from above on a black page;
+   light: soft grey tiles on off-white. */
+:root {
+  --map-body: color-mix(in oklch, var(--foreground) 20%, var(--background));
+  --map-panel: color-mix(in oklch, var(--foreground) 29%, var(--background));
+  --map-panel-hi: color-mix(in oklch, var(--foreground) 38%, var(--background));
+  --map-rim: color-mix(in oklch, var(--foreground) 18%, transparent);
+  --map-on-rim: color-mix(in oklch, var(--primary) 60%, white);
+}
+.light {
+  --map-body: color-mix(in oklch, var(--foreground) 3%, var(--background));
+  --map-panel: color-mix(in oklch, var(--foreground) 12%, var(--background));
+  --map-panel-hi: color-mix(in oklch, var(--foreground) 5%, var(--background));
+  --map-rim: color-mix(in oklch, var(--foreground) 16%, transparent);
+}

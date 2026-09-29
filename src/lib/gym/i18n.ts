@@ -663,6 +663,16 @@ const en = {
     scannedFoodFallback: "Scanned food",
     addToLog: "Add to log",
   },
+  muscleMap: {
+    front: "Front",
+    back: "Back",
+    mapLabel: (view: string) => `Muscle map, ${view}`,
+    tapHint: "Tap the map to pick muscles",
+    allMuscles: "All muscles",
+    hideList: "Hide list",
+    removeMuscle: (label: string) => `Remove ${label}`,
+    suggestedLegend: "Hatched = suggested pairing",
+  },
   barcodeScanner: {
     title: "Scan food label or barcode",
     aim: "Point at the barcode — it's read automatically.",
@@ -1665,6 +1675,16 @@ const nl: Dict = {
       `Kon die streepjescode niet opzoeken — probeer opnieuw, fotografeer het label, of voer het handmatig in. (${detail})`,
     scannedFoodFallback: "Gescand voedsel",
     addToLog: "Toevoegen aan logboek",
+  },
+  muscleMap: {
+    front: "Voorkant",
+    back: "Achterkant",
+    mapLabel: (view: string) => `Spierkaart, ${view}`,
+    tapHint: "Tik op de kaart om spieren te kiezen",
+    allMuscles: "Alle spieren",
+    hideList: "Lijst verbergen",
+    removeMuscle: (label: string) => `${label} verwijderen`,
+    suggestedLegend: "Gearceerd = voorgestelde combinatie",
   },
   barcodeScanner: {
     title: "Voedingslabel of streepjescode scannen",

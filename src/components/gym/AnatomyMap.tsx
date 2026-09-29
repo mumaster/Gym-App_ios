@@ -1,110 +1,106 @@
-import { REGIONS, type RegionId } from "../../lib/gym/anatomy";
+import { useState } from "react";
+import { X } from "lucide-react";
+import { useTranslation } from "../../lib/gym/i18n";
+import { REGIONS, regionById, type RegionId } from "../../lib/gym/anatomy";
 
 /** Distinct hue used for pairing suggestions (map highlight + popup border). */
 export const SUGGESTED_COLOR = "oklch(0.85 0.18 90)";
 
-type Shape =
-  | { kind: "ellipse"; cx: number; cy: number; rx: number; ry: number; rotate?: number }
-  | { kind: "rect"; x: number; y: number; w: number; h: number; r: number }
-  | { kind: "path"; d: string };
+/*
+ * The figure is drawn once for the viewer's left half (x < 100) and mirrored
+ * for the right, so every muscle is a pair of panels that select together.
+ * The viewBox is 200 × 430: about 7.5 heads tall with the legs at half the
+ * height and the arms held away from the body, so each limb is its own shape.
+ * Panels follow the muscles and are separated by thin gaps, like frosted
+ * tiles, instead of floating ellipses on a block.
+ */
+type Paths = Partial<Record<RegionId, string[]>>;
 
-const SHAPES: Record<RegionId, Shape[]> = {
-  shoulders: [
-    { kind: "ellipse", cx: 63, cy: 74, rx: 15, ry: 12, rotate: -20 },
-    { kind: "ellipse", cx: 137, cy: 74, rx: 15, ry: 12, rotate: 20 },
-  ],
-  chest: [
-    { kind: "path", d: "M98 80 h-14 q-8 2 -7 12 q2 10 12 12 q7 1 9 -4 z" },
-    { kind: "path", d: "M102 80 h14 q8 2 7 12 q-2 10 -12 12 q-7 1 -9 -4 z" },
-  ],
-  biceps: [
-    { kind: "ellipse", cx: 57, cy: 105, rx: 10, ry: 19, rotate: -8 },
-    { kind: "ellipse", cx: 143, cy: 105, rx: 10, ry: 19, rotate: 8 },
-  ],
-  forearms: [
-    { kind: "ellipse", cx: 50, cy: 148, rx: 8, ry: 22, rotate: -6 },
-    { kind: "ellipse", cx: 150, cy: 148, rx: 8, ry: 22, rotate: 6 },
-  ],
-  core: [{ kind: "rect", x: 86, y: 110, w: 28, h: 44, r: 11 }],
-  hips: [{ kind: "path", d: "M80 158 q20 12 40 0 v8 q-20 14 -40 0 z" }],
-  quads: [
-    { kind: "ellipse", cx: 88, cy: 202, rx: 13, ry: 30 },
-    { kind: "ellipse", cx: 112, cy: 202, rx: 13, ry: 30 },
-  ],
-  lats: [{ kind: "path", d: "M80 78 q20 6 40 0 l6 30 q-6 12 -26 14 q-20 -2 -26 -14 z" }],
-  lower_back: [{ kind: "rect", x: 87, y: 126, w: 26, h: 26, r: 9 }],
-  triceps: [
-    { kind: "ellipse", cx: 57, cy: 105, rx: 10, ry: 19, rotate: -8 },
-    { kind: "ellipse", cx: 143, cy: 105, rx: 10, ry: 19, rotate: 8 },
-  ],
-  glutes: [
-    { kind: "ellipse", cx: 89, cy: 165, rx: 14, ry: 13 },
-    { kind: "ellipse", cx: 111, cy: 165, rx: 14, ry: 13 },
-  ],
-  hamstrings: [
-    { kind: "ellipse", cx: 88, cy: 206, rx: 13, ry: 28 },
-    { kind: "ellipse", cx: 112, cy: 206, rx: 13, ry: 28 },
-  ],
-  calves: [
-    { kind: "ellipse", cx: 88, cy: 268, rx: 10, ry: 22 },
-    { kind: "ellipse", cx: 112, cy: 268, rx: 10, ry: 22 },
-  ],
+const SHOULDER =
+  "M76 63 C66 60 55 63 49 72 C45 80 45 92 48 101 C55 100 61 95 65 88 C69 80 73 71 76 63 Z";
+const ARM_UPPER =
+  "M47 104 C43 116 39 128 37 141 L50 144 C54 130 58 118 62 104 C56 105 51 105 47 104 Z";
+const FOREARM = "M36 148 C33 164 30 182 28 199 L39 201 C43 186 48 168 51 150 Z";
+const CALF_FRONT = "M72 300 C68 326 69 358 75 392 L88 392 C92 358 94 326 92 300 Z";
+
+const FRONT: Paths = {
+  shoulders: [SHOULDER],
+  chest: ["M99 73 C91 69 80 69 72 75 C68 84 68 98 74 107 C82 113 93 113 99 108 Z"],
+  biceps: [ARM_UPPER],
+  forearms: [FOREARM],
+  core: ["M99 114 C90 114 82 116 77 122 C75 138 77 154 81 168 C87 172 93 173 99 173 Z"],
+  hips: ["M99 178 C90 178 80 176 73 171 C70 180 70 192 76 203 C84 208 92 210 99 211 Z"],
+  quads: ["M73 209 C68 234 66 264 71 293 L93 293 C98 264 99 236 99 217 C90 216 80 214 73 209 Z"],
+  calves: [CALF_FRONT],
 };
 
-function ShapeNode({ shape }: { shape: Shape }) {
-  if (shape.kind === "ellipse") {
-    return (
-      <ellipse
-        cx={shape.cx}
-        cy={shape.cy}
-        rx={shape.rx}
-        ry={shape.ry}
-        transform={shape.rotate ? `rotate(${shape.rotate} ${shape.cx} ${shape.cy})` : undefined}
-      />
-    );
-  }
-  if (shape.kind === "rect") {
-    return <rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={shape.r} />;
-  }
-  return <path d={shape.d} />;
-}
+// Rear delts and forearms exist on the back too. They map to the same muscle
+// groups as on the front, so they toggle the same region.
+const BACK: Paths = {
+  shoulders: [SHOULDER],
+  lats: ["M99 60 C89 60 78 64 68 72 C64 90 68 116 78 134 C86 142 94 144 99 144 Z"],
+  triceps: [ARM_UPPER],
+  forearms: [FOREARM],
+  lower_back: ["M99 149 C90 149 83 150 79 154 C79 164 84 173 99 176 Z"],
+  glutes: ["M99 181 C88 179 76 181 72 193 C69 207 75 219 87 221 C95 221 99 217 99 210 Z"],
+  hamstrings: [
+    "M73 227 C68 248 67 272 71 293 L93 293 C98 272 99 248 99 228 C90 230 80 230 73 227 Z",
+  ],
+  calves: ["M72 300 C67 322 69 354 76 390 L88 390 C93 354 95 322 92 300 Z"],
+};
 
-/** Non-interactive body silhouette drawn under the muscle regions. */
-function Silhouette() {
+const PATHS = { front: FRONT, back: BACK } as const;
+
+/** Trapezius at the base of the neck: drawn, not selectable. */
+const TRAPS = "M99 60 C90 60 80 63 72 68 C74 74 84 72 99 74 Z";
+
+/** Body silhouette pieces for the left half (torso, arm, leg). */
+const SILHOUETTE_HALF = [
+  "M100 57 C86 57 70 61 60 70 C52 75 47 85 47 99 L51 126 C55 146 60 158 65 170 C63 182 65 196 69 205 L100 214 Z",
+  "M60 70 C50 72 43 82 43 98 C41 116 37 130 35 143 C32 161 28 181 25 201 C24 209 27 215 32 215 C38 215 41 209 43 201 C47 183 53 163 56 147 C59 131 63 115 65 100 Z",
+  "M68 203 C63 234 61 264 67 293 C63 322 63 358 69 394 L67 413 C74 419 88 419 92 411 L90 394 C96 358 98 322 94 293 C99 264 99 238 99 214 Z",
+];
+
+/** Faint ab lines, drawn on top of the core panel (front only). */
+const AB_LINES = [
+  "M88 130 C92 130 96 131 99 131",
+  "M86 145 C91 145 96 146 99 146",
+  "M84 159 C90 159 95 160 99 160",
+];
+
+/** A path for the left half plus its mirror image for the right half. */
+function Pair({ d, ...rest }: { d: string } & React.SVGProps<SVGPathElement>) {
   return (
-    <g
-      className="pointer-events-none stroke-border"
-      fill="url(#body-fill)"
-      strokeWidth={1.25}
-      style={{ filter: "drop-shadow(0 6px 10px oklch(0 0 0 / 35%))" }}
-    >
-      <circle cx={100} cy={34} r={19} />
-      <rect x={92} y={50} width={16} height={14} rx={6} />
-      <path d="M100 60 q26 2 34 20 l6 26 q4 26 -2 44 l-8 6 l-4 40 q-26 12 -52 0 l-4 -40 l-8 -6 q-6 -18 -2 -44 l6 -26 q8 -18 34 -20 z" />
-      <path d="M66 84 q-12 6 -14 22 l-6 44 q-2 12 4 16 q8 2 10 -10 l8 -40 z" />
-      <path d="M134 84 q12 6 14 22 l6 44 q2 12 -4 16 q-8 2 -10 -10 l-8 -40 z" />
-      <path d="M78 168 q22 16 44 0 l2 42 q-2 46 -8 76 l-2 24 q-10 4 -18 0 l-2 -78 l-2 78 q-8 4 -18 0 l-2 -24 q-6 -30 -8 -76 z" />
-    </g>
+    <>
+      <path d={d} {...rest} />
+      <path d={d} transform="translate(200 0) scale(-1 1)" {...rest} />
+    </>
   );
 }
 
-/** A soft blurred duplicate of a region's shapes, sitting behind it for a bloom effect. */
-function Glow({ regionIds, color }: { regionIds: RegionId[]; color: string }) {
-  if (!regionIds.length) return null;
-  return (
-    <g
-      className="pointer-events-none"
-      style={{ filter: "url(#soft-blur)" }}
-      fill={color}
-      opacity={0.4}
-    >
-      {regionIds.map((id) => (
-        <g key={id}>
-          {SHAPES[id]!.map((s, i) => (
-            <ShapeNode key={i} shape={s} />
-          ))}
-        </g>
+/** Body silhouette: a rim pass, then a fill pass that covers the seams. */
+function Silhouette() {
+  const parts = (
+    <>
+      {SILHOUETTE_HALF.map((d) => (
+        <Pair key={d} d={d} />
       ))}
+      <ellipse cx={100} cy={27} rx={13} ry={16.5} />
+      <rect x={92.5} y={40} width={15} height={22} rx={6} />
+    </>
+  );
+  return (
+    <g className="pointer-events-none">
+      <g
+        fill="var(--map-rim)"
+        stroke="var(--map-rim)"
+        strokeWidth={3.2}
+        strokeLinejoin="round"
+        style={{ filter: "drop-shadow(0 5px 8px oklch(0 0 0 / 28%))" }}
+      >
+        {parts}
+      </g>
+      <g fill="var(--map-body)">{parts}</g>
     </g>
   );
 }
@@ -120,63 +116,116 @@ function Body({
   suggested?: RegionId | null;
   onToggle: (id: RegionId) => void;
 }) {
-  const regions = REGIONS.filter((r) => r.view === view);
-  const activeIds = regions.filter((r) => selected.includes(r.id)).map((r) => r.id);
-  const hintedId = regions.find((r) => !selected.includes(r.id) && suggested === r.id)?.id;
+  const t = useTranslation();
+  const paths = PATHS[view];
+  const ids = Object.keys(paths) as RegionId[];
+  const label = view === "front" ? t.muscleMap.front : t.muscleMap.back;
 
   return (
     <div className="min-w-0 flex-1 rounded-3xl bg-gradient-to-b from-muted/45 to-muted/15 px-1.5 pb-2.5 pt-2 ring-1 ring-inset ring-border/60">
       <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
-        {view}
+        {label}
       </p>
       <svg
-        viewBox="0 0 200 320"
+        viewBox="0 0 200 430"
         role="group"
-        aria-label={`Muscle map, ${view} view`}
+        aria-label={t.muscleMap.mapLabel(label)}
         className="mx-auto mt-1 block h-auto w-full max-w-[190px]"
       >
-        <ellipse cx={100} cy={300} rx={62} ry={12} fill="url(#figure-glow)" />
-        <Glow regionIds={activeIds} color="var(--primary)" />
-        {hintedId ? <Glow regionIds={[hintedId]} color={SUGGESTED_COLOR} /> : null}
+        <ellipse cx={100} cy={420} rx={64} ry={8} fill="url(#map-floor)" />
+        {/* Bloom behind the selected panels. */}
+        <g
+          className="pointer-events-none"
+          style={{ filter: "url(#map-bloom)" }}
+          fill="var(--primary)"
+          opacity={0.45}
+        >
+          {ids
+            .filter((id) => selected.includes(id))
+            .flatMap((id) => paths[id]!.map((d) => <Pair key={id + d} d={d} />))}
+        </g>
         <Silhouette />
-        {regions.map((r) => {
-          const active = selected.includes(r.id);
-          const hinted = !active && suggested === r.id;
+        {view === "front" ? (
+          <g className="pointer-events-none" fill="var(--map-panel)" opacity={0.55}>
+            <Pair d={TRAPS} />
+          </g>
+        ) : null}
+        {/* Hit layer: a wide invisible stroke around every panel, drawn under
+            all the panels so it only catches taps in the gaps and just outside
+            the edges. A panel's own area always belongs to that panel. */}
+        <g aria-hidden>
+          {ids.map((id) => (
+            <g key={id} className="cursor-pointer" onClick={() => onToggle(id)}>
+              {paths[id]!.map((d) => (
+                <Pair
+                  key={d}
+                  d={d}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={10}
+                  style={{ pointerEvents: "stroke" }}
+                />
+              ))}
+            </g>
+          ))}
+        </g>
+        {ids.map((id) => {
+          const active = selected.includes(id);
+          const hinted = !active && suggested === id;
           return (
             <g
-              key={r.id}
+              key={id}
               role="checkbox"
               aria-checked={active}
-              aria-label={r.label}
+              aria-label={regionById(id).label}
               tabIndex={0}
-              onClick={() => onToggle(r.id)}
+              onClick={() => onToggle(id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onToggle(r.id);
+                  onToggle(id);
                 }
               }}
-              className={`origin-center cursor-pointer outline-none transition-[fill,stroke,filter,opacity] duration-200 ease-out active:scale-[0.94] ${hinted ? "animate-pulse" : ""}`}
-              style={{
-                fill: active
-                  ? "url(#muscle-active)"
-                  : hinted
-                    ? "url(#muscle-hint)"
-                    : "color-mix(in oklch, var(--foreground) 7%, transparent)",
-                stroke: active
-                  ? "var(--primary)"
-                  : hinted
-                    ? SUGGESTED_COLOR
-                    : "color-mix(in oklch, var(--foreground) 18%, transparent)",
-                strokeWidth: active || hinted ? 2.4 : 1,
-              }}
+              className={`cursor-pointer outline-none transition-opacity duration-150 active:opacity-70 focus-visible:[filter:drop-shadow(0_0_3px_var(--primary))] ${
+                active ? "muscle-pop" : ""
+              } ${hinted ? "animate-pulse" : ""}`}
+              style={{ transformBox: "fill-box", transformOrigin: "center" }}
             >
-              {SHAPES[r.id]!.map((s, i) => (
-                <ShapeNode key={i} shape={s} />
+              {paths[id]!.map((d) => (
+                <Pair
+                  key={d}
+                  d={d}
+                  strokeLinejoin="round"
+                  style={{
+                    fill: active ? "url(#map-on)" : hinted ? "url(#map-hint)" : "url(#map-idle)",
+                    stroke: active
+                      ? "var(--map-on-rim)"
+                      : hinted
+                        ? SUGGESTED_COLOR
+                        : "var(--map-rim)",
+                    strokeWidth: active || hinted ? 1.6 : 0.8,
+                    transition: "fill 200ms, stroke 200ms",
+                  }}
+                />
               ))}
             </g>
           );
         })}
+        {view === "front" ? (
+          <g
+            className="pointer-events-none"
+            fill="none"
+            stroke="var(--foreground)"
+            strokeOpacity={0.16}
+            strokeWidth={0.9}
+            strokeLinecap="round"
+          >
+            {AB_LINES.map((d) => (
+              <Pair key={d} d={d} />
+            ))}
+            <path d="M99 116 L99 172" />
+          </g>
+        ) : null}
       </svg>
     </div>
   );
@@ -192,8 +241,11 @@ export function AnatomyMap({
   suggested?: RegionId | null;
   onToggle: (id: RegionId) => void;
 }) {
-  const frontRegions = REGIONS.filter((r) => r.view === "front");
-  const backRegions = REGIONS.filter((r) => r.view === "back");
+  const t = useTranslation();
+  const [listOpen, setListOpen] = useState(false);
+  const chosen = REGIONS.filter((r) => selected.includes(r.id));
+  const suggestedHere =
+    suggested && !selected.includes(suggested) && (suggested in FRONT || suggested in BACK);
 
   const chip = (r: (typeof REGIONS)[number]) => {
     const active = selected.includes(r.id);
@@ -201,6 +253,7 @@ export function AnatomyMap({
       <button
         key={r.id}
         onClick={() => onToggle(r.id)}
+        aria-pressed={active}
         className={`min-h-[34px] rounded-full px-3.5 text-[12.5px] font-semibold transition-colors active:scale-95 ${
           active
             ? "bg-primary text-primary-foreground shadow-[0_0_14px_-3px_var(--primary)]"
@@ -216,30 +269,33 @@ export function AnatomyMap({
     <div>
       <svg width={0} height={0} className="absolute" aria-hidden>
         <defs>
-          <filter id="soft-blur" x="-60%" y="-60%" width="220%" height="220%">
+          <filter id="map-bloom" x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="5" />
           </filter>
-          <linearGradient id="body-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--foreground)" stopOpacity="0.16" />
-            <stop offset="100%" stopColor="var(--foreground)" stopOpacity="0.06" />
-          </linearGradient>
-          <radialGradient id="figure-glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="var(--foreground)" stopOpacity="0.16" />
+          <radialGradient id="map-floor" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="var(--foreground)" stopOpacity="0.14" />
             <stop offset="100%" stopColor="var(--foreground)" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="muscle-active" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.55" />
+          <linearGradient id="map-idle" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style={{ stopColor: "var(--map-panel-hi)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--map-panel)" }} />
+          </linearGradient>
+          <linearGradient id="map-on" x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0%"
+              style={{ stopColor: "color-mix(in oklch, var(--primary) 70%, white)" }}
+            />
+            <stop offset="100%" style={{ stopColor: "var(--primary)" }} />
           </linearGradient>
           <pattern
-            id="muscle-hint"
-            width="7"
-            height="7"
+            id="map-hint"
+            width="6"
+            height="6"
             patternUnits="userSpaceOnUse"
             patternTransform="rotate(45)"
           >
-            <rect width="7" height="7" fill="var(--secondary)" />
-            <rect width="3" height="7" fill={SUGGESTED_COLOR} fillOpacity="0.75" />
+            <rect width="6" height="6" fill="var(--map-panel)" />
+            <rect width="2.6" height="6" fill={SUGGESTED_COLOR} fillOpacity="0.85" />
           </pattern>
         </defs>
       </svg>
@@ -253,14 +309,43 @@ export function AnatomyMap({
         <Body view="back" selected={selected} suggested={suggested ?? null} onToggle={onToggle} />
       </div>
 
-      <div className="mt-4 space-y-2">
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {frontRegions.map(chip)}
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {backRegions.map(chip)}
-        </div>
+      {suggestedHere ? (
+        <p className="mt-2 text-center text-[12px] text-muted-foreground">
+          {t.muscleMap.suggestedLegend}
+        </p>
+      ) : null}
+
+      {/* What's selected, as removable chips; the full list is one tap away. */}
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+        {chosen.length ? (
+          chosen.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => onToggle(r.id)}
+              aria-label={t.muscleMap.removeMuscle(r.label)}
+              className="flex min-h-[34px] items-center gap-1 rounded-full bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground shadow-[0_0_14px_-3px_var(--primary)] active:scale-95"
+            >
+              {r.label}
+              <X className="size-3.5 opacity-70" strokeWidth={3} />
+            </button>
+          ))
+        ) : (
+          <p className="text-[12.5px] text-muted-foreground">{t.muscleMap.tapHint}</p>
+        )}
+        <button
+          onClick={() => setListOpen((v) => !v)}
+          aria-expanded={listOpen}
+          className="min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
+        >
+          {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
+        </button>
       </div>
+
+      {listOpen ? (
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+          {REGIONS.map(chip)}
+        </div>
+      ) : null}
     </div>
   );
 }
