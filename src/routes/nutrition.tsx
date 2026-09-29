@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  BookmarkPlus,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +24,7 @@ import {
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
+  ingredientsFromEntries,
   MEAL_ORDER,
   NUTRIENT_ORDER,
   nutrientStatus,
@@ -33,6 +35,7 @@ import {
   WATER_QUICK_ADD,
   type FoodEntry,
   type Macros,
+  type MealIngredient,
   type MealType,
   type NutrientStatus,
   type NutritionGoals,
@@ -94,6 +97,12 @@ function NutritionScreen() {
   const [foodSheet, setFoodSheet] = useState<{ meal?: MealType } | FoodEntry | null>(null);
   const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
   const [createMealOpen, setCreateMealOpen] = useState(false);
+  /** Foods pre-filled into the meal builder (a logged meal saved as a meal). */
+  const [mealSeed, setMealSeed] = useState<{
+    name: string;
+    ingredients: MealIngredient[];
+    meal: MealType;
+  } | null>(null);
   const [createRecipeOpen, setCreateRecipeOpen] = useState(false);
   const [waterGoalEditing, setWaterGoalEditing] = useState(false);
   const [waterGoalDraft, setWaterGoalDraft] = useState("");
@@ -223,6 +232,17 @@ function NutritionScreen() {
               proteinTarget={proteinTarget}
               canAdd={isToday}
               onAdd={() => openAdd(meal)}
+              onSaveAsMeal={() => {
+                haptic(15);
+                setMealSeed({
+                  name: t.mealTypes[meal],
+                  meal,
+                  ingredients: ingredientsFromEntries(
+                    selectedEntries.filter((e) => e.meal === meal),
+                  ),
+                });
+                setCreateMealOpen(true);
+              }}
               onEdit={(entry) => {
                 haptic(12);
                 setFoodSheet(entry);
@@ -353,6 +373,7 @@ function NutritionScreen() {
         onClose={() => setFoodSheet(null)}
         onCreateMeal={() => {
           setFoodSheet(null);
+          setMealSeed(null);
           setCreateMealOpen(true);
         }}
         onCreateRecipe={() => {
@@ -361,7 +382,15 @@ function NutritionScreen() {
         }}
       />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
-      <CreateMealSheet open={createMealOpen} onClose={() => setCreateMealOpen(false)} />
+      <CreateMealSheet
+        open={createMealOpen}
+        seed={mealSeed}
+        day={selectedKey}
+        onClose={() => {
+          setCreateMealOpen(false);
+          setMealSeed(null);
+        }}
+      />
       <CreateRecipeSheet open={createRecipeOpen} onClose={() => setCreateRecipeOpen(false)} />
     </Screen>
   );
@@ -630,6 +659,7 @@ function MealGroup({
   proteinTarget,
   canAdd,
   onAdd,
+  onSaveAsMeal,
   onEdit,
   onDelete,
 }: {
@@ -638,6 +668,7 @@ function MealGroup({
   proteinTarget: number | null;
   canAdd: boolean;
   onAdd: () => void;
+  onSaveAsMeal: () => void;
   onEdit: (entry: FoodEntry) => void;
   onDelete: (entry: FoodEntry) => void;
 }) {
@@ -666,6 +697,16 @@ function MealGroup({
                 </span>
               ) : null}
             </p>
+          ) : null}
+          {entries.length ? (
+            <button
+              onClick={onSaveAsMeal}
+              aria-label={t.nutrition.saveAsMeal(t.mealTypes[meal])}
+              className="relative flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+            >
+              <HapticSwitch />
+              <BookmarkPlus className="size-4" />
+            </button>
           ) : null}
           {canAdd ? (
             <button

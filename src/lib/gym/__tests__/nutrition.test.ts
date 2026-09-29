@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ingredientsFromEntries,
   PROTEIN_PER_MEAL_G_PER_KG,
   proteinPerMealTarget,
   weeklyAverage,
@@ -155,5 +156,25 @@ describe("weekly calorie average", () => {
   it("has no goal when a counted day has none", () => {
     const noGoal = { key: "2026-09-21", calories: 2000, goal: undefined, logged: true };
     expect(weeklyAverage([noGoal], "2026-09-24")?.goal).toBeNull();
+  });
+});
+
+describe("ingredientsFromEntries", () => {
+  const per100 = { calories: 100, protein: 10, carbs: 5, fat: 2, fiber: 1, salt: 0.1 };
+  const base = { id: "a", logged_at: "2026-09-29T12:00:00.000Z", meal: "lunch" as const };
+
+  it("keeps name, portion and values, and drops ids and times", () => {
+    const [ing] = ingredientsFromEntries([{ ...base, name: "Rice", grams: 150, per100 }]);
+    expect(ing).toEqual({ name: "Rice", grams: 150, per100 });
+  });
+
+  it("carries the NEVO mark and copies rather than shares it", () => {
+    const entry = { ...base, name: "Banana", grams: 120, per100, nevo: [151] };
+    const ing = ingredientsFromEntries([entry])[0]!;
+    expect(ing.nevo).toEqual([151]);
+    ing.nevo!.push(1);
+    ing.per100.calories = 0;
+    expect(entry.nevo).toEqual([151]);
+    expect(entry.per100.calories).toBe(100);
   });
 });

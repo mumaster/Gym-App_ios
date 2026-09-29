@@ -431,6 +431,17 @@ export function entriesForDay<T extends { logged_at: string }>(entries: T[], key
   return entries.filter((e) => dayKey(e.logged_at) === key);
 }
 
+/** Logged foods as saved-meal ingredients (same name, portion and values;
+ *  the NEVO mark travels along, see FoodEntry.nevo). */
+export function ingredientsFromEntries(entries: FoodEntry[]): MealIngredient[] {
+  return entries.map((e) => ({
+    name: e.name,
+    grams: e.grams,
+    per100: { ...e.per100 },
+    ...(e.nevo?.length ? { nevo: [...e.nevo] } : {}),
+  }));
+}
+
 export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macros {
   return entries.reduce<Macros>(
     (acc, e) => {

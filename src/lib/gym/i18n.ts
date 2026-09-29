@@ -525,6 +525,7 @@ const en = {
     kcalLeft: (n: string) => `${n} left`,
     kcalOver: (n: string) => `${n} over`,
     addToMeal: (meal: string) => `Add food to ${meal}`,
+    saveAsMeal: (meal: string) => `Save ${meal} as a meal`,
     nothingInMeal: "Nothing yet",
     proteinOk: (g: number, target: number) =>
       `${g} g protein — at least the ${target} g per meal that builds muscle best`,
@@ -715,6 +716,8 @@ const en = {
     ingredientsEmpty: "Add each ingredient — scan its label or enter it manually.",
     removeIngredient: (name: string) => `Remove ${name}`,
     addIngredient: "Add ingredient",
+    fromLogged: "Add everything from a logged meal",
+    addAllFrom: (meal: string, n: number) => `Add all ${n} foods from ${meal}`,
     wholeMeal: "Whole meal",
     macroSummary: (c: number, p: number, cb: number, f: number, fi: number, s: number) =>
       `${c} kcal · ${p}g protein · ${cb}g carbs · ${f}g fat · ${fi}g fiber · ${s}g salt`,
@@ -1538,6 +1541,7 @@ const nl: Dict = {
     kcalLeft: (n: string) => `${n} over`,
     kcalOver: (n: string) => `${n} te veel`,
     addToMeal: (meal: string) => `Voeding toevoegen aan ${meal}`,
+    saveAsMeal: (meal: string) => `${meal} opslaan als maaltijd`,
     nothingInMeal: "Nog niets",
     proteinOk: (g: number, target: number) =>
       `${g} g eiwit — minstens de ${target} g per maaltijd die spieropbouw het best helpt`,
@@ -1732,6 +1736,8 @@ const nl: Dict = {
     ingredientsEmpty: "Voeg elk ingrediënt toe — scan het label of voer het handmatig in.",
     removeIngredient: (name: string) => `${name} verwijderen`,
     addIngredient: "Ingrediënt toevoegen",
+    fromLogged: "Voeg alles toe uit een gelogde maaltijd",
+    addAllFrom: (meal: string, n: number) => `Voeg alle ${n} producten uit ${meal} toe`,
     wholeMeal: "Hele maaltijd",
     macroSummary: (c: number, p: number, cb: number, f: number, fi: number, s: number) =>
       `${c} kcal · ${p}g eiwit · ${cb}g koolh. · ${f}g vet · ${fi}g vezels · ${s}g zout`,

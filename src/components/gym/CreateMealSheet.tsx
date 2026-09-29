@@ -1,24 +1,79 @@
-import { useMemo, useState } from "react";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ListPlus, Plus, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
 import { useTranslation } from "../../lib/gym/i18n";
-import { dailyTotals, scaledMacros, type MealIngredient } from "../../lib/gym/nutrition";
+import { dayKeyFromDate } from "../../lib/gym/date";
+import {
+  dailyTotals,
+  entriesForDay,
+  ingredientsFromEntries,
+  MEAL_ORDER,
+  scaledMacros,
+  type MealIngredient,
+  type MealType,
+} from "../../lib/gym/nutrition";
 import { selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
-export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { saveMealTemplate } = useGym();
+/**
+ * `seed` pre-fills the builder when it opens (e.g. every food logged under
+ * Lunch); `day` is the day whose logged meals the "Add from a logged meal"
+ * chips read from (today when omitted).
+ */
+export function CreateMealSheet({
+  open,
+  onClose,
+  seed,
+  day,
+}: {
+  open: boolean;
+  onClose: () => void;
+  seed?: { name: string; ingredients: MealIngredient[]; meal?: MealType } | null;
+  day?: string;
+}) {
+  const { saveMealTemplate, foodEntries } = useGym();
   const t = useTranslation();
   const [name, setName] = useState("");
   const [ingredients, setIngredients] = useState<MealIngredient[]>([]);
   const [addingIngredient, setAddingIngredient] = useState(false);
+  /** Logged meals already pulled in, so a second tap can't add them twice. */
+  const [imported, setImported] = useState<MealType[]>([]);
 
   const reset = () => {
     setName("");
     setIngredients([]);
     setAddingIngredient(false);
+    setImported([]);
+  };
+
+  // Apply the seed each time the sheet opens (the component stays mounted).
+  const seedRef = useRef(seed);
+  seedRef.current = seed;
+  useEffect(() => {
+    if (!open) return;
+    const s = seedRef.current;
+    if (!s) return;
+    setName(s.name);
+    setIngredients(s.ingredients);
+    setImported(s.meal ? [s.meal] : []);
+  }, [open]);
+
+  const dayEntries = useMemo(
+    () => entriesForDay(foodEntries, day ?? dayKeyFromDate(new Date())),
+    [foodEntries, day],
+  );
+  const loggedMeals = MEAL_ORDER.map((meal) => ({
+    meal,
+    entries: dayEntries.filter((e) => e.meal === meal),
+  })).filter((m) => m.entries.length > 0);
+
+  const importMeal = (meal: MealType, entries: typeof dayEntries) => {
+    haptic(15);
+    setIngredients((cur) => [...cur, ...ingredientsFromEntries(entries)]);
+    setImported((cur) => [...cur, meal]);
+    setName((cur) => (cur.trim() ? cur : t.mealTypes[meal]));
   };
 
   const totals = useMemo(() => dailyTotals(ingredients), [ingredients]);
@@ -102,6 +157,38 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
               </div>
             )}
           </div>
+
+          {loggedMeals.length > 0 ? (
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                {t.createMeal.fromLogged}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {loggedMeals.map(({ meal, entries }) => {
+                  const done = imported.includes(meal);
+                  return (
+                    <button
+                      key={meal}
+                      disabled={done}
+                      onClick={() => importMeal(meal, entries)}
+                      aria-label={t.createMeal.addAllFrom(t.mealTypes[meal], entries.length)}
+                      className={`relative flex min-h-[44px] items-center gap-2 rounded-full px-4 text-[14px] font-semibold active:scale-95 ${
+                        done
+                          ? "bg-secondary text-muted-foreground"
+                          : "bg-primary/15 text-foreground"
+                      }`}
+                    >
+                      {done ? <Check className="size-4" /> : <ListPlus className="size-4" />}
+                      {t.mealTypes[meal]}
+                      <span className="tabular text-[12px] text-muted-foreground">
+                        {entries.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           <button
             onClick={() => {
