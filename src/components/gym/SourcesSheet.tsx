@@ -25,6 +25,13 @@ export function SourcesSheet({ open, onClose }: { open: boolean; onClose: () => 
                     {ref}
                   </p>
                 ))}
+                {/* The reference RIVM's conditions of use prescribe for
+                    output based on NEVO data (see nevoFoods.ts). */}
+                {s.id === "foodComposition" ? (
+                  <p className="mt-1 text-[12.5px] italic leading-snug text-muted-foreground">
+                    {t.nutrition.nevoReference}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
