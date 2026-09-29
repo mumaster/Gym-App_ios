@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatWaterAmount,
+  parseWaterMl,
+  sanitizeWaterShortcuts,
   caffeineMg,
   CAFFEINE_DAILY_LIMIT_MG,
   COFFEE_CAFFEINE_MG,
@@ -205,5 +208,27 @@ describe("energySplit", () => {
 
   it("returns null without macros", () => {
     expect(energySplit({ protein: 0, carbs: 0, fat: 0 })).toBeNull();
+  });
+});
+
+describe("water shortcuts", () => {
+  it("parses a typed amount, rejecting empty, zero and over 3 L", () => {
+    expect(parseWaterMl("600")).toBe(600);
+    expect(parseWaterMl("330,5")).toBe(331);
+    expect(parseWaterMl("")).toBeNull();
+    expect(parseWaterMl("0")).toBeNull();
+    expect(parseWaterMl("6000")).toBeNull();
+  });
+
+  it("keeps usable saved shortcuts and falls back per slot", () => {
+    expect(sanitizeWaterShortcuts(undefined)).toEqual([250, 500, 750, 1000]);
+    expect(sanitizeWaterShortcuts([600, 330, 1500, 2000])).toEqual([600, 330, 1500, 2000]);
+    expect(sanitizeWaterShortcuts([600, -1, "x", 9000])).toEqual([600, 500, 750, 1000]);
+  });
+
+  it("prints ml under a litre and litres from 1000", () => {
+    expect(formatWaterAmount(600)).toBe("600ml");
+    expect(formatWaterAmount(1000)).toBe("1L");
+    expect(formatWaterAmount(1500)).toBe("1.5L");
   });
 });

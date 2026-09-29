@@ -23,6 +23,8 @@ import {
   type NutritionProfile,
   type Recipe,
   type WaterEntry,
+  WATER_QUICK_ADD,
+  sanitizeWaterShortcuts,
   type CoffeeEntry,
   type CoffeeKind,
 } from "./nutrition";
@@ -161,6 +163,9 @@ interface GymState {
   weightLog: WeightEntry[];
   /** Daily water target in ml, or null if the user hasn't set one. */
   waterGoalMl: number | null;
+  /** The four water quick-add amounts in ml, editable on /nutrition and
+   *  shared with Home's Water tile (see nutrition.ts's WATER_QUICK_ADD). */
+  waterQuickAdd: number[];
   /** Logged coffees, newest first (see nutrition.ts's CoffeeEntry). */
   coffeeEntries: CoffeeEntry[];
   /** Watch-recorded cardio (runs, walks, rides), newest first — see types.ts. */
@@ -209,6 +214,7 @@ const initialState: GymState = {
   waterEntries: [],
   weightLog: [],
   waterGoalMl: null,
+  waterQuickAdd: [...WATER_QUICK_ADD],
   coffeeEntries: [],
   cardioSessions: [],
 };
@@ -335,6 +341,7 @@ function migrate(raw: Partial<GymState>): GymState {
     waterEntries: raw.waterEntries ?? [],
     weightLog: raw.weightLog ?? [],
     waterGoalMl: raw.waterGoalMl ?? null,
+    waterQuickAdd: sanitizeWaterShortcuts(raw.waterQuickAdd),
     coffeeEntries: raw.coffeeEntries ?? [],
     cardioSessions: raw.cardioSessions ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({

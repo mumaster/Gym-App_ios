@@ -118,6 +118,32 @@ export interface WaterEntry {
  *  "quick add" means. */
 export const WATER_QUICK_ADD = [250, 500, 750, 1000];
 
+/** Largest single water amount the app accepts (a 3 L jug), so a typo like
+ *  "6000" for a 600 ml bottle can't log six litres. A UI bound, not a
+ *  nutrition number. */
+export const WATER_AMOUNT_MAX_ML = 3000;
+
+/** A typed water amount in ml, or null when it isn't a usable one. */
+export function parseWaterMl(text: string): number | null {
+  const ml = Math.round(Number(text.replace(",", ".")));
+  return Number.isFinite(ml) && ml > 0 && ml <= WATER_AMOUNT_MAX_ML ? ml : null;
+}
+
+/** The user's four water shortcuts (GymState.waterQuickAdd): each slot kept
+ *  when it's a usable amount, else that slot's default. */
+export function sanitizeWaterShortcuts(raw: unknown): number[] {
+  const list = Array.isArray(raw) ? raw : [];
+  return WATER_QUICK_ADD.map((fallback, i) => {
+    const v = list[i];
+    return typeof v === "number" && Number.isFinite(v) && v > 0 && v <= WATER_AMOUNT_MAX_ML
+      ? Math.round(v)
+      : fallback;
+  });
+}
+
+/** "600ml", "1L", "1.5L" — how a shortcut's amount is printed. */
+export const formatWaterAmount = (ml: number) => (ml >= 1000 ? formatLiters(ml) : `${ml}ml`);
+
 /**
  * Coffee, tracked by the cup like water, with an estimate of the caffeine.
  * Caffeine per drink is EFSA's (NDA Panel, Scientific opinion on the safety

@@ -21,7 +21,7 @@ import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
   NUTRIENT_ORDER,
-  WATER_QUICK_ADD,
+  formatWaterAmount,
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
@@ -649,6 +649,7 @@ function WaterTile({
   onOpen: () => void;
 }) {
   const t = useTranslation();
+  const { waterQuickAdd } = useGym();
   const pct = goalMl ? Math.min(100, (totalMl / goalMl) * 100) : 0;
   const active = totalMl > 0;
 
@@ -692,14 +693,14 @@ function WaterTile({
       </div>
 
       <div className="relative grid grid-cols-4 gap-1.5">
-        {WATER_QUICK_ADD.map((ml) => (
+        {waterQuickAdd.map((ml, i) => (
           <button
-            key={ml}
+            key={i}
             onClick={() => onAdd(ml)}
             aria-label={t.home.addWater(ml)}
             className="relative flex min-h-[36px] items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-foreground active:scale-95"
           >
-            <HapticSwitch />+{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
+            <HapticSwitch />+{formatWaterAmount(ml)}
           </button>
         ))}
       </div>

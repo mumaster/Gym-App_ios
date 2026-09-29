@@ -6,6 +6,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  RotateCcw,
   Coffee,
   Droplet,
   Plus,
@@ -39,7 +41,10 @@ import {
   scaledMacros,
   formatLiters,
   weeklyAverage,
+  WATER_AMOUNT_MAX_ML,
   WATER_QUICK_ADD,
+  formatWaterAmount,
+  parseWaterMl,
   type FoodEntry,
   type Macros,
   type MealIngredient,
@@ -323,26 +328,7 @@ function NutritionScreen() {
           </div>
         ) : null}
 
-        {isToday ? (
-          <div className="mt-4 grid grid-cols-4 gap-2">
-            {WATER_QUICK_ADD.map((ml) => (
-              <button
-                key={ml}
-                onClick={() => {
-                  haptic(15);
-                  logWater(ml);
-                }}
-                className="glass relative flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
-              >
-                <HapticSwitch />
-                <Droplet className="size-4 text-primary-text" />
-                <span className="text-[12px] font-semibold">
-                  +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
+        {isToday ? <WaterShortcuts onLog={logWater} /> : null}
       </Card>
 
       {selectedWaterEntries.length > 0 ? (
@@ -895,6 +881,150 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
           ))}
         </div>
       ) : null}
+    </>
+  );
+}
+
+/** The water quick-adds: four one-tap shortcuts (amounts the user can
+ *  change, shared with Home's Water tile), plus a field for a one-off
+ *  amount such as a 600 ml bottle. */
+function WaterShortcuts({ onLog }: { onLog: (ml: number) => void }) {
+  const t = useTranslation();
+  const { waterQuickAdd, update } = useGym();
+  const [custom, setCustom] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [drafts, setDrafts] = useState<string[]>([]);
+  const customMl = parseWaterMl(custom);
+  const draftMl = drafts.map(parseWaterMl);
+  const draftsValid = draftMl.every((ml) => ml != null);
+
+  const logCustom = () => {
+    if (customMl == null) return;
+    haptic(15);
+    onLog(customMl);
+    setCustom("");
+  };
+  const startEditing = () => {
+    haptic(12);
+    setDrafts(waterQuickAdd.map(String));
+    setEditing(true);
+  };
+  const saveShortcuts = () => {
+    if (!draftsValid) return;
+    haptic(15);
+    update({ waterQuickAdd: draftMl as number[] });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-4">
+        <p className="text-[12.5px] text-muted-foreground">{t.nutrition.waterShortcutsHint}</p>
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          {drafts.map((value, i) => (
+            <label
+              key={i}
+              className={`flex flex-col items-center gap-0.5 rounded-2xl px-1.5 py-2 ${
+                draftMl[i] == null ? "bg-destructive/10 ring-1 ring-destructive/50" : "bg-muted"
+              }`}
+            >
+              <span className="sr-only">{t.nutrition.waterShortcut(i + 1)}</span>
+              <input
+                inputMode="numeric"
+                type="text"
+                value={value}
+                onFocus={selectOnFocus}
+                onChange={(e) => {
+                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  const next = [...drafts];
+                  next[i] = e.target.value;
+                  setDrafts(next);
+                }}
+                className="tabular h-8 w-full min-w-0 bg-transparent text-center text-[16px] font-bold outline-none"
+              />
+              <span className="text-[11px] text-muted-foreground">ml</span>
+            </label>
+          ))}
+        </div>
+        {!draftsValid ? (
+          <p className="mt-1.5 text-[12px] text-destructive">
+            {t.nutrition.waterInvalid(WATER_AMOUNT_MAX_ML)}
+          </p>
+        ) : null}
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => {
+              haptic(10);
+              setDrafts(WATER_QUICK_ADD.map(String));
+            }}
+            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl bg-secondary px-4 text-[14px] font-semibold"
+          >
+            <RotateCcw className="size-4" /> {t.nutrition.waterResetShortcuts}
+          </button>
+          <button
+            onClick={saveShortcuts}
+            disabled={!draftsValid}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground disabled:opacity-40"
+          >
+            <Check className="size-4" /> {t.nutrition.waterSaveShortcuts}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {waterQuickAdd.map((ml, i) => (
+          <button
+            key={i}
+            onClick={() => {
+              haptic(15);
+              onLog(ml);
+            }}
+            className="glass relative flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
+          >
+            <HapticSwitch />
+            <Droplet className="size-4 text-primary-text" />
+            <span className="text-[12px] font-semibold">+{formatWaterAmount(ml)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
+          <span className="sr-only">{t.nutrition.waterOther}</span>
+          <input
+            inputMode="numeric"
+            type="text"
+            value={custom}
+            onFocus={selectOnFocus}
+            onChange={(e) => {
+              if (DECIMAL_INPUT_RE.test(e.target.value)) setCustom(e.target.value);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && logCustom()}
+            placeholder={t.nutrition.waterOther}
+            className="tabular h-full w-full min-w-0 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground"
+          />
+          <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
+        </label>
+        <button
+          onClick={logCustom}
+          disabled={customMl == null}
+          aria-label={t.nutrition.waterAddOtherAria}
+          className="relative flex h-11 shrink-0 items-center gap-1 rounded-xl bg-primary px-3.5 text-[14px] font-bold text-primary-foreground disabled:opacity-40"
+        >
+          <Plus className="size-4" /> {t.nutrition.waterAddOther}
+        </button>
+        <button
+          onClick={startEditing}
+          aria-label={t.nutrition.waterEditShortcuts}
+          title={t.nutrition.waterEditShortcuts}
+          className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground"
+        >
+          <Pencil className="size-4" />
+        </button>
+      </div>
     </>
   );
 }
