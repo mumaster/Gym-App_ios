@@ -231,6 +231,58 @@ function Body({
   );
 }
 
+/** Gradients, bloom and hatch the figures reference by id. */
+function MapDefs() {
+  return (
+    <svg width={0} height={0} className="absolute" aria-hidden>
+      <defs>
+        <filter id="map-bloom" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
+        <radialGradient id="map-floor" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--foreground)" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="var(--foreground)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="map-idle" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" style={{ stopColor: "var(--map-panel-hi)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--map-panel)" }} />
+        </linearGradient>
+        <linearGradient id="map-on" x1="0" y1="0" x2="0" y2="1">
+          <stop
+            offset="0%"
+            style={{ stopColor: "color-mix(in oklch, var(--primary) 70%, white)" }}
+          />
+          <stop offset="100%" style={{ stopColor: "var(--primary)" }} />
+        </linearGradient>
+        <pattern
+          id="map-hint"
+          width="6"
+          height="6"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="6" height="6" fill="var(--map-panel)" />
+          <rect width="2.6" height="6" fill={SUGGESTED_COLOR} fillOpacity="0.85" />
+        </pattern>
+      </defs>
+    </svg>
+  );
+}
+
+/** Both figures with some regions lit, not interactive (used as an
+ *  illustration, e.g. in the welcome tour). */
+export function AnatomyPreview({ selected }: { selected: RegionId[] }) {
+  return (
+    <div inert aria-hidden className="pointer-events-none">
+      <MapDefs />
+      <div className="flex gap-2">
+        <Body view="front" selected={selected} onToggle={() => {}} />
+        <Body view="back" selected={selected} onToggle={() => {}} />
+      </div>
+    </div>
+  );
+}
+
 export function AnatomyMap({
   selected,
   suggested,
@@ -267,38 +319,7 @@ export function AnatomyMap({
 
   return (
     <div>
-      <svg width={0} height={0} className="absolute" aria-hidden>
-        <defs>
-          <filter id="map-bloom" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" />
-          </filter>
-          <radialGradient id="map-floor" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="var(--foreground)" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="var(--foreground)" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="map-idle" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" style={{ stopColor: "var(--map-panel-hi)" }} />
-            <stop offset="100%" style={{ stopColor: "var(--map-panel)" }} />
-          </linearGradient>
-          <linearGradient id="map-on" x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0%"
-              style={{ stopColor: "color-mix(in oklch, var(--primary) 70%, white)" }}
-            />
-            <stop offset="100%" style={{ stopColor: "var(--primary)" }} />
-          </linearGradient>
-          <pattern
-            id="map-hint"
-            width="6"
-            height="6"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <rect width="6" height="6" fill="var(--map-panel)" />
-            <rect width="2.6" height="6" fill={SUGGESTED_COLOR} fillOpacity="0.85" />
-          </pattern>
-        </defs>
-      </svg>
+      <MapDefs />
 
       <div className="flex gap-3">
         <Body view="front" selected={selected} suggested={suggested ?? null} onToggle={onToggle} />

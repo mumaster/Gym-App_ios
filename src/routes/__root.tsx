@@ -18,6 +18,7 @@ import { installAppWideHaptics } from "../lib/gym/tapFeedback";
 import { registerServiceWorker } from "../pwa";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
+import { WelcomeTour } from "../components/gym/WelcomeTour";
 import { UpdateBanner } from "../components/gym/UpdateBanner";
 
 // `head()` below runs both server-side (for the actual SSR'd document) and
@@ -534,6 +535,7 @@ function RootComponent() {
         <TabBar />
         <SplashScreen />
         <UpdateBanner />
+        <WelcomeTour />
       </GymProvider>
     </QueryClientProvider>
   );

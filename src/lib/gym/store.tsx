@@ -95,6 +95,8 @@ interface GymState {
   language: Language;
   /** Which character represents the user in the profile/settings icon. */
   avatarId: AvatarId;
+  /** The welcome tour has been seen (or skipped). Settings can reset it. */
+  welcomeSeen: boolean;
   supersetsEnabled: boolean;
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
@@ -176,6 +178,7 @@ const initialState: GymState = {
   colorScheme: "dark",
   language: "en",
   avatarId: DEFAULT_AVATAR_ID,
+  welcomeSeen: false,
   supersetsEnabled: false,
   growthFocus: [],
   supersetRounds: 3,
@@ -292,6 +295,17 @@ function migrate(raw: Partial<GymState>): GymState {
     colorScheme: raw.colorScheme ?? "dark",
     language: raw.language ?? "en",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
+    // Saves from before the tour: someone who already logged something
+    // knows the app, so only an empty save gets the tour.
+    welcomeSeen:
+      raw.welcomeSeen ??
+      Boolean(
+        raw.workouts?.length ||
+        raw.foodEntries?.length ||
+        raw.weightLog?.length ||
+        raw.program ||
+        raw.weeklyScheme,
+      ),
     supersetsEnabled: raw.supersetsEnabled ?? false,
     growthFocus: raw.growthFocus ?? [],
     supersetRounds: raw.supersetRounds ?? 3,

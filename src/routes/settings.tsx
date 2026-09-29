@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   LogOut,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsScreen() {
-  const { session, syncStatus, signOut } = useGym();
+  const { session, syncStatus, signOut, update } = useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -143,6 +144,24 @@ function SettingsScreen() {
       </Card>
 
       <SectionLabel>{t.settings.about}</SectionLabel>
+      <button
+        onClick={() => {
+          haptic(10);
+          update({ welcomeSeen: false });
+        }}
+        className="glass mb-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+            <Sparkles className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">{t.welcome.replay}</p>
+            <p className="truncate text-[12.5px] text-muted-foreground">{t.welcome.replayDesc}</p>
+          </div>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      </button>
       <button
         onClick={() => {
           haptic(10);
