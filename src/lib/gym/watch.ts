@@ -1,6 +1,41 @@
 import { dayKey } from "./date";
 import type { CardioSession, WatchData, Workout } from "./types";
 
+/** Most decimals any imported watch figure keeps. Screenshots print whole
+ *  or one- to two-decimal values; longer ones come from the reader doing
+ *  arithmetic (a 10-second zone as 0.1666… min) and just read as noise. */
+export const WATCH_DECIMALS = 2;
+
+const LONG_DECIMAL = /^(-?\d+)([.,])(\d{3,})$/;
+
+/**
+ * Every number in imported watch data rounded to WATCH_DECIMALS, deep
+ * (zones, splits, tables, metrics), plus numeric strings with more decimals
+ * than that ("0.16666666"), keeping their decimal mark. Everything else is
+ * returned as it is.
+ */
+export function roundWatchNumbers<T>(value: T): T {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) return value;
+    const f = 10 ** WATCH_DECIMALS;
+    const r = Math.round(value * f) / f;
+    return (Object.is(r, -0) ? 0 : r) as T;
+  }
+  if (typeof value === "string") {
+    const m = LONG_DECIMAL.exec(value.trim());
+    if (!m) return value;
+    const n = roundWatchNumbers(Number(`${m[1]}.${m[3]}`));
+    return String(n).replace(".", m[2]!) as T;
+  }
+  if (Array.isArray(value)) return value.map((v) => roundWatchNumbers(v)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, roundWatchNumbers(v)]),
+    ) as T;
+  }
+  return value;
+}
+
 /** How far apart a watch recording and a Forge session may start and still
  *  be treated as the same session. A matching aid, not a training number:
  *  you start the watch a few minutes before or after tapping Start. */

@@ -77,7 +77,7 @@ import {
 import { deleteRouteMap } from "./routeMapStore";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
-import { cardioStartIso } from "./watch";
+import { cardioStartIso, roundWatchNumbers } from "./watch";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
 interface GymState {
@@ -260,7 +260,14 @@ function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
     plan.map((p) => ({ ...p, warmup_sets: p.warmup_sets ?? 0 }));
   const fixWorkout = <T extends Workout | null>(w: T): T =>
-    w ? ({ ...w, unit: "kg", plan: fixPlan(w.plan) } as T) : w;
+    w
+      ? ({
+          ...w,
+          unit: "kg",
+          plan: fixPlan(w.plan),
+          ...(w.watch ? { watch: roundWatchNumbers(w.watch) } : {}),
+        } as T)
+      : w;
 
   const fixProfile = (p: EquipmentProfile): EquipmentProfile => ({
     ...p,
@@ -343,7 +350,12 @@ function migrate(raw: Partial<GymState>): GymState {
     waterGoalMl: raw.waterGoalMl ?? null,
     waterQuickAdd: sanitizeWaterShortcuts(raw.waterQuickAdd),
     coffeeEntries: raw.coffeeEntries ?? [],
-    cardioSessions: raw.cardioSessions ?? [],
+    // Imports from before watch numbers were rounded (a 10 s zone saved
+    // as 0.1666… min) get the same 2-decimal rounding new imports get.
+    cardioSessions: (raw.cardioSessions ?? []).map((c) => ({
+      ...c,
+      watch: roundWatchNumbers(c.watch),
+    })),
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -999,7 +1011,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
           workouts: s.workouts.map((w) => {
             if (w.id !== workoutId) return w;
             const { watch: _old, ...rest } = w;
-            return watch ? { ...rest, watch } : rest;
+            return watch ? { ...rest, watch: roundWatchNumbers(watch) } : rest;
           }),
         })),
       saveCardioSession: (id, watch, hasRouteMap) =>
@@ -1012,7 +1024,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ...(existing ?? {}),
             id,
             date,
-            watch,
+            watch: roundWatchNumbers(watch),
             ...(map ? { hasRouteMap: true } : {}),
           };
           const rest = s.cardioSessions.filter((c) => c.id !== next.id);

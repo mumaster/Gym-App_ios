@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Activity,
   Droplets,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import type { WatchData } from "../../lib/gym/types";
-import { formatDuration, formatPace } from "../../lib/gym/watch";
+import { formatDuration, formatPace, roundWatchNumbers, WATCH_DECIMALS } from "../../lib/gym/watch";
 
 interface Stat {
   icon: LucideIcon;
@@ -32,8 +33,11 @@ interface Stat {
  *  minutes per heart-rate and pace zone, per-km splits, training-effect
  *  scores, recovery, and anything else it printed. Every figure is the
  *  watch's — Forge computes nothing here. */
-export function WatchDataCard({ data }: { data: WatchData }) {
+export function WatchDataCard({ data: raw }: { data: WatchData }) {
   const t = useTranslation();
+  // Rounded again here so a fresh scan under review reads the same as a
+  // saved one (the store rounds on save; see watch.ts's roundWatchNumbers).
+  const data = useMemo(() => roundWatchNumbers(raw), [raw]);
   const locale = useLocale();
   const fmt = (n: number, digits = 2) =>
     n.toLocaleString(locale, { maximumFractionDigits: digits });
@@ -78,7 +82,7 @@ export function WatchDataCard({ data }: { data: WatchData }) {
       label: t.watch.maxHr,
       value: fmt(data.maxHr),
       unit: t.watch.bpm,
-      note: data.minHr != null ? t.watch.minHr(data.minHr) : null,
+      note: data.minHr != null ? t.watch.minHr(fmt(data.minHr)) : null,
     },
     data.avgSpeedKmh != null && {
       icon: Wind,
@@ -176,7 +180,7 @@ export function WatchDataCard({ data }: { data: WatchData }) {
             {[
               ...data.trainingEffects.map((e) => ({
                 label: e.label,
-                value: e.value.toLocaleString(locale),
+                value: fmt(e.value),
                 rating: e.rating,
               })),
               ...data.otherMetrics.map((m) => ({
@@ -201,7 +205,7 @@ export function WatchDataCard({ data }: { data: WatchData }) {
 
       {data.recoveryHours != null || data.hrRecovery?.drop != null ? (
         <div className="space-y-1 text-[13.5px]">
-          {data.recoveryHours != null ? <p>{t.watch.recovery(data.recoveryHours)}</p> : null}
+          {data.recoveryHours != null ? <p>{t.watch.recovery(fmt(data.recoveryHours))}</p> : null}
           {data.hrRecovery?.drop != null ? (
             <p>
               {t.watch.hrRecovery(
@@ -228,6 +232,7 @@ export function WatchDataCard({ data }: { data: WatchData }) {
 
 function Zones({ title, zones }: { title: string; zones: { name: string; minutes: number }[] }) {
   const t = useTranslation();
+  const locale = useLocale();
   if (!zones.length) return null;
   const max = Math.max(1, ...zones.map((z) => z.minutes));
   return (
@@ -246,7 +251,9 @@ function Zones({ title, zones }: { title: string; zones: { name: string; minutes
               <span
                 className={`tabular shrink-0 ${z.minutes ? "font-semibold" : "text-muted-foreground"}`}
               >
-                {t.watch.minutes(z.minutes)}
+                {t.watch.minutes(
+                  z.minutes.toLocaleString(locale, { maximumFractionDigits: WATCH_DECIMALS }),
+                )}
               </span>
             </p>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">

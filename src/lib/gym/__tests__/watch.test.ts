@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, matchWorkout } from "../watch";
+import { formatDuration, matchWorkout, roundWatchNumbers } from "../watch";
 import type { Workout } from "../types";
 
 const at = (y: number, m: number, d: number, h: number, min: number, id: string): Workout => ({
@@ -40,5 +40,38 @@ describe("duration format", () => {
   it("prints m:ss or h:mm:ss", () => {
     expect(formatDuration(1657)).toBe("27:37");
     expect(formatDuration(3725)).toBe("1:02:05");
+  });
+});
+
+describe("roundWatchNumbers", () => {
+  it("rounds every number to 2 decimals, deep", () => {
+    const data = {
+      avgSpeedKmh: 4.4312,
+      hrZones: [
+        { name: "Geavanceerd aeroob", minutes: 0.16666666666666666 },
+        { name: "Basis aeroob", minutes: 10 },
+      ],
+      splits: [{ km: 1, paceSeconds: 612.3333333 }],
+      name: "Wandelen",
+      start: "2026-09-27T11:20",
+    };
+    expect(roundWatchNumbers(data)).toEqual({
+      avgSpeedKmh: 4.43,
+      hrZones: [
+        { name: "Geavanceerd aeroob", minutes: 0.17 },
+        { name: "Basis aeroob", minutes: 10 },
+      ],
+      splits: [{ km: 1, paceSeconds: 612.33 }],
+      name: "Wandelen",
+      start: "2026-09-27T11:20",
+    });
+  });
+
+  it("rounds long numeric strings, keeping their decimal mark, and leaves other text", () => {
+    expect(roundWatchNumbers("0.16666666")).toBe("0.17");
+    expect(roundWatchNumbers("49,6667")).toBe("49,67");
+    expect(roundWatchNumbers("49,6")).toBe("49,6");
+    expect(roundWatchNumbers("Links 49,6 · Rechts 50,4")).toBe("Links 49,6 · Rechts 50,4");
+    expect(roundWatchNumbers(null)).toBeNull();
   });
 });
