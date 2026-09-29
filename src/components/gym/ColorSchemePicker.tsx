@@ -25,7 +25,7 @@ export function ColorSchemePicker() {
             }}
             className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 transition-transform active:scale-[0.97] ${
               active
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/10 text-primary-text"
                 : "border-transparent text-muted-foreground"
             }`}
           >

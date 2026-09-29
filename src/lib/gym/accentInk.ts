@@ -36,3 +36,37 @@ export function readableInk(hex: string): string {
   const l = luminance(parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16));
   return contrast(l, LIGHT_LUMINANCE) > contrast(l, DARK_LUMINANCE) ? LIGHT_INK : DARK_INK;
 }
+
+/**
+ * A custom accent used as *text* (labels, active tab names, small icons) sits
+ * on the page, not on its own fill, so a dark green vanishes on the dark
+ * theme's black and a pale yellow on the light theme's off-white. Blends the
+ * colour towards white (dark theme) or black (light theme) in 4% steps until
+ * it reaches the 4.5:1 contrast WCAG 2.x asks of normal-size text (SC 1.4.3,
+ * AA), and leaves it untouched if it already does.
+ *
+ * Measured against the palest/darkest surface text sits on rather than the
+ * page itself: cards are a little lighter than the black page in the dark
+ * theme, and muted chips a little darker than the off-white one in the light
+ * theme (styles.css: --chart-surface ≈ #1a1b1d, --muted over the page ≈
+ * #e6e7ea), so it stays readable on those too.
+ */
+export const TEXT_CONTRAST = 4.5;
+const DARK_SURFACE = luminance(26, 27, 29);
+const LIGHT_SURFACE = luminance(230, 231, 234);
+
+export function readableAccentText(hex: string, theme: "dark" | "light"): string {
+  const m = hex.trim().match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return hex;
+  const rgb = [parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16)];
+  const surface = theme === "dark" ? DARK_SURFACE : LIGHT_SURFACE;
+  const target = theme === "dark" ? 255 : 0;
+  for (let step = 0; step <= 25; step++) {
+    const t = step * 0.04;
+    const mixed = rgb.map((v) => Math.round(v + (target - v) * t));
+    if (contrast(luminance(mixed[0]!, mixed[1]!, mixed[2]!), surface) >= TEXT_CONTRAST) {
+      return `#${mixed.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+    }
+  }
+  return theme === "dark" ? "#ffffff" : "#000000";
+}

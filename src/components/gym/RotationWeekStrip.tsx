@@ -30,7 +30,7 @@ export function RotationWeekStrip({
           >
             <p
               className={`flex items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                isNext ? "text-primary" : "text-muted-foreground"
+                isNext ? "text-primary-text" : "text-muted-foreground"
               }`}
             >
               {done ? <Check className="size-2.5" strokeWidth={3} /> : null}

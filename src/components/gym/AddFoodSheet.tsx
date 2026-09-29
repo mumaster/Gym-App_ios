@@ -628,7 +628,7 @@ export function AddFoodSheet({
                   onClick={startManual}
                   className="glass flex min-h-[52px] w-full items-center gap-2 rounded-2xl px-4 text-left active:scale-[0.985]"
                 >
-                  <Keyboard className="size-5 shrink-0 text-primary" />
+                  <Keyboard className="size-5 shrink-0 text-primary-text" />
                   <span className="min-w-0 truncate text-[14px] font-bold">
                     {t.addFood.enterAsNew(q)}
                   </span>
@@ -658,7 +658,7 @@ export function AddFoodSheet({
                     onClick={startManual}
                     className="glass flex min-h-[60px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
                   >
-                    <Keyboard className="size-5 shrink-0 text-primary" />
+                    <Keyboard className="size-5 shrink-0 text-primary-text" />
                     <span className="text-[14px] font-bold leading-tight">
                       {t.addFood.enterManually}
                     </span>
@@ -741,7 +741,7 @@ export function AddFoodSheet({
 
         {step === "scanning" ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <DumbbellLoader size={56} className="text-primary" />
+            <DumbbellLoader size={56} className="text-primary-text" />
             <p className="text-[15px] font-semibold">
               {scanKind === "barcode" ? t.addFood.lookingUpProduct : t.addFood.readingLabel}
             </p>
@@ -797,7 +797,7 @@ export function AddFoodSheet({
                       ? t.addFood.unfavorite(name)
                       : t.addFood.favorite(name)
                   }
-                  className="flex size-11 shrink-0 rounded-2xl bg-muted items-center justify-center text-primary active:scale-90"
+                  className="flex size-11 shrink-0 rounded-2xl bg-muted items-center justify-center text-primary-text active:scale-90"
                 >
                   <Star
                     className="size-4"
@@ -822,10 +822,10 @@ export function AddFoodSheet({
                 }}
                 className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
               >
-                <span className="text-[14px] font-semibold text-primary">
+                <span className="text-[14px] font-semibold text-primary-text">
                   {t.addFood.useServingSize(suggestedGrams)}
                 </span>
-                <Check className="size-4 shrink-0 text-primary" />
+                <Check className="size-4 shrink-0 text-primary-text" />
               </button>
             ) : null}
 
@@ -896,7 +896,7 @@ export function AddFoodSheet({
             </div>
 
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
+              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
                 {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
               </p>
               <p className="tabular mt-1 text-[15px] font-semibold">
@@ -1017,7 +1017,7 @@ function FoodList({
                 aria-label={
                   starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)
                 }
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary active:scale-90"
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary-text active:scale-90"
               >
                 <Star className="size-4" fill={starred ? "currentColor" : "none"} />
               </button>

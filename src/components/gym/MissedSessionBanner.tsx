@@ -27,7 +27,7 @@ export function MissedSessionBanner({
   return (
     <div className="mt-3 rounded-2xl bg-primary/10 p-3">
       <p className="flex items-center gap-1.5 text-[14px] font-semibold">
-        <CalendarClock className="size-4 shrink-0 text-primary" />
+        <CalendarClock className="size-4 shrink-0 text-primary-text" />
         <span className="min-w-0">
           {overdue < 7
             ? t.schedule.missedTitle(dayLabel, weekday)

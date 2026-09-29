@@ -332,7 +332,7 @@ function SessionScreen() {
       <div className="safe-top min-h-[100dvh] bg-background px-4 pb-8">
         <div className="mx-auto w-full max-w-xl">
           <div className="flex flex-col items-center gap-2 pb-6 pt-10 text-center">
-            <Trophy className="size-10 text-primary" />
+            <Trophy className="size-10 text-primary-text" />
             <h1 className="text-2xl font-bold">{t.session.workoutComplete}</h1>
             <p className="text-[14px] text-muted-foreground">{t.session.workoutCompleteSub}</p>
           </div>
@@ -671,7 +671,7 @@ function SessionScreen() {
               aria-label={t.session.workoutOverview}
               className="glass flex size-11 items-center justify-center rounded-full"
             >
-              <List className="size-5 text-primary" />
+              <List className="size-5 text-primary-text" />
             </button>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -692,7 +692,7 @@ function SessionScreen() {
             style={{ backgroundColor: "color-mix(in oklch, var(--background) 88%, transparent)" }}
           >
             <div className="flex items-center gap-3">
-              <Flame className="size-5 text-primary" />
+              <Flame className="size-5 text-primary-text" />
               <span className="tabular text-xl font-bold">
                 {restDone ? t.session.restComplete : t.session.restSeconds(rest.secondsLeft)}
               </span>
@@ -751,7 +751,7 @@ function SessionScreen() {
       <main className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-3">
         <div className={isSuperset ? "space-y-3" : ""}>
           {isSuperset ? (
-            <p className="rounded-full bg-primary/20 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-widest text-primary">
+            <p className="rounded-full bg-primary/20 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-widest text-primary-text">
               {t.session.supersetRound(
                 supersetBadge,
                 Math.min(pos.round, block.rounds),
@@ -825,7 +825,7 @@ function SessionScreen() {
 
         {isLastBlock && blockComplete && planned.bonus ? (
           <div className="glass glow rounded-3xl p-5 text-center">
-            <PartyPopper className="mx-auto size-10 text-primary" />
+            <PartyPopper className="mx-auto size-10 text-primary-text" />
             <h2 className="mt-3 text-[26px] font-bold leading-tight tracking-tight">
               {t.session.outstandingTitle}
             </h2>
@@ -903,7 +903,7 @@ function SessionScreen() {
           >
             <span className="flex items-center gap-1.5 text-[15px] font-semibold">
               {notifyEnabled ? (
-                <Bell className="size-4 text-primary" />
+                <Bell className="size-4 text-primary-text" />
               ) : (
                 <BellOff className="size-4 text-muted-foreground" />
               )}
@@ -948,7 +948,7 @@ function SessionScreen() {
                   aria-label={t.session.addExtra}
                   className="glass flex min-h-[52px] active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
                 >
-                  <Plus className="size-5 text-primary" /> {t.session.extra}
+                  <Plus className="size-5 text-primary-text" /> {t.session.extra}
                 </button>
               ) : null}
               <button
@@ -1033,7 +1033,7 @@ function SessionScreen() {
               className={`w-full rounded-2xl p-4 text-left ${i === blockIndex ? "bg-primary/15" : "glass"}`}
             >
               {b.group !== undefined ? (
-                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary-text">
                   {t.session.supersetRounds(b.rounds)}
                 </p>
               ) : null}
@@ -1045,7 +1045,9 @@ function SessionScreen() {
                 ).length;
                 return (
                   <div key={idx} className="flex items-center gap-3 py-0.5">
-                    <span className="tabular w-5 text-lg font-bold text-primary">{idx + 1}</span>
+                    <span className="tabular w-5 text-lg font-bold text-primary-text">
+                      {idx + 1}
+                    </span>
                     <div className="flex-1">
                       <p className="text-[16px] font-semibold">{ex?.name}</p>
                       <p className="text-[13px] text-muted-foreground">
@@ -1053,7 +1055,7 @@ function SessionScreen() {
                       </p>
                     </div>
                     {logged >= p.target_sets ? (
-                      <CheckCircle2 className="size-5 text-primary" />
+                      <CheckCircle2 className="size-5 text-primary-text" />
                     ) : null}
                   </div>
                 );
@@ -1349,7 +1351,7 @@ function ExerciseBlock({
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-text">
             {letter ? t.session.exerciseLetter(letter) : t.session.exerciseOf(index + 1, total)}
           </p>
           <h2 className="mt-1 text-[24px] font-bold leading-[1.1] tracking-tight">
@@ -1376,7 +1378,7 @@ function ExerciseBlock({
             aria-label={t.session.watchDemo}
             className="flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
           >
-            <Youtube className="size-4 text-primary" />
+            <Youtube className="size-4 text-primary-text" />
           </a>
         </div>
       </div>
@@ -1407,7 +1409,7 @@ function ExerciseBlock({
           aria-label={t.session.editNote}
           className="mt-3 flex w-full items-start gap-2 rounded-xl bg-muted px-3 py-2 text-left active:scale-[0.99]"
         >
-          <StickyNote className="mt-0.5 size-4 shrink-0 text-primary" />
+          <StickyNote className="mt-0.5 size-4 shrink-0 text-primary-text" />
           <span className="min-w-0 flex-1 whitespace-pre-wrap text-[14px] leading-snug">
             {note}
           </span>
@@ -1444,7 +1446,7 @@ function ExerciseBlock({
 
       {exerciseComplete ? (
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-primary/15 px-4 py-3">
-          <CheckCircle2 className="size-6 shrink-0 text-primary" />
+          <CheckCircle2 className="size-6 shrink-0 text-primary-text" />
           <div className="min-w-0">
             <p className="text-[15px] font-bold">{t.session.wellDone(planned.target_sets)}</p>
             <p className="text-[13px] text-muted-foreground">
@@ -1470,7 +1472,7 @@ function ExerciseBlock({
             return (
               <div key={`edit-${abs}`} className="space-y-2 rounded-xl bg-primary/15 p-2">
                 <div className="flex items-center gap-2">
-                  <span className="tabular w-6 shrink-0 text-[15px] font-bold text-primary">
+                  <span className="tabular w-6 shrink-0 text-[15px] font-bold text-primary-text">
                     {s.set_type === "warmup" ? "W" : s.set_number}
                   </span>
                   <Stepper
@@ -1529,7 +1531,7 @@ function ExerciseBlock({
               aria-label={t.session.editSet(s.set_number)}
               className={`${GRID} w-full rounded-xl bg-primary/15 px-0.5 py-2 text-left active:scale-[0.99]`}
             >
-              <span className="tabular text-[15px] font-bold text-primary">
+              <span className="tabular text-[15px] font-bold text-primary-text">
                 {s.set_type === "warmup" ? "W" : s.set_number}
               </span>
               <span className="tabular text-[13px] text-muted-foreground">
@@ -1542,7 +1544,9 @@ function ExerciseBlock({
               </span>
               <span className="tabular text-center text-[16px] font-semibold">
                 {s.reps}
-                {s.rpe ? <span className="ml-1 text-[11px] text-primary">@{s.rpe}</span> : null}
+                {s.rpe ? (
+                  <span className="ml-1 text-[11px] text-primary-text">@{s.rpe}</span>
+                ) : null}
               </span>
             </button>
           );
@@ -1560,7 +1564,7 @@ function ExerciseBlock({
               }
               className={`tabular size-11 shrink-0 rounded-xl text-[15px] font-bold active:scale-95 ${
                 setType === "warmup"
-                  ? "bg-primary/25 text-primary"
+                  ? "bg-primary/25 text-primary-text"
                   : "bg-secondary text-secondary-foreground"
               }`}
             >
@@ -1588,7 +1592,7 @@ function ExerciseBlock({
           ) : null}
 
           {!lastLogged && suggestion && suggestion.direction !== "same" ? (
-            <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary">
+            <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary-text">
               {suggestion.direction === "up" ? (
                 <TrendingUp className="size-4 shrink-0" />
               ) : (
@@ -1751,7 +1755,7 @@ function ExerciseBlock({
               !active || locked
                 ? "bg-secondary text-muted-foreground opacity-50"
                 : lastLogged
-                  ? "border border-primary/60 text-primary"
+                  ? "border border-primary/60 text-primary-text"
                   : "bg-primary text-primary-foreground"
             }`}
           >
@@ -1768,13 +1772,13 @@ function ExerciseBlock({
       </p>
 
       {isPR ? (
-        <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary">
+        <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary-text">
           <Trophy className="size-4" /> {t.session.prPace(load(best?.weight ?? 0), best?.reps ?? 0)}
         </p>
       ) : null}
 
       <div className="mt-3 rounded-2xl border border-border/70 bg-muted/40 px-4 py-3">
-        <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary">
+        <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary-text">
           <Lightbulb className="size-4" /> {t.session.keyFormCues}
         </p>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
@@ -1783,7 +1787,7 @@ function ExerciseBlock({
         <ul className="mt-2 space-y-1.5">
           {exercise.cues.map((c) => (
             <li key={c} className="flex items-start gap-2 text-[14px] font-medium text-foreground">
-              <Check className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={3} />
+              <Check className="mt-0.5 size-4 shrink-0 text-primary-text" strokeWidth={3} />
               <span>{sentence(c)}</span>
             </li>
           ))}

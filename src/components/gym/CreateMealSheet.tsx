@@ -108,14 +108,14 @@ export function CreateMealSheet({ open, onClose }: { open: boolean; onClose: () 
               haptic(15);
               setAddingIngredient(true);
             }}
-            className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
+            className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary-text active:scale-[0.985]"
           >
             <Plus className="size-4" /> {t.createMeal.addIngredient}
           </button>
 
           {ingredients.length > 0 ? (
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary">
+              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
                 {t.createMeal.wholeMeal}
               </p>
               <p className="tabular mt-1 text-[15px] font-semibold">

@@ -147,7 +147,7 @@ function HistoryScreen() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <Flame
-                  className={`size-6 ${streak > 0 ? "text-primary" : "text-muted-foreground"}`}
+                  className={`size-6 ${streak > 0 ? "text-primary-text" : "text-muted-foreground"}`}
                 />
                 <div>
                   <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
@@ -256,7 +256,7 @@ function HistoryScreen() {
                   {/* An estimate from the external load alone means nothing
                       for a bodyweight exercise, so it gets no pill. */}
                   {bw ? null : (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary">
+                    <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary-text">
                       <Trophy className="size-4" />
                       {p.e1rm} kg
                     </span>
@@ -380,7 +380,7 @@ function HistoryScreen() {
                           className="tabular flex shrink-0 items-center gap-0.5 text-[13px] text-muted-foreground"
                           aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
                         >
-                          <HeartPulse className="size-3.5 text-primary" />
+                          <HeartPulse className="size-3.5 text-primary-text" />
                           {w.watch.avgHr}
                         </p>
                       ) : null}
@@ -399,7 +399,7 @@ function HistoryScreen() {
       {weeks.length > weeksShown ? (
         <button
           onClick={() => setWeeksShown((n) => n + 8)}
-          className="glass mt-3 min-h-[48px] w-full rounded-2xl text-[15px] font-semibold text-primary active:scale-[0.985]"
+          className="glass mt-3 min-h-[48px] w-full rounded-2xl text-[15px] font-semibold text-primary-text active:scale-[0.985]"
         >
           {t.history.showMore}
         </button>
@@ -433,7 +433,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
       {map ? <RouteThumb map={map} className="size-10" /> : null}
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[15px] font-semibold">
-          {map ? null : <Footprints className="size-4 shrink-0 text-primary" aria-hidden />}
+          {map ? null : <Footprints className="size-4 shrink-0 text-primary-text" aria-hidden />}
           <span className="truncate">
             {/* No weekday, unlike a strength row: with the route thumbnail
                 beside it, "Wed, Jun 10 · Buiten hardlopen" doesn't fit at 390pt. */}
@@ -458,7 +458,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
                 className="flex items-center gap-0.5"
                 aria-label={`${t.watch.avgHr} ${watch.avgHr} ${t.watch.bpm}`}
               >
-                <HeartPulse className="size-3.5 text-primary" />
+                <HeartPulse className="size-3.5 text-primary-text" />
                 {watch.avgHr}
               </span>
             ) : null}

@@ -75,7 +75,7 @@ export function WeeklySetsCard() {
           <div key={r.muscle} className="flex items-center gap-2.5">
             <span className="flex w-24 shrink-0 items-center gap-1 truncate text-[13px] font-medium">
               {r.focus ? (
-                <Star className="size-3 shrink-0 text-primary" fill="currentColor" />
+                <Star className="size-3 shrink-0 text-primary-text" fill="currentColor" />
               ) : null}
               {r.muscle}
             </span>

@@ -104,7 +104,7 @@ function SettingsScreen() {
         className="glass flex items-center justify-between gap-3 rounded-2xl p-4 transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
             <LayoutGrid className="size-5" />
           </div>
           <div className="min-w-0">
@@ -151,7 +151,7 @@ function SettingsScreen() {
         className="glass mb-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
             <BookMarked className="size-5" />
           </div>
           <div className="min-w-0">
@@ -169,7 +169,7 @@ function SettingsScreen() {
         <button
           onClick={handleForceUpdate}
           disabled={updating}
-          className="glass flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold text-primary disabled:opacity-60"
+          className="glass flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold text-primary-text disabled:opacity-60"
         >
           <RefreshCw className={`size-4 ${updating ? "animate-spin" : ""}`} />
           {updating ? t.settings.updating : t.settings.update}

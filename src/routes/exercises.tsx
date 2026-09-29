@@ -282,7 +282,7 @@ function ExercisesScreen() {
                   toggleLovedExercise(e.id);
                 }}
                 className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
-                  loved ? "bg-primary/15 text-primary" : "glass text-secondary-foreground"
+                  loved ? "bg-primary/15 text-primary-text" : "glass text-secondary-foreground"
                 }`}
               >
                 <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
@@ -364,7 +364,9 @@ function ExercisesScreen() {
                   <span
                     key={m}
                     className={`rounded-full px-3 py-1.5 text-[13px] font-semibold ${
-                      i === 0 ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"
+                      i === 0
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-primary/15 text-primary-text"
                     }`}
                   >
                     {m}
@@ -412,7 +414,7 @@ function ExercisesScreen() {
               }}
               className="glass flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-4 text-left text-[15px] font-semibold active:scale-[0.985]"
             >
-              <Icon className="size-5 text-primary" />
+              <Icon className="size-5 text-primary-text" />
               {label}
             </button>
           ))}

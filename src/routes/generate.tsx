@@ -395,7 +395,7 @@ function WorkoutHome() {
           <>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                   {programWeek.type === "deload" ? (
                     <Snowflake className="size-3.5" />
                   ) : (
@@ -470,7 +470,7 @@ function WorkoutHome() {
           <>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+                <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                   {splitTemplateById(weeklyScheme.templateId).label}
                 </p>
                 <p className="mt-1 truncate text-[18px] font-bold">
@@ -569,7 +569,7 @@ function WorkoutHome() {
         <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                 {t.generate.sessionInProgress}
               </p>
               <p className="mt-1 text-lg font-bold">
@@ -579,7 +579,7 @@ function WorkoutHome() {
                 )}
               </p>
             </div>
-            <ChevronRight className="size-6 text-primary" />
+            <ChevronRight className="size-6 text-primary-text" />
           </div>
         </Card>
       ) : null}
@@ -594,7 +594,7 @@ function WorkoutHome() {
           <Card className="p-4 glow" onClick={() => repeat(workouts[0]!)}>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary">
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                   <Repeat className="size-3.5" /> {t.generate.repeatLastWorkout}
                 </p>
                 <p className="mt-1 truncate text-lg font-bold">
@@ -607,7 +607,7 @@ function WorkoutHome() {
                   )}
                 </p>
               </div>
-              <Play className="size-6 shrink-0 text-primary" />
+              <Play className="size-6 shrink-0 text-primary-text" />
             </div>
           </Card>
           {workouts.length > 1 ? (
@@ -693,7 +693,7 @@ function WorkoutHome() {
           </label>
         </div>
         <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
-          <Timer className="size-4 text-primary" />
+          <Timer className="size-4 text-primary-text" />
           {duration <= 30
             ? t.generate.durationShort
             : duration <= 45
@@ -755,7 +755,7 @@ function WorkoutHome() {
             ))}
             <button
               onClick={() => setTemplatesOpen(true)}
-              className="glass shrink-0 rounded-2xl px-4 py-2 text-[13px] font-semibold text-primary active:scale-[0.985]"
+              className="glass shrink-0 rounded-2xl px-4 py-2 text-[13px] font-semibold text-primary-text active:scale-[0.985]"
             >
               {t.common.manage}
             </button>
@@ -766,9 +766,9 @@ function WorkoutHome() {
       {hydrated && !weeklyScheme && !program && workouts.length > 0 && regions.length === 0 ? (
         <Card className="mb-4 p-4">
           <div className="flex items-start gap-3">
-            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
+            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary-text" />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary">
+              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                 {t.generate.recommendedToday}
               </p>
               <p className="mt-1 text-[15px] leading-snug">
@@ -896,7 +896,7 @@ function WorkoutHome() {
       {lovedExerciseIds.length ? (
         <div className="mt-4">
           <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
-            <Heart className="size-3.5 fill-current text-primary" />
+            <Heart className="size-3.5 fill-current text-primary-text" />
             {t.generate.alwaysIncluded}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -909,7 +909,7 @@ function WorkoutHome() {
                     haptic(12);
                     toggleLovedExercise(id);
                   }}
-                  className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/15 px-3 text-[14px] font-semibold text-primary"
+                  className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/15 px-3 text-[14px] font-semibold text-primary-text"
                 >
                   {ex?.name ?? id}
                   <X className="size-3.5" />
@@ -992,7 +992,7 @@ function WorkoutHome() {
                 haptic(12);
                 setSavingTemplate(true);
               }}
-              className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary"
+              className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary-text"
             >
               <Bookmark className="size-3.5" /> {t.generate.save}
             </button>
@@ -1005,7 +1005,7 @@ function WorkoutHome() {
               return (
                 <Card key={`${p.exercise_id}-${i}`} className="p-4">
                   <div className="flex items-center gap-3">
-                    <span className="tabular w-6 text-lg font-bold text-primary">{i + 1}</span>
+                    <span className="tabular w-6 text-lg font-bold text-primary-text">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="min-w-0 flex-1 text-[17px] font-semibold leading-tight">
@@ -1026,7 +1026,7 @@ function WorkoutHome() {
                           aria-label={loved ? t.generate.unlove(ex.name) : t.generate.love(ex.name)}
                           aria-pressed={loved}
                           className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
-                            loved ? "text-primary" : "text-muted-foreground"
+                            loved ? "text-primary-text" : "text-muted-foreground"
                           }`}
                         >
                           <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
@@ -1046,7 +1046,7 @@ function WorkoutHome() {
                       </p>
                       {p.suggested_weight != null &&
                       (p.suggested_weight !== 0 || isBodyweightExercise(ex)) ? (
-                        <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary">
+                        <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary-text">
                           <TrendingUp className="size-3.5" />{" "}
                           {t.generate.suggestedWeight(
                             formatLoad(p.suggested_weight, isBodyweightExercise(ex), t.session.bw),

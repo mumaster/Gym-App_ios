@@ -64,7 +64,7 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
       <div className="space-y-4">
         {confirmSent ? (
           <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-            <p className="flex items-center gap-1.5 text-[14px] font-semibold text-primary">
+            <p className="flex items-center gap-1.5 text-[14px] font-semibold text-primary-text">
               <Mail className="size-4" /> {t.auth.checkYourEmail}
             </p>
             <p className="mt-1 text-[13px] text-muted-foreground">
@@ -84,7 +84,7 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
         ) : (
           <>
             <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-primary-text">
                 <Cloud className="size-3.5" /> {t.auth.cloudTitle}
               </p>
               <p className="mt-1 text-[13px] text-muted-foreground">{t.auth.cloudDesc}</p>

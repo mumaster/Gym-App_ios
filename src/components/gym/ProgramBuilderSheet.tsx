@@ -153,7 +153,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                     <div className="min-w-0">
                       <span className="text-[15px] font-semibold">{dayLabel}</span>
                       {isNext ? (
-                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
                           {t.programBuilder.nextUp}
                         </span>
                       ) : null}
@@ -241,7 +241,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             >
               <span className="text-[17px] font-semibold">{tpl.label}</span>
               <span className="text-[13px] text-muted-foreground">{tpl.description}</span>
-              <span className="mt-1 text-[12px] font-semibold text-primary">
+              <span className="mt-1 text-[12px] font-semibold text-primary-text">
                 {tpl.days.map((d) => d.label).join(" → ")}
               </span>
             </button>
@@ -251,7 +251,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
         <div className="space-y-4">
           <button
             onClick={() => setMode("template")}
-            className="text-[13px] font-semibold text-primary"
+            className="text-[13px] font-semibold text-primary-text"
           >
             {t.programBuilder.changeSplit(template.label)}
           </button>
@@ -317,7 +317,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
         <div className="space-y-4">
           <button
             onClick={() => setMode("days")}
-            className="text-[13px] font-semibold text-primary"
+            className="text-[13px] font-semibold text-primary-text"
           >
             {t.programBuilder.changeTrainingDays}
           </button>
@@ -343,7 +343,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[16px] font-semibold">{p.label}</span>
-                  {presetId === p.id ? <Check className="size-4 text-primary" /> : null}
+                  {presetId === p.id ? <Check className="size-4 text-primary-text" /> : null}
                 </div>
                 <span className="text-[13px] text-muted-foreground">{p.description}</span>
                 <div className="mt-1 flex gap-1">
@@ -353,7 +353,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                       className={`flex size-6 items-center justify-center rounded-full text-[10px] font-bold ${
                         w.type === "deload"
                           ? "bg-secondary text-secondary-foreground"
-                          : "bg-primary/20 text-primary"
+                          : "bg-primary/20 text-primary-text"
                       }`}
                     >
                       {i + 1}

@@ -211,7 +211,7 @@ export function SplashScreen() {
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="overflow-visible text-primary"
+                className="overflow-visible text-primary-text"
                 role="img"
                 aria-label="Forge"
               >

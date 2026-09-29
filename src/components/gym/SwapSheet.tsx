@@ -20,7 +20,7 @@ function Row({ e, onPick }: { e: Exercise; onPick: (e: Exercise) => void }) {
           {e.equipment_required.map((id) => EQUIPMENT.find((q) => q.id === id)?.label).join(" · ")}
         </p>
       </div>
-      <Repeat className="ml-3 size-5 shrink-0 text-primary" />
+      <Repeat className="ml-3 size-5 shrink-0 text-primary-text" />
     </button>
   );
 }
@@ -95,7 +95,7 @@ export function SwapSheet({
                   className="glass glow flex min-h-[52px] w-full items-center justify-between rounded-2xl px-4 text-left text-[16px] font-semibold active:scale-[0.985]"
                 >
                   {t.swapSheet.swapTo(e.name)}
-                  <Repeat className="ml-3 size-5 shrink-0 text-primary" />
+                  <Repeat className="ml-3 size-5 shrink-0 text-primary-text" />
                 </button>
               ))}
             </div>
@@ -131,7 +131,7 @@ export function SwapSheet({
               <p className="mb-1 text-[13px] text-muted-foreground">
                 {t.swapSheet.pairedWith(partner.name)}
               </p>
-              <p className="pt-1 text-[12px] font-bold uppercase tracking-widest text-primary">
+              <p className="pt-1 text-[12px] font-bold uppercase tracking-widest text-primary-text">
                 {t.swapSheet.recommendedAlternatives}
               </p>
               {recommended.length ? (

@@ -18,7 +18,7 @@ export function LanguagePicker() {
             }}
             className={`flex items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 transition-transform active:scale-[0.97] ${
               active
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/10 text-primary-text"
                 : "border-transparent text-muted-foreground"
             }`}
           >

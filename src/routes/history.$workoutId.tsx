@@ -48,7 +48,10 @@ function SessionDetailScreen() {
       <Screen title={t.historyDetail.title}>
         <Card className="p-6 text-center">
           <p className="text-[17px] font-semibold">{t.historyDetail.sessionNotFound}</p>
-          <Link to="/history" className="mt-3 inline-block text-[15px] font-semibold text-primary">
+          <Link
+            to="/history"
+            className="mt-3 inline-block text-[15px] font-semibold text-primary-text"
+          >
             {t.historyDetail.backToHistory}
           </Link>
         </Card>
@@ -173,7 +176,7 @@ function SessionDetailScreen() {
           onClick={() => setWatchOpen(true)}
           className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
         >
-          <Watch className="size-5 text-primary" /> {t.watch.add}
+          <Watch className="size-5 text-primary-text" /> {t.watch.add}
         </button>
       )}
       <WatchImportSheet
@@ -198,7 +201,7 @@ function SessionDetailScreen() {
                 <p className="text-[13px] text-muted-foreground">{ex.muscle}</p>
               </div>
               {ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
-                <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary">
+                <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary-text">
                   <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
                 </span>
               ) : null}
@@ -210,7 +213,7 @@ function SessionDetailScreen() {
                   key={`${s.set_number}-${i}`}
                   className="grid grid-cols-[44px_1fr_1fr] items-center gap-2 rounded-xl bg-muted px-3 py-2"
                 >
-                  <span className="tabular text-[13px] font-bold text-primary">
+                  <span className="tabular text-[13px] font-bold text-primary-text">
                     {s.set_type === "warmup" ? "W" : s.set_number}
                   </span>
                   <span className="tabular text-[15px] font-semibold">
@@ -222,7 +225,7 @@ function SessionDetailScreen() {
                   </span>
                   <span className="tabular text-right text-[15px] font-semibold">
                     {t.historyDetail.reps(s.reps)}
-                    {s.rpe ? <span className="text-primary"> @{s.rpe}</span> : null}
+                    {s.rpe ? <span className="text-primary-text"> @{s.rpe}</span> : null}
                   </span>
                 </div>
               ))}

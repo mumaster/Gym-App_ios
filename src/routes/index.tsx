@@ -273,7 +273,7 @@ function HomeScreen() {
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary-text">
                 <HeroIcon className="size-3.5" /> {heroEyebrow}
               </p>
               <p className="mt-1.5 truncate text-[20px] font-bold leading-tight">{heroTitle}</p>

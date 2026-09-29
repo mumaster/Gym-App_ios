@@ -188,7 +188,7 @@ export function WatchImportSheet({
 
       {step === "reading" ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <DumbbellLoader size={56} className="text-primary" />
+          <DumbbellLoader size={56} className="text-primary-text" />
           <p className="text-[15px] font-semibold">{t.watch.reading}</p>
           <p className="text-[13px] text-muted-foreground">{t.watch.readingDesc}</p>
         </div>
@@ -203,7 +203,7 @@ export function WatchImportSheet({
             onClick={() => fileRef.current?.click()}
             className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold"
           >
-            <ImagePlus className="size-5 text-primary" /> {t.watch.tryAgain}
+            <ImagePlus className="size-5 text-primary-text" /> {t.watch.tryAgain}
           </button>
         </div>
       ) : null}
@@ -220,11 +220,11 @@ export function WatchImportSheet({
               </p>
               {!preset ? (
                 cardio ? (
-                  <p className="mb-2 flex items-center gap-1.5 text-[12.5px] text-primary">
+                  <p className="mb-2 flex items-center gap-1.5 text-[12.5px] text-primary-text">
                     <Check className="size-3.5" /> {t.watch.cardioDetected}
                   </p>
                 ) : matched ? (
-                  <p className="mb-2 flex items-center gap-1.5 text-[12.5px] text-primary">
+                  <p className="mb-2 flex items-center gap-1.5 text-[12.5px] text-primary-text">
                     <Check className="size-3.5" /> {t.watch.matched}
                   </p>
                 ) : (
@@ -303,13 +303,13 @@ function TargetRow({
       }`}
     >
       <span className="flex min-w-0 items-center gap-2">
-        {icon ? <Footprints className="size-4 shrink-0 text-primary" /> : null}
+        {icon ? <Footprints className="size-4 shrink-0 text-primary-text" /> : null}
         <span className="min-w-0 truncate">
           <span className="font-semibold">{title}</span>
           {detail ? <span className="text-muted-foreground"> · {detail}</span> : null}
         </span>
       </span>
-      {on ? <Check className="size-4 shrink-0 text-primary" /> : null}
+      {on ? <Check className="size-4 shrink-0 text-primary-text" /> : null}
     </button>
   );
 }

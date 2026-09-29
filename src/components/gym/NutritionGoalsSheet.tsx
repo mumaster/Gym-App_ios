@@ -91,9 +91,9 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             }}
             className="flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-left active:scale-[0.985]"
           >
-            <Sparkles className="size-5 shrink-0 text-primary" />
+            <Sparkles className="size-5 shrink-0 text-primary-text" />
             <span className="min-w-0">
-              <span className="block text-[14px] font-semibold text-primary">
+              <span className="block text-[14px] font-semibold text-primary-text">
                 {t.nutritionGoals.suggestMyLimits}
               </span>
               <span className="block text-[12.5px] text-muted-foreground">

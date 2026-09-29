@@ -25,6 +25,9 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  /* The accent as *text*: same as --primary except for a custom accent, whose
+     colour is lightened/darkened until readable on the page (accentInk.ts). */
+  --color-primary-text: var(--primary-text, var(--primary));
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -114,7 +117,6 @@
   --shadow-float: 0 18px 50px oklch(0 0 0 / 65%);
 }
 
-
 /* Accent themes — applied as a class on <html>. */
 .accent-green {
   --primary: oklch(0.88 0.24 145);
@@ -160,12 +162,17 @@
 }
 .accent-custom {
   --primary: var(--custom-primary, #34d399);
+  --primary-text: var(--custom-text-dark, var(--primary));
   /* Fallback until GymProvider sets --primary-foreground inline from the
      chosen colour (accentInk.ts): white on dark colours, this on light ones. */
   --primary-foreground: oklch(0.16 0.02 145);
   --ring: color-mix(in oklch, var(--primary) 55%, transparent);
   --chart-1: var(--primary);
   --glow-primary: 0 0 32px color-mix(in oklch, var(--primary) 28%, transparent);
+}
+
+.light.accent-custom {
+  --primary-text: var(--custom-text-light, var(--primary));
 }
 
 /* Light mode — applied via a `.light` class on <html> (GymProvider's own
@@ -421,15 +428,27 @@
 }
 
 @keyframes sheet-up {
-  from { transform: translateY(16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* A banner pinned to the top of the screen drops in from above
    (generate.tsx's muscle-pairing pop-up). */
 @keyframes banner-down {
-  from { transform: translateY(-12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* DumbbellLoader: the weight-plate clusters slide off along the bar's own
@@ -495,7 +514,10 @@
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
   80% {
-    transform: translate(calc(var(--dumbbell-slide-x) * 0.06), calc(var(--dumbbell-slide-y) * 0.06));
+    transform: translate(
+      calc(var(--dumbbell-slide-x) * 0.06),
+      calc(var(--dumbbell-slide-y) * 0.06)
+    );
     animation-timing-function: cubic-bezier(0.5, 0, 0.7, 1);
   }
   100% {

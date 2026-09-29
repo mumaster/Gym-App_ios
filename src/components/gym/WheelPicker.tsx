@@ -42,7 +42,7 @@ export function WheelPicker({
           <div
             key={v}
             className={`flex h-11 snap-center items-center justify-center text-xl font-semibold tabular ${
-              v === value ? "text-primary" : "text-muted-foreground"
+              v === value ? "text-primary-text" : "text-muted-foreground"
             }`}
           >
             {v}

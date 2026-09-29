@@ -24,7 +24,7 @@ export function PlateHint({ exerciseId, target }: { exerciseId: string; target: 
 
   return (
     <div className="mt-2 flex items-start gap-2 rounded-2xl bg-muted px-4 py-3">
-      <Layers className="mt-0.5 size-4 shrink-0 text-primary" />
+      <Layers className="mt-0.5 size-4 shrink-0 text-primary-text" />
       <p className="text-[13px] leading-snug text-muted-foreground">
         <span className="font-semibold text-foreground">
           {solution.total} kg {isDumbbell && !isBar ? t.plateHint.perDumbbell : ""}

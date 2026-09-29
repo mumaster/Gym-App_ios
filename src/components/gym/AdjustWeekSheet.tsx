@@ -69,7 +69,7 @@ export function AdjustWeekSheet({
                     <span className="shrink-0 text-[13px] text-muted-foreground">
                       {dateLabel(planned)}
                       {moved ? (
-                        <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-bold text-primary">
+                        <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-bold text-primary-text">
                           {t.schedule.moved}
                         </span>
                       ) : null}
@@ -148,7 +148,7 @@ export function AdjustWeekSheet({
           ) : null}
           <button
             onClick={onEditUsualDays}
-            className="min-h-[40px] text-[13px] font-semibold text-primary"
+            className="min-h-[40px] text-[13px] font-semibold text-primary-text"
           >
             {t.schedule.editUsualDays}
           </button>

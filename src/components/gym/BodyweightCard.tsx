@@ -64,7 +64,7 @@ export function BodyweightCard() {
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2">
         <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
-          <Scale className="size-4 shrink-0 text-primary" />
+          <Scale className="size-4 shrink-0 text-primary-text" />
           <input
             inputMode="decimal"
             type="text"

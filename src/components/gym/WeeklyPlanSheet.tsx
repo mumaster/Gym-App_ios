@@ -106,7 +106,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                     <div className="min-w-0">
                       <span className="text-[15px] font-semibold">{dayLabel}</span>
                       {isNext ? (
-                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
                           {t.weeklyPlan.nextUp}
                         </span>
                       ) : null}
@@ -180,7 +180,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             >
               <span className="text-[17px] font-semibold">{tpl.label}</span>
               <span className="text-[13px] text-muted-foreground">{tpl.description}</span>
-              <span className="mt-1 text-[12px] font-semibold text-primary">
+              <span className="mt-1 text-[12px] font-semibold text-primary-text">
                 {tpl.days.map((d) => d.label).join(" → ")}
               </span>
             </button>
@@ -190,7 +190,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
         <div className="space-y-4">
           <button
             onClick={() => setMode("template")}
-            className="text-[13px] font-semibold text-primary"
+            className="text-[13px] font-semibold text-primary-text"
           >
             {t.weeklyPlan.changeSplitBack(template.label)}
           </button>

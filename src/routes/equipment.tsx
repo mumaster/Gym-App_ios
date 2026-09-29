@@ -103,7 +103,7 @@ function EquipmentScreen() {
           className="glass flex size-11 shrink-0 items-center justify-center rounded-full"
           aria-label={t.equipment.addProfile}
         >
-          <Plus className="size-5 text-primary" />
+          <Plus className="size-5 text-primary-text" />
         </button>
       </div>
 

@@ -70,7 +70,7 @@ export function TrainingLoadCard() {
 
       {ratio && ratio.ratio > LOAD_SPIKE_RATIO ? (
         <div className="flex items-start gap-2 rounded-xl bg-muted px-3 py-2">
-          <Activity className="mt-0.5 size-4 shrink-0 text-primary" />
+          <Activity className="mt-0.5 size-4 shrink-0 text-primary-text" />
           <p className="text-[12.5px] leading-snug">{t.trainingLoad.spike}</p>
         </div>
       ) : null}

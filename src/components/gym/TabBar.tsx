@@ -43,13 +43,13 @@ function TabButton({
       className="relative flex min-h-[54px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] active:scale-95"
     >
       <Icon
-        className={`size-[22px] ${active ? "text-primary" : "text-muted-foreground"}`}
+        className={`size-[22px] ${active ? "text-primary-text" : "text-muted-foreground"}`}
         strokeWidth={active ? 2.4 : 1.9}
       />
       <span
         aria-hidden
         className={`max-w-full truncate text-[10px] font-semibold leading-3 tracking-[-0.01em] ${
-          active ? "text-primary" : "text-muted-foreground"
+          active ? "text-primary-text" : "text-muted-foreground"
         }`}
       >
         {label}

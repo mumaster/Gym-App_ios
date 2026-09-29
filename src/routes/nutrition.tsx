@@ -302,7 +302,7 @@ function NutritionScreen() {
                 className="glass relative flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
               >
                 <HapticSwitch />
-                <Droplet className="size-4 text-primary" />
+                <Droplet className="size-4 text-primary-text" />
                 <span className="text-[12px] font-semibold">
                   +{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}
                 </span>
@@ -324,7 +324,7 @@ function NutritionScreen() {
               aria-label={t.nutrition.removeWaterEntry(entry.ml)}
               className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
             >
-              <Droplet className="size-3 text-primary" /> {entry.ml}ml <X className="size-3" />
+              <Droplet className="size-3 text-primary-text" /> {entry.ml}ml <X className="size-3" />
             </button>
           ))}
         </div>
@@ -611,7 +611,7 @@ function DaySummary({
       {!hasGoals ? (
         <button
           onClick={onSetGoals}
-          className="w-full text-center text-[13px] font-semibold text-primary"
+          className="w-full text-center text-[13px] font-semibold text-primary-text"
         >
           {t.nutrition.setDailyLimitsToTrack}
         </button>

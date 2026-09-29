@@ -51,7 +51,10 @@ function CardioDetailScreen() {
       <Screen title={t.watch.cardio} action={back}>
         <Card className="p-6 text-center">
           <p className="text-[17px] font-semibold">{t.watch.notFound}</p>
-          <Link to="/history" className="mt-3 inline-block text-[15px] font-semibold text-primary">
+          <Link
+            to="/history"
+            className="mt-3 inline-block text-[15px] font-semibold text-primary-text"
+          >
             {t.historyDetail.backToHistory}
           </Link>
         </Card>
