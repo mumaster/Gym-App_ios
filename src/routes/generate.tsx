@@ -25,7 +25,6 @@ import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
-import { ProfileAvatar } from "../components/gym/ProfileAvatar";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
@@ -552,22 +551,7 @@ function WorkoutHome() {
   );
 
   return (
-    <Screen
-      title={t.generate.title}
-      subtitle={t.generate.subtitle}
-      action={
-        <button
-          onClick={() => {
-            haptic(12);
-            navigate({ to: "/settings" });
-          }}
-          aria-label={t.common.settings}
-          className="flex items-center justify-center rounded-full"
-        >
-          <ProfileAvatar avatarId={avatarId} size={40} />
-        </button>
-      }
-    >
+    <Screen title={t.generate.title} subtitle={t.generate.subtitle}>
       {hydrated && activeWorkout ? (
         <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
           <div className="flex items-center justify-between">

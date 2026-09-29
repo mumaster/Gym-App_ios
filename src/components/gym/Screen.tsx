@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
 
 export function Screen({
   title,
@@ -23,7 +24,9 @@ export function Screen({
             black turned translucent, not a distinct gray panel/bar sitting
             on top of it — see that utility's own comment in styles.css. */}
         <div className="glass-header absolute inset-0" />
-        <div className="relative mx-auto grid w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4">
+        <div
+          className={`relative mx-auto grid min-h-[42px] w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 ${SETTINGS_BUTTON_GUTTER}`}
+        >
           <div className="min-w-0">
             <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-foreground">
               {title}
@@ -33,6 +36,7 @@ export function Screen({
             ) : null}
           </div>
           {action}
+          <SettingsButton />
         </div>
       </header>
       <main

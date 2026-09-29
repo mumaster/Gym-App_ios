@@ -16,7 +16,7 @@ import {
   CalendarClock,
   Moon,
 } from "lucide-react";
-import { ProfileAvatar } from "../components/gym/ProfileAvatar";
+import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "../components/gym/SettingsButton";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
@@ -224,43 +224,36 @@ function HomeScreen() {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
-      <header className="safe-top shrink-0 flex items-center justify-between gap-3 px-5 pb-1">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
-              {dateLabel}
-            </p>
-            {/* Once answered, the check-in shrinks to this chip so its tile
+      <header className="safe-top shrink-0 pb-1">
+        <div className={`relative flex min-h-[42px] items-center px-4 ${SETTINGS_BUTTON_GUTTER}`}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
+                {dateLabel}
+              </p>
+              {/* Once answered, the check-in shrinks to this chip so its tile
                 gives its row back to the rest of the grid. Tapping it
                 reopens the picker. */}
-            {todayCheckIn && !readinessEditing ? (
-              <button
-                onClick={() => {
-                  haptic(10);
-                  setReadinessEditing(true);
-                }}
-                aria-label={t.home.readinessChipAria(t.readiness[todayCheckIn.score])}
-                className="-my-0.5 flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold leading-[16px] text-secondary-foreground active:scale-95"
-              >
-                <span aria-hidden>{READINESS_EMOJI[todayCheckIn.score]}</span>
-                {t.readiness[todayCheckIn.score]}
-              </button>
-            ) : null}
+              {todayCheckIn && !readinessEditing ? (
+                <button
+                  onClick={() => {
+                    haptic(10);
+                    setReadinessEditing(true);
+                  }}
+                  aria-label={t.home.readinessChipAria(t.readiness[todayCheckIn.score])}
+                  className="-my-0.5 flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold leading-[16px] text-secondary-foreground active:scale-95"
+                >
+                  <span aria-hidden>{READINESS_EMOJI[todayCheckIn.score]}</span>
+                  {t.readiness[todayCheckIn.score]}
+                </button>
+              ) : null}
+            </div>
+            <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
+              {greeting()}
+            </h1>
           </div>
-          <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
-            {greeting()}
-          </h1>
+          <SettingsButton />
         </div>
-        <button
-          onClick={() => {
-            haptic(12);
-            navigate({ to: "/settings" });
-          }}
-          aria-label={t.common.settings}
-          className="flex shrink-0 items-center justify-center rounded-full active:scale-95"
-        >
-          <ProfileAvatar avatarId={avatarId} size={42} />
-        </button>
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-2">
