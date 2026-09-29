@@ -23,6 +23,8 @@ import {
   type NutritionProfile,
   type Recipe,
   type WaterEntry,
+  type CoffeeEntry,
+  type CoffeeKind,
 } from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
@@ -158,6 +160,8 @@ interface GymState {
   weightLog: WeightEntry[];
   /** Daily water target in ml, or null if the user hasn't set one. */
   waterGoalMl: number | null;
+  /** Logged coffees, newest first (see nutrition.ts's CoffeeEntry). */
+  coffeeEntries: CoffeeEntry[];
   /** Watch-recorded cardio (runs, walks, rides), newest first — see types.ts. */
   cardioSessions: CardioSession[];
 }
@@ -204,6 +208,7 @@ const initialState: GymState = {
   waterEntries: [],
   weightLog: [],
   waterGoalMl: null,
+  coffeeEntries: [],
   cardioSessions: [],
 };
 
@@ -329,6 +334,7 @@ function migrate(raw: Partial<GymState>): GymState {
     waterEntries: raw.waterEntries ?? [],
     weightLog: raw.weightLog ?? [],
     waterGoalMl: raw.waterGoalMl ?? null,
+    coffeeEntries: raw.coffeeEntries ?? [],
     cardioSessions: raw.cardioSessions ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
@@ -450,6 +456,8 @@ interface Ctx extends GymState {
   logRecipe: (id: string, servings: number, meal: MealType) => void;
   logWater: (ml: number) => void;
   removeWaterEntry: (id: string) => void;
+  logCoffee: (kind: CoffeeKind) => void;
+  removeCoffeeEntry: (id: string) => void;
   /** Logs a weigh-in; a second one on the same day replaces the first. */
   logWeight: (kg: number) => void;
   removeWeightEntry: (id: string) => void;
@@ -1259,6 +1267,16 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, weightLog: s.weightLog.filter((e) => e.id !== id) })),
       removeWaterEntry: (id) =>
         setState((s) => ({ ...s, waterEntries: s.waterEntries.filter((e) => e.id !== id) })),
+      logCoffee: (kind) =>
+        setState((s) => ({
+          ...s,
+          coffeeEntries: [
+            { id: crypto.randomUUID(), kind, logged_at: new Date().toISOString() },
+            ...s.coffeeEntries,
+          ],
+        })),
+      removeCoffeeEntry: (id) =>
+        setState((s) => ({ ...s, coffeeEntries: s.coffeeEntries.filter((e) => e.id !== id) })),
     };
   }, [state, hydrated, session, syncStatus]);
 

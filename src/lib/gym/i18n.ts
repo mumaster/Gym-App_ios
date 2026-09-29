@@ -193,6 +193,8 @@ const en = {
       restDayCarbs: "Fewer carbs on rest days, protein and fat unchanged",
       proteinPerMeal: "Protein per meal: 0.4 g/kg, over at least 4 meals",
       watchCalories: "Watch calories shown, not used for nutrition (wrist estimates off by 20%+)",
+      caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
+      energySplit: "A meal's split of energy between protein, carbs and fat",
     },
   },
   settings: {
@@ -791,6 +793,31 @@ const en = {
     replay: "Welcome tour",
     replayDesc: "See what Forge can do again",
   },
+  coffee: {
+    title: "Coffee",
+    cups: (n: number) => (n === 1 ? "1 cup" : `${n} cups`),
+    caffeine: (mg: number, limit: number) => `≈${mg} of ${limit} mg caffeine`,
+    over: (mg: number) => `${mg} mg over the daily limit`,
+    note: (limit: number, pregnancy: number) =>
+      `Up to ${limit} mg of caffeine a day is safe for most adults, ${pregnancy} mg when pregnant or breastfeeding.`,
+    kinds: { espresso: "Espresso", filter: "Coffee", milk: "Cappuccino" } as Record<
+      "espresso" | "filter" | "milk",
+      string
+    >,
+    add: (kind: string) => `Log ${kind.toLowerCase()}`,
+    remove: (kind: string) => `Remove ${kind.toLowerCase()}`,
+  },
+  mealOverview: {
+    open: (meal: string) => `${meal}: nutrition overview`,
+    title: (meal: string, day: string) => `${meal} · ${day}`,
+    ofDay: (pct: number) => `${pct}% of the day's calories`,
+    ofLimit: (pct: number) => `${pct}% of your limit`,
+    split: "Energy from",
+    foods: (n: number) => (n === 1 ? "1 food" : `${n} foods`),
+    proteinMeal: (g: number, target: number) => `Protein in this meal: ${g} of ${target} g`,
+    add: "Add food",
+    save: "Save as meal",
+  },
   createMeal: {
     title: "Create meal",
     meal: "Meal",
@@ -1290,6 +1317,8 @@ const nl: Dict = {
       proteinPerMeal: "Eiwit per maaltijd: 0,4 g/kg, over minstens 4 maaltijden",
       watchCalories:
         "Horlogecalorieën getoond, niet gebruikt voor voeding (polsschattingen 20%+ ernaast)",
+      caffeine: "Cafeïne per koffie (espresso 80 mg, filter 90 mg) en de grens van 400 mg per dag",
+      energySplit: "Hoe de energie van een maaltijd verdeeld is over eiwit, koolhydraten en vet",
     },
   },
   settings: {
@@ -1893,6 +1922,28 @@ const nl: Dict = {
     readyLook: "Gewoon rondkijken",
     replay: "Rondleiding",
     replayDesc: "Bekijk opnieuw wat Forge kan",
+  },
+  coffee: {
+    title: "Koffie",
+    cups: (n: number) => (n === 1 ? "1 kopje" : `${n} kopjes`),
+    caffeine: (mg: number, limit: number) => `≈${mg} van ${limit} mg cafeïne`,
+    over: (mg: number) => `${mg} mg boven de daggrens`,
+    note: (limit: number, pregnancy: number) =>
+      `Tot ${limit} mg cafeïne per dag is veilig voor de meeste volwassenen, ${pregnancy} mg bij zwangerschap of borstvoeding.`,
+    kinds: { espresso: "Espresso", filter: "Koffie", milk: "Cappuccino" },
+    add: (kind: string) => `${kind} loggen`,
+    remove: (kind: string) => `${kind} verwijderen`,
+  },
+  mealOverview: {
+    open: (meal: string) => `${meal}: voedingsoverzicht`,
+    title: (meal: string, day: string) => `${meal} · ${day}`,
+    ofDay: (pct: number) => `${pct}% van de calorieën van de dag`,
+    ofLimit: (pct: number) => `${pct}% van je limiet`,
+    split: "Energie uit",
+    foods: (n: number) => (n === 1 ? "1 product" : `${n} producten`),
+    proteinMeal: (g: number, target: number) => `Eiwit in deze maaltijd: ${g} van ${target} g`,
+    add: "Voeding toevoegen",
+    save: "Opslaan als maaltijd",
   },
   createMeal: {
     title: "Maaltijd samenstellen",

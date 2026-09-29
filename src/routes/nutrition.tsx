@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Coffee,
   Droplet,
   Plus,
   Settings2,
@@ -15,12 +16,18 @@ import {
 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
+import { MealOverviewSheet } from "../components/gym/MealOverviewSheet";
 import { CreateRecipeSheet } from "../components/gym/CreateRecipeSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwipeToDelete } from "../components/gym/SwipeToDelete";
 import {
   addDays,
+  CAFFEINE_DAILY_LIMIT_MG,
+  CAFFEINE_PREGNANCY_LIMIT_MG,
+  caffeineMg,
+  COFFEE_CAFFEINE_MG,
+  COFFEE_KINDS,
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
@@ -97,6 +104,8 @@ function NutritionScreen() {
   const [foodSheet, setFoodSheet] = useState<{ meal?: MealType } | FoodEntry | null>(null);
   const [goalsSheetOpen, setGoalsSheetOpen] = useState(false);
   const [createMealOpen, setCreateMealOpen] = useState(false);
+  /** The meal whose nutrition overview is open. */
+  const [overviewMeal, setOverviewMeal] = useState<MealType | null>(null);
   /** Foods pre-filled into the meal builder (a logged meal saved as a meal). */
   const [mealSeed, setMealSeed] = useState<{
     name: string;
@@ -153,6 +162,16 @@ function NutritionScreen() {
           day: "numeric",
           month: "short",
         });
+
+  const saveMealFrom = (meal: MealType) => {
+    haptic(15);
+    setMealSeed({
+      name: t.mealTypes[meal],
+      meal,
+      ingredients: ingredientsFromEntries(selectedEntries.filter((e) => e.meal === meal)),
+    });
+    setCreateMealOpen(true);
+  };
 
   const openAdd = (meal?: MealType) => {
     haptic(15);
@@ -232,17 +251,11 @@ function NutritionScreen() {
               proteinTarget={proteinTarget}
               canAdd={isToday}
               onAdd={() => openAdd(meal)}
-              onSaveAsMeal={() => {
-                haptic(15);
-                setMealSeed({
-                  name: t.mealTypes[meal],
-                  meal,
-                  ingredients: ingredientsFromEntries(
-                    selectedEntries.filter((e) => e.meal === meal),
-                  ),
-                });
-                setCreateMealOpen(true);
+              onOpen={() => {
+                haptic(12);
+                setOverviewMeal(meal);
               }}
+              onSaveAsMeal={() => saveMealFrom(meal)}
               onEdit={(entry) => {
                 haptic(12);
                 setFoodSheet(entry);
@@ -350,6 +363,9 @@ function NutritionScreen() {
         </div>
       ) : null}
 
+      <SectionLabel>{t.coffee.title}</SectionLabel>
+      <CoffeeCard dayKey={selectedKey} canAdd={isToday} />
+
       {isToday ? (
         <>
           <SectionLabel>{t.bodyweight.title}</SectionLabel>
@@ -379,6 +395,32 @@ function NutritionScreen() {
         onCreateRecipe={() => {
           setFoodSheet(null);
           setCreateRecipeOpen(true);
+        }}
+      />
+      {/* One sheet at a time: each action closes the overview first. */}
+      <MealOverviewSheet
+        meal={overviewMeal}
+        entries={overviewMeal ? selectedEntries.filter((e) => e.meal === overviewMeal) : []}
+        dayTotals={totals}
+        goals={dayGoals}
+        proteinTarget={proteinTarget}
+        dayLabel={dayLabel}
+        canAdd={isToday}
+        onClose={() => setOverviewMeal(null)}
+        onAdd={() => {
+          const meal = overviewMeal ?? undefined;
+          setOverviewMeal(null);
+          openAdd(meal);
+        }}
+        onSaveAsMeal={() => {
+          const meal = overviewMeal;
+          setOverviewMeal(null);
+          if (meal) saveMealFrom(meal);
+        }}
+        onEdit={(entry) => {
+          haptic(12);
+          setOverviewMeal(null);
+          setFoodSheet(entry);
         }}
       />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
@@ -659,6 +701,7 @@ function MealGroup({
   proteinTarget,
   canAdd,
   onAdd,
+  onOpen,
   onSaveAsMeal,
   onEdit,
   onDelete,
@@ -668,6 +711,7 @@ function MealGroup({
   proteinTarget: number | null;
   canAdd: boolean;
   onAdd: () => void;
+  onOpen: () => void;
   onSaveAsMeal: () => void;
   onEdit: (entry: FoodEntry) => void;
   onDelete: (entry: FoodEntry) => void;
@@ -679,25 +723,36 @@ function MealGroup({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        <p className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {t.mealTypes[meal]}
-        </p>
-        <div className="flex items-center gap-2">
+        {/* Tapping the heading opens the meal's nutrition overview. */}
+        <button
+          onClick={onOpen}
+          disabled={!entries.length}
+          aria-label={t.mealOverview.open(t.mealTypes[meal])}
+          className="-mx-1 flex min-h-[32px] min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left active:bg-foreground/5 disabled:active:bg-transparent"
+        >
+          <span className="shrink-0 text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {t.mealTypes[meal]}
+          </span>
           {entries.length ? (
-            <p className="tabular flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
-              {t.nutrition.kcal(Math.round(mealTotals.calories))} · P {protein}
+            <span className="tabular flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
+              <span className="truncate">
+                {t.nutrition.kcal(Math.round(mealTotals.calories))} · P {protein}
+              </span>
               {proteinOk ? (
                 <span
                   role="img"
                   aria-label={t.nutrition.proteinOk(protein, proteinTarget!)}
                   title={t.nutrition.proteinOk(protein, proteinTarget!)}
-                  className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                  className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
                 >
                   <Check className="size-2.5" strokeWidth={3.5} />
                 </span>
               ) : null}
-            </p>
+              <ChevronRight className="size-4 shrink-0" />
+            </span>
           ) : null}
+        </button>
+        <div className="flex shrink-0 items-center gap-2">
           {entries.length ? (
             <button
               onClick={onSaveAsMeal}
@@ -759,5 +814,87 @@ function MealGroup({
         <p className="px-1 text-[13px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
       )}
     </div>
+  );
+}
+
+/** Coffee, logged by the cup like water, with the day's caffeine against
+ *  EFSA's daily limit (see nutrition.ts's COFFEE_CAFFEINE_MG). */
+function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
+  const t = useTranslation();
+  const { coffeeEntries, logCoffee, removeCoffeeEntry } = useGym();
+  const entries = useMemo(() => entriesForDay(coffeeEntries, dayKey), [coffeeEntries, dayKey]);
+  const mg = caffeineMg(entries);
+  const status = nutrientStatus(mg, CAFFEINE_DAILY_LIMIT_MG);
+  return (
+    <>
+      <Card className="p-4">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+            <Coffee className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="tabular text-[22px] font-bold leading-none">
+              {t.coffee.cups(entries.length)}
+            </p>
+            <p
+              className={`tabular mt-1 text-[12.5px] ${status === "over" ? "font-semibold text-destructive" : "text-muted-foreground"}`}
+            >
+              {status === "over"
+                ? t.coffee.over(mg - CAFFEINE_DAILY_LIMIT_MG)
+                : t.coffee.caffeine(mg, CAFFEINE_DAILY_LIMIT_MG)}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className={`h-full rounded-full transition-all ${barClass(status)}`}
+            style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
+          />
+        </div>
+        {canAdd ? (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {COFFEE_KINDS.map((kind) => (
+              <button
+                key={kind}
+                onClick={() => {
+                  haptic(15);
+                  logCoffee(kind);
+                }}
+                aria-label={t.coffee.add(t.coffee.kinds[kind])}
+                className="glass relative flex flex-col items-center gap-0.5 rounded-2xl py-2.5 active:scale-95"
+              >
+                <HapticSwitch />
+                <Coffee className="size-4 text-primary-text" />
+                <span className="text-[12.5px] font-semibold">+ {t.coffee.kinds[kind]}</span>
+                <span className="tabular text-[11px] text-muted-foreground">
+                  {COFFEE_CAFFEINE_MG[kind]} mg
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <p className="mt-3 text-[11.5px] leading-snug text-muted-foreground">
+          {t.coffee.note(CAFFEINE_DAILY_LIMIT_MG, CAFFEINE_PREGNANCY_LIMIT_MG)}
+        </p>
+      </Card>
+      {entries.length > 0 ? (
+        <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+          {entries.map((entry) => (
+            <button
+              key={entry.id}
+              onClick={() => {
+                haptic(10);
+                removeCoffeeEntry(entry.id);
+              }}
+              aria-label={t.coffee.remove(t.coffee.kinds[entry.kind])}
+              className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
+            >
+              <Coffee className="size-3 text-primary-text" /> {t.coffee.kinds[entry.kind]}{" "}
+              <X className="size-3" />
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }

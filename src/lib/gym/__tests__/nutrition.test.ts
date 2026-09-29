@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  caffeineMg,
+  CAFFEINE_DAILY_LIMIT_MG,
+  COFFEE_CAFFEINE_MG,
+  energySplit,
   ingredientsFromEntries,
   PROTEIN_PER_MEAL_G_PER_KG,
   proteinPerMealTarget,
@@ -176,5 +180,30 @@ describe("ingredientsFromEntries", () => {
     ing.per100.calories = 0;
     expect(entry.nevo).toEqual([151]);
     expect(entry.per100.calories).toBe(100);
+  });
+});
+
+describe("coffee", () => {
+  it("uses EFSA's caffeine per drink and 400 mg daily limit", () => {
+    expect(COFFEE_CAFFEINE_MG).toEqual({ espresso: 80, filter: 90, milk: 80 });
+    expect(CAFFEINE_DAILY_LIMIT_MG).toBe(400);
+  });
+
+  it("adds up a day's caffeine", () => {
+    expect(caffeineMg([])).toBe(0);
+    expect(caffeineMg([{ kind: "espresso" }, { kind: "filter" }, { kind: "milk" }])).toBe(250);
+  });
+});
+
+describe("energySplit", () => {
+  it("splits energy with the EU factors 4/4/9 and sums to 100", () => {
+    // 25 g protein = 100, 50 g carbs = 200, 10 g fat = 90 → 390 kcal
+    const split = energySplit({ protein: 25, carbs: 50, fat: 10 })!;
+    expect(split).toEqual({ protein: 26, carbs: 51, fat: 23 });
+    expect(split.protein + split.carbs + split.fat).toBe(100);
+  });
+
+  it("returns null without macros", () => {
+    expect(energySplit({ protein: 0, carbs: 0, fat: 0 })).toBeNull();
   });
 });

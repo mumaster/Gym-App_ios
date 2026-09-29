@@ -40,7 +40,9 @@ export type SourceId =
   | "calorieFloor"
   | "restDayCarbs"
   | "proteinPerMeal"
-  | "watchCalories";
+  | "watchCalories"
+  | "caffeine"
+  | "energySplit";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -131,6 +133,16 @@ export const SOURCES: SourceEntry[] = [
       "NEVO online version 2025/9.0, RIVM, Bilthoven",
       "EU Regulation 1169/2011, Annex I (salt = sodium × 2.5)",
     ],
+  },
+  {
+    id: "energySplit",
+    group: "nutrition",
+    refs: ["EU Regulation 1169/2011, Annex XIV (protein 4, carbohydrate 4, fat 9 kcal/g)"],
+  },
+  {
+    id: "caffeine",
+    group: "nutrition",
+    refs: ["EFSA NDA Panel, Scientific opinion on the safety of caffeine, EFSA Journal 2015"],
   },
   {
     id: "sessionEnergy",

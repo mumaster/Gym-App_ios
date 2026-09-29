@@ -118,6 +118,61 @@ export interface WaterEntry {
  *  "quick add" means. */
 export const WATER_QUICK_ADD = [250, 500, 750, 1000];
 
+/**
+ * Coffee, tracked by the cup like water, with an estimate of the caffeine.
+ * Caffeine per drink is EFSA's (NDA Panel, Scientific opinion on the safety
+ * of caffeine, EFSA Journal 2015;13(5):4102, as given in its consumer
+ * summary and EUFIC's; confirmed through web search results): an espresso
+ * (60 ml) about 80 mg, a cup of filter coffee (200 ml) about 90 mg. A
+ * cappuccino or latte is counted as one espresso shot, since that's what's
+ * in it — the app's own reading, not a separate published value; a double
+ * shot is two espressos.
+ */
+export type CoffeeKind = "espresso" | "filter" | "milk";
+export const COFFEE_KINDS: CoffeeKind[] = ["espresso", "filter", "milk"];
+export const COFFEE_CAFFEINE_MG: Record<CoffeeKind, number> = {
+  espresso: 80,
+  filter: 90,
+  milk: 80,
+};
+/** EFSA 2015 (same opinion): up to 400 mg a day raises no safety concerns
+ *  for healthy adults; 200 mg a day for pregnant or breastfeeding women. */
+export const CAFFEINE_DAILY_LIMIT_MG = 400;
+export const CAFFEINE_PREGNANCY_LIMIT_MG = 200;
+
+/** One logged coffee. */
+export interface CoffeeEntry {
+  id: string;
+  kind: CoffeeKind;
+  /** ISO timestamp when logged. */
+  logged_at: string;
+}
+
+export const caffeineMg = (entries: { kind: CoffeeKind }[]) =>
+  entries.reduce((sum, e) => sum + (COFFEE_CAFFEINE_MG[e.kind] ?? 0), 0);
+
+/**
+ * Where a meal's energy comes from, as whole percentages of the energy in
+ * its protein, carbs and fat, using the EU's energy conversion factors
+ * (Regulation 1169/2011, Annex XIV: protein 4, carbohydrate 4, fat
+ * 9 kcal/g). Fiber and alcohol are left out, so this is the split between
+ * the three macros, not a share of the logged kcal. Null with none of them.
+ */
+export const ENERGY_PER_GRAM = { protein: 4, carbs: 4, fat: 9 } as const;
+export function energySplit(m: Pick<Macros, "protein" | "carbs" | "fat">) {
+  const kcal = {
+    protein: m.protein * ENERGY_PER_GRAM.protein,
+    carbs: m.carbs * ENERGY_PER_GRAM.carbs,
+    fat: m.fat * ENERGY_PER_GRAM.fat,
+  };
+  const total = kcal.protein + kcal.carbs + kcal.fat;
+  if (total <= 0) return null;
+  const protein = Math.round((kcal.protein / total) * 100);
+  const fat = Math.round((kcal.fat / total) * 100);
+  // Carbs take the remainder so the three always add up to 100.
+  return { protein, carbs: 100 - protein - fat, fat };
+}
+
 /** Trims a fixed-2dp liters string down to whatever precision it actually needs. */
 export const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\.?0+$/, "")}L`;
 
