@@ -848,6 +848,24 @@ export function AddFoodSheet({
               />
             </label>
 
+            {/* What this portion adds up to, right under the grams that set
+                it and above the per-100 g values it's worked out from. */}
+            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
+              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
+                {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
+              </p>
+              <p className="tabular mt-1 text-[15px] font-semibold">
+                {t.addFood.macroSummary(
+                  preview.calories,
+                  preview.protein,
+                  preview.carbs,
+                  preview.fat,
+                  preview.fiber,
+                  preview.salt,
+                )}
+              </p>
+            </div>
+
             <div>
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
                 {t.addFood.per100g}
@@ -893,22 +911,6 @@ export function AddFoodSheet({
                   {t.addFood.nevoSaltNote} {t.nutrition.nevoReference}
                 </p>
               ) : null}
-            </div>
-
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
-                {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
-              </p>
-              <p className="tabular mt-1 text-[15px] font-semibold">
-                {t.addFood.macroSummary(
-                  preview.calories,
-                  preview.protein,
-                  preview.carbs,
-                  preview.fat,
-                  preview.fiber,
-                  preview.salt,
-                )}
-              </p>
             </div>
 
             {/* Editing an existing entry already saves on Done/backdrop close
