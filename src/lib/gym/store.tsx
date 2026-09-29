@@ -76,6 +76,7 @@ import { deleteRouteMap } from "./routeMapStore";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso } from "./watch";
+import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
 interface GymState {
   profiles: EquipmentProfile[];
@@ -510,6 +511,54 @@ export function GymProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(KEY, JSON.stringify(state));
   }, [state, hydrated]);
+
+  // NEVO foods show NEVO's own name in the app's language (nevoFoods.ts's
+  // localizeNevoName): after a language switch, or when foods logged in the
+  // other language arrive (a cloud pull, an older save), their stored names
+  // are switched over — the log, favourites and saved meals and recipes, so
+  // search, recents and the star all keep matching by name. The table is
+  // only loaded when something carries a NEVO mark.
+  const nevoItemCount = useMemo(() => {
+    const one = (x: { nevo?: number[] }) => x.nevo?.length === 1;
+    return (
+      state.foodEntries.filter(one).length +
+      state.favoriteFoods.filter(one).length +
+      state.mealTemplates.reduce((n, m) => n + m.ingredients.filter(one).length, 0) +
+      state.recipes.reduce((n, r) => n + r.ingredients.filter(one).length, 0)
+    );
+  }, [state.foodEntries, state.favoriteFoods, state.mealTemplates, state.recipes]);
+  useEffect(() => {
+    if (!hydrated || nevoItemCount === 0) return;
+    let alive = true;
+    loadNevoFoods()
+      .then((foods) => {
+        if (!alive) return;
+        const byCode = new Map(foods.map((f) => [f.code, f]));
+        setState((s) => {
+          const lang = s.language;
+          const foodEntries = localizeNevoNames(s.foodEntries, byCode, lang);
+          const favoriteFoods = localizeNevoNames(s.favoriteFoods, byCode, lang);
+          const mealTemplates = s.mealTemplates.map((m) => {
+            const ingredients = localizeNevoNames(m.ingredients, byCode, lang);
+            return ingredients === m.ingredients ? m : { ...m, ingredients };
+          });
+          const recipes = s.recipes.map((r) => {
+            const ingredients = localizeNevoNames(r.ingredients, byCode, lang);
+            return ingredients === r.ingredients ? r : { ...r, ingredients };
+          });
+          const changed =
+            foodEntries !== s.foodEntries ||
+            favoriteFoods !== s.favoriteFoods ||
+            mealTemplates.some((m, i) => m !== s.mealTemplates[i]) ||
+            recipes.some((r, i) => r !== s.recipes[i]);
+          return changed ? { ...s, foodEntries, favoriteFoods, mealTemplates, recipes } : s;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, state.language, nevoItemCount]);
 
   useEffect(() => onAuthStateChange(setSession), []);
 

@@ -3,6 +3,8 @@ import { NEVO_FOODS, NEVO_VERSION } from "../nevoFoods.data";
 import {
   SALT_PER_SODIUM,
   foldText,
+  localizeNevoName,
+  localizeNevoNames,
   matchesNevo,
   nevoFoodFromRow,
   searchNevoFoods,
@@ -82,5 +84,33 @@ describe("keeping the NEVO mark", () => {
   it("only while the values are NEVO's own", () => {
     expect(matchesNevo({ ...nevo }, nevo)).toBe(true);
     expect(matchesNevo({ ...nevo, calories: 95 }, nevo)).toBe(false);
+  });
+});
+
+describe("NEVO names in the app's language", () => {
+  const map = new Map(foods.map((f) => [f.code, f]));
+  const per100 = byCode(151).per100;
+
+  it("switches NEVO's other-language name to this language", () => {
+    const item = { name: "Banana", grams: 120, per100, nevo: [151] };
+    expect(localizeNevoName(item, map, "nl").name).toBe("Banaan");
+    expect(localizeNevoName({ ...item, name: "banaan" }, map, "en").name).toBe("Banana");
+  });
+
+  it("leaves a name already in this language, a typed name, recipes and unmarked foods", () => {
+    const item = { name: "Banaan", grams: 120, per100, nevo: [151] };
+    expect(localizeNevoName(item, map, "nl")).toBe(item);
+    const typed = { ...item, name: "Rijpe banaan" };
+    expect(localizeNevoName(typed, map, "en")).toBe(typed);
+    const recipe = { ...item, name: "Banana", nevo: [151, 1] };
+    expect(localizeNevoName(recipe, map, "nl")).toBe(recipe);
+    const unmarked = { name: "Banana", grams: 120, per100 };
+    expect(localizeNevoName(unmarked, map, "nl")).toBe(unmarked);
+  });
+
+  it("returns the same list when nothing changes", () => {
+    const list = [{ name: "Banaan", grams: 120, per100, nevo: [151] }];
+    expect(localizeNevoNames(list, map, "nl")).toBe(list);
+    expect(localizeNevoNames(list, map, "en")[0]!.name).toBe("Banana");
   });
 });

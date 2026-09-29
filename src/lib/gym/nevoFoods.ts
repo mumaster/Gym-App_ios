@@ -63,6 +63,43 @@ export function nevoFoodFromRow(row: NevoRow): NevoFood {
 export const nevoName = (food: NevoFood, language: "en" | "nl") =>
   language === "nl" ? food.nl : food.en;
 
+/**
+ * A logged, starred or saved food carrying one NEVO code shows NEVO's name
+ * in the app's language: an item still named with NEVO's other-language
+ * name ("Banana" in the Dutch app) gets NEVO's name in this language
+ * ("Banaan"). Anything else — a name the user typed, a recipe (several
+ * codes), a food whose NEVO mark was dropped — is left alone. Returns the
+ * same object when nothing changes.
+ */
+export function localizeNevoName<T extends { name: string; nevo?: number[] }>(
+  item: T,
+  byCode: Map<number, NevoFood>,
+  language: "en" | "nl",
+): T {
+  const code = item.nevo?.length === 1 ? item.nevo[0] : undefined;
+  const food = code == null ? undefined : byCode.get(code);
+  if (!food) return item;
+  const other = nevoName(food, language === "nl" ? "en" : "nl");
+  const own = nevoName(food, language);
+  if (own === other || foldText(item.name.trim()) !== foldText(other)) return item;
+  return { ...item, name: own };
+}
+
+/** localizeNevoName over a list; the same array when nothing changes. */
+export function localizeNevoNames<T extends { name: string; nevo?: number[] }>(
+  items: T[],
+  byCode: Map<number, NevoFood>,
+  language: "en" | "nl",
+): T[] {
+  let changed = false;
+  const next = items.map((item) => {
+    const renamed = localizeNevoName(item, byCode, language);
+    if (renamed !== item) changed = true;
+    return renamed;
+  });
+  return changed ? next : items;
+}
+
 let loaded: Promise<NevoFood[]> | null = null;
 
 /** The table, loaded on first use (a separate chunk, not the main bundle). */
