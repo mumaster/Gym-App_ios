@@ -49,6 +49,10 @@ import {
 } from "../lib/gym/schedule";
 import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
 import { addDays } from "../lib/gym/date";
+import { cardioSessionsOn, remainingCardioOn } from "../lib/gym/cardio";
+import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
+import { LogCardioSheet } from "../components/gym/LogCardioSheet";
+import type { CardioPlanDay, CardioSession } from "../lib/gym/types";
 import { bestWeekStreak, currentWeekStreak, trainingDaysThisWeek } from "../lib/gym/streak";
 import { haptic, useGym } from "../lib/gym/store";
 
@@ -90,8 +94,11 @@ function HomeScreen() {
     setTodayReadiness,
     weightLog,
     nutritionProfile,
+    cardioPlan,
+    cardioSessions,
   } = useGym();
   const [readinessEditing, setReadinessEditing] = useState(false);
+  const [cardioLogOpen, setCardioLogOpen] = useState(false);
   const todayCheckIn = todaysCheckIn(readinessLog);
 
   const streak = useMemo(() => currentWeekStreak(workouts), [workouts]);
@@ -161,7 +168,7 @@ function HomeScreen() {
   let heroTitle = t.home.readyToTrain;
   let heroSub: string | null = null;
   let heroCta = t.home.generate;
-  let heroTarget: "/session" | "/generate" = "/generate";
+  let heroTarget: "/session" | "/generate" | "cardio" = "/generate";
 
   if (activeWorkout) {
     heroIcon = Play;
@@ -217,146 +224,183 @@ function HomeScreen() {
     return name.charAt(0).toUpperCase() + name.slice(1);
   })();
   if (whenLabel) heroSub = heroSub ? `${whenLabel} · ${heroSub}` : whenLabel;
+
+  // Planned cardio still to do today. On a day with no strength session due
+  // (none planned today, none overdue, none running) it takes the hero, with
+  // a Log button that opens the log sheet right here; on a strength day it's
+  // added to the hero's sub-line instead, so strength stays the one CTA.
+  const cardioToday = remainingCardioOn(cardioPlan, cardioSessions, today, today)[0] ?? null;
+  const strengthDue =
+    !!activeWorkout ||
+    (rotation != null && overdueDays(rotation) > 0) ||
+    whenLabel === t.home.today;
+  if (cardioToday && !strengthDue) {
+    heroIcon = CARDIO_ICONS[cardioToday.activity];
+    heroEyebrow = t.cardio.heroEyebrow;
+    heroTitle = t.cardio.session(t.cardio.activities[cardioToday.activity], cardioToday.minutes);
+    // Still say when the next strength session is, after the effort.
+    const nextStrength = whenLabel
+      ? `${t.home.nextDay(program ? programDayLabel : schemeDayLabel)} · ${whenLabel}`
+      : null;
+    heroSub = [t.cardio.efforts[cardioToday.effort], nextStrength].filter(Boolean).join(" · ");
+    heroCta = t.cardio.heroCta;
+    heroTarget = "cardio";
+  } else if (cardioToday && whenLabel === t.home.today) {
+    const plus = t.cardio.plusCardio(t.cardio.activities[cardioToday.activity]);
+    heroSub = heroSub ? `${heroSub} ${plus}` : plus;
+  }
   const HeroIcon = heroIcon;
   const readinessOpen = !todayCheckIn || readinessEditing;
 
   if (!hydrated) return <div className="fixed inset-0 bg-background" />;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
-      <header className="safe-top shrink-0 pb-1">
-        <div className={`relative flex min-h-[42px] items-center px-4 ${SETTINGS_BUTTON_GUTTER}`}>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
-                {dateLabel}
-              </p>
-              {/* Once answered, the check-in shrinks to this chip so its tile
+    <>
+      <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
+        <header className="safe-top shrink-0 pb-1">
+          <div className={`relative flex min-h-[42px] items-center px-4 ${SETTINGS_BUTTON_GUTTER}`}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
+                  {dateLabel}
+                </p>
+                {/* Once answered, the check-in shrinks to this chip so its tile
                 gives its row back to the rest of the grid. Tapping it
                 reopens the picker. */}
-              {todayCheckIn && !readinessEditing ? (
-                <button
-                  onClick={() => {
-                    haptic(10);
-                    setReadinessEditing(true);
-                  }}
-                  aria-label={t.home.readinessChipAria(t.readiness[todayCheckIn.score])}
-                  className="-my-0.5 flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold leading-[16px] text-secondary-foreground active:scale-95"
-                >
-                  <span aria-hidden>{READINESS_EMOJI[todayCheckIn.score]}</span>
-                  {t.readiness[todayCheckIn.score]}
-                </button>
-              ) : null}
+                {todayCheckIn && !readinessEditing ? (
+                  <button
+                    onClick={() => {
+                      haptic(10);
+                      setReadinessEditing(true);
+                    }}
+                    aria-label={t.home.readinessChipAria(t.readiness[todayCheckIn.score])}
+                    className="-my-0.5 flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold leading-[16px] text-secondary-foreground active:scale-95"
+                  >
+                    <span aria-hidden>{READINESS_EMOJI[todayCheckIn.score]}</span>
+                    {t.readiness[todayCheckIn.score]}
+                  </button>
+                ) : null}
+              </div>
+              <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
+                {greeting()}
+              </h1>
             </div>
-            <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
-              {greeting()}
-            </h1>
+            <SettingsButton />
           </div>
-          <SettingsButton />
-        </div>
-      </header>
+        </header>
 
-      <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-2">
-        <button
-          onClick={() => {
-            haptic(12);
-            navigate({ to: heroTarget });
-          }}
-          className="glass glow shrink-0 rounded-[28px] p-4 text-left transition-transform active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary-text">
-                <HeroIcon className="size-3.5" /> {heroEyebrow}
-              </p>
-              <p className="mt-1.5 truncate text-[20px] font-bold leading-tight">{heroTitle}</p>
-              {heroSub ? (
-                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{heroSub}</p>
-              ) : null}
-            </div>
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary py-2.5 pl-4 pr-3 text-[14px] font-bold text-primary-foreground">
-              {heroCta} <ChevronRight className="size-4" />
-            </span>
-          </div>
-          {program && programWeek ? (
-            <div className="mt-2.5 flex gap-1">
-              {program.weeks.map((w, i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full ${
-                    i < program.currentWeek
-                      ? "bg-primary/40"
-                      : i === program.currentWeek
-                        ? "bg-primary"
-                        : "bg-foreground/10"
-                  }`}
-                />
-              ))}
-            </div>
-          ) : null}
-        </button>
-
-        <div
-          className={`grid min-h-0 flex-1 grid-cols-2 gap-2.5 ${
-            readinessOpen
-              ? "grid-rows-[0.84fr_0.76fr_0.64fr_0.33fr_0.38fr]"
-              : "grid-rows-[0.95fr_0.95fr_0.44fr_0.5fr]"
-          }`}
-        >
-          <NutritionTile
-            active={todayEntries.length > 0}
-            hasGoals={hasNutritionGoals}
-            totals={todayTotals}
-            goals={dayGoals}
-            dayType={dayNutrition.byDayType ? dayNutrition.dayType : null}
-            calorieStatus={calorieStatus}
-            caloriePct={caloriePct}
-            onClick={() => navigate({ to: "/nutrition" })}
-          />
-
-          <WaterTile
-            totalMl={todayWaterMl}
-            goalMl={waterGoalMl}
-            onAdd={(ml) => {
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-2">
+          <button
+            onClick={() => {
               haptic(12);
-              logWater(ml);
+              if (heroTarget === "cardio") setCardioLogOpen(true);
+              else navigate({ to: heroTarget });
             }}
-            onOpen={() => navigate({ to: "/nutrition" })}
-          />
+            className="glass glow shrink-0 rounded-[28px] p-4 text-left transition-transform active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary-text">
+                  <HeroIcon className="size-3.5" /> {heroEyebrow}
+                </p>
+                <p className="mt-1.5 truncate text-[20px] font-bold leading-tight">{heroTitle}</p>
+                {heroSub ? (
+                  <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{heroSub}</p>
+                ) : null}
+              </div>
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary py-2.5 pl-4 pr-3 text-[14px] font-bold text-primary-foreground">
+                {heroCta} <ChevronRight className="size-4" />
+              </span>
+            </div>
+            {program && programWeek && heroTarget !== "cardio" ? (
+              <div className="mt-2.5 flex gap-1">
+                {program.weeks.map((w, i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full ${
+                      i < program.currentWeek
+                        ? "bg-primary/40"
+                        : i === program.currentWeek
+                          ? "bg-primary"
+                          : "bg-foreground/10"
+                    }`}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </button>
 
-          {readinessOpen ? (
-            <ReadinessTile
-              current={todayCheckIn?.score ?? null}
-              onPick={(score) => {
-                haptic([15, 25]);
-                setTodayReadiness(score);
-                setReadinessEditing(false);
-              }}
+          <div
+            className={`grid min-h-0 flex-1 grid-cols-2 gap-2.5 ${
+              readinessOpen
+                ? "grid-rows-[0.84fr_0.76fr_0.64fr_0.33fr_0.38fr]"
+                : "grid-rows-[0.95fr_0.95fr_0.44fr_0.5fr]"
+            }`}
+          >
+            <NutritionTile
+              active={todayEntries.length > 0}
+              hasGoals={hasNutritionGoals}
+              totals={todayTotals}
+              goals={dayGoals}
+              dayType={dayNutrition.byDayType ? dayNutrition.dayType : null}
+              calorieStatus={calorieStatus}
+              caloriePct={caloriePct}
+              onClick={() => navigate({ to: "/nutrition" })}
             />
-          ) : null}
 
-          <ActivityTile
-            streak={streak}
-            longestStreak={longestStreak}
-            daysThisWeek={daysThisWeek}
-            totalWorkouts={workouts.length}
-            onClick={() => navigate({ to: "/history" })}
+            <WaterTile
+              totalMl={todayWaterMl}
+              goalMl={waterGoalMl}
+              onAdd={(ml) => {
+                haptic(12);
+                logWater(ml);
+              }}
+              onOpen={() => navigate({ to: "/nutrition" })}
+            />
+
+            {readinessOpen ? (
+              <ReadinessTile
+                current={todayCheckIn?.score ?? null}
+                onPick={(score) => {
+                  haptic([15, 25]);
+                  setTodayReadiness(score);
+                  setReadinessEditing(false);
+                }}
+              />
+            ) : null}
+
+            <ActivityTile
+              streak={streak}
+              longestStreak={longestStreak}
+              daysThisWeek={daysThisWeek}
+              totalWorkouts={workouts.length}
+              onClick={() => navigate({ to: "/history" })}
+            />
+
+            <LatestPrTile pr={pr} today={today} onClick={() => navigate({ to: "/history" })} />
+          </div>
+
+          <WeekStrip
+            today={today}
+            rotation={rotation}
+            trainedKeys={trainedKeys}
+            cardioPlan={cardioPlan}
+            cardioSessions={cardioSessions}
+            onClick={() => {
+              haptic(10);
+              navigate({ to: rotation ? "/generate" : "/history" });
+            }}
           />
-
-          <LatestPrTile pr={pr} today={today} onClick={() => navigate({ to: "/history" })} />
-        </div>
-
-        <WeekStrip
-          today={today}
-          rotation={rotation}
-          trainedKeys={trainedKeys}
-          onClick={() => {
-            haptic(10);
-            navigate({ to: rotation ? "/generate" : "/history" });
-          }}
-        />
-      </main>
-    </div>
+        </main>
+      </div>
+      {/* Outside the fixed page: inside it the sheet would share its stacking
+        context and sit under the tab bar. */}
+      <LogCardioSheet
+        open={cardioLogOpen}
+        onClose={() => setCardioLogOpen(false)}
+        preset={cardioToday}
+      />
+    </>
   );
 }
 
@@ -773,11 +817,15 @@ function WeekStrip({
   today,
   rotation,
   trainedKeys,
+  cardioPlan,
+  cardioSessions,
   onClick,
 }: {
   today: Date;
   rotation: Rotation | null;
   trainedKeys: Set<string>;
+  cardioPlan: CardioPlanDay[];
+  cardioSessions: CardioSession[];
   onClick: () => void;
 }) {
   const t = useTranslation();
@@ -789,11 +837,19 @@ function WeekStrip({
     const trained = trainedKeys.has(key);
     const future = daysBetween(today, date) >= 0;
     const planned = !trained && future && rotation != null && hasPlannedSession(rotation, date);
+    const cardioDone = cardioSessionsOn(cardioSessions, key);
+    const cardioLeft = remainingCardioOn(cardioPlan, cardioSessions, date, today);
     return {
       date,
       key,
       isToday: daysBetween(today, date) === 0,
       state: trained ? ("trained" as const) : planned ? ("planned" as const) : ("rest" as const),
+      cardio: cardioDone.length
+        ? ("done" as const)
+        : cardioLeft.length
+          ? ("planned" as const)
+          : null,
+      cardioActivity: cardioDone[0]?.activity ?? cardioLeft[0]?.activity ?? null,
     };
   });
 
@@ -809,11 +865,11 @@ function WeekStrip({
           <span
             key={d.key}
             role="img"
-            aria-label={t.home.weekDayAria(
+            aria-label={`${t.home.weekDayAria(
               d.date.toLocaleDateString(locale, { weekday: "long" }),
               d.state,
               d.isToday,
-            )}
+            )}${d.cardio ? `, ${t.cardio.dayAria(d.cardio)}` : ""}`}
             className={`flex flex-col items-center gap-0.5 rounded-xl py-0.5 ${
               d.isToday ? "bg-foreground/[0.06]" : ""
             }`}
@@ -825,8 +881,11 @@ function WeekStrip({
             >
               {name.charAt(0).toUpperCase()}
             </span>
-            <span className="flex size-5 items-center justify-center">
-              {d.state === "trained" ? (
+            <span className="relative flex size-5 items-center justify-center">
+              {d.state === "rest" && d.cardio ? (
+                // A cardio-only day: its own mark, with the activity's icon.
+                <CardioMark state={d.cardio} Icon={CARDIO_ICONS[d.cardioActivity ?? "run"]} />
+              ) : d.state === "trained" ? (
                 <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Check className="size-3" strokeWidth={3.2} />
                 </span>
@@ -835,10 +894,34 @@ function WeekStrip({
               ) : (
                 <span className="size-1.5 rounded-full bg-muted-foreground/30" />
               )}
+              {d.state !== "rest" && d.cardio ? (
+                // Strength and cardio on one day: a small corner dot, filled
+                // once the cardio is done.
+                <span
+                  aria-hidden
+                  className={`absolute -right-1 -top-1 size-2.5 rounded-full ring-2 ring-background ${
+                    d.cardio === "done"
+                      ? "bg-primary"
+                      : "border-[1.5px] border-primary bg-background"
+                  }`}
+                />
+              ) : null}
             </span>
           </span>
         );
       })}
     </button>
+  );
+}
+
+function CardioMark({ state, Icon }: { state: "done" | "planned"; Icon: LucideIcon }) {
+  return state === "done" ? (
+    <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <Icon className="size-3" strokeWidth={2.6} />
+    </span>
+  ) : (
+    <span className="flex size-[18px] items-center justify-center rounded-full border-2 border-primary text-primary-text">
+      <Icon className="size-2.5" strokeWidth={2.6} />
+    </span>
   );
 }

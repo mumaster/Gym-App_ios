@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
+import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
@@ -575,6 +576,7 @@ function WorkoutHome() {
           on the page; time and gear are settings under it. Without one the
           page reads as the generator: time, gear, then the optional plan. */}
       {hasPlan ? planCard : null}
+      {hasPlan && hydrated ? <CardioWeekCard className="mb-4" /> : null}
 
       {hydrated && !activeWorkout && workouts.length > 0 ? (
         <div className="mb-4">
@@ -723,6 +725,7 @@ function WorkoutHome() {
       </Card>
 
       {!hasPlan ? planCard : null}
+      {!hasPlan && hydrated ? <CardioWeekCard className="mb-4" /> : null}
 
       {hydrated && workoutTemplates.length > 0 ? (
         <div className="mb-4">

@@ -4,6 +4,9 @@ import { ChevronLeft } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { CardioRouteMap } from "../components/gym/RouteMapView";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { ActivityPicker, EffortPicker } from "../components/gym/CardioControls";
+import { cardioName } from "../components/gym/cardioDisplay";
+import type { CardioActivity, CardioEffort } from "../lib/gym/types";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -27,7 +30,9 @@ export const Route = createFileRoute("/history/cardio/$cardioId")({
  *  session-effort rating that counts toward training load. */
 function CardioDetailScreen() {
   const { cardioId } = useParams({ from: "/history/cardio/$cardioId" });
-  const { cardioSessions, hydrated, rateCardio, deleteCardioSession } = useGym();
+  const { cardioSessions, hydrated, rateCardio, deleteCardioSession, setCardioKind } = useGym();
+  const [pickedActivity, setPickedActivity] = useState<CardioActivity | null>(null);
+  const [pickedEffort, setPickedEffort] = useState<CardioEffort | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const navigate = useNavigate();
@@ -64,10 +69,17 @@ function CardioDetailScreen() {
 
   const date = new Date(session.date);
   const minutes = cardioMinutes(session);
+  // Both are needed before it counts (cardio.ts's cardioInfo), so a first
+  // pick on an older import waits here for the other one.
+  const activity = pickedActivity ?? session.activity ?? null;
+  const effort = pickedEffort ?? session.effort ?? null;
+  const pick = (a: CardioActivity | null, e: CardioEffort | null) => {
+    if (a && e) setCardioKind(session.id, a, e);
+  };
 
   return (
     <Screen
-      title={session.watch.activity || t.watch.cardio}
+      title={cardioName(session, t)}
       subtitle={date.toLocaleString(locale, {
         weekday: "long",
         day: "numeric",
@@ -80,6 +92,27 @@ function CardioDetailScreen() {
       <Card className="space-y-4 p-4">
         {session.hasRouteMap ? <CardioRouteMap id={session.id} /> : null}
         <WatchDataCard data={session.watch} />
+      </Card>
+
+      <SectionLabel>{t.cardio.activity}</SectionLabel>
+      <Card className="space-y-4 p-4">
+        <ActivityPicker
+          value={activity}
+          onChange={(a) => {
+            setPickedActivity(a);
+            pick(a, effort);
+          }}
+        />
+        <EffortPicker
+          value={effort}
+          onChange={(e) => {
+            setPickedEffort(e);
+            pick(activity, e);
+          }}
+        />
+        {!session.activity || !session.effort ? (
+          <p className="text-[12.5px] text-muted-foreground">{t.cardio.setKind}</p>
+        ) : null}
       </Card>
 
       <SectionLabel>{t.trainingLoad.sessionEffort}</SectionLabel>

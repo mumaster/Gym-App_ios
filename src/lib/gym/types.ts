@@ -205,6 +205,21 @@ export interface WatchTable {
   rows: string[][];
 }
 
+/** Cardio activities with their own Compendium entries — see cardio.ts. */
+export type CardioActivity = "run" | "cycle" | "walk" | "swim" | "row" | "elliptical" | "intervals";
+
+/** How hard a cardio session was, in the Compendium's own terms. */
+export type CardioEffort = "easy" | "moderate" | "hard";
+
+/** One planned cardio session a week: on weekday `dow` (Date#getDay). */
+export interface CardioPlanDay {
+  id: string;
+  dow: number;
+  activity: CardioActivity;
+  minutes: number;
+  effort: CardioEffort;
+}
+
 /** A cardio session recorded only on a watch (a run, a walk, a ride), with
  *  no Forge strength session to attach it to. Kept apart from `workouts` on
  *  purpose: everything that reads workouts (streak, sets per muscle,
@@ -214,6 +229,15 @@ export interface CardioSession {
   /** Start, ISO. */
   date: string;
   watch: WatchData;
+  /** Which activity and how hard, as the user picked them — what the energy
+   *  and WHO-minute estimates in cardio.ts are based on. Missing on watch
+   *  imports from before they were asked; those count for neither until
+   *  the user sets them. */
+  activity?: CardioActivity;
+  effort?: CardioEffort;
+  /** Logged by hand rather than imported from watch screenshots; its
+   *  `watch` then holds only what was typed in. */
+  manual?: boolean;
   /** Session RPE, 0–10 on Foster's CR-10 scale — counts toward training load. */
   session_rpe?: number;
   /** A route map was saved for it (in IndexedDB, on this device — see

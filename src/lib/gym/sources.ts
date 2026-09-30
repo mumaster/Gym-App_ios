@@ -42,7 +42,10 @@ export type SourceId =
   | "proteinPerMeal"
   | "watchCalories"
   | "caffeine"
-  | "energySplit";
+  | "energySplit"
+  | "concurrent"
+  | "cardioMinutes"
+  | "cardioMets";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -96,6 +99,15 @@ export const SOURCES: SourceEntry[] = [
     ],
   },
   {
+    id: "concurrent",
+    group: "training",
+    refs: [
+      "Held et al., umbrella review of concurrent training, Sports Med 2026",
+      "Schumann et al., Sports Med 2022",
+      "Robineau et al., J Strength Cond Res 2016",
+    ],
+  },
+  {
     id: "sessionRpe",
     group: "tracking",
     refs: ["Foster et al. 2001", "Day et al. 2004"],
@@ -106,6 +118,16 @@ export const SOURCES: SourceEntry[] = [
     refs: ["Gabbett, Br J Sports Med 2016", "Impellizzeri et al. 2020"],
   },
   { id: "e1rm", group: "tracking", refs: ["Epley 1985"] },
+  {
+    id: "cardioMinutes",
+    group: "tracking",
+    refs: ["WHO guidelines on physical activity (Bull et al., Br J Sports Med 2020)"],
+  },
+  {
+    id: "cardioMets",
+    group: "tracking",
+    refs: ["2024 Adult Compendium of Physical Activities (Herrmann et al.), cardio entries"],
+  },
   {
     id: "streak",
     group: "tracking",

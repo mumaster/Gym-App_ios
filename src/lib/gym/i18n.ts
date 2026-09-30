@@ -158,6 +158,64 @@ const en = {
     notFound: "Cardio session not found",
     routeMap: "Route map",
   },
+  cardio: {
+    title: "Cardio",
+    thisWeek: "Cardio this week",
+    progress: (n: number, target: number) => `${n} of ${target} min`,
+    explain:
+      "Counted as minutes of moderate-intensity activity: a minute of hard cardio counts as two. The health guideline is at least 150 minutes a week.",
+    reached: "Weekly minimum reached",
+    log: "Log cardio",
+    plan: "Plan cardio",
+    editPlan: "Edit cardio plan",
+    noPlan:
+      "No cardio days planned yet. Cardio doesn't hold back strength or muscle gains, so any day works.",
+    activities: {
+      run: "Run",
+      cycle: "Ride",
+      walk: "Walk",
+      swim: "Swim",
+      row: "Row",
+      elliptical: "Cross trainer",
+      intervals: "Intervals",
+    },
+    efforts: { easy: "Easy", moderate: "Moderate", hard: "Hard" },
+    activity: "Activity",
+    effort: "Effort",
+    minutes: "Minutes",
+    min: (n: number) => `${n} min`,
+    distance: "Distance",
+    distanceHint: "km, optional",
+    when: "When",
+    today: "Today",
+    yesterday: "Yesterday",
+    rpe: "How hard was the whole session? (optional)",
+    save: "Save",
+    logTitle: "Log cardio",
+    planTitle: "Cardio plan",
+    planIntro:
+      "Pick the days you do cardio. Your strength days stay as they are — both fit in one week.",
+    addSession: "Add a session",
+    day: "Day",
+    remove: "Remove",
+    planTotal: (n: number, target: number) =>
+      `Adds up to ${n} of ${target} minutes of moderate-intensity activity a week`,
+    sameDayHint: (hours: number) =>
+      `On a strength day: do strength first, and leave ${hours}+ hours between them if you can.`,
+    alsoStrength: "also strength",
+    planned: "Planned",
+    plannedToday: "Planned today",
+    session: (activity: string, minutes: number) => `${activity} · ${minutes} min`,
+    setKind:
+      "Pick the activity and effort so this session counts toward your weekly cardio minutes.",
+    heroEyebrow: "Cardio today",
+    heroCta: "Log",
+    plusCardio: (activity: string) => `+ ${activity}`,
+    dayAria: (state: "done" | "planned"): string =>
+      state === "done" ? "cardio done" : "cardio planned",
+    weekCaption: (sessions: number) =>
+      sessions === 1 ? "1 cardio session this week" : `${sessions} cardio sessions this week`,
+  },
   sources: {
     title: "Sources",
     row: "Sources",
@@ -195,6 +253,11 @@ const en = {
       watchCalories: "Watch calories shown, not used for nutrition (wrist estimates off by 20%+)",
       caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
       energySplit: "A meal's split of energy between protein, carbs and fat",
+      concurrent:
+        "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day",
+      cardioMinutes: "150 cardio minutes a week, a hard minute counting as two",
+      cardioMets:
+        "How hard each cardio activity is (METs), for the weekly minutes and a cardio session's energy",
     },
   },
   settings: {
@@ -1151,7 +1214,7 @@ const en = {
   },
 } satisfies Record<string, Record<string, unknown>>;
 
-type Dict = typeof en;
+export type Dict = typeof en;
 
 const nl: Dict = {
   common: {
@@ -1288,6 +1351,63 @@ const nl: Dict = {
     notFound: "Cardiosessie niet gevonden",
     routeMap: "Routekaart",
   },
+  cardio: {
+    title: "Cardio",
+    thisWeek: "Cardio deze week",
+    progress: (n: number, target: number) => `${n} van ${target} min`,
+    explain:
+      "Geteld als minuten matig intensief bewegen: een minuut zware cardio telt dubbel. De beweegrichtlijn is minstens 150 minuten per week.",
+    reached: "Weekminimum gehaald",
+    log: "Cardio loggen",
+    plan: "Cardio plannen",
+    editPlan: "Cardioplan aanpassen",
+    noPlan:
+      "Nog geen cardiodagen gepland. Cardio remt je kracht- en spiergroei niet, dus elke dag kan.",
+    activities: {
+      run: "Hardlopen",
+      cycle: "Fietsen",
+      walk: "Wandelen",
+      swim: "Zwemmen",
+      row: "Roeien",
+      elliptical: "Crosstrainer",
+      intervals: "Intervallen",
+    },
+    efforts: { easy: "Rustig", moderate: "Matig", hard: "Zwaar" },
+    activity: "Activiteit",
+    effort: "Inspanning",
+    minutes: "Minuten",
+    min: (n: number) => `${n} min`,
+    distance: "Afstand",
+    distanceHint: "km, optioneel",
+    when: "Wanneer",
+    today: "Vandaag",
+    yesterday: "Gisteren",
+    rpe: "Hoe zwaar was de hele sessie? (optioneel)",
+    save: "Opslaan",
+    logTitle: "Cardio loggen",
+    planTitle: "Cardioplan",
+    planIntro:
+      "Kies de dagen waarop je cardio doet. Je krachtdagen blijven zoals ze zijn — ze passen samen in één week.",
+    addSession: "Sessie toevoegen",
+    day: "Dag",
+    remove: "Verwijderen",
+    planTotal: (n: number, target: number) =>
+      `Samen ${n} van ${target} minuten matig intensief bewegen per week`,
+    sameDayHint: (hours: number) =>
+      `Op een krachtdag: eerst kracht, en als het kan ${hours}+ uur ertussen.`,
+    alsoStrength: "ook kracht",
+    planned: "Gepland",
+    plannedToday: "Vandaag gepland",
+    session: (activity: string, minutes: number) => `${activity} · ${minutes} min`,
+    setKind:
+      "Kies de activiteit en inspanning, dan telt deze sessie mee voor je cardiominuten per week.",
+    heroEyebrow: "Cardio vandaag",
+    heroCta: "Loggen",
+    plusCardio: (activity: string) => `+ ${activity.toLowerCase()}`,
+    dayAria: (state: "done" | "planned") => (state === "done" ? "cardio gedaan" : "cardio gepland"),
+    weekCaption: (sessions: number) =>
+      sessions === 1 ? "1 cardiosessie deze week" : `${sessions} cardiosessies deze week`,
+  },
   sources: {
     title: "Bronnen",
     row: "Bronnen",
@@ -1329,6 +1449,11 @@ const nl: Dict = {
         "Horlogecalorieën getoond, niet gebruikt voor voeding (polsschattingen 20%+ ernaast)",
       caffeine: "Cafeïne per koffie (espresso 80 mg, filter 90 mg) en de grens van 400 mg per dag",
       energySplit: "Hoe de energie van een maaltijd verdeeld is over eiwit, koolhydraten en vet",
+      concurrent:
+        "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen",
+      cardioMinutes: "150 cardiominuten per week, een zware minuut telt dubbel",
+      cardioMets:
+        "Hoe zwaar elke cardio-activiteit is (MET), voor de minuten per week en de energie van een cardiosessie",
     },
   },
   settings: {

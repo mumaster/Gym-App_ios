@@ -53,6 +53,9 @@ import {
 } from "./splits";
 import type {
   AccentId,
+  CardioActivity,
+  CardioEffort,
+  CardioPlanDay,
   CardioSession,
   ColorScheme,
   EquipmentProfile,
@@ -78,6 +81,7 @@ import { deleteRouteMap } from "./routeMapStore";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
+import { manualCardioWatch, sortCardioPlan } from "./cardio";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
 interface GymState {
@@ -170,6 +174,10 @@ interface GymState {
   coffeeEntries: CoffeeEntry[];
   /** Watch-recorded cardio (runs, walks, rides), newest first — see types.ts. */
   cardioSessions: CardioSession[];
+  /** Planned cardio, one entry per session a week (see cardio.ts). Fixed
+   *  weekdays, unlike the strength rotation: nothing moves when a day is
+   *  missed, the week just shows what's left. */
+  cardioPlan: CardioPlanDay[];
 }
 
 const initialState: GymState = {
@@ -217,6 +225,7 @@ const initialState: GymState = {
   waterQuickAdd: [...WATER_QUICK_ADD],
   coffeeEntries: [],
   cardioSessions: [],
+  cardioPlan: [],
 };
 
 const KEY = "forge.gym.state.v2";
@@ -356,6 +365,7 @@ function migrate(raw: Partial<GymState>): GymState {
       ...c,
       watch: roundWatchNumbers(c.watch),
     })),
+    cardioPlan: raw.cardioPlan ?? [],
     foodEntries: (raw.foodEntries ?? []).map((e) => ({
       ...e,
       meal: e.meal ?? mealForTime(e.logged_at),
@@ -416,7 +426,26 @@ interface Ctx extends GymState {
   setWorkoutWatch: (workoutId: string, watch: WatchData | null) => void;
   /** Saves (or, for an existing id, replaces) a watch-only cardio session;
    *  the caller picks the id with watch.ts's cardioTargetId. */
-  saveCardioSession: (id: string, watch: WatchData, hasRouteMap: boolean) => void;
+  saveCardioSession: (
+    id: string,
+    watch: WatchData,
+    hasRouteMap: boolean,
+    kind?: { activity: CardioActivity; effort: CardioEffort },
+  ) => void;
+  /** Logs a cardio session by hand (no watch). */
+  logCardio: (input: {
+    activity: CardioActivity;
+    effort: CardioEffort;
+    minutes: number;
+    distanceKm: number | null;
+    /** Local start, "YYYY-MM-DDTHH:mm". */
+    start: string;
+    label: string;
+    rpe: number | null;
+  }) => void;
+  /** Sets a cardio session's activity and effort (e.g. on an older import). */
+  setCardioKind: (id: string, activity: CardioActivity, effort: CardioEffort) => void;
+  setCardioPlan: (plan: CardioPlanDay[]) => void;
   rateCardio: (id: string, rpe: number | null) => void;
   deleteCardioSession: (id: string) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
@@ -1014,7 +1043,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return watch ? { ...rest, watch: roundWatchNumbers(watch) } : rest;
           }),
         })),
-      saveCardioSession: (id, watch, hasRouteMap) =>
+      saveCardioSession: (id, watch, hasRouteMap, kind) =>
         setState((s) => {
           const existing = s.cardioSessions.find((c) => c.id === id);
           const date = cardioStartIso(watch);
@@ -1026,6 +1055,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
             date,
             watch: roundWatchNumbers(watch),
             ...(map ? { hasRouteMap: true } : {}),
+            ...(kind ?? {}),
           };
           const rest = s.cardioSessions.filter((c) => c.id !== next.id);
           return {
@@ -1033,6 +1063,39 @@ export function GymProvider({ children }: { children: ReactNode }) {
             cardioSessions: [next, ...rest].sort((a, b) => Date.parse(b.date) - Date.parse(a.date)),
           };
         }),
+      logCardio: ({ activity, effort, minutes, distanceKm, start, label, rpe }) =>
+        setState((s) => {
+          const watch = manualCardioWatch({
+            label,
+            start,
+            minutes,
+            distanceKm,
+            importedAt: new Date().toISOString(),
+          });
+          const next: CardioSession = {
+            id: crypto.randomUUID(),
+            date: cardioStartIso(watch),
+            watch: roundWatchNumbers(watch),
+            activity,
+            effort,
+            manual: true,
+            ...(rpe == null ? {} : { session_rpe: rpe }),
+          };
+          return {
+            ...s,
+            cardioSessions: [next, ...s.cardioSessions].sort(
+              (a, b) => Date.parse(b.date) - Date.parse(a.date),
+            ),
+          };
+        }),
+      setCardioKind: (id, activity, effort) =>
+        setState((s) => ({
+          ...s,
+          cardioSessions: s.cardioSessions.map((c) =>
+            c.id === id ? { ...c, activity, effort } : c,
+          ),
+        })),
+      setCardioPlan: (plan) => setState((s) => ({ ...s, cardioPlan: sortCardioPlan(plan) })),
       rateCardio: (id, rpe) =>
         setState((s) => ({
           ...s,

@@ -6,6 +6,8 @@ import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
+import { CardioWeekCard } from "../components/gym/CardioWeekCard";
+import { CARDIO_ICONS, cardioName } from "../components/gym/cardioDisplay";
 import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
 import { RouteThumb } from "../components/gym/RouteMapView";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
@@ -180,6 +182,12 @@ function HistoryScreen() {
           <TrainingLoadCard />
         </>
       ) : null}
+
+      {/* Cardio sits with the other "this week" cards; always shown, since
+          someone who only does cardio logs it from here too. */}
+      <div className="mt-4">
+        <CardioWeekCard />
+      </div>
 
       {workouts.length ? (
         <>
@@ -421,6 +429,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
     watch.avgPaceSeconds != null ? `${formatPace(watch.avgPaceSeconds)}${t.watch.perKm}` : null,
     minutes != null ? t.history.minutesShort(minutes) : null,
   ].filter(Boolean);
+  const Icon = cardio.activity ? CARDIO_ICONS[cardio.activity] : Footprints;
   return (
     <Link
       to="/history/cardio/$cardioId"
@@ -433,7 +442,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
       {map ? <RouteThumb map={map} className="size-10" /> : null}
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[15px] font-semibold">
-          {map ? null : <Footprints className="size-4 shrink-0 text-primary-text" aria-hidden />}
+          {map ? null : <Icon className="size-4 shrink-0 text-primary-text" aria-hidden />}
           <span className="truncate">
             {/* No weekday, unlike a strength row: with the route thumbnail
                 beside it, "Wed, Jun 10 · Buiten hardlopen" doesn't fit at 390pt. */}
@@ -443,7 +452,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
             })}
             <span className="font-normal text-muted-foreground">
               {" · "}
-              {watch.activity || t.watch.cardio}
+              {cardioName(cardio, t)}
             </span>
           </span>
         </p>

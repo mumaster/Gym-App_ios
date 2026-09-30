@@ -11,8 +11,10 @@ import { extractRouteMap, partBoxToCrop, type RouteMap } from "../../lib/gym/rou
 import { putRouteMap } from "../../lib/gym/routeMapStore";
 import { parseDayKey } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
-import type { WatchData } from "../../lib/gym/types";
+import type { CardioActivity, CardioEffort, WatchData } from "../../lib/gym/types";
 import { cardioTargetId, formatDuration, looksLikeCardio, matchWorkout } from "../../lib/gym/watch";
+import { guessCardioActivity } from "../../lib/gym/cardio";
+import { ActivityPicker, EffortPicker } from "./CardioControls";
 import { scanWatchWorkout } from "../../lib/gym/watchScan";
 
 type Step = "pick" | "reading" | "review" | "error";
@@ -55,6 +57,8 @@ export function WatchImportSheet({
   const [scan, setScan] = useState<WatchData | null>(null);
   const [chosen, setChosen] = useState<Target | null>(null);
   const [routeMap, setRouteMap] = useState<RouteMap | null>(null);
+  const [pickedActivity, setPickedActivity] = useState<CardioActivity | null>(null);
+  const [pickedEffort, setPickedEffort] = useState<CardioEffort | null>(null);
 
   const matched = useMemo(
     () => (scan && !workoutId && !cardioId ? matchWorkout(scan.start, workouts) : null),
@@ -74,6 +78,13 @@ export function WatchImportSheet({
             ? { type: "workout", id: matched.id }
             : null));
   const preset = workoutId ? workouts.find((w) => w.id === workoutId) : undefined;
+  // Activity and effort for a cardio save: what the user picked, else what
+  // the session being replaced had, else (activity only) a guess from the
+  // watch's own name for it. Effort is never guessed.
+  const replacing = cardioId ? cardioSessions.find((c) => c.id === cardioId) : undefined;
+  const activity =
+    pickedActivity ?? replacing?.activity ?? guessCardioActivity(scan?.activity) ?? null;
+  const effort = pickedEffort ?? replacing?.effort ?? null;
   const dayLabel = (iso: string) =>
     new Date(iso).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
 
@@ -83,6 +94,8 @@ export function WatchImportSheet({
     setScan(null);
     setChosen(null);
     setRouteMap(null);
+    setPickedActivity(null);
+    setPickedEffort(null);
   };
 
   const save = () => {
@@ -91,7 +104,12 @@ export function WatchImportSheet({
     if (target.type === "workout") setWorkoutWatch(target.id, scan);
     else {
       const id = cardioTargetId(scan, cardioSessions, cardioId) ?? crypto.randomUUID();
-      saveCardioSession(id, scan, !!routeMap);
+      saveCardioSession(
+        id,
+        scan,
+        !!routeMap,
+        activity && effort ? { activity, effort } : undefined,
+      );
       if (routeMap) void putRouteMap(id, routeMap);
     }
     reset();
@@ -266,6 +284,16 @@ export function WatchImportSheet({
               ) : null}
             </div>
           )}
+
+          {target?.type === "cardio" ? (
+            <div className="space-y-4">
+              <ActivityPicker value={activity} onChange={setPickedActivity} />
+              <EffortPicker value={effort} onChange={setPickedEffort} />
+              {!activity || !effort ? (
+                <p className="text-[12.5px] text-muted-foreground">{t.cardio.setKind}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <button
             onClick={save}
