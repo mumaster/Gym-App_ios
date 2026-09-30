@@ -386,6 +386,43 @@ export interface NutritionProfile {
 }
 
 /**
+ * Water, from EFSA's Scientific Opinion on Dietary Reference Values for
+ * water (NDA Panel, EFSA Journal 2010;8(3):1459), read from the opinion's
+ * full text:
+ *
+ * - Adequate total water intake (drinks plus the water in food) is 2.0 L a
+ *   day for women and 2.5 L for men, at moderate temperature and moderate
+ *   activity (PAL 1.6). `WATER_AI_ML`.
+ * - Section 6.3.2: total water can also be set per unit of energy; the
+ *   Nordic, French and German-speaking guidelines advise 1 mL per kcal for
+ *   adults. `WATER_ML_PER_KCAL`. That's what makes the suggestion follow
+ *   activity: the energy need comes from the 2023 DRI equation at the
+ *   user's own activity level and bodyweight (estimatedEnergyRequirement).
+ *   EFSA writes "per unit of energy consumed"; the app uses the energy
+ *   *need*, which is the same at energy balance, so a cut doesn't lower it.
+ * - Section 6.1: food normally provides 20–30% of total water, drinks
+ *   70–80%. `WATER_FROM_DRINKS` takes 80%, the end that assumes the least
+ *   from food, so the drinks goal isn't set short.
+ *
+ * The suggestion is the larger of the adequate intake and 1 mL/kcal, times
+ * the drinks share, rounded to 100 mL. EFSA adds 300 mL in pregnancy and
+ * 700 mL when breastfeeding; the questionnaire doesn't ask about either,
+ * so the goal is left for the user to raise. Heavy sweating (heat, long
+ * sessions) needs more again: EFSA only says losses must be replaced, and
+ * the ACSM fluid stand (Sawka et al. 2007) says sweat rates vary too much
+ * between people for one figure, so no per-hour amount is added.
+ */
+export const WATER_AI_ML: Record<Sex, number> = { female: 2000, male: 2500 };
+export const WATER_ML_PER_KCAL = 1;
+export const WATER_FROM_DRINKS = 0.8;
+
+/** Suggested daily drinks in mL for a profile (see WATER_AI_ML). */
+export function suggestWaterGoalMl(p: NutritionProfile): number {
+  const total = Math.max(WATER_AI_ML[p.sex], estimatedEnergyRequirement(p) * WATER_ML_PER_KCAL);
+  return Math.round((total * WATER_FROM_DRINKS) / 100) * 100;
+}
+
+/**
  * Suggests daily limits from a short profile — a starting point to review
  * and adjust, not a prescription. Every constant above names its source.
  * Energy: the 2023 DRI estimated energy requirement for the chosen

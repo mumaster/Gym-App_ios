@@ -45,7 +45,8 @@ export type SourceId =
   | "energySplit"
   | "concurrent"
   | "cardioMinutes"
-  | "cardioMets";
+  | "cardioMets"
+  | "water";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -160,6 +161,14 @@ export const SOURCES: SourceEntry[] = [
     id: "energySplit",
     group: "nutrition",
     refs: ["EU Regulation 1169/2011, Annex XIV (protein 4, carbohydrate 4, fat 9 kcal/g)"],
+  },
+  {
+    id: "water",
+    group: "nutrition",
+    refs: [
+      "EFSA NDA Panel, Scientific opinion on dietary reference values for water, EFSA Journal 2010",
+      "ACSM position stand on exercise and fluid replacement (Sawka et al., 2007)",
+    ],
   },
   {
     id: "caffeine",

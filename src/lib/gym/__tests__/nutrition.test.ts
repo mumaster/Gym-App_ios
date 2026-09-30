@@ -16,6 +16,10 @@ import {
   sessionEnergyKcal,
   suggestNutritionGoals,
   estimatedEnergyRequirement,
+  suggestWaterGoalMl,
+  WATER_AI_ML,
+  WATER_FROM_DRINKS,
+  WATER_ML_PER_KCAL,
   trainingDayGoalsFromAverage,
   weeklyAverageCalories,
   type NutritionProfile,
@@ -243,5 +247,38 @@ describe("water shortcuts", () => {
     expect(formatWaterAmount(600)).toBe("600ml");
     expect(formatWaterAmount(1000)).toBe("1L");
     expect(formatWaterAmount(1500)).toBe("1.5L");
+  });
+});
+
+describe("suggested water goal (EFSA 2010)", () => {
+  const base = {
+    age: 31,
+    heightCm: 185,
+    weightKg: 97,
+    goal: "lose",
+    pace: "moderate",
+  } as const;
+  it("pins EFSA's numbers", () => {
+    expect(WATER_AI_ML).toEqual({ female: 2000, male: 2500 });
+    expect(WATER_ML_PER_KCAL).toBe(1);
+    expect(WATER_FROM_DRINKS).toBe(0.8);
+  });
+  it("follows the energy need, so more activity means more water", () => {
+    const low = { ...base, sex: "male", activityLevel: "lowActive" } as const;
+    const high = { ...base, sex: "male", activityLevel: "veryActive" } as const;
+    const lowMl = suggestWaterGoalMl(low);
+    expect(lowMl).toBe(Math.round((estimatedEnergyRequirement(low) * 0.8) / 100) * 100);
+    expect(suggestWaterGoalMl(high)).toBeGreaterThan(lowMl);
+  });
+  it("never goes below the adequate intake's drinks share", () => {
+    const small = {
+      ...base,
+      sex: "female",
+      age: 70,
+      heightCm: 150,
+      weightKg: 45,
+      activityLevel: "inactive",
+    } as const;
+    expect(suggestWaterGoalMl(small)).toBe(1600); // 2.0 L × 80%
   });
 });

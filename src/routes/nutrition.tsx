@@ -43,6 +43,7 @@ import {
   nutrientStatus,
   proteinPerMealTarget,
   scaledMacros,
+  suggestWaterGoalMl,
   formatLiters,
   weeklyAverage,
   WATER_AMOUNT_MAX_ML,
@@ -149,6 +150,14 @@ function NutritionScreen() {
     [selectedWaterEntries],
   );
   const waterPct = waterGoalMl ? Math.min(100, (totalWaterMl / waterGoalMl) * 100) : 0;
+  // A starting point from EFSA's water reference values and your energy
+  // need at your activity level (nutrition.ts); the goal itself stays yours.
+  // The latest weigh-in beats the questionnaire's one-off weight.
+  const suggestedWaterMl = useMemo(() => {
+    if (!nutritionProfile) return null;
+    const weightKg = latestBodyKg(weightLog, nutritionProfile) ?? nutritionProfile.weightKg;
+    return suggestWaterGoalMl({ ...nutritionProfile, weightKg });
+  }, [nutritionProfile, weightLog]);
 
   const openWaterGoalEditor = () => {
     haptic(12);
@@ -329,6 +338,28 @@ function NutritionScreen() {
               <Check className="size-4" />
             </button>
           </div>
+        ) : null}
+
+        {waterGoalEditing ? (
+          <WaterSuggestion
+            suggestedMl={suggestedWaterMl}
+            actionLabel={t.nutrition.waterUseSuggestion}
+            onUse={(ml) => {
+              haptic(10);
+              setWaterGoalDraft(String(ml));
+            }}
+            onNeedProfile={() => setGoalsSheetOpen(true)}
+          />
+        ) : !waterGoalMl && isToday ? (
+          <WaterSuggestion
+            suggestedMl={suggestedWaterMl}
+            actionLabel={t.nutrition.waterSetSuggestion}
+            onUse={(ml) => {
+              haptic(15);
+              update({ waterGoalMl: ml });
+            }}
+            onNeedProfile={() => setGoalsSheetOpen(true)}
+          />
         ) : waterGoalMl ? (
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
             <div
@@ -906,6 +937,52 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
 /** The water quick-adds: four one-tap shortcuts (amounts the user can
  *  change, shared with Home's Water tile), plus a field for a one-off
  *  amount such as a 600 ml bottle. */
+/** The suggested water goal with a button to take it (or, without a
+ *  profile to base it on, a way to the questionnaire). Under the goal
+ *  field while editing; on its own while no goal is set. */
+function WaterSuggestion({
+  suggestedMl,
+  actionLabel,
+  onUse,
+  onNeedProfile,
+}: {
+  suggestedMl: number | null;
+  actionLabel: string;
+  onUse: (ml: number) => void;
+  onNeedProfile: () => void;
+}) {
+  const t = useTranslation();
+  if (suggestedMl == null) {
+    return (
+      <button
+        onClick={onNeedProfile}
+        className="mt-3 flex w-full items-center justify-between gap-2 rounded-xl bg-muted px-3 py-2.5 text-left text-[12.5px] text-muted-foreground active:scale-[0.985]"
+      >
+        {t.nutrition.waterSuggestNeedsProfile}
+        <ChevronRight className="size-4 shrink-0" />
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-xl bg-muted px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13.5px] font-semibold">
+          {t.nutrition.waterSuggested(formatLiters(suggestedMl))}
+        </p>
+        <button
+          onClick={() => onUse(suggestedMl)}
+          className="shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[12.5px] font-bold text-foreground active:scale-95"
+        >
+          {actionLabel}
+        </button>
+      </div>
+      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+        {t.nutrition.waterSuggestionWhy}
+      </p>
+    </div>
+  );
+}
+
 function WaterShortcuts({ onLog }: { onLog: (ml: number) => void }) {
   const t = useTranslation();
   const { waterQuickAdd, update } = useGym();

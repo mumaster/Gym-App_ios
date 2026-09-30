@@ -256,6 +256,8 @@ const en = {
       concurrent:
         "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day",
       cardioMinutes: "150 cardio minutes a week, a hard minute counting as two",
+      water:
+        "Suggested water goal: at least 2.0 L (women) or 2.5 L (men) of total water, 1 ml per kcal of your energy needs, 80% of it from drinks",
       cardioMets:
         "How hard each cardio activity is (METs), for the weekly minutes and a cardio session's energy",
     },
@@ -554,6 +556,13 @@ const en = {
     loggedMl: (ml: number) => `${ml}ml logged`,
     setWaterGoal: "Set water goal",
     saveWaterGoal: "Save water goal",
+    waterSuggested: (l: string) => `Suggested for you: ${l} a day`,
+    waterUseSuggestion: "Use",
+    waterSetSuggestion: "Set as goal",
+    waterSuggestionWhy:
+      "From your energy needs at your activity level: about 1 ml of water per kcal, 80% of it from drinks and the rest from food. Drink more on hot days and during long sessions. You can always change the goal.",
+    waterSuggestNeedsProfile:
+      "Answer “Suggest my limits” to get a suggested water goal based on your activity",
     mlPlaceholder: "e.g. 2500",
     removeWaterEntry: (ml: number) => `Remove ${ml}ml water entry`,
     waterOther: "Other amount",
@@ -1456,6 +1465,8 @@ const nl: Dict = {
       concurrent:
         "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen",
       cardioMinutes: "150 cardiominuten per week, een zware minuut telt dubbel",
+      water:
+        "Voorgesteld waterdoel: minstens 2,0 L (vrouwen) of 2,5 L (mannen) totaal water, 1 ml per kcal van je energiebehoefte, waarvan 80% uit drinken",
       cardioMets:
         "Hoe zwaar elke cardio-activiteit is (MET), voor de minuten per week en de energie van een cardiosessie",
     },
@@ -1756,6 +1767,13 @@ const nl: Dict = {
     loggedMl: (ml: number) => `${ml}ml gelogd`,
     setWaterGoal: "Waterdoel instellen",
     saveWaterGoal: "Waterdoel opslaan",
+    waterSuggested: (l: string) => `Voorstel voor jou: ${l} per dag`,
+    waterUseSuggestion: "Gebruik",
+    waterSetSuggestion: "Als doel instellen",
+    waterSuggestionWhy:
+      "Op basis van je energiebehoefte bij je activiteitsniveau: ongeveer 1 ml water per kcal, waarvan 80% uit drinken en de rest uit eten. Drink meer op warme dagen en bij lange trainingen. Je kunt het doel altijd aanpassen.",
+    waterSuggestNeedsProfile:
+      "Vul „Stel mijn limieten voor” in voor een voorgesteld waterdoel op basis van je activiteit",
     mlPlaceholder: "bijv. 2500",
     removeWaterEntry: (ml: number) => `Verwijder ${ml}ml water-invoer`,
     waterOther: "Andere hoeveelheid",
