@@ -361,17 +361,23 @@ function SessionScreen() {
   /** Bring the focused card's top just under the sticky header as focus
    *  moves (next exercise, superset partner, after a rest). Centring it, as
    *  before, put a card taller than the screen with its title hidden under
-   *  the header. */
+   *  the header. Exercise A of a superset lines up the same way rather than
+   *  scrolling to the very top: the round label above it took room that
+   *  pushed the Log set button under the bottom bar (reported). */
   useEffect(() => {
     const card = activeCardRef.current;
     if (!card) return;
     const headerBottom = headerRef.current?.getBoundingClientRect().bottom ?? 0;
-    // The first exercise of a block (or of a superset round) goes back to the
-    // very top, so the superset round label above it shows too.
-    const top =
-      pos.slot === 0
-        ? 0
-        : card.getBoundingClientRect().top + window.scrollY - headerBottom - CARD_GAP_PX;
+    const cardTop = card.getBoundingClientRect().top + window.scrollY - headerBottom - CARD_GAP_PX;
+    // On a smaller phone the card can be taller than the space between the
+    // header and the bottom bar; then scroll on until Log set clears the
+    // bar, since that's what you tap next (the title scrolls away instead).
+    const log = card.querySelector<HTMLElement>("[data-log-set]");
+    const navTop = navRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+    const logTop = log
+      ? log.getBoundingClientRect().bottom + window.scrollY - (navTop - CARD_GAP_PX)
+      : 0;
+    const top = Math.max(cardTop, logTop);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }, [pos.block, pos.slot, pos.round]);
@@ -1825,6 +1831,7 @@ function ExerciseBlock({
             />
 
             <button
+              data-log-set
               onClick={logCurrent}
               disabled={!active || locked}
               className={`relative min-h-14 w-full rounded-2xl px-3 text-[16px] font-bold active:scale-[0.99] ${
