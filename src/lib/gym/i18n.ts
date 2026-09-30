@@ -459,7 +459,6 @@ const en = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point.`,
     resting: "Resting…",
-    sameAsLast: (load: string, reps: number) => `Same as last set: ${load} × ${reps}`,
     logSetWith: (load: string, reps: number, rpe: number | null): string =>
       `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
     rateLastSet: "RPE of that set",
@@ -1676,7 +1675,6 @@ const nl: Dict = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt.`,
     resting: "Rusten…",
-    sameAsLast: (load: string, reps: number) => `Zelfde als vorige set: ${load} × ${reps}`,
     logSetWith: (load: string, reps: number, rpe: number | null): string =>
       `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
     rateLastSet: "RPE van die set",

@@ -14,7 +14,6 @@ import {
   PartyPopper,
   Plus,
   Repeat,
-  RotateCcw,
   TrendingDown,
   TrendingUp,
   Trophy,
@@ -1236,15 +1235,6 @@ function ExerciseBlock({
   const previous = lastPerformance(planned.exercise_id);
   const best = bestSet(planned.exercise_id);
 
-  /** Highest rep count ever logged for this exercise, history + current session. */
-  const bestReps = useMemo(() => {
-    const all = [
-      ...workouts.flatMap((w) => w.completed_sets),
-      ...(activeWorkout?.completed_sets ?? []),
-    ].filter((s) => s.exercise_id === planned.exercise_id && s.set_type === "working");
-    return all.reduce((m, s) => Math.max(m, s.reps), 0);
-  }, [workouts, activeWorkout, planned.exercise_id]);
-
   const targetTopReps = useMemo(() => {
     const nums = (planned.target_reps.match(/\d+/g) ?? []).map(Number);
     return nums.length ? Math.max(...nums) : 8;
@@ -1315,7 +1305,13 @@ function ExerciseBlock({
         suggestion?.weight ??
         previous?.weight ??
         0);
-  const prefillReps = warmup ? warmup.reps : bestReps || targetTopReps;
+  // Reps carry on from the last working set too, like the weight; before
+  // any this session, the double-progression target, then last session's.
+  // (It used to be the most reps ever logged, so after a set of 10 the
+  // field could read 12.)
+  const prefillReps = warmup
+    ? warmup.reps
+    : (lastWorking?.reps ?? suggestion?.reps ?? previous?.reps ?? targetTopReps);
 
   if (!exercise) return null;
 
@@ -1369,14 +1365,6 @@ function ExerciseBlock({
   // could flag/miss a PR differently than the History tab would.
   const currentWeight = parseDecimal(weight || String(prefillWeight));
   const currentReps = parseDecimal(reps || String(prefillReps));
-  /** The last working set, offered as a one-tap fill while the fields
-   *  differ from it (after an RPE-based adjustment, or edited). */
-  const sameAsLast =
-    setType === "working" &&
-    lastWorking &&
-    (lastWorking.weight !== currentKg || lastWorking.reps !== currentReps)
-      ? lastWorking
-      : null;
   const isPR =
     !!best &&
     currentWeight > 0 &&
@@ -1787,25 +1775,6 @@ function ExerciseBlock({
             target={parseDecimal(weight === "" ? String(prefillWeight) : weight)}
           />
 
-          {sameAsLast ? (
-            // Fills the fields only; logging stays one button, right under
-            // the RPE row, so a set is never logged past its RPE by accident.
-            <button
-              type="button"
-              onClick={() => {
-                haptic(10);
-                setWeight(String(sameAsLast.weight));
-                setReps(String(sameAsLast.reps));
-              }}
-              disabled={!active}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-secondary px-3 text-[14px] font-semibold text-secondary-foreground active:scale-[0.99]"
-            >
-              <RotateCcw className="size-4 shrink-0" />
-              <span className="truncate">
-                {t.session.sameAsLast(load(sameAsLast.weight), sameAsLast.reps)}
-              </span>
-            </button>
-          ) : null}
           <button
             onClick={logCurrent}
             disabled={!active || locked}
