@@ -47,6 +47,7 @@ import {
   nameKey,
   searchMyFoods,
 } from "../../lib/gym/myFoods";
+import { useTapFocus } from "../../lib/gym/tapFocus";
 import { haptic, useGym } from "../../lib/gym/store";
 
 type Step = "start" | "scanning" | "review";
@@ -142,6 +143,7 @@ export function AddFoodSheet({
    *  above the keyboard until it closes, so it doesn't resize as results
    *  come and go (and doesn't shrink back the moment the keyboard hides). */
   const [searchMode, setSearchMode] = useState(false);
+  const searchTap = useTapFocus(() => setSearchMode(true));
   const [nevoFoods, setNevoFoods] = useState<NevoFood[] | null>(null);
   /** When the form holds a NEVO food: its codes and NEVO's own values, so
    *  the entry keeps its NEVO mark only while the values are unchanged. */
@@ -531,10 +533,10 @@ export function AddFoodSheet({
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        // Start going full height on touch-down, before focus: by the time
-        // the keyboard slides in the field is already on its way to the
-        // top, so iOS doesn't pan the page to reveal it and then back.
-        onPointerDown={() => setSearchMode(true)}
+        // A tap focuses the field itself (no iOS scroll-and-bounce) and
+        // starts going full height in the same tap; onFocus covers a
+        // keyboard or other focus.
+        {...searchTap}
         onFocus={() => setSearchMode(true)}
         placeholder={t.addFood.searchFoods}
         enterKeyHint="search"

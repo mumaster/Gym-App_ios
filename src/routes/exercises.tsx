@@ -33,6 +33,7 @@ import {
 } from "../lib/gym/catalog";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
+import { useTapFocus } from "../lib/gym/tapFocus";
 import type {
   EquipmentId,
   Exercise,
@@ -92,6 +93,7 @@ function ExercisesScreen() {
   const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const searchTap = useTapFocus();
   const searching = searchFocused || query.length > 0;
 
   // While searching, the list starts right under the pinned search field,
@@ -175,6 +177,7 @@ function ExercisesScreen() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            {...searchTap}
             onFocus={() => {
               setSearchFocused(true);
               scrollListUnderSearch(true);

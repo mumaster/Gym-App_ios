@@ -70,6 +70,18 @@ export function BottomSheet({
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [scrollKey]);
 
+  // While full height, hold the page behind still: iOS may scroll it to
+  // reveal a focused field, which shows as the sheet shooting up and back.
+  useEffect(() => {
+    if (!open || !fullHeight) return;
+    const y = window.scrollY;
+    const hold = () => {
+      if (window.scrollY !== y) window.scrollTo(0, y);
+    };
+    window.addEventListener("scroll", hold);
+    return () => window.removeEventListener("scroll", hold);
+  }, [open, fullHeight]);
+
   // Glide instead of jumping when the sheet's top edge moves: going full
   // height for a search, or content growing or shrinking. After each render
   // the new top is compared with the last one and the sheet animates from
