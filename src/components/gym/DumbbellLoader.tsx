@@ -1,20 +1,19 @@
 import { useTranslation } from "../../lib/gym/i18n";
 
 /**
- * The app's loading indicator: a barbell doing a rep inside a spinning arc.
+ * The app's loading indicator: the splash screen's dumbbell inside a spinning
+ * arc.
  *
- * - The barbell is drawn in the splash screen's language (solid plates, a
- *   smaller plate and a collar each side, a thin bar), not line art. It dips
- *   slightly, drives up, holds a beat at the top and lowers — one rep per
- *   cycle — while a soft shadow under it shrinks and fades as it rises.
+ * - The dumbbell is the same glyph the splash assembles (the same paths, on
+ *   the same diagonal, with the same round line caps), held still, so the
+ *   loader reads as part of the app's brand.
  * - Around it, an indeterminate arc: it rotates steadily while its length
- *   grows and shrinks, over a faint full-circle track.
+ *   grows and shrinks, over a faint full-circle track. That's the only motion.
  *
  * Everything is `currentColor` (pass `text-primary-text`, or let it inherit,
  * e.g. a button's `text-primary-foreground`), so it follows the accent. The
- * motion lives in styles.css ("Loading indicator"); with Reduce Motion it
- * holds still and only pulses. It replaced lucide's dumbbell outline with its
- * plates sliding off and fading, which read as a glitching icon.
+ * motion lives in styles.css ("Loading indicator"); with Reduce Motion the arc
+ * holds still and the whole thing pulses.
  */
 export function DumbbellLoader({
   size = 48,
@@ -24,20 +23,14 @@ export function DumbbellLoader({
   className?: string;
 }) {
   const t = useTranslation();
-  // Plates, collar: [x, y, width, height, radius] on the left; the right
-  // side mirrors them around x = 24.
-  const parts: [number, number, number, number, number][] = [
-    [10, 18.5, 3.8, 15, 1.5],
-    [14.4, 21, 2.6, 10, 1.1],
-    [17.6, 23.6, 1.6, 4.8, 0.7],
-  ];
-  // Below ~40 px the shadow and the arc under the bar read as a face, and
-  // the shadow is too small to see anyway.
+  // Small (in a button, ~26 px): a thicker ring and bolder lines, so it reads
+  // at that size instead of as fine detail.
   const small = size < 40;
-  const showShadow = !small;
-  // Small (in a button): a thicker ring and a bigger barbell, so it reads at
-  // ~26 px instead of as fine detail.
   const ring = small ? 3.6 : 2.5;
+  const line = small ? 2.6 : 2;
+  // The glyph is drawn in the splash's 24-unit box and centred in this 48-unit
+  // one; at these scales its plate corners stay clear of the ring.
+  const scale = small ? 1.25 : 1.1;
   return (
     <svg
       viewBox="0 0 48 48"
@@ -62,29 +55,20 @@ export function DumbbellLoader({
           transform="rotate(-90 24 24)"
         />
       </g>
-
-      {showShadow ? (
-        <ellipse
-          className="forge-loader-shadow"
-          cx="24"
-          cy="36.4"
-          rx="9"
-          ry="1.3"
-          fill="currentColor"
-        />
-      ) : null}
-      {/* The scale sits on a wrapper: the lift's CSS transform would
-          override a transform attribute on the same element. */}
-      <g transform={small ? "translate(24 24.5) scale(1.1) translate(-24 -24.5)" : undefined}>
-        <g className="forge-loader-lift" fill="currentColor">
-          <rect x="9" y="25" width="30" height="2" rx="1" opacity="0.85" />
-          {parts.map(([x, y, w, h, r]) => (
-            <g key={x}>
-              <rect x={x} y={y} width={w} height={h} rx={r} />
-              <rect x={48 - x - w} y={y} width={w} height={h} rx={r} />
-            </g>
-          ))}
-        </g>
+      {/* Same paths as SplashScreen's dumbbell (bar, then each plate cluster
+          and its end). */}
+      <g
+        transform={`translate(24 24) scale(${scale}) translate(-12 -12)`}
+        stroke="currentColor"
+        strokeWidth={line}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m9.6 14.4 4.8-4.8" />
+        <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" />
+        <path d="m20.1 3.9 1.4-1.4" />
+        <path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" />
+        <path d="m2.5 21.5 1.4-1.4" />
       </g>
     </svg>
   );
