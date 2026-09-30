@@ -115,6 +115,9 @@ interface GymState {
   /** The welcome tour has been seen (or skipped). Settings can reset it. */
   welcomeSeen: boolean;
   supersetsEnabled: boolean;
+  /** Warm-up sets before compound exercises. Off: none are planned, and a
+   *  running workout starts every exercise on a working set. */
+  warmupsEnabled: boolean;
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
   growthFocus: FocusGroup[];
@@ -206,6 +209,7 @@ const initialState: GymState = {
   avatarId: DEFAULT_AVATAR_ID,
   welcomeSeen: false,
   supersetsEnabled: false,
+  warmupsEnabled: true,
   growthFocus: [],
   supersetRounds: 3,
   lovedExerciseIds: [],
@@ -343,6 +347,7 @@ function migrate(raw: Partial<GymState>): GymState {
         raw.weeklyScheme,
       ),
     supersetsEnabled: raw.supersetsEnabled ?? false,
+    warmupsEnabled: raw.warmupsEnabled ?? true,
     growthFocus: raw.growthFocus ?? [],
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],

@@ -187,6 +187,9 @@ interface GenerateArgs {
   variation?: number;
   /** Pair exercises into back-to-back supersets. */
   supersets?: boolean;
+  /** Plan warm-up sets before compound exercises (default on). Off, their
+   *  time goes to working sets when the plan is fitted to the duration. */
+  warmups?: boolean;
   /** Exercise ids the user "loved" — forced into the plan regardless of targets. */
   loved?: string[];
   /** Exercise ids the user is avoiding (injury, pain, dislike) — never selected. */
@@ -337,6 +340,7 @@ export function generateWorkout({
   targets: requestedTargets,
   variation = 0,
   supersets = false,
+  warmups = true,
   loved = [],
   avoided = [],
   history = [],
@@ -390,7 +394,7 @@ export function generateWorkout({
     return {
       exercise_id: choice.id,
       target_sets: compound ? shape.compoundSets : shape.accessorySets,
-      warmup_sets: compound ? shape.compoundWarmups : 0,
+      warmup_sets: compound && warmups ? shape.compoundWarmups : 0,
       target_reps,
       rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
       ...(suggestedWeight !== undefined ? { suggested_weight: suggestedWeight } : {}),

@@ -348,6 +348,8 @@ const en = {
     supersets: "Supersets",
     supersetsDesc: "Pair exercises back-to-back, rounds set by intensity",
     enableSupersets: "Enable supersets",
+    warmups: "Warm-up sets",
+    warmupsDesc: "Lighter sets before the big lifts; off gives that time to working sets",
     buildingSession: "Building your session…",
     generateWorkout: "Generate workout",
     yourPlan: (min: number, exercises: number) =>
@@ -1569,6 +1571,8 @@ const nl: Dict = {
     supersets: "Supersets",
     supersetsDesc: "Combineer oefeningen achter elkaar, rondes bepaald door intensiteit",
     enableSupersets: "Supersets inschakelen",
+    warmups: "Warming-upsets",
+    warmupsDesc: "Lichtere sets voor de zware oefeningen; uit geeft die tijd aan werksets",
     buildingSession: "Je sessie wordt samengesteld…",
     generateWorkout: "Genereer training",
     yourPlan: (min: number, exercises: number) =>

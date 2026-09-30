@@ -36,4 +36,15 @@ describe("generateWorkout", () => {
     expect(sets(deload)).toBeLessThanOrEqual(Math.ceil(sets(normal) / 2) + normal.length);
     expect(deload.every((p) => p.target_sets >= 1)).toBe(true);
   });
+
+  it("plans no warm-ups when they're turned off, still fitting the duration", () => {
+    const withWarmups = generateWorkout({ duration: 60, equipment, targets });
+    const without = generateWorkout({ duration: 60, equipment, targets, warmups: false });
+    expect(withWarmups.some((p) => p.warmup_sets > 0)).toBe(true);
+    expect(without.every((p) => p.warmup_sets === 0)).toBe(true);
+    const est = estimateMinutes(without);
+    expect(Math.abs(est - 60) / 60).toBeLessThan(0.15);
+    const sets = (p: typeof without) => p.reduce((n, x) => n + x.target_sets, 0);
+    expect(sets(without)).toBeGreaterThanOrEqual(sets(withWarmups));
+  });
 });

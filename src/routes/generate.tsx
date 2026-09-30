@@ -98,6 +98,7 @@ function WorkoutHome() {
     startWorkout,
     hydrated,
     supersetsEnabled,
+    warmupsEnabled,
     growthFocus,
     lovedExerciseIds,
     toggleLovedExercise,
@@ -212,6 +213,7 @@ function WorkoutHome() {
       profile.id,
       profile.active_equipment_ids.length,
       supersetsEnabled,
+      warmupsEnabled,
     ]);
   const [planKey, setPlanKey] = useState<string | null>(null);
   const shownPlan = plan && planKey === inputKey(regions, focus) ? plan : null;
@@ -243,6 +245,7 @@ function WorkoutHome() {
         targets: targetsFor(rs, fs),
         variation: nextVariation,
         supersets: supersetsEnabled,
+        warmups: warmupsEnabled,
         focusMuscles: [...focusMuscles(growthFocus)],
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
@@ -930,6 +933,30 @@ function WorkoutHome() {
           <span
             className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
               supersetsEnabled ? "left-[22px]" : "left-[2px]"
+            }`}
+          />
+        </button>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold">{t.generate.warmups}</p>
+          <p className="text-[12.5px] text-muted-foreground">{t.generate.warmupsDesc}</p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={warmupsEnabled}
+          aria-label={t.generate.warmups}
+          onClick={() => {
+            haptic(12);
+            update({ warmupsEnabled: !warmupsEnabled });
+          }}
+          className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
+            warmupsEnabled ? "bg-primary" : "bg-secondary"
+          }`}
+        >
+          <span
+            className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
+              warmupsEnabled ? "left-[22px]" : "left-[2px]"
             }`}
           />
         </button>

@@ -121,6 +121,7 @@ function SessionScreen() {
     restSeconds,
     restOverride,
     soundEnabled,
+    warmupsEnabled,
     notifyEnabled,
     swapActiveExercise,
     appendBonusExercise,
@@ -530,7 +531,7 @@ function SessionScreen() {
       .map((p, i) => ({
         ...p,
         target_sets: Math.max(0, p.target_sets - loggedWorking(i)),
-        warmup_sets: Math.max(0, p.warmup_sets - warmDone(p.exercise_id)),
+        warmup_sets: warmupsEnabled ? Math.max(0, p.warmup_sets - warmDone(p.exercise_id)) : 0,
       }))
       .filter((p) => p.target_sets > 0);
     const projected = Math.round(elapsed / 60 + estimateSeconds(remaining) / 60);
@@ -969,6 +970,22 @@ function SessionScreen() {
             </p>
           </div>
           <button
+            onClick={() => update({ warmupsEnabled: !warmupsEnabled })}
+            className="flex w-full items-center justify-between gap-2"
+            aria-pressed={warmupsEnabled}
+          >
+            <span className="text-[15px] font-semibold">{t.generate.warmups}</span>
+            <span
+              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
+                warmupsEnabled
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {warmupsEnabled ? t.session.on : t.session.off}
+            </span>
+          </button>
+          <button
             onClick={() => update({ soundEnabled: !soundEnabled })}
             className="flex w-full items-center justify-between gap-2"
             aria-pressed={soundEnabled}
@@ -1259,6 +1276,7 @@ function ExerciseBlock({
     nutritionProfile,
     exerciseNotes,
     setExerciseNote,
+    warmupsEnabled,
   } = useGym();
   const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
@@ -1296,12 +1314,14 @@ function ExerciseBlock({
   }, [workouts, planned.exercise_id]);
 
   const warmupsLogged = logged.filter((s) => s.set_type === "warmup").length;
+  /** Warm-ups turned off in settings: none are due, also in a workout
+   *  planned with them. */
+  const plannedWarmups = warmupsEnabled ? planned.warmup_sets : 0;
   /** Warm-ups only come before the first working set: once working sets are
    *  logged (warm-ups done or skipped), the next set is a working one, also
    *  when the session is reopened. It used to start on a warm-up again
    *  whenever the planned warm-ups hadn't all been logged. */
-  const warmupDue =
-    warmupsLogged < planned.warmup_sets && !logged.some((s) => s.set_type === "working");
+  const warmupDue = warmupsLogged < plannedWarmups && !logged.some((s) => s.set_type === "working");
   const previous = lastPerformance(planned.exercise_id);
   const best = bestSet(planned.exercise_id);
 
@@ -1354,7 +1374,7 @@ function ExerciseBlock({
   const lastWorking = [...logged].reverse().find((s) => s.set_type === "working");
   const workingRef = lastWorking?.weight ?? suggestion?.weight ?? previous?.weight ?? null;
   const gear = exercise?.equipment_required ?? [];
-  const warmupCount = Math.max(planned.warmup_sets, 1);
+  const warmupCount = Math.max(plannedWarmups, 1);
   // Sourced warm-up ramp (see warmup.ts); not for bodyweight exercises,
   // where there's no lighter version of your own body to load.
   const warmup =
@@ -1469,7 +1489,7 @@ function ExerciseBlock({
             </button>
           </h2>
           <p className="mt-1.5 truncate text-[12px] text-muted-foreground">
-            {planned.warmup_sets ? t.session.warmupPrefix(planned.warmup_sets) : ""}
+            {plannedWarmups ? t.session.warmupPrefix(plannedWarmups) : ""}
             {t.session.targetLine(planned.target_sets, planned.target_reps, restForThisExercise)}
             <span className="capitalize">{exercise.primary_muscle}</span>
           </p>
