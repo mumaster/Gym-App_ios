@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -81,6 +82,7 @@ import { deleteRouteMap } from "./routeMapStore";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
+import { loadSyncedMark, reconcile, saveSyncedMark, stateHash } from "./syncState";
 import { manualCardioWatch, sortCardioPlan } from "./cardio";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
@@ -521,6 +523,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("offline");
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressPush = useRef(false);
+  /** The latest state, for pushes fired from event listeners and timers. */
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  /** The user whose device/cloud reconciliation has finished this launch;
+   *  local edits aren't pushed before that, so a push can't race the
+   *  launch's own pull (see syncState.ts). */
+  const [reconciledFor, setReconciledFor] = useState<string | null>(null);
   // Tracks the last color-scheme resolution the effect below actually
   // applied, so it can tell a genuine switch (worth nudging the service
   // worker's cached shell and reloading — see that effect's own comment)
@@ -614,27 +623,51 @@ export function GymProvider({ children }: { children: ReactNode }) {
     if (!session) setSyncStatus("offline");
   }, [session]);
 
-  // On sign-in, reconcile this device against the cloud: an existing cloud
-  // copy (signing into an account already used elsewhere) wins and replaces
-  // local state; no cloud copy yet (first time this account syncs) means
-  // this device's current local state becomes the initial cloud copy.
+  /** Pushes a state to the cloud and remembers it as what the cloud holds. */
+  const pushNow = useCallback(async (userId: string, value: GymState) => {
+    const json = JSON.stringify(value);
+    await pushCloudState(userId, value);
+    saveSyncedMark({ userId, hash: stateHash(json) });
+  }, []);
+
+  // On every launch with a session (and on sign-in), reconcile this device
+  // against the cloud. The cloud copy used to win unconditionally, which
+  // threw away sets logged mid-workout whenever iOS closed the app before
+  // the debounced push got out; syncState.ts's `reconcile` now keeps local
+  // edits the cloud never received. A cloud copy still wins on a first
+  // sign-in on this device (restoring onto a new phone) and when this
+  // device has nothing new (another device may have moved on).
   useEffect(() => {
     if (!session || !hydrated) return;
+    const userId = session.user.id;
     let cancelled = false;
     setSyncStatus("syncing");
     void (async () => {
       try {
-        const cloud = await pullCloudState(session.user.id);
+        const cloud = await pullCloudState(userId);
         if (cancelled) return;
-        if (cloud) {
+        // Decided after the pull, on the latest local state, so a set
+        // logged while the pull was in flight also counts as local news.
+        const local = stateRef.current;
+        const action = reconcile({
+          userId,
+          cloudExists: cloud != null,
+          localHash: stateHash(JSON.stringify(local)),
+          mark: loadSyncedMark(),
+        });
+        if (action === "adoptCloud") {
+          const next = migrate(cloud as Partial<GymState>);
           suppressPush.current = true;
-          setState(migrate(cloud as Partial<GymState>));
+          setState(next);
+          saveSyncedMark({ userId, hash: stateHash(JSON.stringify(next)) });
         } else {
-          await pushCloudState(session.user.id, state);
+          await pushNow(userId, local);
         }
         if (!cancelled) setSyncStatus("synced");
       } catch {
         if (!cancelled) setSyncStatus("error");
+      } finally {
+        if (!cancelled) setReconciledFor(userId);
       }
     })();
     return () => {
@@ -645,24 +678,57 @@ export function GymProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id, hydrated]);
 
-  // Mirror local edits up to the cloud (debounced) while signed in.
+  // Mirror local edits up to the cloud (debounced) while signed in, once
+  // this launch's reconciliation is done.
   useEffect(() => {
-    if (!session || !hydrated) return;
+    if (!session || !hydrated || reconciledFor !== session.user.id) return;
     if (suppressPush.current) {
       suppressPush.current = false;
       return;
     }
+    const userId = session.user.id;
     setSyncStatus("syncing");
     if (pushTimer.current) clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
-      pushCloudState(session.user.id, state)
+      pushTimer.current = null;
+      // Nothing to send when the cloud already holds exactly this (right
+      // after the launch's own reconcile, say).
+      const mark = loadSyncedMark();
+      if (mark?.userId === userId && mark.hash === stateHash(JSON.stringify(state))) {
+        setSyncStatus("synced");
+        return;
+      }
+      pushNow(userId, state)
         .then(() => setSyncStatus("synced"))
         .catch(() => setSyncStatus("error"));
     }, 1500);
     return () => {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
-  }, [state, session, hydrated]);
+  }, [state, session, hydrated, reconciledFor, pushNow]);
+
+  // Going to the background (switching to YouTube, locking the phone) sends
+  // a waiting push straight away rather than leaving it to a timer iOS may
+  // never run. If it still doesn't make it, the next launch keeps the local
+  // edits anyway (see the reconcile effect above).
+  useEffect(() => {
+    if (!session) return;
+    const userId = session.user.id;
+    const flush = () => {
+      if (document.visibilityState === "visible" || !pushTimer.current) return;
+      clearTimeout(pushTimer.current);
+      pushTimer.current = null;
+      pushNow(userId, stateRef.current)
+        .then(() => setSyncStatus("synced"))
+        .catch(() => setSyncStatus("error"));
+    };
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", flush);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [session, pushNow]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -833,7 +899,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         }
         try {
           await Promise.race([
-            pushCloudState(session.user.id, state),
+            pushNow(session.user.id, state),
             new Promise((resolve) => setTimeout(resolve, 2000)),
           ]);
         } catch {
