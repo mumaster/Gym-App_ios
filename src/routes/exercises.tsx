@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
   Heart,
@@ -9,6 +9,7 @@ import {
   ShieldOff,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
@@ -89,6 +90,24 @@ function ExercisesScreen() {
   const [detail, setDetail] = useState<Exercise | null>(null);
   const [draft, setDraft] = useState<{ value: Exercise; isNew: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searching = searchFocused || query.length > 0;
+
+  // While searching, the list starts right under the pinned search field,
+  // so results sit above the keyboard; the filters stay a scroll up. The
+  // list's min-height (below) keeps that position reachable however few
+  // results there are, so typing never makes the page jump.
+  const scrollListUnderSearch = () => {
+    const list = listRef.current;
+    const header = document.querySelector("header");
+    if (!list || !header) return;
+    const top = list.getBoundingClientRect().top + window.scrollY - header.offsetHeight - 12;
+    window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+  };
+  useLayoutEffect(() => {
+    if (query) scrollListUnderSearch();
+  }, [query]);
 
   const results = useMemo(
     () =>
@@ -145,18 +164,39 @@ function ExercisesScreen() {
           <MoreHorizontal className="size-5" />
         </button>
       }
+      toolbar={
+        <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
+          <Search className="size-5 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => {
+              setSearchFocused(true);
+              scrollListUnderSearch();
+            }}
+            onBlur={() => setSearchFocused(false)}
+            placeholder={t.exercises.search}
+            enterKeyHint="search"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label={t.addFood.clearSearch}
+              className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
+            >
+              <X className="size-4" />
+            </button>
+          ) : null}
+        </div>
+      }
     >
-      <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
-        <Search className="size-5 text-muted-foreground" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.exercises.search}
-          className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground"
-        />
-      </div>
-
-      <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
         {(["All", ...MUSCLES] as const).map((m) => (
           <button
             key={m}
@@ -227,7 +267,7 @@ function ExercisesScreen() {
         }}
       />
 
-      <div className="mt-4 space-y-2">
+      <div ref={listRef} className={`mt-4 space-y-2 ${searching ? "min-h-[100dvh]" : ""}`}>
         {results.map((e) => {
           const loved = lovedExerciseIds.includes(e.id);
           const avoided = avoidedExerciseIds.includes(e.id);

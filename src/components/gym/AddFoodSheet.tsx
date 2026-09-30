@@ -138,6 +138,10 @@ export function AddFoodSheet({
   const [editingSaved, setEditingSaved] = useState(false);
   /** Search over your own foods and NEVO's unpackaged ones (nevoFoods.ts). */
   const [query, setQuery] = useState("");
+  /** Set once the search field is focused: the sheet then fills the screen
+   *  above the keyboard until it closes, so it doesn't resize as results
+   *  come and go (and doesn't shrink back the moment the keyboard hides). */
+  const [searchMode, setSearchMode] = useState(false);
   const [nevoFoods, setNevoFoods] = useState<NevoFood[] | null>(null);
   /** When the form holds a NEVO food: its codes and NEVO's own values, so
    *  the entry keeps its NEVO mark only while the values are unchanged. */
@@ -183,6 +187,7 @@ export function AddFoodSheet({
     setUnmatched(new Set());
     setEditingSaved(false);
     setQuery("");
+    setSearchMode(false);
     setNevoSource(null);
     setBarcode(null);
     unknownBarcode.current = null;
@@ -517,6 +522,36 @@ export function AddFoodSheet({
 
   const showSaved = !onIngredientCaptured && !editEntry;
 
+  // Pinned under the title, outside the scrolling list, so the field stays
+  // at the top of the screen while results change under it.
+  const searchField = (
+    <label className="flex items-center gap-2 rounded-2xl bg-muted pl-4 pr-1.5">
+      <Search className="size-4 shrink-0 text-muted-foreground" />
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setSearchMode(true)}
+        placeholder={t.addFood.searchFoods}
+        enterKeyHint="search"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        className="h-12 w-full min-w-0 flex-1 bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+      />
+      {query ? (
+        <button
+          type="button"
+          onClick={() => setQuery("")}
+          aria-label={t.addFood.clearSearch}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
+        >
+          <X className="size-4" />
+        </button>
+      ) : null}
+    </label>
+  );
+
   return (
     <>
       <BottomSheet
@@ -529,6 +564,9 @@ export function AddFoodSheet({
               ? t.addFood.editFood
               : t.addFood.addFood
         }
+        toolbar={step === "start" ? searchField : undefined}
+        fullHeight={step === "start" && searchMode}
+        scrollKey={q}
       >
         <input
           ref={fileInputRef}
@@ -549,33 +587,11 @@ export function AddFoodSheet({
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {scanError}
               </p>
             ) : null}
-            {onIngredientCaptured ? null : (
+            {/* While searching, the meal moves under the results so they
+                start right below the search field, above the keyboard. */}
+            {onIngredientCaptured || searching ? null : (
               <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
             )}
-            <label className="flex items-center gap-2 rounded-2xl bg-muted pl-4 pr-1.5">
-              <Search className="size-4 shrink-0 text-muted-foreground" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t.addFood.searchFoods}
-                enterKeyHint="search"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                className="h-12 w-full min-w-0 flex-1 bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
-              />
-              {query ? (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label={t.addFood.clearSearch}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
-                >
-                  <X className="size-4" />
-                </button>
-              ) : null}
-            </label>
             {searching ? (
               <div className="space-y-4">
                 {savedMatches.length ? (
@@ -633,6 +649,9 @@ export function AddFoodSheet({
                     {t.addFood.enterAsNew(q)}
                   </span>
                 </button>
+                {onIngredientCaptured ? null : (
+                  <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
+                )}
                 {nevoMatches.length ? (
                   <p className="px-1 text-[11px] leading-snug text-muted-foreground">
                     {t.nutrition.nevoReference}

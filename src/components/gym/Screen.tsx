@@ -5,12 +5,16 @@ export function Screen({
   title,
   subtitle,
   action,
+  toolbar,
   children,
   padBottom = true,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  /** Pinned in the sticky header under the title (a search field), so it
+   *  stays at the top of the screen however far the page scrolls. */
+  toolbar?: ReactNode;
   children: ReactNode;
   padBottom?: boolean;
 }) {
@@ -22,8 +26,11 @@ export function Screen({
             that contains it, instead of confining it to what's behind.
             glass-header (not glass-strong) so this reads as the page's own
             black turned translucent, not a distinct gray panel/bar sitting
-            on top of it — see that utility's own comment in styles.css. */}
-        <div className="glass-header absolute inset-0" />
+            on top of it — see that utility's own comment in styles.css.
+            Solid with a toolbar instead: the page scrolls right up under a
+            pinned search field, and through the tint its chips and labels
+            showed behind the field. */}
+        <div className={`absolute inset-0 ${toolbar ? "bg-background" : "glass-header"}`} />
         <div
           className={`relative mx-auto grid min-h-[42px] w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 ${SETTINGS_BUTTON_GUTTER}`}
         >
@@ -38,6 +45,9 @@ export function Screen({
           {action}
           <SettingsButton />
         </div>
+        {toolbar ? (
+          <div className="relative mx-auto w-full max-w-xl px-4 pt-2">{toolbar}</div>
+        ) : null}
       </header>
       <main
         className={`mx-auto w-full max-w-xl px-4 pt-3 ${padBottom ? "pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))]" : "pb-8"}`}

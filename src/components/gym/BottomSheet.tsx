@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "../../lib/gym/i18n";
+import { useVisualViewport } from "../../lib/gym/useVisualViewport";
 
 /** Pull-down-to-close, like an iOS sheet: released past this many px, or
  *  flicked down faster than DISMISS_VELOCITY (px/ms), the sheet closes;
@@ -25,20 +26,45 @@ function scrolledAbove(target: Element, sheet: HTMLElement): boolean {
   return false;
 }
 
+/** Keyboard taller than this (CSS px) counts as open: the visual viewport
+ *  also shrinks a little for Safari's own toolbars, which isn't a keyboard. */
+const KEYBOARD_MIN_PX = 120;
+
 export function BottomSheet({
   open,
   onClose,
   title,
   children,
+  toolbar,
+  fullHeight = false,
+  scrollKey,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Pinned under the title, outside the scrolling content (a search field). */
+  toolbar?: ReactNode;
+  /** Fill the screen above the keyboard at a fixed height, so the content
+   *  changing (search results as you type) never moves the sheet. */
+  fullHeight?: boolean;
+  /** Scroll the content back to the top whenever this changes. */
+  scrollKey?: unknown;
 }) {
   const t = useTranslation();
   const titleId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewport = useVisualViewport(open && fullHeight);
+  /** Above the keyboard there's no home indicator to clear. */
+  const keyboardOpen =
+    viewport != null &&
+    typeof window !== "undefined" &&
+    window.innerHeight - viewport.height > KEYBOARD_MIN_PX;
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [scrollKey]);
   const triggerRef = useRef<Element | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -192,7 +218,10 @@ export function BottomSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div
+      className={`fixed z-50 flex flex-col justify-end ${viewport ? "inset-x-0" : "inset-0"}`}
+      style={viewport ? { top: viewport.offsetTop, height: viewport.height } : undefined}
+    >
       <button
         aria-label={t.bottomSheet.close}
         onClick={onClose}
@@ -202,19 +231,23 @@ export function BottomSheet({
           transition: dragging ? "none" : `opacity ${LEAVE_MS}ms ease-out`,
         }}
       />
+      {/* The title (and toolbar) stay put; only the content below scrolls. */}
       <div
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="glass-strong safe-bottom relative max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-3xl px-5 pt-3 shadow-[var(--shadow-float)] duration-300 animate-in slide-in-from-bottom outline-none motion-reduce:!transition-none"
+        className={`glass-strong relative flex flex-col overflow-hidden rounded-t-3xl shadow-[var(--shadow-float)] duration-300 animate-in slide-in-from-bottom outline-none motion-reduce:!transition-none ${
+          keyboardOpen ? "" : "safe-bottom"
+        } ${fullHeight ? "" : "max-h-[82vh]"}`}
         style={{
+          height: fullHeight ? "calc(100% - env(safe-area-inset-top) - 0.5rem)" : undefined,
           transform: dragY ? `translateY(${dragY}px)` : undefined,
           transition: dragging ? "none" : `transform ${LEAVE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
         }}
       >
-        <div data-sheet-grip className="-mx-5 -mt-3 cursor-grab px-5 pt-3 active:cursor-grabbing">
+        <div data-sheet-grip className="shrink-0 cursor-grab px-5 pt-3 active:cursor-grabbing">
           <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
           <div className="mb-3 flex items-center justify-between">
             <h2 id={titleId} className="text-xl font-bold tracking-tight">
@@ -228,7 +261,13 @@ export function BottomSheet({
             </button>
           </div>
         </div>
-        <div className="pb-6">{children}</div>
+        {toolbar ? <div className="shrink-0 px-5 pb-3">{toolbar}</div> : null}
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
