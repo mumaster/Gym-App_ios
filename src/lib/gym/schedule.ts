@@ -18,6 +18,10 @@ export interface Rotation {
   anchor: string;
   /** slot index → days after `anchor`, replacing that slot's normal weekday for this cycle. */
   dayOverrides?: Record<number, number> | undefined;
+  /** slot index → dayKey the session was actually done on, this cycle only.
+   *  A finished session is shown on this day rather than its planned one; a
+   *  skipped session has no entry. */
+  doneOn?: Record<number, string> | undefined;
 }
 
 /** Monday-first position of a Date#getDay value (Mon = 0 … Sun = 6). */
@@ -61,14 +65,20 @@ export function nextCycleAnchor(schedule: ScheduleSlot[], lastDate: Date): strin
   return dayKeyFromDate(mondayOf(d));
 }
 
-/** Moves the cursor past the current session (finished or skipped). On
- *  wrapping, re-anchors to the next cycle and drops this cycle's overrides. */
+/** Moves the cursor past the current session (finished or skipped). A
+ *  finished session passes `doneOn`, the day it was done, which is kept for
+ *  this cycle. On wrapping, re-anchors to the next cycle and drops this
+ *  cycle's overrides and done days. */
 export function advanceRotation<R extends Rotation>(
   r: R,
   today = new Date(),
+  doneOn?: Date,
 ): { rotation: R; wrapped: boolean } {
   const next = r.cyclePosition + 1;
-  if (next < r.schedule.length) return { rotation: { ...r, cyclePosition: next }, wrapped: false };
+  if (next < r.schedule.length) {
+    const done = doneOn ? { ...r.doneOn, [r.cyclePosition]: dayKeyFromDate(doneOn) } : r.doneOn;
+    return { rotation: { ...r, cyclePosition: next, doneOn: done }, wrapped: false };
+  }
   const last = plannedDate(r, r.schedule.length - 1);
   const lastDate = last > startOfDay(today) ? last : today;
   return {
@@ -77,9 +87,40 @@ export function advanceRotation<R extends Rotation>(
       cyclePosition: 0,
       anchor: nextCycleAnchor(r.schedule, lastDate),
       dayOverrides: undefined,
+      doneOn: undefined,
     },
     wrapped: true,
   };
+}
+
+/** The day session `index` was done on this cycle, or null when it was
+ *  skipped or is still to come. */
+export const doneDate = (r: Rotation, index: number): Date | null => {
+  const key = index < r.cyclePosition ? r.doneOn?.[index] : undefined;
+  return key ? parseDayKey(key) : null;
+};
+
+/** Done days for a rotation saved before they were recorded: the scheduled
+ *  workouts (`fromRotation`) of the last two weeks, newest matched to the
+ *  latest done session. With fewer workouts than done sessions, the earliest
+ *  ones stay without a day, as skipped. */
+export function backfillDoneOn(
+  r: Rotation,
+  workouts: Workout[],
+  fromRotation: (w: Workout) => boolean,
+): Record<number, string> {
+  const since = addDays(parseDayKey(r.anchor), -7);
+  const days = workouts
+    .filter((w) => fromRotation(w) && daysBetween(since, new Date(w.date)) >= 0)
+    .map((w) => dayKey(w.date))
+    .sort()
+    .slice(-r.cyclePosition);
+  const out: Record<number, string> = {};
+  const first = r.cyclePosition - days.length;
+  days.forEach((key, k) => {
+    out[first + k] = key;
+  });
+  return out;
 }
 
 /** Days the next session is overdue by (0 when it's today or still ahead). */
@@ -133,7 +174,14 @@ export function resortRotation<R extends Rotation>(r: R, today = new Date()): R 
     0,
     schedule.findIndex((slot) => remaining.has(slot)),
   );
-  const next = { ...r, schedule, cyclePosition, dayOverrides: undefined };
+  // Done days follow their session to its new index.
+  let doneOn: Record<number, string> | undefined;
+  r.schedule.forEach((slot, i) => {
+    const key = r.doneOn?.[i];
+    const j = schedule.indexOf(slot);
+    if (key && j < cyclePosition) doneOn = { ...doneOn, [j]: key };
+  });
+  const next = { ...r, schedule, cyclePosition, dayOverrides: undefined, doneOn };
   return overdueDays(next, today) > 0
     ? { ...next, anchor: anchorFor(schedule, cyclePosition, today) }
     : next;

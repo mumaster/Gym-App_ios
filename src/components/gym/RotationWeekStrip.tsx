@@ -1,11 +1,18 @@
 import { Check } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
-import { plannedDate, slotOffset, weekIndex, type Rotation } from "../../lib/gym/schedule";
+import {
+  doneDate,
+  plannedDate,
+  slotOffset,
+  weekIndex,
+  type Rotation,
+} from "../../lib/gym/schedule";
 import { splitDayLabel, type SplitTemplateId } from "../../lib/gym/splits";
 
 /** One cell per session in the current cycle. Remaining sessions show the
  *  weekday they're actually planned on this cycle (so a shifted week reads
- *  truthfully); finished/skipped ones are dimmed with a check. */
+ *  truthfully). Finished ones are dimmed with a check and show the weekday
+ *  they were actually done on; skipped ones are dimmed and struck through. */
 export function RotationWeekStrip({
   rotation,
   templateId,
@@ -18,9 +25,11 @@ export function RotationWeekStrip({
     <div className="mt-3 flex justify-between gap-1">
       {rotation.schedule.map((slot, i) => {
         const done = i < rotation.cyclePosition;
+        const doneOn = doneDate(rotation, i);
+        const skipped = done && !doneOn;
         const isNext = i === rotation.cyclePosition;
         const moved = !done && slotOffset(rotation, i) !== weekIndex(slot.dow);
-        const dow = done ? slot.dow : plannedDate(rotation, i).getDay();
+        const dow = (doneOn ?? plannedDate(rotation, i)).getDay();
         return (
           <div
             key={i}
@@ -33,11 +42,13 @@ export function RotationWeekStrip({
                 isNext ? "text-primary-text" : "text-muted-foreground"
               }`}
             >
-              {done ? <Check className="size-2.5" strokeWidth={3} /> : null}
+              {doneOn ? <Check className="size-2.5" strokeWidth={3} /> : null}
               {t.common.dow[dow]}
               {moved ? <span className="size-1 rounded-full bg-primary" aria-hidden /> : null}
             </p>
-            <p className="truncate px-0.5 text-[11px] font-semibold">
+            <p
+              className={`truncate px-0.5 text-[11px] font-semibold ${skipped ? "line-through" : ""}`}
+            >
               {splitDayLabel(templateId, slot.dayId)}
             </p>
           </div>

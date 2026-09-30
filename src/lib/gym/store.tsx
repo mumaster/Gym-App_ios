@@ -42,6 +42,7 @@ import {
   moveSession,
   parseDayKey,
   resortRotation,
+  backfillDoneOn,
   shiftRemaining,
   weekIndex,
   type Rotation,
@@ -300,17 +301,25 @@ function migrate(raw: Partial<GymState>): GymState {
   // Older rotations were sorted Sunday-first and had no calendar anchor:
   // re-sort Monday-first (cursor stays on the same session) and anchor so
   // the next session is never already overdue right after upgrading.
-  const fixRotation = <R extends Rotation>(r: R | null | undefined): R | null => {
+  // Rotations saved before done days were recorded get them from the
+  // scheduled workouts, so a finished session shows the day it was done.
+  const fixRotation = <R extends Rotation>(
+    r: R | null | undefined,
+    fromRotation: (w: Workout) => boolean,
+  ): R | null => {
     if (!r) return null;
     const current = r.schedule[r.cyclePosition];
     const schedule = [...r.schedule].sort((a, b) => weekIndex(a.dow) - weekIndex(b.dow));
     const cyclePosition = Math.max(0, current ? schedule.indexOf(current) : 0);
-    return {
+    const fixed = {
       ...r,
       schedule,
       cyclePosition,
       anchor: r.anchor ?? anchorFor(schedule, cyclePosition),
     };
+    return fixed.doneOn || !cyclePosition
+      ? fixed
+      : { ...fixed, doneOn: backfillDoneOn(fixed, raw.workouts ?? [], fromRotation) };
   };
 
   // Program weeks used unsourced build multipliers (up to 1.16) and a 60%
@@ -356,8 +365,8 @@ function migrate(raw: Partial<GymState>): GymState {
     soundEnabled: raw.soundEnabled ?? true,
     restOverride: raw.restOverride ?? null,
     notifyEnabled: raw.notifyEnabled ?? false,
-    weeklyScheme: fixRotation(raw.weeklyScheme),
-    program: fixProgramWeeks(fixRotation(raw.program)),
+    weeklyScheme: fixRotation(raw.weeklyScheme, (w) => Boolean(w.fromScheduledDay)),
+    program: fixProgramWeeks(fixRotation(raw.program, (w) => Boolean(w.fromProgramDay))),
     nutritionGoals: raw.nutritionGoals ?? {},
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
@@ -1090,13 +1099,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
                 // silently skip the day that was really next.
                 weeklyScheme:
                   s.weeklyScheme && s.activeWorkout.fromScheduledDay
-                    ? advanceRotation(s.weeklyScheme).rotation
+                    ? advanceRotation(s.weeklyScheme, new Date(), new Date(s.activeWorkout.date))
+                        .rotation
                     : s.weeklyScheme,
                 // Same "only advance the session that actually scheduled it"
                 // guard as weeklyScheme above, mirrored for the program cursor.
                 program:
                   s.program && s.activeWorkout.fromProgramDay
-                    ? advanceProgram(s.program)
+                    ? advanceProgram(s.program, new Date(), new Date(s.activeWorkout.date))
                     : s.program,
               }
             : s,
@@ -1316,6 +1326,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
               cyclePosition,
               anchor: anchorFor(schedule, cyclePosition),
               dayOverrides: undefined,
+              doneOn: undefined,
             },
           };
         }),

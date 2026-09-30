@@ -4,7 +4,9 @@ import {
   advanceRotation,
   allowedDatesFor,
   anchorFor,
+  backfillDoneOn,
   dayTypeFor,
+  doneDate,
   overdueDays,
   parseDayKey,
   plannedDate,
@@ -104,5 +106,60 @@ describe("dayTypeFor", () => {
     const ctx = { rotation: base, workouts: [workout("2026-09-23T17:00:00")], activeWorkout: null };
     expect(dayTypeFor(d("2026-09-21"), ctx, today)).toBe("rest");
     expect(dayTypeFor(d("2026-09-23"), ctx, today)).toBe("training");
+  });
+});
+
+describe("done days", () => {
+  it("shows a finished session on the day it was done, not its planned day", () => {
+    // Monday's push, moved to Wednesday and done there.
+    const moved = shiftRemaining(base, 2);
+    const done = advanceRotation(moved, d("2026-09-23"), d("2026-09-23")).rotation;
+    expect(dayKeyFromDate(doneDate(done, 0)!)).toBe("2026-09-23");
+    expect(doneDate(done, 1)).toBeNull(); // still to come
+  });
+  it("leaves a skipped session without a day", () => {
+    const skipped = advanceRotation(base, d("2026-09-22")).rotation;
+    expect(doneDate(skipped, 0)).toBeNull();
+  });
+  it("forgets done days when the cycle wraps", () => {
+    let r = base;
+    for (const day of ["2026-09-21", "2026-09-23", "2026-09-25"]) {
+      r = advanceRotation(r, d(day), d(day)).rotation;
+    }
+    expect(r.cyclePosition).toBe(0);
+    expect(r.doneOn).toBeUndefined();
+  });
+  it("keeps done days with their session when the week is re-sorted", () => {
+    const done = advanceRotation(base, d("2026-09-22"), d("2026-09-22")).rotation;
+    // Pull moves from Wednesday to Thursday: push stays done.
+    const resorted = resortRotation(
+      { ...done, schedule: [done.schedule[0]!, { dow: 4, dayId: "pull" }, done.schedule[2]!] },
+      d("2026-09-22"),
+    );
+    expect(dayKeyFromDate(doneDate(resorted, 0)!)).toBe("2026-09-22");
+  });
+  it("backfills older saves from the scheduled workouts", () => {
+    const w = (date: string, fromProgramDay: boolean): Workout => ({
+      id: date,
+      date,
+      duration_minutes: 45,
+      target_muscles: [],
+      plan: [],
+      completed_sets: [],
+      finished: true,
+      unit: "kg",
+      fromProgramDay,
+    });
+    const r = { ...base, cyclePosition: 2 };
+    const workouts = [
+      w("2026-09-23T18:00:00", true),
+      w("2026-09-22T18:00:00", false), // off-schedule, not a program day
+      w("2026-09-10T18:00:00", true), // before this cycle
+    ];
+    // One scheduled workout for two done sessions: the latest gets it, the
+    // earlier one counts as skipped.
+    expect(backfillDoneOn(r, workouts, (x) => Boolean(x.fromProgramDay))).toEqual({
+      1: "2026-09-23",
+    });
   });
 });

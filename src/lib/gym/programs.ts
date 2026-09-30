@@ -91,8 +91,8 @@ export const currentProgramWeek = (program: Program): ProgramWeek =>
 /** Advances a program's cursor by one finished or skipped session — rolls
  *  into the next week (wrapping back to week 0, so a finished wave restarts
  *  rather than dead-ending) once the current week's schedule is exhausted. */
-export function advanceProgram(program: Program, today = new Date()): Program {
-  const { rotation, wrapped } = advanceRotation(program, today);
+export function advanceProgram(program: Program, today = new Date(), doneOn?: Date): Program {
+  const { rotation, wrapped } = advanceRotation(program, today, doneOn);
   return wrapped
     ? { ...rotation, currentWeek: (program.currentWeek + 1) % program.weeks.length }
     : rotation;
