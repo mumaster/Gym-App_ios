@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Dumbbell, Moon, Sparkles } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { NutritionQuestionnaireSheet } from "./NutritionQuestionnaireSheet";
-import { useTranslation } from "../../lib/gym/i18n";
+import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   deriveRestDayGoals,
   sessionEnergyKcal,
   trainingDayGoalsFromAverage,
+  weeklyAverageCalories,
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
 import { useSessionEnergy, useSessionShape } from "../../lib/gym/dayNutrition";
@@ -36,9 +37,16 @@ const fromDraft = (draft: Draft): NutritionGoals => {
 };
 
 export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { nutritionGoals, nutritionByDayType, restDayGoalOverrides, setNutritionGoals, update } =
-    useGym();
+  const {
+    nutritionGoals,
+    nutritionByDayType,
+    nutritionProfile,
+    restDayGoalOverrides,
+    setNutritionGoals,
+    update,
+  } = useGym();
   const t = useTranslation();
+  const locale = useLocale();
   const session = useSessionEnergy();
   const sessionShape = useSessionShape();
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -74,6 +82,13 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   const derivedRest = deriveRestDayGoals(fromDraft(draft), session?.kcal ?? 0);
   const activeDraft = showingRest ? restDraft : draft;
   const setActiveDraft = showingRest ? setRestDraft : setDraft;
+  // What the two day types average out to over the user's week, so a
+  // training-day limit above the suggestion reads as intended, not a bug.
+  const trainingDays = nutritionProfile?.sessionsPerWeek;
+  const weekAverage =
+    byDayType && session && trainingDays != null && trainingDays > 0 && trainingDays < 7
+      ? weeklyAverageCalories(fromDraft(draft), fromDraft(restDraft), trainingDays, session.kcal)
+      : null;
 
   return (
     <>
@@ -162,6 +177,12 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
 
           {showingRest ? (
             <p className="text-[12.5px] text-muted-foreground">{t.nutritionGoals.restHint}</p>
+          ) : null}
+
+          {weekAverage != null && trainingDays != null ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              {t.nutritionGoals.weeklyAverage(weekAverage.toLocaleString(locale), trainingDays)}
+            </p>
           ) : null}
 
           <div className="space-y-2">

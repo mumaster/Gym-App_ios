@@ -17,6 +17,7 @@ import {
   suggestNutritionGoals,
   estimatedEnergyRequirement,
   trainingDayGoalsFromAverage,
+  weeklyAverageCalories,
   type NutritionProfile,
 } from "../nutrition";
 
@@ -129,7 +130,19 @@ describe("rest-day limits", () => {
       const r = deriveRestDayGoals(t, 300);
       const avg = (days * t.calories! + (7 - days) * r.calories!) / 7;
       expect(Math.abs(avg - 2500)).toBeLessThanOrEqual(1);
+      expect(Math.abs(weeklyAverageCalories(t, {}, days, 300)! - 2500)).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("would undershoot the target if training days stayed on the average", () => {
+    // 4 training days, 300 kcal sessions: rest days at 2,200 pull the week
+    // down to 2,371 a day — 129 kcal under the suggestion.
+    expect(weeklyAverageCalories({ calories: 2500 }, {}, 4, 300)).toBe(2371);
+  });
+
+  it("averages hand-set rest calories too", () => {
+    expect(weeklyAverageCalories({ calories: 2800 }, { calories: 2100 }, 4, 300)).toBe(2500);
+    expect(weeklyAverageCalories({}, {}, 4, 300)).toBeNull();
   });
 });
 

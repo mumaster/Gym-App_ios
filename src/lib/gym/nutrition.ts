@@ -470,7 +470,16 @@ export const restDayGoals = (
  *  rest days derived via deriveRestDayGoals, the weekly average calories
  *  still land on the original target: with n training days and a session
  *  cost D, 7·avg = n·T + (7−n)·(T−D), so T = avg + D·(7−n)/7. The extra
- *  calories go to carbs. */
+ *  calories go to carbs.
+ *
+ *  Why training days go *above* the suggestion rather than staying on it:
+ *  the suggestion (EER_2023) is an average day. The DRI 2023 equations are
+ *  fitted to doubly labelled water, which measures the average daily energy
+ *  use over a 7–14 day period (training days and rest days together), and
+ *  the activity level already counts the workouts. Keeping training days at
+ *  that average while rest days drop by D would put the week D·(7−n)/7 kcal
+ *  a day under target: an extra deficit on top of the chosen pace (confirmed
+ *  through web search results; the report site isn't reachable from here). */
 export function trainingDayGoalsFromAverage(
   average: NutritionGoals,
   trainingDaysPerWeek: number,
@@ -482,6 +491,21 @@ export function trainingDayGoalsFromAverage(
   const training: NutritionGoals = { ...average, calories: Math.round(average.calories + extra) };
   if (average.carbs != null) training.carbs = Math.round(average.carbs + extra / 4);
   return training;
+}
+
+/** The average daily calories over a week with this many training days,
+ *  using the same rest-day limits the app applies (overrides included).
+ *  Null when there are no calorie limits to average. */
+export function weeklyAverageCalories(
+  training: NutritionGoals,
+  overrides: NutritionGoals,
+  trainingDaysPerWeek: number,
+  sessionKcal: number,
+): number | null {
+  if (training.calories == null) return null;
+  const n = Math.min(7, Math.max(0, trainingDaysPerWeek));
+  const rest = restDayGoals(training, overrides, sessionKcal).calories ?? training.calories;
+  return Math.round((n * training.calories + (7 - n) * rest) / 7);
 }
 
 export type NutrientStatus = "none" | "ok" | "near" | "over";

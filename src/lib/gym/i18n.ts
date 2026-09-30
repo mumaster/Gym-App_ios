@@ -874,6 +874,8 @@ const en = {
     trainingDay: "Training day",
     restDay: "Rest day",
     restHint: "Blank fields follow your training-day limits automatically.",
+    weeklyAverage: (kcal: string, days: number) =>
+      `With ${days} training ${days === 1 ? "day" : "days"} a week, this averages ${kcal} kcal a day. A suggested limit is that weekly average, so training days sit a little above it and rest days below.`,
   },
   nutritionQuestionnaire: {
     title: "Suggest my limits",
@@ -2009,6 +2011,8 @@ const nl: Dict = {
     trainingDay: "Trainingsdag",
     restDay: "Rustdag",
     restHint: "Lege velden volgen automatisch je limieten voor trainingsdagen.",
+    weeklyAverage: (kcal: string, days: number) =>
+      `Met ${days} ${days === 1 ? "trainingsdag" : "trainingsdagen"} per week is dit gemiddeld ${kcal} kcal per dag. Een voorgestelde limiet is dat weekgemiddelde, dus trainingsdagen liggen er iets boven en rustdagen eronder.`,
   },
   nutritionQuestionnaire: {
     title: "Stel mijn limieten voor",
