@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconcile, stateHash } from "../syncState";
+import { keepRunningWorkout, reconcile, stateHash } from "../syncState";
 
 describe("which copy wins at launch", () => {
   const a = stateHash(JSON.stringify({ sets: 3 }));
@@ -37,5 +37,34 @@ describe("which copy wins at launch", () => {
   it("hashes equal JSON equally and different JSON differently", () => {
     expect(stateHash('{"a":1}')).toBe(stateHash('{"a":1}'));
     expect(stateHash('{"a":1}')).not.toBe(stateHash('{"a":2}'));
+  });
+});
+
+describe("a cloud copy never takes sets away from the running workout", () => {
+  const w = (id: string, sets: number) => ({ id, completed_sets: Array.from({ length: sets }) });
+  const state = (active: ReturnType<typeof w> | null, done: string[] = []) => ({
+    activeWorkout: active,
+    workouts: done.map((id) => ({ id })),
+  });
+
+  it("keeps the local workout when it has more sets", () => {
+    const local = state(w("w1", 4));
+    const cloud = state(w("w1", 2));
+    expect(keepRunningWorkout(local, cloud).activeWorkout?.completed_sets).toHaveLength(4);
+  });
+  it("takes the cloud's when it has as many or more", () => {
+    expect(
+      keepRunningWorkout(state(w("w1", 2)), state(w("w1", 3))).activeWorkout?.completed_sets,
+    ).toHaveLength(3);
+  });
+  it("keeps a workout the cloud never saw", () => {
+    expect(keepRunningWorkout(state(w("w1", 2)), state(null)).activeWorkout?.id).toBe("w1");
+  });
+  it("lets another device's finish win", () => {
+    expect(keepRunningWorkout(state(w("w1", 2)), state(null, ["w1"])).activeWorkout).toBeNull();
+  });
+  it("leaves the cloud alone when nothing is running here", () => {
+    const cloud = state(w("w2", 1));
+    expect(keepRunningWorkout(state(null), cloud)).toBe(cloud);
   });
 });

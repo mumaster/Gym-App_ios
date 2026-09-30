@@ -74,3 +74,35 @@ export function saveSyncedMark(mark: SyncedMark) {
     // Storage full or blocked: the next launch falls back to cloud-wins.
   }
 }
+
+interface HasWorkouts<W extends { id: string; completed_sets: unknown[] }> {
+  activeWorkout: W | null;
+  workouts: { id: string }[];
+}
+
+/**
+ * A cloud copy about to replace local state, with the workout in progress
+ * protected: a cloud copy must never take logged sets away from a running
+ * session. Keeps the local running workout when the cloud has the same one
+ * with fewer sets, or doesn't know about it at all (started here, never
+ * uploaded, and not finished on another device). Everything else comes
+ * from the cloud as before. This also covers a first launch after this
+ * change, when there's no fingerprint yet and the cloud copy wins.
+ */
+export function keepRunningWorkout<
+  W extends { id: string; completed_sets: unknown[] },
+  S extends HasWorkouts<W>,
+>(local: S, cloud: S): S {
+  const mine = local.activeWorkout;
+  if (!mine) return cloud;
+  const theirs = cloud.activeWorkout;
+  if (theirs && theirs.id === mine.id) {
+    return mine.completed_sets.length > theirs.completed_sets.length
+      ? { ...cloud, activeWorkout: mine }
+      : cloud;
+  }
+  if (!theirs && !cloud.workouts.some((w) => w.id === mine.id)) {
+    return { ...cloud, activeWorkout: mine };
+  }
+  return cloud;
+}

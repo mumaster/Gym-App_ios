@@ -82,7 +82,13 @@ import { deleteRouteMap } from "./routeMapStore";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
-import { loadSyncedMark, reconcile, saveSyncedMark, stateHash } from "./syncState";
+import {
+  keepRunningWorkout,
+  loadSyncedMark,
+  reconcile,
+  saveSyncedMark,
+  stateHash,
+} from "./syncState";
 import { manualCardioWatch, sortCardioPlan } from "./cardio";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
@@ -656,10 +662,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
           mark: loadSyncedMark(),
         });
         if (action === "adoptCloud") {
-          const next = migrate(cloud as Partial<GymState>);
-          suppressPush.current = true;
+          const next = keepRunningWorkout(local, migrate(cloud as Partial<GymState>));
+          const keptLocal =
+            local.activeWorkout !== null && next.activeWorkout === local.activeWorkout;
+          // A kept local workout is news for the cloud, so let it be pushed.
+          suppressPush.current = !keptLocal;
           setState(next);
-          saveSyncedMark({ userId, hash: stateHash(JSON.stringify(next)) });
+          if (!keptLocal) saveSyncedMark({ userId, hash: stateHash(JSON.stringify(next)) });
         } else {
           await pushNow(userId, local);
         }
