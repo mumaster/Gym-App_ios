@@ -1015,11 +1015,20 @@ function SessionScreen() {
           rest, the overview (header) jumps anywhere, and "Next exercise"
           sits in the page when a finished exercise is showing. The dock only
           appears for the rest timer and the end of the workout. */}
+      {rest.phase !== "idle" ? (
+        // The rest is the one thing to look at: the page and header behind
+        // the rest panel are blurred and dimmed, and taps on them do
+        // nothing until the rest ends (Skip Rest ends it early).
+        <div
+          aria-hidden
+          className="animate-in fade-in fixed inset-0 z-[35] bg-background/40 backdrop-blur-md duration-300"
+        />
+      ) : null}
       {rest.phase !== "idle" || (isLastBlock && blockComplete) ? (
         <nav
           ref={setNavEl}
           data-session-dock
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.5rem))] shadow-[var(--shadow-float)]"
+          className="fixed inset-x-0 bottom-0 z-40 rounded-t-3xl border-t border-border bg-background px-4 pt-3 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.5rem))] shadow-[var(--shadow-float)]"
         >
           {rest.phase !== "idle" ? (
             <RestPanel
@@ -1287,6 +1296,12 @@ function ExerciseBlock({
   }, [workouts, planned.exercise_id]);
 
   const warmupsLogged = logged.filter((s) => s.set_type === "warmup").length;
+  /** Warm-ups only come before the first working set: once working sets are
+   *  logged (warm-ups done or skipped), the next set is a working one, also
+   *  when the session is reopened. It used to start on a warm-up again
+   *  whenever the planned warm-ups hadn't all been logged. */
+  const warmupDue =
+    warmupsLogged < planned.warmup_sets && !logged.some((s) => s.set_type === "working");
   const previous = lastPerformance(planned.exercise_id);
   const best = bestSet(planned.exercise_id);
 
@@ -1299,7 +1314,7 @@ function ExerciseBlock({
   const [weight, setWeight] = useState<string>("");
   const [reps, setReps] = useState<string>("");
   const [rpe, setRpe] = useState<number | null>(null);
-  const [setType, setSetType] = useState<SetType>(planned.warmup_sets > 0 ? "warmup" : "working");
+  const [setType, setSetType] = useState<SetType>(warmupDue ? "warmup" : "working");
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editW, setEditW] = useState(0);
   const [editR, setEditR] = useState(0);
@@ -1320,8 +1335,8 @@ function ExerciseBlock({
   );
 
   useEffect(() => {
-    if (warmupsLogged >= planned.warmup_sets) setSetType((t) => (t === "warmup" ? "working" : t));
-  }, [warmupsLogged, planned.warmup_sets]);
+    if (!warmupDue) setSetType((t) => (t === "warmup" ? "working" : t));
+  }, [warmupDue]);
 
   // Absolute indices into completed_sets shift when any set is added/removed.
   useEffect(() => {
