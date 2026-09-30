@@ -456,34 +456,99 @@
   }
 }
 
-/* DumbbellLoader: the weight-plate clusters slide off along the bar's own
-   diagonal while fading out, and back, looping — used instead of a plain
-   spinner for loading scenes. The fade keeps pace with the slide (both hit
-   their extreme at the same keyframe) so a plate dissolves away before it
-   would visibly clip against the square viewBox, rather than sliding
-   through a hard edge. --dumbbell-slide-x/-y are a mirrored pair of signed
-   SVG user-unit offsets: the top-right cluster travels up-and-right
-   (+x, -y), the bottom-left cluster down-and-left by the same magnitude. */
-@keyframes dumbbell-plates {
-  0%,
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
-  22%,
-  45% {
-    transform: translate(var(--dumbbell-slide-x), var(--dumbbell-slide-y));
-    opacity: 0;
-  }
-  70%,
-  95% {
-    transform: translate(0, 0);
-    opacity: 1;
+/* Loading indicator (DumbbellLoader): a barbell doing a rep inside an
+   indeterminate arc. The arc rotates steadily (2 s) while its length grows
+   and shrinks on a different period (1.5 s), so the two never line up into
+   a visible loop; pathLength is 100, so the dash values are percentages of
+   the ring. The rep is 1.6 s: a small dip, the drive up, a beat held at the
+   top, the lowering. SVG transforms are in the viewBox's own units (48). */
+.forge-loader-spin {
+  transform-origin: 24px 24px;
+  animation: forge-loader-spin 2s linear infinite;
+}
+.forge-loader-arc {
+  stroke-dasharray: 1 200;
+  animation: forge-loader-dash 1.5s ease-in-out infinite;
+}
+.forge-loader-lift {
+  animation: forge-loader-lift 1.6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.forge-loader-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.22;
+  animation: forge-loader-shadow 1.6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+@keyframes forge-loader-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
-
-@utility animate-dumbbell-plates {
-  animation: dumbbell-plates 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+@keyframes forge-loader-dash {
+  0% {
+    stroke-dasharray: 1 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 42 200;
+    stroke-dashoffset: -12;
+  }
+  100% {
+    stroke-dasharray: 42 200;
+    stroke-dashoffset: -99;
+  }
+}
+@keyframes forge-loader-lift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  14% {
+    transform: translateY(0.7px);
+  }
+  48%,
+  62% {
+    transform: translateY(-4.6px);
+  }
+}
+@keyframes forge-loader-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.22;
+  }
+  14% {
+    transform: scaleX(1.06);
+    opacity: 0.26;
+  }
+  48%,
+  62% {
+    transform: scaleX(0.62);
+    opacity: 0.1;
+  }
+}
+@keyframes forge-loader-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .forge-loader-spin,
+  .forge-loader-lift,
+  .forge-loader-shadow {
+    animation: none;
+  }
+  .forge-loader-arc {
+    animation: none;
+    stroke-dasharray: 28 200;
+  }
+  .forge-loader {
+    animation: forge-loader-pulse 1.8s ease-in-out infinite;
+  }
 }
 
 /* SplashScreen's entrance reveal: each weight-plate cluster slams onto the
