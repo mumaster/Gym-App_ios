@@ -3,16 +3,19 @@ import {
   CARDIO_METS,
   SAME_DAY_GAP_HOURS,
   WHO_WEEKLY_MINUTES,
+  cardioDay,
   cardioEnergyKcal,
   cardioInfo,
   cardioMet,
   guessCardioActivity,
   manualCardioWatch,
+  plannedWeeklyCardioKcal,
   plannedWhoMinutes,
   remainingCardioOn,
   weekWhoMinutes,
   whoMinutes,
 } from "../cardio";
+import { addDayEnergy, trainingDayGoalsFromAverage, weeklyAverageCalories } from "../nutrition";
 import type { CardioPlanDay, CardioSession } from "../types";
 
 const session = (
@@ -139,4 +142,44 @@ describe("guessing the activity from a watch's name", () => {
 
 it("advises a gap of 3+ hours on a shared day (Schumann et al. 2022)", () => {
   expect(SAME_DAY_GAP_HOURS).toBe(3);
+});
+
+describe("cardio in the nutrition limits", () => {
+  it("adds a day's cardio energy, all from carbs", () => {
+    expect(addDayEnergy({ calories: 2200, carbs: 250, protein: 180 }, 240)).toEqual({
+      calories: 2440,
+      carbs: 310,
+      protein: 180,
+    });
+    expect(addDayEnergy({ protein: 180 }, 240)).toEqual({ protein: 180 });
+  });
+
+  it("keeps the weekly average on target with cardio planned", () => {
+    const avg = { calories: 2500, carbs: 300 };
+    const S = 300; // strength session
+    const C = 600; // the week's planned cardio
+    const T = trainingDayGoalsFromAverage(avg, 4, S, C);
+    expect(T.calories).toBe(2543); // 2500 + (300·3 − 600)/7
+    expect(weeklyAverageCalories(T, {}, 4, S, C)).toBe(2500);
+    // Without cardio it's the old formula.
+    expect(trainingDayGoalsFromAverage(avg, 4, S).calories).toBe(2629);
+  });
+
+  it("counts logged cardio on past days and the plan from today on", () => {
+    const wed = new Date(2026, 8, 30, 12);
+    const plan: CardioPlanDay[] = [
+      { id: "a", dow: 3, activity: "cycle", minutes: 30, effort: "moderate" }, // Wed
+      { id: "b", dow: 2, activity: "cycle", minutes: 30, effort: "moderate" }, // Tue (past)
+    ];
+    // (7.0 − 1) × 80 × 0.5 = 240
+    expect(cardioDay(wed, plan, [], 80, wed)).toEqual({ any: true, kcal: 240 });
+    // A past planned day with nothing logged isn't a cardio day.
+    expect(cardioDay(new Date(2026, 8, 29), plan, [], 80, wed)).toEqual({ any: false, kcal: 0 });
+    // Logged today replaces the plan rather than adding to it.
+    const rode = session(new Date(2026, 8, 30, 7), 30);
+    expect(cardioDay(wed, plan, [rode], 80, wed)).toEqual({ any: true, kcal: 240 });
+    // No bodyweight: still a cardio day, no energy estimate.
+    expect(cardioDay(wed, plan, [], null, wed)).toEqual({ any: true, kcal: 0 });
+    expect(plannedWeeklyCardioKcal(plan, 80)).toBe(480);
+  });
 });

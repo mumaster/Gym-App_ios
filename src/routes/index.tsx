@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Droplet,
   Dumbbell,
+  HeartPulse,
   Flame,
   type LucideIcon,
   Play,
@@ -37,7 +38,7 @@ import { dayKey, dayKeyFromDate as keyOf } from "../lib/gym/date";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { latestPr, type LatestPr } from "../lib/gym/progress";
 import { READINESS_EMOJI, todaysCheckIn, type ReadinessScore } from "../lib/gym/readiness";
-import { useDayNutrition } from "../lib/gym/dayNutrition";
+import { useDayNutrition, type DayKind } from "../lib/gym/dayNutrition";
 import {
   daysBetween,
   hasPlannedSession,
@@ -342,7 +343,7 @@ function HomeScreen() {
               hasGoals={hasNutritionGoals}
               totals={todayTotals}
               goals={dayGoals}
-              dayType={dayNutrition.byDayType ? dayNutrition.dayType : null}
+              dayType={dayNutrition.byDayType ? dayNutrition.dayKind : null}
               calorieStatus={calorieStatus}
               caloriePct={caloriePct}
               onClick={() => navigate({ to: "/nutrition" })}
@@ -425,7 +426,7 @@ function NutritionTile({
   calorieStatus: NutrientStatus;
   caloriePct: number;
   /** Shown as a small label when day-type limits are on; null hides it. */
-  dayType: DayType | null;
+  dayType: DayKind | null;
   onClick: () => void;
 }) {
   const t = useTranslation();
@@ -463,10 +464,16 @@ function NutritionTile({
               <>
                 {dayType === "training" ? (
                   <Dumbbell className="size-3" />
+                ) : dayType === "cardio" ? (
+                  <HeartPulse className="size-3" />
                 ) : (
                   <Moon className="size-3" />
                 )}
-                {dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
+                {dayType === "training"
+                  ? t.nutrition.trainingDay
+                  : dayType === "cardio"
+                    ? t.nutrition.cardioDay
+                    : t.nutrition.restDay}
               </>
             ) : null}
             <ChevronRight className="size-4" />

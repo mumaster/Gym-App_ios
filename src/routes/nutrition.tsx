@@ -14,6 +14,7 @@ import {
   Settings2,
   X,
   Dumbbell,
+  HeartPulse,
   Moon,
   Sunrise,
   Sun,
@@ -200,12 +201,18 @@ function NutritionScreen() {
           <span className="truncate">{dayLabel}</span>
           {dayNutrition.byDayType ? (
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] normal-case tracking-normal text-foreground">
-              {dayNutrition.dayType === "training" ? (
+              {dayNutrition.dayKind === "training" ? (
                 <Dumbbell className="size-3" />
+              ) : dayNutrition.dayKind === "cardio" ? (
+                <HeartPulse className="size-3" />
               ) : (
                 <Moon className="size-3" />
               )}
-              {dayNutrition.dayType === "training" ? t.nutrition.trainingDay : t.nutrition.restDay}
+              {dayNutrition.dayKind === "training"
+                ? t.nutrition.trainingDay
+                : dayNutrition.dayKind === "cardio"
+                  ? t.nutrition.cardioDay
+                  : t.nutrition.restDay}
             </span>
           ) : null}
         </p>

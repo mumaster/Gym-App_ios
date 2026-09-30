@@ -271,3 +271,45 @@ export function manualCardioWatch(input: {
     avgSpeedKmh: km ? Math.round((km / (seconds / 3600)) * 100) / 100 : null,
   };
 }
+
+/** Extra kcal of the cardio planned in a weekly plan (null weight → 0). */
+export function plannedWeeklyCardioKcal(plan: CardioPlanDay[], weightKg: number | null): number {
+  if (!weightKg) return 0;
+  return plan.reduce(
+    (n, d) =>
+      n + cardioEnergyKcal(weightKg, { minutes: d.minutes, met: cardioMet(d.activity, d.effort) }),
+    0,
+  );
+}
+
+/**
+ * A day's cardio: whether there is any, and its extra kcal. Past days count
+ * only what was logged; today and later also count the plan still to do
+ * (remainingCardioOn), so a planned run raises the limit before it's run
+ * and a logged one keeps it raised. Sessions without an activity/effort
+ * (older imports) add nothing until they're set. No bodyweight → 0 kcal.
+ */
+export function cardioDay(
+  date: Date,
+  plan: CardioPlanDay[],
+  sessions: CardioSession[],
+  weightKg: number | null,
+  today = new Date(),
+): { any: boolean; kcal: number } {
+  const logged = cardioSessionsOn(sessions, dayKeyFromDate(date));
+  const planned = remainingCardioOn(plan, sessions, date, today);
+  let kcal = 0;
+  if (weightKg) {
+    for (const s of logged) {
+      const info = cardioInfo(s);
+      if (info) kcal += cardioEnergyKcal(weightKg, info);
+    }
+    for (const d of planned) {
+      kcal += cardioEnergyKcal(weightKg, {
+        minutes: d.minutes,
+        met: cardioMet(d.activity, d.effort),
+      });
+    }
+  }
+  return { any: logged.length + planned.length > 0, kcal };
+}

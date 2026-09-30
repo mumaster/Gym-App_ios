@@ -484,10 +484,15 @@ export function trainingDayGoalsFromAverage(
   average: NutritionGoals,
   trainingDaysPerWeek: number,
   sessionKcal: number,
+  weeklyCardioKcal = 0,
 ): NutritionGoals {
   if (average.calories == null) return average;
   const n = Math.min(7, Math.max(0, trainingDaysPerWeek));
-  const extra = (sessionKcal * (7 - n)) / 7;
+  // Planned cardio is added on its own days (addDayEnergy), so the week's
+  // cardio energy C comes out of the base here: 7·avg = n·T + (7−n)·(T−D) + C.
+  // The average already includes it, since the activity level counts all
+  // activity, cardio as well as the gym.
+  const extra = (sessionKcal * (7 - n) - weeklyCardioKcal) / 7;
   const training: NutritionGoals = { ...average, calories: Math.round(average.calories + extra) };
   if (average.carbs != null) training.carbs = Math.round(average.carbs + extra / 4);
   return training;
@@ -501,11 +506,23 @@ export function weeklyAverageCalories(
   overrides: NutritionGoals,
   trainingDaysPerWeek: number,
   sessionKcal: number,
+  weeklyCardioKcal = 0,
 ): number | null {
   if (training.calories == null) return null;
   const n = Math.min(7, Math.max(0, trainingDaysPerWeek));
   const rest = restDayGoals(training, overrides, sessionKcal).calories ?? training.calories;
-  return Math.round((n * training.calories + (7 - n) * rest) / 7);
+  return Math.round((n * training.calories + (7 - n) * rest + weeklyCardioKcal) / 7);
+}
+
+/** A day's limits plus the energy of that day's cardio, all from carbs —
+ *  the same rule as the rest-day reduction, in the other direction: the
+ *  joint position (Thomas et al., 2016) and Burke et al. (2011) scale daily
+ *  carbohydrate to the day's training, protein and fat stay the same. */
+export function addDayEnergy(goals: NutritionGoals, kcal: number): NutritionGoals {
+  if (kcal <= 0 || goals.calories == null) return goals;
+  const next: NutritionGoals = { ...goals, calories: Math.round(goals.calories + kcal) };
+  if (goals.carbs != null) next.carbs = Math.round(goals.carbs + kcal / 4);
+  return next;
 }
 
 export type NutrientStatus = "none" | "ok" | "near" | "over";

@@ -1,7 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { dayKeyFromDate } from "./date";
+import { cardioDay } from "./cardio";
 import {
   RESISTANCE_TRAINING_MET,
+  addDayEnergy,
   SUPERSET_TRAINING_MET,
   restDayGoals,
   sessionEnergyKcal,
@@ -52,6 +54,10 @@ export function useSessionEnergy(): SessionEnergy | null {
   }, [nutritionProfile, weightLog, minutes, met]);
 }
 
+/** What a day is, for its label: a strength day, a day with only cardio,
+ *  or a rest day. */
+export type DayKind = "training" | "cardio" | "rest";
+
 /** Resolves the day type and limits for any date — the week strip on
  *  `/nutrition` needs seven at once, which a per-date hook can't give. With
  *  day-type limits off (or no bodyweight to estimate a session from), every
@@ -60,6 +66,7 @@ export function useSessionEnergy(): SessionEnergy | null {
  *  plan cards use. */
 export function useDayGoalsResolver(): (date: Date) => {
   dayType: DayType;
+  dayKind: DayKind;
   goals: NutritionGoals;
 } {
   const {
@@ -70,6 +77,8 @@ export function useDayGoalsResolver(): (date: Date) => {
     weeklyScheme,
     workouts,
     activeWorkout,
+    cardioPlan,
+    cardioSessions,
   } = useGym();
   const session = useSessionEnergy();
   return useCallback(
@@ -79,13 +88,21 @@ export function useDayGoalsResolver(): (date: Date) => {
         workouts,
         activeWorkout,
       });
-      const goals =
+      // A day's limit: the rest-day base, plus a strength session's energy
+      // on a strength day (which is the training-day limit itself), plus
+      // that day's cardio. Cardio only counts with day-type limits on.
+      const cardio = cardioDay(date, cardioPlan, cardioSessions, session?.weightKg ?? null);
+      const base =
         nutritionByDayType && dayType === "rest"
           ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
           : nutritionGoals;
-      return { dayType, goals };
+      const goals = nutritionByDayType ? addDayEnergy(base, cardio.kcal) : base;
+      const dayKind: DayKind = dayType === "training" ? "training" : cardio.any ? "cardio" : "rest";
+      return { dayType, dayKind, goals };
     },
     [
+      cardioPlan,
+      cardioSessions,
       program,
       weeklyScheme,
       workouts,
@@ -101,6 +118,7 @@ export function useDayGoalsResolver(): (date: Date) => {
 /** Whether `date` is a training or rest day, and the limits that apply. */
 export function useDayNutrition(date: Date): {
   dayType: DayType;
+  dayKind: DayKind;
   goals: NutritionGoals;
   byDayType: boolean;
 } {

@@ -13,6 +13,7 @@ import {
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
 import { useSessionEnergy, useSessionShape } from "../../lib/gym/dayNutrition";
+import { plannedWeeklyCardioKcal } from "../../lib/gym/cardio";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
@@ -44,6 +45,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     restDayGoalOverrides,
     setNutritionGoals,
     update,
+    cardioPlan,
   } = useGym();
   const t = useTranslation();
   const locale = useLocale();
@@ -87,7 +89,13 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   const trainingDays = nutritionProfile?.sessionsPerWeek;
   const weekAverage =
     byDayType && session && trainingDays != null && trainingDays > 0 && trainingDays < 7
-      ? weeklyAverageCalories(fromDraft(draft), fromDraft(restDraft), trainingDays, session.kcal)
+      ? weeklyAverageCalories(
+          fromDraft(draft),
+          fromDraft(restDraft),
+          trainingDays,
+          session.kcal,
+          plannedWeeklyCardioKcal(cardioPlan, session.weightKg),
+        )
       : null;
 
   return (
@@ -179,9 +187,17 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             <p className="text-[12.5px] text-muted-foreground">{t.nutritionGoals.restHint}</p>
           ) : null}
 
+          {byDayType && session ? (
+            <p className="text-[12.5px] text-muted-foreground">{t.nutritionGoals.cardioHint}</p>
+          ) : null}
+
           {weekAverage != null && trainingDays != null ? (
             <p className="text-[12.5px] text-muted-foreground">
-              {t.nutritionGoals.weeklyAverage(weekAverage.toLocaleString(locale), trainingDays)}
+              {t.nutritionGoals.weeklyAverage(
+                weekAverage.toLocaleString(locale),
+                trainingDays,
+                cardioPlan.length,
+              )}
             </p>
           ) : null}
 
@@ -232,8 +248,13 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
           // average on target, and let every rest field auto-derive again.
           const kcal = sessionEnergyKcal(profile.weightKg, sessionShape.minutes, sessionShape.met);
           const trainingDays = profile.sessionsPerWeek ?? 0;
+          const cardioKcal = plannedWeeklyCardioKcal(cardioPlan, profile.weightKg);
           setDraft(
-            toDraft(byDayType ? trainingDayGoalsFromAverage(goals, trainingDays, kcal) : goals),
+            toDraft(
+              byDayType
+                ? trainingDayGoalsFromAverage(goals, trainingDays, kcal, cardioKcal)
+                : goals,
+            ),
           );
           if (byDayType) setRestDraft(emptyDraft);
           setTab("training");

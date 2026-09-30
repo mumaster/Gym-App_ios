@@ -248,7 +248,7 @@ const en = {
       fat: "Fat: 25–27.5% of calories",
       fiberSalt: "Fiber (14 g per 1000 kcal) and salt (under 5 g)",
       calorieFloor: "Minimum calories (1200 women, 1500 men)",
-      restDayCarbs: "Fewer carbs on rest days, protein and fat unchanged",
+      restDayCarbs: "Fewer carbs on rest days, more on cardio days; protein and fat unchanged",
       proteinPerMeal: "Protein per meal: 0.4 g/kg, over at least 4 meals",
       watchCalories: "Watch calories shown, not used for nutrition (wrist estimates off by 20%+)",
       caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
@@ -545,6 +545,7 @@ const en = {
     today: "Today",
     yesterday: "Yesterday",
     trainingDay: "Training day",
+    cardioDay: "Cardio day",
     restDay: "Rest day",
     setDailyLimits: "Set daily nutrition limits",
     setDailyLimitsToTrack: "Set daily limits to track progress",
@@ -935,10 +936,13 @@ const en = {
     byDayTypeNeedsWeight:
       "Answer “Suggest my limits” first — the rest-day estimate needs your bodyweight. Until then, rest days use your training-day limits.",
     trainingDay: "Training day",
+    cardioDay: "Cardio day",
     restDay: "Rest day",
     restHint: "Blank fields follow your training-day limits automatically.",
-    weeklyAverage: (kcal: string, days: number) =>
-      `With ${days} training ${days === 1 ? "day" : "days"} a week, this averages ${kcal} kcal a day. A suggested limit is that weekly average, so training days sit a little above it and rest days below.`,
+    weeklyAverage: (kcal: string, days: number, cardio: number) =>
+      `With ${days} training ${days === 1 ? "day" : "days"}${cardio ? ` and ${cardio} planned cardio ${cardio === 1 ? "session" : "sessions"}` : ""} a week, this averages ${kcal} kcal a day. A suggested limit is that weekly average, so training days sit a little above it and rest days below.`,
+    cardioHint:
+      "Cardio adds its own energy to the day it's planned or logged, from carbs — so a cardio day sits above a rest day.",
   },
   nutritionQuestionnaire: {
     title: "Suggest my limits",
@@ -1443,7 +1447,7 @@ const nl: Dict = {
       fat: "Vet: 25–27,5% van de calorieën",
       fiberSalt: "Vezels (14 g per 1000 kcal) en zout (minder dan 5 g)",
       calorieFloor: "Minimum aantal calorieën (1200 vrouwen, 1500 mannen)",
-      restDayCarbs: "Minder koolhydraten op rustdagen, eiwit en vet gelijk",
+      restDayCarbs: "Minder koolhydraten op rustdagen, meer op cardiodagen; eiwit en vet gelijk",
       proteinPerMeal: "Eiwit per maaltijd: 0,4 g/kg, over minstens 4 maaltijden",
       watchCalories:
         "Horlogecalorieën getoond, niet gebruikt voor voeding (polsschattingen 20%+ ernaast)",
@@ -1743,6 +1747,7 @@ const nl: Dict = {
     today: "Vandaag",
     yesterday: "Gisteren",
     trainingDay: "Trainingsdag",
+    cardioDay: "Cardiodag",
     restDay: "Rustdag",
     setDailyLimits: "Dagelijkse voedingslimieten instellen",
     setDailyLimitsToTrack: "Stel dagelijkse limieten in om voortgang bij te houden",
@@ -2134,10 +2139,13 @@ const nl: Dict = {
     byDayTypeNeedsWeight:
       "Vul eerst „Stel mijn limieten voor” in — de schatting voor rustdagen heeft je lichaamsgewicht nodig. Tot die tijd gelden op rustdagen je limieten voor trainingsdagen.",
     trainingDay: "Trainingsdag",
+    cardioDay: "Cardiodag",
     restDay: "Rustdag",
     restHint: "Lege velden volgen automatisch je limieten voor trainingsdagen.",
-    weeklyAverage: (kcal: string, days: number) =>
-      `Met ${days} ${days === 1 ? "trainingsdag" : "trainingsdagen"} per week is dit gemiddeld ${kcal} kcal per dag. Een voorgestelde limiet is dat weekgemiddelde, dus trainingsdagen liggen er iets boven en rustdagen eronder.`,
+    weeklyAverage: (kcal: string, days: number, cardio: number) =>
+      `Met ${days} ${days === 1 ? "trainingsdag" : "trainingsdagen"}${cardio ? ` en ${cardio} geplande ${cardio === 1 ? "cardiosessie" : "cardiosessies"}` : ""} per week is dit gemiddeld ${kcal} kcal per dag. Een voorgestelde limiet is dat weekgemiddelde, dus trainingsdagen liggen er iets boven en rustdagen eronder.`,
+    cardioHint:
+      "Cardio telt zijn eigen energie op bij de dag waarop het gepland of gelogd is, uit koolhydraten — een cardiodag ligt dus boven een rustdag.",
   },
   nutritionQuestionnaire: {
     title: "Stel mijn limieten voor",
