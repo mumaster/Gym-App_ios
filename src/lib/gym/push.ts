@@ -5,6 +5,14 @@ const VAPID_PUBLIC_KEY =
   "BD47i2d3Ha3sEfA6tQKzTgMi4AjtvPmDIQey9eRnBgEN-7kad3u9Lu5RZp0_K-5WXxzsNJt_z9QM_29GzOWP2Ks";
 
 const DEVICE_ID_KEY = "forge.push-device-id.v1";
+/** The endpoint this device last re-registered after its row went missing
+ *  (see restoreSubscription). */
+const RESTORED_KEY = "forge.push-restored.v1";
+
+/** Postgres foreign_key_violation: `rest_timer_notifications.device_id`
+ *  references `push_subscriptions`, so this means the device has no
+ *  subscription row on the server. */
+const FK_VIOLATION = "23503";
 
 function getDeviceId(): string {
   let id = localStorage.getItem(DEVICE_ID_KEY);
@@ -32,13 +40,21 @@ export type PushSubscribeResult = { ok: true } | { ok: false; reason: string };
  * added to the Home Screen) — callers can ignore a failure result, but it's
  * returned rather than swallowed so the caller can surface it if useful.
  */
-export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
+export async function ensurePushSubscription({ renew = false }: { renew?: boolean } = {}): Promise<
+  PushSubscribeResult & { endpoint?: string }
+> {
   if (typeof window === "undefined") return { ok: false, reason: "no window" };
   if (!("serviceWorker" in navigator)) return { ok: false, reason: "no service worker support" };
   if (!("PushManager" in window)) return { ok: false, reason: "no Push API support" };
   try {
     const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
+    // `renew` swaps a subscription the push service no longer accepts for a
+    // fresh one (a new endpoint and keys).
+    if (subscription && renew) {
+      await subscription.unsubscribe();
+      subscription = null;
+    }
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -84,10 +100,53 @@ export async function ensurePushSubscription(): Promise<PushSubscribeResult> {
         if (retryError) return { ok: false, reason: `Supabase: ${retryError.message}` };
       }
     }
-    return { ok: true };
+    return { ok: true, endpoint: json.endpoint };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Puts this device's subscription row back after it went missing. That
+ * happens when the server dropped it because the push service answered
+ * 404/410 for its endpoint (see send-rest-notifications), when the first
+ * save never succeeded, or when cleared storage gave the device a new id.
+ * The first time, the existing subscription is simply saved again. If the
+ * row goes missing again for that same endpoint, the push service is
+ * rejecting it, so it's replaced with a fresh subscription.
+ */
+async function restoreSubscription(): Promise<PushSubscribeResult> {
+  let restored: string | null = null;
+  try {
+    restored = localStorage.getItem(RESTORED_KEY);
+  } catch {
+    // Storage blocked: just save the existing subscription again.
+  }
+  let current: string | null = null;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    current = (await registration.pushManager.getSubscription())?.endpoint ?? null;
+  } catch {
+    // No service worker/Push API: ensurePushSubscription reports why.
+  }
+  const result = await ensurePushSubscription({
+    renew: current !== null && current === restored,
+  });
+  if (result.ok && result.endpoint) {
+    try {
+      localStorage.setItem(RESTORED_KEY, result.endpoint);
+    } catch {
+      // Not critical: the next recovery re-saves instead of renewing.
+    }
+  }
+  return result;
+}
+
+async function insertRestNotification(deviceId: string, fire_at: string) {
+  const { error } = await supabase
+    .from("rest_timer_notifications")
+    .insert({ device_id: deviceId, fire_at });
+  return error;
 }
 
 /** Schedules a server-sent push for when the current rest period ends. */
@@ -105,9 +164,14 @@ export async function scheduleRestNotification(
       .select("device_id");
     if (updateError) return { ok: false, reason: `Supabase: ${updateError.message}` };
     if (!updated || updated.length === 0) {
-      const { error: insertError } = await supabase
-        .from("rest_timer_notifications")
-        .insert({ device_id: deviceId, fire_at });
+      let insertError = await insertRestNotification(deviceId, fire_at);
+      if (insertError?.code === FK_VIOLATION) {
+        // No subscription row for this device on the server: put it back
+        // and try once more, rather than failing on every rest.
+        const restored = await restoreSubscription();
+        if (!restored.ok) return restored;
+        insertError = await insertRestNotification(deviceId, fire_at);
+      }
       if (insertError) {
         if (insertError.code !== "23505")
           return { ok: false, reason: `Supabase: ${insertError.message}` };

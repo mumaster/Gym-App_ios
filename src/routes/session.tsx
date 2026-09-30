@@ -223,6 +223,11 @@ function SessionScreen() {
   const resting = rest.phase === "counting";
   const restDone = rest.phase === "done";
 
+  /** A failed push schedule is shown once per session, not on every rest:
+   *  the in-app timer still works, and repeating the same error each rest
+   *  only gets in the way. */
+  const pushErrorShown = useRef(false);
+
   /** Starts the rest countdown and, if notifications are on, schedules the
    *  server-sent push that backs it up while the screen is off. */
   const startRest = useCallback(
@@ -230,12 +235,33 @@ function SessionScreen() {
       rest.start(seconds);
       if (notifyEnabled) {
         void scheduleRestNotification(seconds).then((result) => {
-          if (!result.ok) setToast(t.session.pushNotScheduled(result.reason));
+          if (result.ok) return;
+          console.warn("scheduleRestNotification:", result.reason);
+          if (pushErrorShown.current) return;
+          pushErrorShown.current = true;
+          setToast(t.session.pushNotScheduled(result.reason));
         });
       }
     },
     [rest, notifyEnabled, t.session],
   );
+
+  // With notifications on, re-save this device's push subscription when the
+  // session opens, so the server has a current one before the first rest
+  // (the browser can rotate it, and the server drops one the push service
+  // rejects). Silent: a rest that still can't be scheduled reports it.
+  const subscriptionChecked = useRef(false);
+  useEffect(() => {
+    if (
+      notifyEnabled &&
+      !subscriptionChecked.current &&
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted"
+    ) {
+      subscriptionChecked.current = true;
+      void ensurePushSubscription();
+    }
+  }, [notifyEnabled]);
 
   // Cancel any pending server-sent notification for this device whenever the
   // session screen goes away (workout finished/cancelled/navigated off) —
@@ -541,6 +567,7 @@ function SessionScreen() {
       // Web Push isn't available outside a Home-Screen-installed PWA) — the
       // in-app cues still work either way — but surface why, since a silent
       // failure here is otherwise impossible to diagnose from outside.
+      subscriptionChecked.current = true;
       const result = await ensurePushSubscription();
       if (!result.ok) setToast(t.session.pushSetupFailed(result.reason));
     } else setToast(t.session.notificationsNotAllowed);
