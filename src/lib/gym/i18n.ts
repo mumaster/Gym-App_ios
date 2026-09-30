@@ -542,7 +542,7 @@ const en = {
     personalRecords: "Personal records · est. 1RM",
     sessions: "Sessions",
     minutesShort: (n: number) => `${n} min`,
-    setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg volume`,
+    setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
   },
   historyDetail: {
     title: "Session",
@@ -1767,7 +1767,7 @@ const nl: Dict = {
     personalRecords: "Persoonlijke records · gesch. 1RM",
     sessions: "Sessies",
     minutesShort: (n: number) => `${n} min`,
-    setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg volume`,
+    setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
   },
   historyDetail: {
     title: "Sessie",

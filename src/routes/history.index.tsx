@@ -1,6 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { ChevronRight, Flame, Footprints, HeartPulse, Trophy, Watch } from "lucide-react";
+import {
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  Footprints,
+  HeartPulse,
+  Trophy,
+  Watch,
+  type LucideIcon,
+} from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
@@ -364,10 +373,13 @@ function HistoryScreen() {
                         i > 0 ? "border-t border-border" : ""
                       }`}
                     >
+                      <SessionIcon icon={Dumbbell} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[15px] font-semibold">
+                        {/* Laid out like a cardio row: date · what, then the
+                            numbers (minutes and heart rate included) on the
+                            second line, so the muscles get the full width. */}
+                        <p className="truncate text-[15px] font-semibold">
                           {new Date(w.date).toLocaleDateString(locale, {
-                            weekday: "short",
                             day: "numeric",
                             month: "short",
                           })}
@@ -376,25 +388,24 @@ function HistoryScreen() {
                             {w.target_muscles.join(" · ") || t.generate.fullBody}
                           </span>
                         </p>
-                        <p className="tabular mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                        <p className="tabular mt-0.5 flex items-center gap-1 truncate text-[12.5px] text-muted-foreground">
                           {t.history.setsAndVolume(
                             w.completed_sets.length,
                             volume.toLocaleString(locale),
                           )}
+                          {" · "}
+                          {t.history.minutesShort(sessionMinutes(w))}
+                          {w.watch?.avgHr != null ? (
+                            <span
+                              className="flex items-center gap-0.5"
+                              aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
+                            >
+                              <HeartPulse className="size-3.5 text-primary-text" />
+                              {w.watch.avgHr}
+                            </span>
+                          ) : null}
                         </p>
                       </div>
-                      {w.watch?.avgHr != null ? (
-                        <p
-                          className="tabular flex shrink-0 items-center gap-0.5 text-[13px] text-muted-foreground"
-                          aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
-                        >
-                          <HeartPulse className="size-3.5 text-primary-text" />
-                          {w.watch.avgHr}
-                        </p>
-                      ) : null}
-                      <p className="tabular shrink-0 text-[13px] text-muted-foreground">
-                        {t.history.minutesShort(sessionMinutes(w))}
-                      </p>
                       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                     </Link>
                   );
@@ -413,6 +424,19 @@ function HistoryScreen() {
         </button>
       ) : null}
     </Screen>
+  );
+}
+
+/** The leading tile every session row has, the same size as a route
+ *  thumbnail, so strength and cardio rows line up. */
+function SessionIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span
+      aria-hidden
+      className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted"
+    >
+      <Icon className="size-5 text-primary-text" />
+    </span>
   );
 }
 
@@ -439,13 +463,13 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
       }`}
     >
       {/* The route's shape, in the accent, when a map was imported. */}
-      {map ? <RouteThumb map={map} className="size-10" /> : null}
+      {map ? <RouteThumb map={map} className="size-10" /> : <SessionIcon icon={Icon} />}
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[15px] font-semibold">
-          {map ? null : <Icon className="size-4 shrink-0 text-primary-text" aria-hidden />}
+        <p className="flex items-center text-[15px] font-semibold">
           <span className="truncate">
-            {/* No weekday, unlike a strength row: with the route thumbnail
-                beside it, "Wed, Jun 10 · Buiten hardlopen" doesn't fit at 390pt. */}
+            {/* No weekday (strength rows too): with the icon or route
+                thumbnail beside it, "Wed, Jun 10 · Buiten hardlopen" doesn't
+                fit at 390pt. */}
             {new Date(cardio.date).toLocaleDateString(locale, {
               day: "numeric",
               month: "short",
@@ -456,9 +480,9 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
             </span>
           </span>
         </p>
-        {/* Minutes and heart rate sit on this line rather than at the right
-            (as on a strength row), so the activity name ("Buiten hardlopen")
-            fits on the first at 390pt. */}
+        {/* Minutes and heart rate sit on this line rather than at the right,
+            so the activity name ("Buiten hardlopen") fits on the first at
+            390pt. Strength rows do the same. */}
         {detail.length || watch.avgHr != null ? (
           <p className="tabular mt-0.5 flex items-center gap-1 truncate text-[12.5px] text-muted-foreground">
             {detail.join(" · ")}
