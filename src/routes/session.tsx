@@ -9,7 +9,6 @@ import {
   Lightbulb,
   ChevronLeft,
   ChevronRight,
-  Flame,
   List,
   Minus,
   PartyPopper,
@@ -90,6 +89,9 @@ interface Block {
   rounds: number;
 }
 
+/** Space left between the sticky header and a card scrolled up to it. */
+const CARD_GAP_PX = 12;
+
 function buildBlocks(plan: PlannedExercise[]): Block[] {
   const blocks: Block[] = [];
   for (let i = 0; i < plan.length; i++) {
@@ -150,6 +152,8 @@ function SessionScreen() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const wasComplete = useRef(false);
   /** Where to move once the running rest finishes — a position rather than
    *  a callback, so it can be saved and survive the app being closed. */
@@ -346,10 +350,34 @@ function SessionScreen() {
     wasComplete.current = blockDone;
   }, [blockDone]);
 
-  /** Keep the focused card in view as focus moves between the paired exercises. */
+  /** Bring the focused card's top just under the sticky header as focus
+   *  moves (next exercise, superset partner, after a rest). Centring it, as
+   *  before, put a card taller than the screen with its title hidden under
+   *  the header. */
   useEffect(() => {
-    activeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const card = activeCardRef.current;
+    if (!card) return;
+    const headerBottom = headerRef.current?.getBoundingClientRect().bottom ?? 0;
+    // The first exercise of a block (or of a superset round) goes back to the
+    // very top, so the superset round label above it shows too.
+    const top =
+      pos.slot === 0
+        ? 0
+        : card.getBoundingClientRect().top + window.scrollY - headerBottom - CARD_GAP_PX;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }, [pos.block, pos.slot, pos.round]);
+
+  // The bottom bar grows while the rest panel is in it, so the page keeps
+  // room to scroll its last content clear of it.
+  const [navHeight, setNavHeight] = useState(0);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setNavHeight(nav.offsetHeight));
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [hydrated, finishedSummary]);
 
   if (!hydrated) return <div className="min-h-[100dvh] bg-background" />;
 
@@ -674,6 +702,7 @@ function SessionScreen() {
   return (
     <div className="min-h-[100dvh] bg-background">
       <header
+        ref={headerRef}
         className={`safe-top glass-strong sticky top-0 z-30 border-x-0 border-t-0 pb-3 transition-[filter] duration-300 ${
           resting ? "brightness-[0.7]" : ""
         }`}
@@ -714,63 +743,6 @@ function SessionScreen() {
         </div>
       </header>
 
-      {rest.phase !== "idle" ? (
-        <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-5 pt-2">
-          <div
-            className={`glass-strong mt-16 flex min-w-[220px] flex-col gap-2 rounded-3xl px-5 py-3 shadow-[var(--shadow-float)] ${restDone ? "flash" : ""}`}
-            // More opaque than plain glass: the bar now carries small text
-            // (what's next) that busy content scrolling underneath drowned out.
-            style={{ backgroundColor: "color-mix(in oklch, var(--background) 88%, transparent)" }}
-          >
-            <div className="flex items-center gap-3">
-              <Flame className="size-5 text-primary-text" />
-              <span className="tabular text-xl font-bold">
-                {restDone ? t.session.restComplete : t.session.restSeconds(rest.secondsLeft)}
-              </span>
-              <button
-                onClick={() => {
-                  haptic();
-                  rest.skip();
-                }}
-                className="pointer-events-auto relative ml-2 min-h-[44px] rounded-full bg-primary px-5 text-[15px] font-bold text-primary-foreground"
-              >
-                <HapticSwitch />
-                {t.session.skipRest}
-              </button>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{
-                  width: `${Math.max(0, Math.min(100, (rest.secondsLeft / Math.max(1, rest.duration)) * 100))}%`,
-                }}
-              />
-            </div>
-            {resting ? (
-              <div className="flex items-center gap-2">
-                <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-                  {restNext}
-                </p>
-                <button
-                  onClick={extendRest}
-                  className="pointer-events-auto relative min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
-                >
-                  <HapticSwitch />
-                  {t.session.addRest}
-                </button>
-                <button
-                  onClick={undoLastSet}
-                  className="pointer-events-auto relative min-h-[36px] shrink-0 rounded-full bg-secondary px-3 text-[13px] font-bold text-secondary-foreground active:scale-95"
-                >
-                  <HapticSwitch />
-                  {t.session.undoSet}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       {toast ? (
         <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-5 pt-2">
           <div className="glass-strong mt-16 rounded-2xl bg-primary/20 px-5 py-3 text-center text-[15px] font-bold text-foreground shadow-[var(--shadow-float)]">
@@ -779,7 +751,10 @@ function SessionScreen() {
         </div>
       ) : null}
 
-      <main className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-3">
+      <main
+        className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-3"
+        style={navHeight ? { paddingBottom: navHeight + 24 } : undefined}
+      >
         <div className={isSuperset ? "space-y-3" : ""}>
           {isSuperset ? (
             <p className="rounded-full bg-primary/20 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-widest text-primary-text">
@@ -956,59 +931,76 @@ function SessionScreen() {
       </main>
 
       <nav
-        className={`glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] transition-[filter] duration-300 ${
-          resting ? "pointer-events-none brightness-[0.55] grayscale-[0.6]" : ""
-        }`}
+        ref={navRef}
+        className="glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+        // Solid while the rest panel is in it, so the card scrolling
+        // underneath can't show through its text.
+        style={rest.phase !== "idle" ? { backgroundColor: "var(--background)" } : undefined}
       >
-        <div className="mx-auto flex w-full max-w-xl items-center gap-2">
-          <button
-            onClick={() => goToBlock(blockIndex - 1)}
-            disabled={blockIndex === 0}
-            aria-label={t.session.previousExercise}
-            className="glass flex min-h-[52px] active:scale-95 w-14 items-center justify-center rounded-2xl disabled:opacity-30"
-          >
-            <ChevronLeft className="size-5" />
-          </button>
-          <span className="tabular w-14 text-center text-[13px] font-semibold text-muted-foreground">
-            {t.common.ofTotal(blockIndex + 1, blocks.length)}
-          </span>
-          {isLastBlock ? (
-            <>
-              {blockComplete && bonusOptions.length > 0 ? (
+        {rest.phase !== "idle" ? (
+          <RestPanel
+            done={restDone}
+            secondsLeft={rest.secondsLeft}
+            duration={rest.duration}
+            next={restNext}
+            onSkip={() => {
+              haptic();
+              rest.skip();
+            }}
+            onExtend={extendRest}
+            onUndo={undoLastSet}
+          />
+        ) : (
+          <div className="mx-auto flex w-full max-w-xl items-center gap-2">
+            <button
+              onClick={() => goToBlock(blockIndex - 1)}
+              disabled={blockIndex === 0}
+              aria-label={t.session.previousExercise}
+              className="glass flex min-h-[52px] active:scale-95 w-14 items-center justify-center rounded-2xl disabled:opacity-30"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <span className="tabular w-14 text-center text-[13px] font-semibold text-muted-foreground">
+              {t.common.ofTotal(blockIndex + 1, blocks.length)}
+            </span>
+            {isLastBlock ? (
+              <>
+                {blockComplete && bonusOptions.length > 0 ? (
+                  <button
+                    onClick={addBonus}
+                    aria-label={t.session.addExtra}
+                    className="glass flex min-h-[52px] active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
+                  >
+                    <Plus className="size-5 text-primary-text" /> {t.session.extra}
+                  </button>
+                ) : null}
                 <button
-                  onClick={addBonus}
-                  aria-label={t.session.addExtra}
-                  className="glass flex min-h-[52px] active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
+                  onClick={endWorkout}
+                  className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold ${
+                    blockComplete
+                      ? "glow bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
                 >
-                  <Plus className="size-5 text-primary-text" /> {t.session.extra}
+                  {t.session.finishWorkout}
                 </button>
-              ) : null}
+              </>
+            ) : (
               <button
-                onClick={endWorkout}
-                className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold ${
+                onClick={() => goToBlock(blockIndex + 1)}
+                disabled={!blockComplete}
+                className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold transition-all ${
                   blockComplete
-                    ? "glow bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground"
+                    ? "glow animate-pulse bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground opacity-60"
                 }`}
               >
-                {t.session.finishWorkout}
+                {isSuperset ? t.session.completeSuperset : t.session.nextExercise}{" "}
+                <ChevronRight className="size-5" />
               </button>
-            </>
-          ) : (
-            <button
-              onClick={() => goToBlock(blockIndex + 1)}
-              disabled={!blockComplete}
-              className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold transition-all ${
-                blockComplete
-                  ? "glow animate-pulse bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground opacity-60"
-              }`}
-            >
-              {isSuperset ? t.session.completeSuperset : t.session.nextExercise}{" "}
-              <ChevronRight className="size-5" />
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </nav>
 
       <BottomSheet
@@ -1840,6 +1832,100 @@ function ExerciseBlock({
 }
 
 /** Numeric field with big −/+ buttons, for editing a logged set. */
+/** m:ss, so a 2-minute rest reads "1:43" rather than "103s". */
+function formatRest(seconds: number): string {
+  const s = Math.max(0, seconds);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/**
+ * The rest timer, docked in the bottom bar in place of the exercise
+ * navigation (which is locked during a rest anyway). It used to float over
+ * the top of the card, covering the weight and reps fields, and cut the
+ * "next" line short. Here it covers only the logging buttons, which are
+ * locked too, and sits under the thumb.
+ */
+function RestPanel({
+  done,
+  secondsLeft,
+  duration,
+  next,
+  onSkip,
+  onExtend,
+  onUndo,
+}: {
+  done: boolean;
+  secondsLeft: number;
+  duration: number;
+  next: string | null;
+  onSkip: () => void;
+  onExtend: () => void;
+  onUndo: () => void;
+}) {
+  const t = useTranslation();
+  const pct = done ? 0 : Math.max(0, Math.min(100, (secondsLeft / Math.max(1, duration)) * 100));
+  return (
+    <div className="mx-auto w-full max-w-xl" role="region" aria-label={t.session.restLabel}>
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {done ? t.session.restOverLabel : t.session.restLabel}
+          </p>
+          <p
+            className={`tabular mt-0.5 truncate text-[34px] font-bold leading-none ${
+              done ? "text-primary-text" : ""
+            }`}
+            aria-label={done ? t.session.restGo : undefined}
+          >
+            {done ? t.session.restGo : formatRest(secondsLeft)}
+          </p>
+        </div>
+        <button
+          onClick={onSkip}
+          className={`relative min-h-[52px] shrink-0 rounded-2xl bg-primary px-5 text-[15px] font-bold text-primary-foreground active:scale-95 ${
+            done ? "glow" : ""
+          }`}
+        >
+          <HapticSwitch />
+          {done ? t.session.restContinue : t.session.skipRest}
+        </button>
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {next ? (
+        <p className="mt-2.5 flex min-w-0 items-baseline gap-1.5 text-[14px]">
+          <span className="shrink-0 font-semibold text-muted-foreground">
+            {t.session.restNextLabel}
+          </span>
+          <span className="line-clamp-2 min-w-0 font-semibold">{next}</span>
+        </p>
+      ) : null}
+      {!done ? (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={onExtend}
+            className="relative min-h-[44px] rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+          >
+            <HapticSwitch />
+            {t.session.addRest}
+          </button>
+          <button
+            onClick={onUndo}
+            className="relative min-h-[44px] rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+          >
+            <HapticSwitch />
+            {t.session.undoSet}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Stepper({
   value,
   onChange,
