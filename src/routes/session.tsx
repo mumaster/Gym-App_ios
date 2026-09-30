@@ -17,6 +17,7 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
+  Undo2,
   Youtube,
   X,
   StickyNote,
@@ -484,7 +485,9 @@ function SessionScreen() {
   }
 
   const totalSets = plan.reduce((n, p) => n + p.target_sets, 0);
-  const done = activeWorkout.completed_sets.length;
+  // Working sets logged, each exercise counted up to its target, against
+  // the planned working sets (it used to count warm-ups and extra sets too).
+  const done = plan.reduce((n, p, i) => n + Math.min(loggedWorking(i), p.target_sets), 0);
   const workingDone = activeWorkout.completed_sets.filter(
     (s) => s.exercise_id === planned.exercise_id && s.set_type === "working",
   ).length;
@@ -740,43 +743,50 @@ function SessionScreen() {
     <div className="min-h-[100dvh] bg-background">
       <header
         ref={headerRef}
-        className={`safe-top glass-strong sticky top-0 z-30 border-x-0 border-t-0 pb-3 transition-[filter] duration-300 ${
+        className={`safe-top glass-strong sticky top-0 z-30 border-x-0 border-t-0 border-b-0 transition-[filter] duration-300 ${
           resting ? "brightness-[0.7]" : ""
         }`}
       >
-        <div className="mx-auto w-full max-w-xl px-4">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={() => navigate({ to: "/" })}
-              className="glass flex size-11 items-center justify-center rounded-full"
-              aria-label={t.session.closeSession}
-            >
-              <X className="size-5" />
-            </button>
-            <div className="text-center">
-              <p className="tabular text-2xl font-bold leading-none">
-                {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
-                {String(elapsed % 60).padStart(2, "0")}
-              </p>
-              <p className="text-[12px] text-muted-foreground">
-                {activeWorkout.target_muscles.join(" · ") || t.generate.title} ·{" "}
-                {t.session.setsOfTotal(done, totalSets)}
-              </p>
-            </div>
-            <button
-              onClick={() => setListOpen(true)}
-              aria-label={t.session.workoutOverview}
-              className="glass flex size-11 items-center justify-center rounded-full"
-            >
-              <List className="size-5 text-primary-text" />
-            </button>
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(100, (done / Math.max(1, totalSets)) * 100)}%` }}
-            />
-          </div>
+        {/* One compact row: the muscles moved out (the card names the
+            exercise; the overview lists the rest), and the progress bar is a
+            hairline along the header's bottom edge. */}
+        <div className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-2">
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="glass flex size-10 shrink-0 items-center justify-center rounded-full"
+            aria-label={t.session.closeSession}
+          >
+            <X className="size-[18px]" />
+          </button>
+          <p className="tabular min-w-0 flex-1 truncate text-center leading-none">
+            <span className="text-[20px] font-bold">
+              {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
+              {String(elapsed % 60).padStart(2, "0")}
+            </span>
+            <span className="ml-2 text-[13px] font-semibold text-muted-foreground">
+              {t.session.setsOfTotal(done, totalSets)}
+            </span>
+          </p>
+          <button
+            onClick={() => setListOpen(true)}
+            aria-label={t.session.workoutOverview}
+            className="glass flex size-10 shrink-0 items-center justify-center rounded-full"
+          >
+            <List className="size-[18px] text-primary-text" />
+          </button>
+        </div>
+        <div
+          className="h-[3px] bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={totalSets}
+          aria-valuenow={done}
+          aria-label={t.session.setsOfTotal(done, totalSets)}
+        >
+          <div
+            className="h-full bg-primary transition-[width] duration-300"
+            style={{ width: `${Math.min(100, (done / Math.max(1, totalSets)) * 100)}%` }}
+          />
         </div>
       </header>
 
@@ -971,7 +981,7 @@ function SessionScreen() {
 
       <nav
         ref={navRef}
-        className="glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+        className="glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.5rem))]"
         // Solid while the rest or finish panel is in it, so the card
         // scrolling underneath can't show through its text.
         style={
@@ -1014,11 +1024,11 @@ function SessionScreen() {
               onClick={() => goToBlock(blockIndex - 1)}
               disabled={blockIndex === 0}
               aria-label={t.session.previousExercise}
-              className="glass flex min-h-[52px] active:scale-95 w-14 items-center justify-center rounded-2xl disabled:opacity-30"
+              className="glass flex min-h-11 active:scale-95 w-11 items-center justify-center rounded-2xl disabled:opacity-30"
             >
               <ChevronLeft className="size-5" />
             </button>
-            <span className="tabular w-14 text-center text-[13px] font-semibold text-muted-foreground">
+            <span className="tabular shrink-0 whitespace-nowrap px-1 text-center text-[12px] font-semibold text-muted-foreground">
               {t.common.ofTotal(blockIndex + 1, blocks.length)}
             </span>
             {isLastBlock ? (
@@ -1027,14 +1037,14 @@ function SessionScreen() {
                   <button
                     onClick={addBonus}
                     aria-label={t.session.addExtra}
-                    className="glass flex min-h-[52px] active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
+                    className="glass flex min-h-11 active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
                   >
                     <Plus className="size-5 text-primary-text" /> {t.session.extra}
                   </button>
                 ) : null}
                 <button
                   onClick={endWorkout}
-                  className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold ${
+                  className={`flex min-h-11 active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold ${
                     blockComplete
                       ? "glow bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground"
@@ -1047,7 +1057,7 @@ function SessionScreen() {
               <button
                 onClick={() => goToBlock(blockIndex + 1)}
                 disabled={!blockComplete}
-                className={`flex min-h-[52px] active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold transition-all ${
+                className={`flex min-h-11 active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold transition-all ${
                   blockComplete
                     ? "glow animate-pulse bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground opacity-60"
@@ -1940,7 +1950,7 @@ function RestPanel({
             {done ? t.session.restOverLabel : t.session.restLabel}
           </p>
           <p
-            className={`tabular mt-0.5 truncate text-[34px] font-bold leading-none ${
+            className={`tabular mt-0.5 truncate text-[28px] font-bold leading-none ${
               done ? "text-primary-text" : ""
             }`}
             aria-label={done ? t.session.restGo : undefined}
@@ -1948,9 +1958,18 @@ function RestPanel({
             {done ? t.session.restGo : formatRest(secondsLeft)}
           </p>
         </div>
+        {!done ? (
+          <button
+            onClick={onExtend}
+            className="relative min-h-11 shrink-0 rounded-2xl bg-secondary px-3 text-[14px] font-bold text-secondary-foreground active:scale-95"
+          >
+            <HapticSwitch />
+            {t.session.addRest}
+          </button>
+        ) : null}
         <button
           onClick={onSkip}
-          className={`relative min-h-[52px] shrink-0 rounded-2xl bg-primary px-5 text-[15px] font-bold text-primary-foreground active:scale-95 ${
+          className={`relative min-h-11 shrink-0 rounded-2xl bg-primary px-5 text-[15px] font-bold text-primary-foreground active:scale-95 ${
             done ? "glow" : ""
           }`}
         >
@@ -1958,46 +1977,44 @@ function RestPanel({
           {done ? t.session.restContinue : t.session.skipRest}
         </button>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
           style={{ width: `${pct}%` }}
         />
       </div>
-      {next ? (
-        <p className="mt-2.5 flex min-w-0 items-baseline gap-1.5 text-[14px]">
-          <span className="shrink-0 font-semibold text-muted-foreground">
-            {t.session.restNextLabel}
-          </span>
-          <span className="line-clamp-2 min-w-0 font-semibold">{next}</span>
-        </p>
+      {next || !done ? (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="flex min-w-0 flex-1 items-baseline gap-1.5 text-[14px]">
+            {next ? (
+              <>
+                <span className="shrink-0 font-semibold text-muted-foreground">
+                  {t.session.restNextLabel}
+                </span>
+                <span className="line-clamp-2 min-w-0 font-semibold">{next}</span>
+              </>
+            ) : null}
+          </p>
+          {!done ? (
+            <button
+              onClick={onUndo}
+              className="relative flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+            >
+              <HapticSwitch />
+              <Undo2 className="size-3.5" />
+              {t.session.undoSet}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {!done && lastSetRpe !== undefined ? (
         // Rest is when you'd rate the set anyway, and logging moves straight
         // on, so the set that just finished can be rated (or corrected) here.
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2">
           <span className="w-16 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
             {t.session.rateLastSet}
           </span>
           <RpePicker value={lastSetRpe} onChange={onRateLastSet} />
-        </div>
-      ) : null}
-      {!done ? (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            onClick={onExtend}
-            className="relative min-h-[44px] rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
-          >
-            <HapticSwitch />
-            {t.session.addRest}
-          </button>
-          <button
-            onClick={onUndo}
-            className="relative min-h-[44px] rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
-          >
-            <HapticSwitch />
-            {t.session.undoSet}
-          </button>
         </div>
       ) : null}
     </div>
@@ -2032,11 +2049,11 @@ function FinishPanel({
   return (
     <div className="mx-auto w-full max-w-xl" role="region" aria-label={t.session.finishTitle}>
       <div className="flex items-center gap-3">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <PartyPopper className="size-6" />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <PartyPopper className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="text-[20px] font-bold leading-tight">
+          <p className="text-[18px] font-bold leading-tight">
             {all ? t.session.finishTitle : t.session.finishTitlePartial}
           </p>
           <p className="tabular text-[14px] text-muted-foreground">
@@ -2046,7 +2063,7 @@ function FinishPanel({
       </div>
       <button
         onClick={onFinish}
-        className="glow relative mt-3 min-h-14 w-full rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.99]"
+        className="glow relative mt-2 min-h-12 w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.99]"
       >
         <HapticSwitch />
         {t.session.finishWorkout}
@@ -2057,7 +2074,7 @@ function FinishPanel({
             <button
               onClick={onBack}
               aria-label={t.session.previousExercise}
-              className="flex min-h-11 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground active:scale-95"
+              className="flex min-h-10 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground active:scale-95"
             >
               <ChevronLeft className="size-5" />
             </button>
@@ -2065,7 +2082,7 @@ function FinishPanel({
           {onExtraSet ? (
             <button
               onClick={onExtraSet}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
+              className="flex min-h-10 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
             >
               <Plus className="size-4 shrink-0" /> {t.session.extraSet}
             </button>
@@ -2074,7 +2091,7 @@ function FinishPanel({
             <button
               onClick={onExtraExercise}
               aria-label={t.session.addExtra}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
+              className="flex min-h-10 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
             >
               <Plus className="size-4 shrink-0" /> {t.session.extraExercise}
             </button>
