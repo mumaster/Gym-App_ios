@@ -162,7 +162,9 @@ function SessionScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
-  const navRef = useRef<HTMLElement | null>(null);
+  /** The bottom dock (rest or finish panel). Only there while one of them
+   *  is, so it's tracked as state for the height observer below. */
+  const [navEl, setNavEl] = useState<HTMLElement | null>(null);
   const wasComplete = useRef(false);
   /** Where to move once the running rest finishes — a position rather than
    *  a callback, so it can be saved and survive the app being closed. */
@@ -374,25 +376,35 @@ function SessionScreen() {
     // header and the bottom bar; then scroll on until Log set clears the
     // bar, since that's what you tap next (the title scrolls away instead).
     const log = card.querySelector<HTMLElement>("[data-log-set]");
-    const navTop = navRef.current?.getBoundingClientRect().top ?? window.innerHeight;
+    const navTop =
+      document.querySelector("[data-session-dock]")?.getBoundingClientRect().top ??
+      window.innerHeight;
     const logTop = log
       ? log.getBoundingClientRect().bottom + window.scrollY - (navTop - CARD_GAP_PX)
       : 0;
-    const top = Math.max(cardTop, logTop);
+    // A finished exercise you jumped back to has "Next exercise" above it;
+    // keep that in view too.
+    const nextBtn = document.querySelector<HTMLElement>("[data-next-exercise]");
+    const nextTop = nextBtn
+      ? nextBtn.getBoundingClientRect().top + window.scrollY - headerBottom - CARD_GAP_PX
+      : Infinity;
+    const top = Math.min(nextTop, Math.max(cardTop, logTop));
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }, [pos.block, pos.slot, pos.round]);
 
-  // The bottom bar grows while the rest panel is in it, so the page keeps
-  // room to scroll its last content clear of it.
+  // The page keeps room to scroll its last content clear of the dock
+  // while it's showing.
   const [navHeight, setNavHeight] = useState(0);
   useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => setNavHeight(nav.offsetHeight));
-    ro.observe(nav);
+    if (!navEl || typeof ResizeObserver === "undefined") {
+      setNavHeight(0);
+      return;
+    }
+    const ro = new ResizeObserver(() => setNavHeight(navEl.offsetHeight));
+    ro.observe(navEl);
     return () => ro.disconnect();
-  }, [hydrated, finishedSummary]);
+  }, [navEl]);
 
   if (!hydrated) return <div className="min-h-[100dvh] bg-background" />;
 
@@ -750,13 +762,13 @@ function SessionScreen() {
         {/* One compact row: the muscles moved out (the card names the
             exercise; the overview lists the rest), and the progress bar is a
             hairline along the header's bottom edge. */}
-        <div className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-2">
+        <div className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-1.5">
           <button
             onClick={() => navigate({ to: "/" })}
-            className="glass flex size-10 shrink-0 items-center justify-center rounded-full"
+            className="glass flex size-9 shrink-0 items-center justify-center rounded-full"
             aria-label={t.session.closeSession}
           >
-            <X className="size-[18px]" />
+            <X className="size-4" />
           </button>
           <p className="tabular min-w-0 flex-1 truncate text-center leading-none">
             <span className="text-[20px] font-bold">
@@ -769,10 +781,13 @@ function SessionScreen() {
           </p>
           <button
             onClick={() => setListOpen(true)}
-            aria-label={t.session.workoutOverview}
-            className="glass flex size-10 shrink-0 items-center justify-center rounded-full"
+            aria-label={`${t.session.workoutOverview} · ${t.common.ofTotal(blockIndex + 1, blocks.length)}`}
+            className="glass flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3"
           >
-            <List className="size-[18px] text-primary-text" />
+            <List className="size-4 text-primary-text" />
+            <span className="tabular text-[13px] font-semibold">
+              {blockIndex + 1}/{blocks.length}
+            </span>
           </button>
         </div>
         <div
@@ -799,17 +814,34 @@ function SessionScreen() {
       ) : null}
 
       <main
-        className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-3"
+        className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3"
         style={navHeight ? { paddingBottom: navHeight + 24 } : undefined}
       >
+        {upNext && blockComplete && !isLastBlock && rest.phase === "idle" ? (
+          // A finished exercise you came back to (the normal path moves on
+          // by itself after the rest): the way forward, where you're looking.
+          <button
+            data-next-exercise
+            onClick={() => goToBlock(blockIndex + 1)}
+            className="glow relative flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-primary px-4 py-2 text-left text-primary-foreground active:scale-[0.99]"
+          >
+            <HapticSwitch />
+            <span className="min-w-0">
+              <span className="block text-[12px] font-semibold opacity-80">
+                {t.session.nextExercise}
+              </span>
+              <span className="block truncate text-[15px] font-bold">{upNext}</span>
+            </span>
+            <ChevronRight className="size-5 shrink-0" />
+          </button>
+        ) : null}
         <div className={isSuperset ? "space-y-3" : ""}>
           {isSuperset ? (
-            <p className="rounded-full bg-primary/20 px-4 py-2 text-center text-[12px] font-bold uppercase tracking-widest text-primary-text">
-              {t.session.supersetRound(
-                supersetBadge,
-                Math.min(pos.round, block.rounds),
-                block.rounds,
-              )}
+            <p className="flex items-center justify-between gap-3 rounded-full bg-primary/20 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-text">
+              <span className="truncate">{supersetBadge}</span>
+              <span className="tabular shrink-0">
+                {t.session.roundOf(Math.min(pos.round, block.rounds), block.rounds)}
+              </span>
             </p>
           ) : null}
 
@@ -873,7 +905,7 @@ function SessionScreen() {
           </div>
         ) : null}
 
-        {upNext ? (
+        {upNext && !(blockComplete && !isLastBlock) ? (
           <p className="rounded-2xl bg-muted px-4 py-3 text-[14px] text-muted-foreground">
             <span className="font-semibold text-foreground">{t.session.upNext}</span> {upNext}
           </p>
@@ -979,97 +1011,47 @@ function SessionScreen() {
         </div>
       </main>
 
-      <nav
-        ref={navRef}
-        className="glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.5rem))]"
-        // Solid while the rest or finish panel is in it, so the card
-        // scrolling underneath can't show through its text.
-        style={
-          rest.phase !== "idle" || (isLastBlock && blockComplete)
-            ? { backgroundColor: "var(--background)" }
-            : undefined
-        }
-      >
-        {rest.phase !== "idle" ? (
-          <RestPanel
-            done={restDone}
-            secondsLeft={rest.secondsLeft}
-            duration={rest.duration}
-            next={restNext}
-            onSkip={() => {
-              haptic();
-              rest.skip();
-            }}
-            onExtend={extendRest}
-            onUndo={undoLastSet}
-            lastSetRpe={lastSetIsWorking ? (lastSet?.rpe ?? null) : undefined}
-            onRateLastSet={(n) => {
-              if (!activeWorkout) return;
-              updateSet(activeWorkout.completed_sets.length - 1, { rpe: n });
-            }}
-          />
-        ) : isLastBlock && blockComplete ? (
-          <FinishPanel
-            setsDone={plan.reduce((n, p, i) => n + Math.min(loggedWorking(i), p.target_sets), 0)}
-            setsPlanned={totalSets}
-            minutes={Math.max(1, Math.round(elapsed / 60))}
-            onFinish={endWorkout}
-            {...(blockIndex > 0 ? { onBack: () => goToBlock(blockIndex - 1) } : {})}
-            {...(formOpenHere ? {} : { onExtraSet: () => addExtraSet(planIndex) })}
-            {...(bonusOptions.length > 0 ? { onExtraExercise: addBonus } : {})}
-          />
-        ) : (
-          <div className="mx-auto flex w-full max-w-xl items-center gap-2">
-            <button
-              onClick={() => goToBlock(blockIndex - 1)}
-              disabled={blockIndex === 0}
-              aria-label={t.session.previousExercise}
-              className="glass flex min-h-11 active:scale-95 w-11 items-center justify-center rounded-2xl disabled:opacity-30"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-            <span className="tabular shrink-0 whitespace-nowrap px-1 text-center text-[12px] font-semibold text-muted-foreground">
-              {t.common.ofTotal(blockIndex + 1, blocks.length)}
-            </span>
-            {isLastBlock ? (
-              <>
-                {blockComplete && bonusOptions.length > 0 ? (
-                  <button
-                    onClick={addBonus}
-                    aria-label={t.session.addExtra}
-                    className="glass flex min-h-11 active:scale-95 items-center justify-center gap-1 rounded-2xl px-3 text-[14px] font-semibold"
-                  >
-                    <Plus className="size-5 text-primary-text" /> {t.session.extra}
-                  </button>
-                ) : null}
-                <button
-                  onClick={endWorkout}
-                  className={`flex min-h-11 active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold ${
-                    blockComplete
-                      ? "glow bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground"
-                  }`}
-                >
-                  {t.session.finishWorkout}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => goToBlock(blockIndex + 1)}
-                disabled={!blockComplete}
-                className={`flex min-h-11 active:scale-95 flex-1 items-center justify-center gap-1 rounded-2xl text-[15px] font-bold transition-all ${
-                  blockComplete
-                    ? "glow animate-pulse bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground opacity-60"
-                }`}
-              >
-                {isSuperset ? t.session.completeSuperset : t.session.nextExercise}{" "}
-                <ChevronRight className="size-5" />
-              </button>
-            )}
-          </div>
-        )}
-      </nav>
+      {/* No bottom bar while you're lifting: moving on happens after the
+          rest, the overview (header) jumps anywhere, and "Next exercise"
+          sits in the page when a finished exercise is showing. The dock only
+          appears for the rest timer and the end of the workout. */}
+      {rest.phase !== "idle" || (isLastBlock && blockComplete) ? (
+        <nav
+          ref={setNavEl}
+          data-session-dock
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background px-4 pt-2 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.5rem))] shadow-[var(--shadow-float)]"
+        >
+          {rest.phase !== "idle" ? (
+            <RestPanel
+              done={restDone}
+              secondsLeft={rest.secondsLeft}
+              duration={rest.duration}
+              next={restNext}
+              onSkip={() => {
+                haptic();
+                rest.skip();
+              }}
+              onExtend={extendRest}
+              onUndo={undoLastSet}
+              lastSetRpe={lastSetIsWorking ? (lastSet?.rpe ?? null) : undefined}
+              onRateLastSet={(n) => {
+                if (!activeWorkout) return;
+                updateSet(activeWorkout.completed_sets.length - 1, { rpe: n });
+              }}
+            />
+          ) : (
+            <FinishPanel
+              setsDone={plan.reduce((n, p, i) => n + Math.min(loggedWorking(i), p.target_sets), 0)}
+              setsPlanned={totalSets}
+              minutes={Math.max(1, Math.round(elapsed / 60))}
+              onFinish={endWorkout}
+              {...(blockIndex > 0 ? { onBack: () => goToBlock(blockIndex - 1) } : {})}
+              {...(formOpenHere ? {} : { onExtraSet: () => addExtraSet(planIndex) })}
+              {...(bonusOptions.length > 0 ? { onExtraExercise: addBonus } : {})}
+            />
+          )}
+        </nav>
+      ) : null}
 
       <BottomSheet
         open={painIndex !== null}
@@ -1157,8 +1139,17 @@ function SessionScreen() {
           ))}
         </div>
         <button
+          onClick={() => {
+            setListOpen(false);
+            endWorkout();
+          }}
+          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+        >
+          <CheckCircle2 className="size-4" /> {t.session.finishWorkout}
+        </button>
+        <button
           onClick={requestCancelWorkout}
-          className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-bold text-destructive active:scale-95"
+          className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-bold text-destructive active:scale-95"
         >
           <Ban className="size-4" /> {t.session.cancelWorkout}
         </button>

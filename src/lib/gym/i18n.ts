@@ -412,8 +412,7 @@ const en = {
     completeSuperset: "Complete superset",
     addExtra: "Add an extra exercise",
     extra: "Extra",
-    supersetRound: (badge: string, round: number, total: number) =>
-      `${badge} • Round ${round} of ${total}`,
+    roundOf: (round: number, total: number) => `Round ${round}/${total}`,
     supersetAntagonist: (label: string) => `Superset (Antagonist • ${label})`,
     supersetSlot: (slot: number) => `Superset ${slot}/2`,
     supersetRounds: (rounds: number) => `Superset · ${rounds} rounds`,
@@ -1634,8 +1633,7 @@ const nl: Dict = {
     completeSuperset: "Superset afronden",
     addExtra: "Extra oefening toevoegen",
     extra: "Extra",
-    supersetRound: (badge: string, round: number, total: number) =>
-      `${badge} • Ronde ${round} van ${total}`,
+    roundOf: (round: number, total: number) => `Ronde ${round}/${total}`,
     supersetAntagonist: (label: string) => `Superset (Antagonist • ${label})`,
     supersetSlot: (slot: number) => `Superset ${slot}/2`,
     supersetRounds: (rounds: number) => `Superset · ${rounds} rondes`,
