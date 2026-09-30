@@ -531,6 +531,10 @@ export function AddFoodSheet({
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        // Start going full height on touch-down, before focus: by the time
+        // the keyboard slides in the field is already on its way to the
+        // top, so iOS doesn't pan the page to reveal it and then back.
+        onPointerDown={() => setSearchMode(true)}
         onFocus={() => setSearchMode(true)}
         placeholder={t.addFood.searchFoods}
         enterKeyHint="search"

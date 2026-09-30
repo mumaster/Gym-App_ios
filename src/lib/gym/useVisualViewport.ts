@@ -24,22 +24,18 @@ export function useVisualViewport(active: boolean): VisualViewportBox | null {
       setBox(null);
       return;
     }
-    let frame = 0;
-    const read = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() =>
-        setBox((cur) =>
-          cur && cur.height === vv.height && cur.offsetTop === vv.offsetTop
-            ? cur
-            : { height: vv.height, offsetTop: vv.offsetTop },
-        ),
+    // Read straight in the event, not a frame later: while iOS pans the
+    // page for the keyboard, a one-frame lag shows as the overlay jumping.
+    const read = () =>
+      setBox((cur) =>
+        cur && cur.height === vv.height && cur.offsetTop === vv.offsetTop
+          ? cur
+          : { height: vv.height, offsetTop: vv.offsetTop },
       );
-    };
     setBox({ height: vv.height, offsetTop: vv.offsetTop });
     vv.addEventListener("resize", read);
     vv.addEventListener("scroll", read);
     return () => {
-      cancelAnimationFrame(frame);
       vv.removeEventListener("resize", read);
       vv.removeEventListener("scroll", read);
     };

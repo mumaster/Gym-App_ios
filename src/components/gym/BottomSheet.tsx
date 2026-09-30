@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useVisualViewport } from "../../lib/gym/useVisualViewport";
 
@@ -10,6 +10,10 @@ const DISMISS_VELOCITY = 0.5;
 /** Movement before a touch counts as a drag or a scroll (px). */
 const DRAG_SLOP = 8;
 const LEAVE_MS = 220;
+/** How long the sheet takes to glide to a new height (going full height for
+ *  a search, or content growing): iOS's own sheet curve, a UI feel value. */
+const RESIZE_MS = 320;
+const SHEET_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 const VELOCITY_WINDOW_MS = 100;
 
 /** Whether the touch started inside something that's scrolled away from
@@ -65,6 +69,32 @@ export function BottomSheet({
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [scrollKey]);
+
+  // Glide instead of jumping when the sheet's top edge moves: going full
+  // height for a search, or content growing or shrinking. After each render
+  // the new top is compared with the last one and the sheet animates from
+  // the old spot (a FLIP). The top is measured against the visible area, so
+  // following iOS's keyboard pan (the overlay's own top) never animates;
+  // that has to stay instant. offsetTop ignores transforms, so a drag or a
+  // running animation doesn't count as a move.
+  const layoutTopRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    const overlay = el?.parentElement;
+    if (!open || !el || !overlay) {
+      layoutTopRef.current = null;
+      return;
+    }
+    const top = overlay.getBoundingClientRect().top - (viewport?.offsetTop ?? 0) + el.offsetTop;
+    const prev = layoutTopRef.current;
+    layoutTopRef.current = top;
+    if (prev == null || Math.abs(prev - top) < 1 || typeof el.animate !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    el.animate([{ transform: `translateY(${prev - top}px)` }, { transform: "translateY(0)" }], {
+      duration: RESIZE_MS,
+      easing: SHEET_EASE,
+    });
+  });
   const triggerRef = useRef<Element | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -244,7 +274,7 @@ export function BottomSheet({
         style={{
           height: fullHeight ? "calc(100% - env(safe-area-inset-top) - 0.5rem)" : undefined,
           transform: dragY ? `translateY(${dragY}px)` : undefined,
-          transition: dragging ? "none" : `transform ${LEAVE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+          transition: dragging ? "none" : `transform ${LEAVE_MS}ms ${SHEET_EASE}`,
         }}
       >
         <div data-sheet-grip className="shrink-0 cursor-grab px-5 pt-3 active:cursor-grabbing">

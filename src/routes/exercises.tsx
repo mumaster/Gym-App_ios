@@ -98,12 +98,16 @@ function ExercisesScreen() {
   // so results sit above the keyboard; the filters stay a scroll up. The
   // list's min-height (below) keeps that position reachable however few
   // results there are, so typing never makes the page jump.
-  const scrollListUnderSearch = () => {
+  const scrollListUnderSearch = (smooth = false) => {
     const list = listRef.current;
     const header = document.querySelector("header");
     if (!list || !header) return;
     const top = list.getBoundingClientRect().top + window.scrollY - header.offsetHeight - 12;
-    window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: smooth && !reduceMotion ? "smooth" : "instant",
+    });
   };
   useLayoutEffect(() => {
     if (query) scrollListUnderSearch();
@@ -173,7 +177,7 @@ function ExercisesScreen() {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
               setSearchFocused(true);
-              scrollListUnderSearch();
+              scrollListUnderSearch(true);
             }}
             onBlur={() => setSearchFocused(false)}
             placeholder={t.exercises.search}
