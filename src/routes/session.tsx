@@ -138,6 +138,13 @@ function SessionScreen() {
   const bodyKg = latestBodyKg(weightLog, nutritionProfile);
 
   const [pos, setPos] = useState<SessionPos>({ block: 0, slot: 0, round: 1 });
+  /** Plan indices whose target sets are done but that got "+ Extra set",
+   *  which brings the entry form back. */
+  const [extraSetFor, setExtraSetFor] = useState<number[]>([]);
+  const addExtraSet = (index: number) => {
+    haptic(10);
+    setExtraSetFor((cur) => (cur.includes(index) ? cur : [...cur, index]));
+  };
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
   const [restNext, setRestNext] = useState<string | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
@@ -478,6 +485,9 @@ function SessionScreen() {
   const exerciseComplete = workingDone >= planned.target_sets;
   const blockComplete = blockDone;
   const isLastBlock = blockIndex >= blocks.length - 1;
+  /** Whether the current exercise's entry form is showing (not yet done,
+   *  or "+ Extra set" was tapped). */
+  const formOpenHere = !exerciseComplete || extraSetFor.includes(planIndex);
   const totalVolume = activeWorkout.completed_sets.reduce((v, s) => v + s.weight * s.reps, 0);
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const planIds = new Set(plan.map((p) => p.exercise_id));
@@ -619,6 +629,15 @@ function SessionScreen() {
         willComplete && blockIndex < blocks.length - 1
           ? { block: blockIndex + 1, slot: 0, round: 1 }
           : null;
+      // The set that completes the last exercise ends the workout: no rest
+      // (nothing is left to rest for), the finish panel takes over.
+      if (
+        blockIndex === blocks.length - 1 &&
+        loggedWorking(planIndex) + 1 === (planned?.target_sets ?? 0)
+      ) {
+        setRestNext(null);
+        return;
+      }
       setRestNext(
         !willComplete
           ? t.session.restNextSet(loggedWorking(planIndex) + 2, planned?.target_sets ?? 0)
@@ -646,6 +665,13 @@ function SessionScreen() {
     }
 
     const nextSlot = remaining(0) > 0 ? 0 : remaining(1) > 0 ? 1 : -1;
+    // Same as above: the set that completes the last superset ends the
+    // workout without a rest.
+    if (nextSlot === -1 && remaining(loggedSlot) === 0 && blockIndex === blocks.length - 1) {
+      afterRest.current = null;
+      setRestNext(null);
+      return;
+    }
     const nextSlotName =
       nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
     setRestNext(nextSlotName ? t.session.restNextExercise(nextSlotName) : null);
@@ -792,6 +818,8 @@ function SessionScreen() {
                 {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
                 complete={doneSets >= p.target_sets}
+                formOpen={doneSets < p.target_sets || extraSetFor.includes(idx)}
+                onExtraSet={() => addExtraSet(idx)}
               />
             );
           })}
@@ -938,9 +966,13 @@ function SessionScreen() {
       <nav
         ref={navRef}
         className="glass-strong fixed inset-x-0 bottom-0 z-30 border-x-0 border-b-0 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-        // Solid while the rest panel is in it, so the card scrolling
-        // underneath can't show through its text.
-        style={rest.phase !== "idle" ? { backgroundColor: "var(--background)" } : undefined}
+        // Solid while the rest or finish panel is in it, so the card
+        // scrolling underneath can't show through its text.
+        style={
+          rest.phase !== "idle" || (isLastBlock && blockComplete)
+            ? { backgroundColor: "var(--background)" }
+            : undefined
+        }
       >
         {rest.phase !== "idle" ? (
           <RestPanel
@@ -959,6 +991,16 @@ function SessionScreen() {
               if (!activeWorkout) return;
               updateSet(activeWorkout.completed_sets.length - 1, { rpe: n });
             }}
+          />
+        ) : isLastBlock && blockComplete ? (
+          <FinishPanel
+            setsDone={plan.reduce((n, p, i) => n + Math.min(loggedWorking(i), p.target_sets), 0)}
+            setsPlanned={totalSets}
+            minutes={Math.max(1, Math.round(elapsed / 60))}
+            onFinish={endWorkout}
+            {...(blockIndex > 0 ? { onBack: () => goToBlock(blockIndex - 1) } : {})}
+            {...(formOpenHere ? {} : { onExtraSet: () => addExtraSet(planIndex) })}
+            {...(bonusOptions.length > 0 ? { onExtraExercise: addBonus } : {})}
           />
         ) : (
           <div className="mx-auto flex w-full max-w-xl items-center gap-2">
@@ -1158,6 +1200,8 @@ function ExerciseBlock({
   onDoLater,
   onLogged,
   complete: exerciseComplete,
+  formOpen,
+  onExtraSet,
 }: {
   planned: PlannedExercise;
   index: number;
@@ -1180,6 +1224,10 @@ function ExerciseBlock({
   onDoLater?: (() => void) | undefined;
   onLogged: (type: SetType) => void;
   complete: boolean;
+  /** The next-set entry form. Hidden once the target sets are logged, so a
+   *  finished exercise doesn't offer a prefilled "set 4". */
+  formOpen: boolean;
+  onExtraSet: () => void;
 }) {
   const {
     activeWorkout,
@@ -1614,186 +1662,197 @@ function ExerciseBlock({
           );
         })}
 
-        <div className={`space-y-2 pt-1 ${!active ? "pointer-events-none opacity-50" : ""}`}>
-          <div className="flex items-center gap-2">
+        {formOpen ? (
+          <div className={`space-y-2 pt-1 ${!active ? "pointer-events-none opacity-50" : ""}`}>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  haptic(10);
+                  setSetType((t) => (t === "warmup" ? "working" : "warmup"));
+                }}
+                aria-label={
+                  setType === "warmup" ? t.session.warmupSetToggleOn : t.session.warmupSetToggleOff
+                }
+                className={`tabular size-11 shrink-0 rounded-xl text-[15px] font-bold active:scale-95 ${
+                  setType === "warmup"
+                    ? "bg-primary/25 text-primary-text"
+                    : "bg-secondary text-secondary-foreground"
+                }`}
+              >
+                {setType === "warmup" ? "W" : logged.length + 1}
+              </button>
+              <span className="text-[12px] text-muted-foreground">
+                {nextPrevious
+                  ? t.session.lastTime(load(nextPrevious.weight), nextPrevious.reps)
+                  : t.session.firstTime}
+              </span>
+            </div>
+            {warmup && workingRef ? (
+              <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  {t.session.warmupHint(
+                    Math.min(warmupsLogged, warmupCount - 1) + 1,
+                    warmupCount,
+                    warmup.reps,
+                    load(warmup.weight),
+                    Math.round(warmup.fraction * 100),
+                    load(workingRef),
+                  )}
+                </span>
+              </p>
+            ) : null}
+
+            {!lastLogged && suggestion && suggestion.direction !== "same" ? (
+              <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary-text">
+                {suggestion.direction === "up" ? (
+                  <TrendingUp className="size-4 shrink-0" />
+                ) : (
+                  <TrendingDown className="size-4 shrink-0" />
+                )}{" "}
+                {t.session.suggestedInline(
+                  load(suggestion.weight),
+                  suggestion.reps,
+                  suggestion.reason,
+                )}
+              </p>
+            ) : null}
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => bumpWeight(-1)}
+                aria-label={t.session.lessWeight}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              >
+                <HapticSwitch />
+                <Minus className="size-4" />
+              </button>
+              <div className="relative min-w-0 flex-1">
+                <input
+                  inputMode="decimal"
+                  type="text"
+                  value={weight}
+                  aria-label={t.session.weightAriaLabel}
+                  placeholder={`${prefillWeight}`}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => {
+                    const re = bw ? SIGNED_DECIMAL_INPUT_RE : DECIMAL_INPUT_RE;
+                    if (!re.test(e.target.value)) return;
+                    setWeight(e.target.value);
+                  }}
+                  className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
+                  kg
+                </span>
+              </div>
+              <button
+                onClick={() => bumpWeight(1)}
+                aria-label={t.session.moreWeight}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              >
+                <HapticSwitch />
+                <Plus className="size-4" />
+              </button>
+            </div>
+            {bw ? (
+              <p className="-mt-1 px-1 text-[12px] text-muted-foreground">
+                <span className="font-semibold text-foreground">{load(currentKg)}</span> ·{" "}
+                {t.session.bodyweightHint}
+              </p>
+            ) : null}
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => bumpReps(-1)}
+                aria-label={t.session.fewerReps}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              >
+                <HapticSwitch />
+                <Minus className="size-4" />
+              </button>
+              <div className="relative min-w-0 flex-1">
+                <input
+                  inputMode="numeric"
+                  type="text"
+                  value={reps}
+                  placeholder={`${prefillReps}`}
+                  aria-label={t.session.repsAriaLabel}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => {
+                    if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                    setReps(e.target.value);
+                  }}
+                  className="tabular h-12 w-full rounded-xl bg-muted px-10 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
+                  reps
+                </span>
+              </div>
+              <button
+                onClick={() => bumpReps(1)}
+                aria-label={t.session.moreReps}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+              >
+                <HapticSwitch />
+                <Plus className="size-4" />
+              </button>
+            </div>
+
+            {setType === "working" ? (
+              <div className="flex items-center gap-2">
+                <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t.session.rpe}
+                </span>
+                <RpePicker value={rpe} onChange={setRpe} />
+              </div>
+            ) : null}
+            {setType === "working" ? (
+              <p className="text-[12px] text-muted-foreground">
+                {rpeAdjustment && lastLogged?.rpe != null
+                  ? t.session.rpeAdjusted(
+                      lastLogged.rpe,
+                      TARGET_RPE[0],
+                      TARGET_RPE[1],
+                      rpeAdjustment.direction === "down",
+                    )
+                  : t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
+              </p>
+            ) : null}
+
+            <PlateHint
+              exerciseId={exercise.id}
+              target={parseDecimal(weight === "" ? String(prefillWeight) : weight)}
+            />
+
             <button
-              onClick={() => {
-                haptic(10);
-                setSetType((t) => (t === "warmup" ? "working" : "warmup"));
-              }}
-              aria-label={
-                setType === "warmup" ? t.session.warmupSetToggleOn : t.session.warmupSetToggleOff
-              }
-              className={`tabular size-11 shrink-0 rounded-xl text-[15px] font-bold active:scale-95 ${
-                setType === "warmup"
-                  ? "bg-primary/25 text-primary-text"
-                  : "bg-secondary text-secondary-foreground"
+              onClick={logCurrent}
+              disabled={!active || locked}
+              className={`relative min-h-14 w-full rounded-2xl px-3 text-[16px] font-bold active:scale-[0.99] ${
+                !active || locked
+                  ? "bg-secondary text-muted-foreground opacity-50"
+                  : "bg-primary text-primary-foreground"
               }`}
             >
-              {setType === "warmup" ? "W" : logged.length + 1}
-            </button>
-            <span className="text-[12px] text-muted-foreground">
-              {nextPrevious
-                ? t.session.lastTime(load(nextPrevious.weight), nextPrevious.reps)
-                : t.session.firstTime}
-            </span>
-          </div>
-          {warmup && workingRef ? (
-            <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {t.session.warmupHint(
-                  Math.min(warmupsLogged, warmupCount - 1) + 1,
-                  warmupCount,
-                  warmup.reps,
-                  load(warmup.weight),
-                  Math.round(warmup.fraction * 100),
-                  load(workingRef),
-                )}
-              </span>
-            </p>
-          ) : null}
-
-          {!lastLogged && suggestion && suggestion.direction !== "same" ? (
-            <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary-text">
-              {suggestion.direction === "up" ? (
-                <TrendingUp className="size-4 shrink-0" />
-              ) : (
-                <TrendingDown className="size-4 shrink-0" />
-              )}{" "}
-              {t.session.suggestedInline(
-                load(suggestion.weight),
-                suggestion.reps,
-                suggestion.reason,
-              )}
-            </p>
-          ) : null}
-
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => bumpWeight(-1)}
-              aria-label={t.session.lessWeight}
-              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
-            >
-              <HapticSwitch />
-              <Minus className="size-4" />
-            </button>
-            <div className="relative min-w-0 flex-1">
-              <input
-                inputMode="decimal"
-                type="text"
-                value={weight}
-                aria-label={t.session.weightAriaLabel}
-                placeholder={`${prefillWeight}`}
-                onFocus={selectOnFocus}
-                onChange={(e) => {
-                  const re = bw ? SIGNED_DECIMAL_INPUT_RE : DECIMAL_INPUT_RE;
-                  if (!re.test(e.target.value)) return;
-                  setWeight(e.target.value);
-                }}
-                className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
-                kg
-              </span>
-            </div>
-            <button
-              onClick={() => bumpWeight(1)}
-              aria-label={t.session.moreWeight}
-              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
-            >
-              <HapticSwitch />
-              <Plus className="size-4" />
+              <HapticSwitch disabled={!active || locked} />
+              {locked
+                ? t.session.resting
+                : t.session.logSetWith(
+                    load(currentKg),
+                    currentReps,
+                    setType === "working" ? rpe : null,
+                  )}
             </button>
           </div>
-          {bw ? (
-            <p className="-mt-1 px-1 text-[12px] text-muted-foreground">
-              <span className="font-semibold text-foreground">{load(currentKg)}</span> ·{" "}
-              {t.session.bodyweightHint}
-            </p>
-          ) : null}
-
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => bumpReps(-1)}
-              aria-label={t.session.fewerReps}
-              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
-            >
-              <HapticSwitch />
-              <Minus className="size-4" />
-            </button>
-            <div className="relative min-w-0 flex-1">
-              <input
-                inputMode="numeric"
-                type="text"
-                value={reps}
-                placeholder={`${prefillReps}`}
-                aria-label={t.session.repsAriaLabel}
-                onFocus={selectOnFocus}
-                onChange={(e) => {
-                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-                  setReps(e.target.value);
-                }}
-                className="tabular h-12 w-full rounded-xl bg-muted px-10 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
-              />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
-                reps
-              </span>
-            </div>
-            <button
-              onClick={() => bumpReps(1)}
-              aria-label={t.session.moreReps}
-              className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
-            >
-              <HapticSwitch />
-              <Plus className="size-4" />
-            </button>
-          </div>
-
-          {setType === "working" ? (
-            <div className="flex items-center gap-2">
-              <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {t.session.rpe}
-              </span>
-              <RpePicker value={rpe} onChange={setRpe} />
-            </div>
-          ) : null}
-          {setType === "working" ? (
-            <p className="text-[12px] text-muted-foreground">
-              {rpeAdjustment && lastLogged?.rpe != null
-                ? t.session.rpeAdjusted(
-                    lastLogged.rpe,
-                    TARGET_RPE[0],
-                    TARGET_RPE[1],
-                    rpeAdjustment.direction === "down",
-                  )
-                : t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
-            </p>
-          ) : null}
-
-          <PlateHint
-            exerciseId={exercise.id}
-            target={parseDecimal(weight === "" ? String(prefillWeight) : weight)}
-          />
-
+        ) : (
           <button
-            onClick={logCurrent}
-            disabled={!active || locked}
-            className={`relative min-h-14 w-full rounded-2xl px-3 text-[16px] font-bold active:scale-[0.99] ${
-              !active || locked
-                ? "bg-secondary text-muted-foreground opacity-50"
-                : "bg-primary text-primary-foreground"
-            }`}
+            type="button"
+            onClick={onExtraSet}
+            disabled={!active}
+            className="mt-1 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border text-[14px] font-semibold text-muted-foreground active:scale-[0.99]"
           >
-            <HapticSwitch disabled={!active || locked} />
-            {locked
-              ? t.session.resting
-              : t.session.logSetWith(
-                  load(currentKg),
-                  currentReps,
-                  setType === "working" ? rpe : null,
-                )}
+            <Plus className="size-4" /> {t.session.extraSet}
           </button>
-        </div>
+        )}
       </div>
 
       <p className="mt-2 text-right text-[13px] text-muted-foreground">
@@ -1932,6 +1991,87 @@ function RestPanel({
             <HapticSwitch />
             {t.session.undoSet}
           </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The end of the workout, docked in the bottom bar once the last exercise's
+ * sets are done. Before, the last set started a rest with nothing after it,
+ * then the card offered a prefilled "set 4" and the only sign the workout
+ * was over was a line of text and the Finish button in the bar.
+ */
+function FinishPanel({
+  setsDone,
+  setsPlanned,
+  minutes,
+  onFinish,
+  onBack,
+  onExtraSet,
+  onExtraExercise,
+}: {
+  setsDone: number;
+  setsPlanned: number;
+  minutes: number;
+  onFinish: () => void;
+  onBack?: () => void;
+  onExtraSet?: () => void;
+  onExtraExercise?: () => void;
+}) {
+  const t = useTranslation();
+  const all = setsDone >= setsPlanned;
+  return (
+    <div className="mx-auto w-full max-w-xl" role="region" aria-label={t.session.finishTitle}>
+      <div className="flex items-center gap-3">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <PartyPopper className="size-6" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[20px] font-bold leading-tight">
+            {all ? t.session.finishTitle : t.session.finishTitlePartial}
+          </p>
+          <p className="tabular text-[14px] text-muted-foreground">
+            {t.session.finishStats(setsDone, setsPlanned, minutes)}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onFinish}
+        className="glow relative mt-3 min-h-14 w-full rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.99]"
+      >
+        <HapticSwitch />
+        {t.session.finishWorkout}
+      </button>
+      {onBack || onExtraSet || onExtraExercise ? (
+        <div className="mt-2 flex gap-2">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              aria-label={t.session.previousExercise}
+              className="flex min-h-11 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground active:scale-95"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+          ) : null}
+          {onExtraSet ? (
+            <button
+              onClick={onExtraSet}
+              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
+            >
+              <Plus className="size-4 shrink-0" /> {t.session.extraSet}
+            </button>
+          ) : null}
+          {onExtraExercise ? (
+            <button
+              onClick={onExtraExercise}
+              aria-label={t.session.addExtra}
+              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-2xl bg-secondary px-2 text-[14px] font-semibold text-secondary-foreground active:scale-95"
+            >
+              <Plus className="size-4 shrink-0" /> {t.session.extraExercise}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
