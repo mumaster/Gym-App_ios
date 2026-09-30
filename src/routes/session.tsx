@@ -14,6 +14,7 @@ import {
   PartyPopper,
   Plus,
   Repeat,
+  RotateCcw,
   TrendingDown,
   TrendingUp,
   Trophy,
@@ -131,6 +132,7 @@ function SessionScreen() {
     activeProfileId,
     avoidedExerciseIds,
     removeSetAt,
+    updateSet,
     weightLog,
     nutritionProfile,
   } = useGym();
@@ -693,6 +695,10 @@ function SessionScreen() {
     setRestNext(null);
   };
 
+  /** The set that started this rest, rated from the rest panel. */
+  const lastSet = activeWorkout?.completed_sets[activeWorkout.completed_sets.length - 1];
+  const lastSetIsWorking = lastSet?.set_type === "working";
+
   const extendRest = () => {
     haptic(10);
     rest.extend(30);
@@ -949,6 +955,11 @@ function SessionScreen() {
             }}
             onExtend={extendRest}
             onUndo={undoLastSet}
+            lastSetRpe={lastSetIsWorking ? (lastSet?.rpe ?? null) : undefined}
+            onRateLastSet={(n) => {
+              if (!activeWorkout) return;
+              updateSet(activeWorkout.completed_sets.length - 1, { rpe: n });
+            }}
           />
         ) : (
           <div className="mx-auto flex w-full max-w-xl items-center gap-2">
@@ -1155,7 +1166,7 @@ function ExerciseBlock({
   round?: number | undefined;
   letter?: "A" | "B" | undefined;
   active: boolean;
-  /** Rest timer running — the Log / Repeat buttons are disabled (inputs stay live). */
+  /** Rest timer running — the Log button is disabled (inputs stay live). */
   locked?: boolean | undefined;
   /** Brief pulse when the rest ends and this card is up next. */
   flash?: boolean | undefined;
@@ -1247,6 +1258,7 @@ function ExerciseBlock({
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editW, setEditW] = useState(0);
   const [editR, setEditR] = useState(0);
+  const [editRpe, setEditRpe] = useState<number | null>(null);
 
   /** Progressive-overload suggestion for this exercise, freshly derived from history. */
   const suggestion = useMemo(
@@ -1329,8 +1341,6 @@ function ExerciseBlock({
   const currentKg = parseDecimal(weight === "" ? String(prefillWeight) : weight) || 0;
   const logCurrent = () =>
     submitSet(currentKg, parseDecimal(reps === "" ? String(prefillReps) : reps), rpe ?? undefined);
-  const repeatLast = () =>
-    lastLogged ? submitSet(lastLogged.weight, lastLogged.reps, rpe ?? undefined) : logCurrent();
 
   const bumpWeight = (dir: 1 | -1) => {
     haptic(10);
@@ -1351,6 +1361,7 @@ function ExerciseBlock({
     setEditIdx(abs);
     setEditW(s.weight);
     setEditR(s.reps);
+    setEditRpe(s.rpe ?? null);
   };
 
   // e1RM-based so this agrees with the PR definition used everywhere else
@@ -1358,6 +1369,14 @@ function ExerciseBlock({
   // could flag/miss a PR differently than the History tab would.
   const currentWeight = parseDecimal(weight || String(prefillWeight));
   const currentReps = parseDecimal(reps || String(prefillReps));
+  /** The last working set, offered as a one-tap fill while the fields
+   *  differ from it (after an RPE-based adjustment, or edited). */
+  const sameAsLast =
+    setType === "working" &&
+    lastWorking &&
+    (lastWorking.weight !== currentKg || lastWorking.reps !== currentReps)
+      ? lastWorking
+      : null;
   const isPR =
     !!best &&
     currentWeight > 0 &&
@@ -1527,11 +1546,23 @@ function ExerciseBlock({
                     ariaLabel={t.session.repsAriaLabel}
                   />
                 </div>
+                {s.set_type === "working" ? (
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">
+                      {t.session.rpe}
+                    </span>
+                    <RpePicker value={editRpe} onChange={setEditRpe} />
+                  </div>
+                ) : null}
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
                       haptic(15);
-                      updateSet(abs, { weight: editW, reps: editR });
+                      updateSet(abs, {
+                        weight: editW,
+                        reps: editR,
+                        ...(s.set_type === "working" ? { rpe: editRpe } : {}),
+                      });
                       setEditIdx(null);
                     }}
                     className="min-h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-primary-foreground active:scale-95"
@@ -1580,6 +1611,15 @@ function ExerciseBlock({
                 {s.reps}
                 {s.rpe ? (
                   <span className="ml-1 text-[11px] text-primary-text">@{s.rpe}</span>
+                ) : s.set_type === "working" ? (
+                  // A reminder that this set has no RPE; the row opens the
+                  // editor, which has the RPE picker.
+                  <span
+                    aria-label={t.session.addRpeAria(s.set_number)}
+                    className="ml-1 rounded-full border border-dashed border-muted-foreground/60 px-1.5 py-px align-middle text-[10px] font-semibold text-muted-foreground"
+                  >
+                    {t.session.addRpe}
+                  </span>
                 ) : null}
               </span>
             </button>
@@ -1726,26 +1766,7 @@ function ExerciseBlock({
               <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 {t.session.rpe}
               </span>
-              <div className="flex flex-1 gap-1">
-                {[6, 7, 8, 9, 10].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => {
-                      haptic(8);
-                      setRpe((cur) => (cur === n ? null : n));
-                    }}
-                    aria-pressed={rpe === n}
-                    aria-label={t.session.rpeAriaLabel(n)}
-                    className={`h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
-                      rpe === n
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
+              <RpePicker value={rpe} onChange={setRpe} />
             </div>
           ) : null}
           {setType === "working" ? (
@@ -1766,35 +1787,42 @@ function ExerciseBlock({
             target={parseDecimal(weight === "" ? String(prefillWeight) : weight)}
           />
 
-          {lastLogged ? (
+          {sameAsLast ? (
+            // Fills the fields only; logging stays one button, right under
+            // the RPE row, so a set is never logged past its RPE by accident.
             <button
-              onClick={repeatLast}
-              disabled={!active || locked}
-              className={`relative min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
-                !active || locked
-                  ? "bg-secondary text-muted-foreground opacity-50"
-                  : "bg-primary text-primary-foreground"
-              }`}
+              type="button"
+              onClick={() => {
+                haptic(10);
+                setWeight(String(sameAsLast.weight));
+                setReps(String(sameAsLast.reps));
+              }}
+              disabled={!active}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-secondary px-3 text-[14px] font-semibold text-secondary-foreground active:scale-[0.99]"
             >
-              <HapticSwitch disabled={!active || locked} />
-              {locked
-                ? t.session.resting
-                : t.session.repeat(load(lastLogged.weight), lastLogged.reps)}
+              <RotateCcw className="size-4 shrink-0" />
+              <span className="truncate">
+                {t.session.sameAsLast(load(sameAsLast.weight), sameAsLast.reps)}
+              </span>
             </button>
           ) : null}
           <button
             onClick={logCurrent}
             disabled={!active || locked}
-            className={`relative min-h-14 w-full rounded-2xl text-[16px] font-bold active:scale-[0.99] ${
+            className={`relative min-h-14 w-full rounded-2xl px-3 text-[16px] font-bold active:scale-[0.99] ${
               !active || locked
                 ? "bg-secondary text-muted-foreground opacity-50"
-                : lastLogged
-                  ? "border border-primary/60 text-primary-text"
-                  : "bg-primary text-primary-foreground"
+                : "bg-primary text-primary-foreground"
             }`}
           >
             <HapticSwitch disabled={!active || locked} />
-            {locked ? t.session.resting : t.session.logSet}
+            {locked
+              ? t.session.resting
+              : t.session.logSetWith(
+                  load(currentKg),
+                  currentReps,
+                  setType === "working" ? rpe : null,
+                )}
           </button>
         </div>
       </div>
@@ -1831,7 +1859,6 @@ function ExerciseBlock({
   );
 }
 
-/** Numeric field with big −/+ buttons, for editing a logged set. */
 /** m:ss, so a 2-minute rest reads "1:43" rather than "103s". */
 function formatRest(seconds: number): string {
   const s = Math.max(0, seconds);
@@ -1853,6 +1880,8 @@ function RestPanel({
   onSkip,
   onExtend,
   onUndo,
+  lastSetRpe,
+  onRateLastSet,
 }: {
   done: boolean;
   secondsLeft: number;
@@ -1861,6 +1890,10 @@ function RestPanel({
   onSkip: () => void;
   onExtend: () => void;
   onUndo: () => void;
+  /** RPE of the working set that started this rest (null: not rated yet);
+   *  undefined hides the picker (the last set was a warm-up). */
+  lastSetRpe: number | null | undefined;
+  onRateLastSet: (rpe: number | null) => void;
 }) {
   const t = useTranslation();
   const pct = done ? 0 : Math.max(0, Math.min(100, (secondsLeft / Math.max(1, duration)) * 100));
@@ -1904,6 +1937,16 @@ function RestPanel({
           <span className="line-clamp-2 min-w-0 font-semibold">{next}</span>
         </p>
       ) : null}
+      {!done && lastSetRpe !== undefined ? (
+        // Rest is when you'd rate the set anyway, and logging moves straight
+        // on, so the set that just finished can be rated (or corrected) here.
+        <div className="mt-3 flex items-center gap-2">
+          <span className="w-16 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+            {t.session.rateLastSet}
+          </span>
+          <RpePicker value={lastSetRpe} onChange={onRateLastSet} />
+        </div>
+      ) : null}
       {!done ? (
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
@@ -1926,6 +1969,42 @@ function RestPanel({
   );
 }
 
+/** RPE 6–10 on Zourdos et al.'s RIR-based scale; tapping the chosen value
+ *  again clears it. */
+function RpePicker({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (rpe: number | null) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div className="flex flex-1 gap-1">
+      {[6, 7, 8, 9, 10].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => {
+            haptic(8);
+            onChange(value === n ? null : n);
+          }}
+          aria-pressed={value === n}
+          aria-label={t.session.rpeAriaLabel(n)}
+          className={`h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
+            value === n
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground"
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Numeric field with big −/+ buttons, for editing a logged set. */
 function Stepper({
   value,
   onChange,

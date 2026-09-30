@@ -459,7 +459,12 @@ const en = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Last set was RPE ${rpe}, outside the ${lo}–${hi} target — weight ${down ? "lowered" : "raised"} 4% per point.`,
     resting: "Resting…",
-    repeat: (load: string, reps: number) => `Repeat  ${load} × ${reps}`,
+    sameAsLast: (load: string, reps: number) => `Same as last set: ${load} × ${reps}`,
+    logSetWith: (load: string, reps: number, rpe: number | null): string =>
+      `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
+    rateLastSet: "RPE of that set",
+    addRpe: "+RPE",
+    addRpeAria: (n: number) => `Add an RPE to set ${n}`,
     bw: "BW",
     addNote: "Note",
     doLater: "Do later",
@@ -1671,7 +1676,12 @@ const nl: Dict = {
     rpeAdjusted: (rpe: number, lo: number, hi: number, down: boolean) =>
       `Vorige set was RPE ${rpe}, buiten het doel van ${lo}–${hi} — gewicht ${down ? "verlaagd" : "verhoogd"} met 4% per punt.`,
     resting: "Rusten…",
-    repeat: (load: string, reps: number) => `Herhaal  ${load} × ${reps}`,
+    sameAsLast: (load: string, reps: number) => `Zelfde als vorige set: ${load} × ${reps}`,
+    logSetWith: (load: string, reps: number, rpe: number | null): string =>
+      `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
+    rateLastSet: "RPE van die set",
+    addRpe: "+RPE",
+    addRpeAria: (n: number) => `RPE toevoegen aan set ${n}`,
     bw: "LG",
     addNote: "Notitie",
     doLater: "Later doen",

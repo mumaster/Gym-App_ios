@@ -415,9 +415,10 @@ interface Ctx extends GymState {
     >,
   ) => void;
   logSet: (set: LoggedSet) => void;
+  /** `rpe: null` clears a set's RPE. */
   updateSet: (
     index: number,
-    patch: Partial<Pick<LoggedSet, "weight" | "reps" | "set_type">>,
+    patch: Partial<Pick<LoggedSet, "weight" | "reps" | "set_type">> & { rpe?: number | null },
   ) => void;
   removeSetAt: (index: number) => void;
   finishWorkout: () => void;
@@ -1047,9 +1048,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
       updateSet: (index, patch) =>
         setState((s) => {
           if (!s.activeWorkout) return s;
-          const sets = s.activeWorkout.completed_sets.map((x, i) =>
-            i === index ? { ...x, ...patch } : x,
-          );
+          const { rpe, ...rest } = patch;
+          const sets = s.activeWorkout.completed_sets.map((x, i) => {
+            if (i !== index) return x;
+            const next: LoggedSet = { ...x, ...rest };
+            if (rpe === null) delete next.rpe;
+            else if (rpe !== undefined) next.rpe = rpe;
+            return next;
+          });
           return {
             ...s,
             activeWorkout: { ...s.activeWorkout, completed_sets: renumber(sets) },
