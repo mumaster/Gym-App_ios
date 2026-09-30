@@ -15,6 +15,9 @@ import {
   X,
   Dumbbell,
   Moon,
+  Sunrise,
+  Sun,
+  Cookie,
 } from "lucide-react";
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
@@ -677,10 +680,20 @@ function DaySummary({
   );
 }
 
-/** One meal's foods in a single grouped card: name and P/C/F on the left,
- *  calories on the right; swipe a row left to delete it (also possible from
- *  its edit sheet). The heading's "+" adds straight into this meal, and a
- *  check marks a meal that reached the protein-per-meal amount. */
+/** A meal's icon, so the four sections tell apart at a glance. */
+const MEAL_ICONS: Record<MealType, typeof Sun> = {
+  breakfast: Sunrise,
+  lunch: Sun,
+  dinner: Moon,
+  snack: Cookie,
+};
+
+/** One meal as one card: a header (icon, name, the meal's kcal and protein,
+ *  save and "+") with its foods listed under it — name and P/C/F on the
+ *  left, calories on the right; swipe a row left to delete it (also possible
+ *  from its edit sheet). The header opens the meal's overview. A check marks
+ *  a meal that reached the protein-per-meal amount. The icon is solid once
+ *  the meal has food and muted while it's empty, like Home's badges. */
 function MealGroup({
   meal,
   entries,
@@ -706,23 +719,35 @@ function MealGroup({
   const mealTotals = dailyTotals(entries);
   const protein = Math.round(mealTotals.protein);
   const proteinOk = proteinTarget != null && entries.length > 0 && protein >= proteinTarget;
+  const Icon = MEAL_ICONS[meal];
+  const hasFood = entries.length > 0;
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        {/* Tapping the heading opens the meal's nutrition overview. */}
+    <Card className="overflow-hidden p-0">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        {/* Tapping the header opens the meal's nutrition overview. */}
         <button
           onClick={onOpen}
-          disabled={!entries.length}
+          disabled={!hasFood}
           aria-label={t.mealOverview.open(t.mealTypes[meal])}
-          className="-mx-1 flex min-h-[32px] min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left active:bg-foreground/5 disabled:active:bg-transparent"
+          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-xl px-1 text-left active:bg-foreground/5 disabled:active:bg-transparent"
         >
-          <span className="shrink-0 text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {t.mealTypes[meal]}
+          <span
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+              hasFood ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            <Icon className="size-[18px]" />
           </span>
-          {entries.length ? (
-            <span className="tabular flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
+          <span className="min-w-0">
+            <span className="flex items-center gap-1 text-[17px] font-bold leading-tight">
+              <span className="truncate">{t.mealTypes[meal]}</span>
+              {hasFood ? <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> : null}
+            </span>
+            <span className="tabular mt-0.5 flex min-w-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
               <span className="truncate">
-                {t.nutrition.kcal(Math.round(mealTotals.calories))} · P {protein}
+                {hasFood
+                  ? `${t.nutrition.kcal(Math.round(mealTotals.calories))} · P ${protein}`
+                  : t.nutrition.nothingInMeal}
               </span>
               {proteinOk ? (
                 <span
@@ -734,12 +759,11 @@ function MealGroup({
                   <Check className="size-2.5" strokeWidth={3.5} />
                 </span>
               ) : null}
-              <ChevronRight className="size-4 shrink-0" />
             </span>
-          ) : null}
+          </span>
         </button>
         <div className="flex shrink-0 items-center gap-2">
-          {entries.length ? (
+          {hasFood ? (
             <button
               onClick={onSaveAsMeal}
               aria-label={t.nutrition.saveAsMeal(t.mealTypes[meal])}
@@ -761,38 +785,32 @@ function MealGroup({
           ) : null}
         </div>
       </div>
-      {entries.length ? (
-        <Card className="overflow-hidden p-0">
-          {entries.map((entry, i) => {
-            const m = scaledMacros(entry);
-            return (
-              <div key={entry.id} className={i > 0 ? "border-t border-border" : ""}>
-                <SwipeToDelete
-                  onDelete={() => onDelete(entry)}
-                  deleteLabel={t.nutrition.removeEntry(entry.name)}
-                >
-                  <button
-                    onClick={() => onEdit(entry)}
-                    aria-label={t.nutrition.editEntry(entry.name)}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:bg-foreground/5"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold">{entry.name}</p>
-                      <PortionLine grams={entry.grams} macros={m} className="text-[12.5px]" />
-                    </div>
-                    <p className="tabular shrink-0 text-[14px] font-semibold">
-                      {t.nutrition.kcal(m.calories)}
-                    </p>
-                  </button>
-                </SwipeToDelete>
-              </div>
-            );
-          })}
-        </Card>
-      ) : (
-        <p className="px-1 text-[13px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
-      )}
-    </div>
+      {entries.map((entry) => {
+        const m = scaledMacros(entry);
+        return (
+          <div key={entry.id} className="border-t border-border">
+            <SwipeToDelete
+              onDelete={() => onDelete(entry)}
+              deleteLabel={t.nutrition.removeEntry(entry.name)}
+            >
+              <button
+                onClick={() => onEdit(entry)}
+                aria-label={t.nutrition.editEntry(entry.name)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:bg-foreground/5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] font-semibold">{entry.name}</p>
+                  <PortionLine grams={entry.grams} macros={m} className="text-[12.5px]" />
+                </div>
+                <p className="tabular shrink-0 text-[14px] font-semibold">
+                  {t.nutrition.kcal(m.calories)}
+                </p>
+              </button>
+            </SwipeToDelete>
+          </div>
+        );
+      })}
+    </Card>
   );
 }
 
