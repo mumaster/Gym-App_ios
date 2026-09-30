@@ -32,12 +32,21 @@ const INK = "#F5F6F7";
 const MUTED = "rgba(245,246,247,0.56)";
 const FAINT = "rgba(245,246,247,0.10)";
 
-/** oklch()/hex/rgb string → something canvas understands. Canvas support
- *  for oklch varies by engine, so oklch is converted to sRGB here. */
+/** oklch()/hex/rgb string → an `rgb(r, g, b)` string canvas understands.
+ *  Canvas support for oklch varies by engine, so oklch is converted to sRGB
+ *  here; hex is converted too, since the glows add alpha to an rgb() string
+ *  (a custom accent is stored as hex, and was painted opaque over the whole
+ *  card). */
 export function toCanvasColor(value: string, fallback = "#4ADE80"): string {
-  const v = value.trim();
+  const v = value.trim() || fallback;
+  const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1]!.length === 3 ? [...hex[1]!].map((c) => c + c).join("") : hex[1]!;
+    const n = parseInt(h, 16);
+    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+  }
   const m = v.match(/^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/i);
-  if (!m) return v || fallback;
+  if (!m) return v;
   const L = Number(m[1]) / (m[2] ? 100 : 1);
   const C = Number(m[3]);
   const h = (Number(m[4]) * Math.PI) / 180;

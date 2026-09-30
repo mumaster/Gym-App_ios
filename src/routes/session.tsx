@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Ban,
   Bell,
@@ -406,6 +406,12 @@ function SessionScreen() {
     ro.observe(navEl);
     return () => ro.disconnect();
   }, [navEl]);
+
+  // The finish screen replaces the session in place, so it would open at
+  // the session's scroll position, with the effort rating above the fold.
+  useLayoutEffect(() => {
+    if (finishedSummary) window.scrollTo({ top: 0, behavior: "instant" });
+  }, [finishedSummary]);
 
   if (!hydrated) return <div className="min-h-[100dvh] bg-background" />;
 
