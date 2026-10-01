@@ -226,6 +226,8 @@ const en = {
     groups: { training: "Training", tracking: "Progress and tracking", nutrition: "Nutrition" },
     uses: {
       rest: "2 minutes of rest between sets",
+      exerciseSelection:
+        "Which exercises are in the list and offered as swaps (muscle-length, EMG and training studies)",
       progression:
         "When to add weight (two sessions in a row at the top of the range), and by how much (2.5% upper body, 5% lower body)",
       repRanges: "Rep ranges",
@@ -1466,6 +1468,8 @@ const nl: Dict = {
     groups: { training: "Training", tracking: "Voortgang en bijhouden", nutrition: "Voeding" },
     uses: {
       rest: "2 minuten rust tussen sets",
+      exerciseSelection:
+        "Welke oefeningen in de lijst staan en als alternatief worden aangeboden (onderzoek naar spierlengte, EMG en training)",
       progression:
         "Wanneer je gewicht toevoegt (twee sessies op rij bovenin de range) en hoeveel (2,5% bovenlichaam, 5% onderlichaam)",
       repRanges: "Herhalingsbereiken",

@@ -1,3 +1,4 @@
+import { EXERCISE_LIBRARY } from "./exerciseLibrary";
 import { DEFAULT_PLATES } from "./plates";
 import type { EquipmentId, EquipmentProfile, Exercise, Muscle, TargetMuscle } from "./types";
 
@@ -213,6 +214,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell", "bench"],
     movement_pattern: "pull",
     compound: true,
+    unilateral: true,
     instructions: "Support on a bench and row the dumbbell to the hip.",
     cues: ["Don't rotate the torso", "Full stretch at the bottom"],
   },
@@ -417,6 +419,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell", "bench"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions: "Rear foot elevated, lower the back knee toward the floor.",
     cues: ["Front shin near vertical for quads", "Drive through the whole foot"],
   },
@@ -770,6 +773,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "push",
     compound: true,
+    unilateral: true,
     instructions:
       "Shift most of the weight onto one arm while the other stays straight out to the side.",
     cues: ["Lower toward the working hand", "Keep the straight arm lightly loaded for balance"],
@@ -825,6 +829,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "pull",
     compound: true,
+    unilateral: true,
     instructions:
       "In a push-up position on the dumbbells, row one to the hip while bracing against rotation.",
     cues: ["Widen the feet for a stable base", "Keep the hips square to the floor"],
@@ -1149,6 +1154,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions:
       "In a long stance, lower the back knee toward the floor and drive back up through the front foot.",
     cues: ["Front shin close to vertical", "Keep the torso upright"],
@@ -1162,6 +1168,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions: "Step one foot back and lower the knee to the floor, then push back to standing.",
     cues: [
       "Most of the weight stays on the front heel",
@@ -1190,6 +1197,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions:
       "Holding dumbbells at the sides, step back into a lunge and return through the front leg.",
     cues: ["Torso stays tall", "Light touch of the back knee, no slam"],
@@ -1203,6 +1211,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions:
       "Lunge forward alternating legs, walking across the room with dumbbells at the sides.",
     cues: ["Push through the front heel to stand", "Keep the steps in a straight line"],
@@ -1216,6 +1225,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell", "bench"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions:
       "Step onto a knee-height bench with one foot and stand fully before lowering under control.",
     cues: ["Drive through the top foot, don't push off the floor", "Control the way down for 2s"],
@@ -1271,6 +1281,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "hinge",
     compound: true,
+    unilateral: true,
     instructions:
       "Balance on one leg and hinge the hips back, reaching the free leg straight behind you.",
     cues: [
@@ -1287,6 +1298,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "hinge",
     compound: true,
+    unilateral: true,
     instructions:
       "Hold a dumbbell in the opposite hand and hinge over the standing leg until the hamstring loads.",
     cues: ["Dumbbell tracks close to the shin", "Square the hips to the floor the whole way"],
@@ -1326,6 +1338,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "hinge",
     compound: false,
+    unilateral: true,
     instructions:
       "Lying on your back with one foot planted, extend the other leg and bridge the hips up level.",
     cues: ["Keep the pelvis square, don't dip to one side", "Squeeze the glute hard at the top"],
@@ -1364,6 +1377,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "squat",
     compound: true,
+    unilateral: true,
     instructions: "Step one leg diagonally behind the other and lower straight down, then return.",
     cues: ["Keep the front foot flat and stable", "Hips stay facing forward"],
   },
@@ -1402,6 +1416,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bands"],
     movement_pattern: "hinge",
     compound: false,
+    unilateral: true,
     instructions:
       "Anchor the band low and around one ankle, then drive that leg straight back and squeeze.",
     cues: ["Keep the standing leg soft", "No arching the lower back to gain range"],
@@ -1480,6 +1495,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "core",
     compound: false,
+    unilateral: true,
     instructions:
       "Stack the feet and prop up on one forearm, lifting the hips to a straight line and holding.",
     cues: [
@@ -1541,7 +1557,7 @@ export const EXERCISES: Exercise[] = [
   },
   {
     id: "bw-calf-raise",
-    name: "Standing Calf Raise",
+    name: "Bodyweight Calf Raise",
     primary_muscle: "Calves",
     secondary_muscles: [],
     muscle_targets: ["Calves"],
@@ -1561,6 +1577,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["bodyweight"],
     movement_pattern: "push",
     compound: false,
+    unilateral: true,
     instructions:
       "Balance on one foot on the edge of a step and raise and lower through the full range.",
     cues: ["Use a wall for balance only, not to push", "Control the drop — no bouncing"],
@@ -1578,6 +1595,8 @@ export const EXERCISES: Exercise[] = [
       "Sit with dumbbells resting on the knees and the balls of the feet on a raised edge, then raise the heels.",
     cues: ["Pause at the top and the stretched bottom", "Keep the reps slow and strict"],
   },
+  // The expansion: more alternatives for every exercise (exerciseLibrary.ts).
+  ...EXERCISE_LIBRARY,
 ];
 export const exerciseById = (id: string) => EXERCISES.find((e) => e.id === id);
 

@@ -19,14 +19,30 @@ export const availableExercises = (equipment: EquipmentId[], avoided: string[] =
     (e) => e.equipment_required.every((r) => equipment.includes(r)) && !avoided.includes(e.id),
   );
 
+/**
+ * Swaps for an exercise: everything available for the same muscle group,
+ * most similar first — the same main target, then shared targets, then the
+ * same movement (hinge vs knee flexion, press vs fly) and the same
+ * compound/isolation kind. The order is the app's own ranking, not a
+ * published one; it puts the closest stand-in at the top while the list
+ * still shows the different ways to train that muscle.
+ */
 export const alternativesFor = (
   exercise: Exercise,
   equipment: EquipmentId[],
   avoided: string[] = [],
-): Exercise[] =>
-  availableExercises(equipment, avoided).filter(
-    (e) => e.id !== exercise.id && e.primary_muscle === exercise.primary_muscle,
-  );
+): Exercise[] => {
+  const similarity = (e: Exercise) =>
+    (e.muscle_targets[0] === exercise.muscle_targets[0] ? 4 : 0) +
+    e.muscle_targets.filter((t) => exercise.muscle_targets.includes(t)).length +
+    (e.movement_pattern === exercise.movement_pattern ? 2 : 0) +
+    (e.compound === exercise.compound ? 1 : 0);
+  return availableExercises(equipment, avoided)
+    .filter((e) => e.id !== exercise.id && e.primary_muscle === exercise.primary_muscle)
+    .map((e, i) => ({ e, i, score: similarity(e) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map(({ e }) => e);
+};
 
 /* ---------------- time model ---------------- */
 
@@ -43,6 +59,13 @@ const TRANSITION_SECONDS = 45;
 const overSessionCap = (plan: PlannedExercise[]) =>
   Object.values(planSets(plan)).some((n) => n > MAX_SESSION_SETS_PER_MUSCLE);
 
+/** A one-sided exercise (split squat, one-arm row) does every set once per
+ *  side, so its set time counts twice; rest stays once per set. All of
+ *  WORKING_SET_SECONDS is doubled, setup included, because the constant
+ *  doesn't split setup from reps — the app's own, conservative reading. */
+const sidesOf = (p: PlannedExercise) =>
+  EXERCISES.find((e) => e.id === p.exercise_id)?.unilateral ? 2 : 1;
+
 export function estimateSeconds(plan: PlannedExercise[]): number {
   let total = 0;
   plan.forEach((p, i) => {
@@ -50,8 +73,9 @@ export function estimateSeconds(plan: PlannedExercise[]): number {
     const pairedWithNext =
       p.superset_group !== undefined && next?.superset_group === p.superset_group;
     const warm = p.warmup_sets ?? 0;
-    total += warm * (WARMUP_SET_SECONDS + WARMUP_REST_SECONDS);
-    total += p.target_sets * WORKING_SET_SECONDS;
+    const sides = sidesOf(p);
+    total += warm * (WARMUP_SET_SECONDS * sides + WARMUP_REST_SECONDS);
+    total += p.target_sets * WORKING_SET_SECONDS * sides;
     // rest after every working set except the very last set of the session
     const rests = i === plan.length - 1 ? p.target_sets - 1 : p.target_sets;
     total += Math.max(0, rests) * p.rest_seconds;

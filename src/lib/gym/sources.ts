@@ -18,6 +18,7 @@ export interface SourceEntry {
 
 export type SourceId =
   | "rest"
+  | "exerciseSelection"
   | "progression"
   | "repRanges"
   | "rpe"
@@ -49,6 +50,21 @@ export type SourceId =
   | "water";
 
 export const SOURCES: SourceEntry[] = [
+  {
+    id: "exerciseSelection",
+    group: "training",
+    refs: [
+      "Maeo et al., Med Sci Sports Exerc 2021 (seated vs prone leg curl)",
+      "Maeo et al., Eur J Sport Sci 2023 (overhead vs neutral triceps extension)",
+      "Kinoshita et al., Front Physiol 2023 (standing vs seated calf raise)",
+      "Kikuchi & Nakazato, 2017; Calatayud et al., J Strength Cond Res 2015 (push-up vs bench press)",
+      "Neto et al., J Sports Sci Med 2020 (gluteus maximus activation, systematic review)",
+      "Boren et al., 2011; Distefano et al., J Orthop Sports Phys Ther 2009 (gluteus medius)",
+      "Ebben, 2009; McAllister et al., J Strength Cond Res 2014 (hamstring exercises)",
+      "Zabaleta-Korta et al., 2021 (leg extension vs squat, regional quadriceps growth)",
+      "ACE-sponsored EMG studies: biceps, triceps, chest, shoulders (2012–2014), abdominals (2001)",
+    ],
+  },
   {
     id: "rest",
     group: "training",

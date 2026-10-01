@@ -55,6 +55,9 @@ export interface Exercise {
   equipment_required: EquipmentId[];
   movement_pattern: MovementPattern;
   compound: boolean;
+  /** One side at a time (a split squat, a one-arm row): every set is done
+   *  for each side, which the time model counts (estimateSeconds). */
+  unilateral?: boolean;
   instructions: string;
   cues: string[];
 }

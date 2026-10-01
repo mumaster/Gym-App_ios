@@ -28,6 +28,7 @@ import {
   exercisesToCsv,
   saveExercise,
   saveExercises,
+  SEED_EXERCISES,
   slugifyId,
   useExerciseCatalog,
 } from "../lib/gym/catalog";
@@ -582,7 +583,9 @@ function ExerciseEditor({
             >
               {busy ? t.exercises.savingExercise : t.exercises.saveExercise}
             </button>
-            {!draft?.isNew ? (
+            {/* Built-in exercises come back from the app's own list, so
+                only your own can be deleted; "Avoid" hides a built-in one. */}
+            {!draft?.isNew && !SEED_EXERCISES.some((e) => e.id === draft?.value.id) ? (
               <button
                 disabled={busy}
                 aria-label={t.exercises.deleteExercise}

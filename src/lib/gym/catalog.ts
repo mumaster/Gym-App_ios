@@ -1,9 +1,23 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EXERCISES, defaultMuscleTargets } from "./data";
+import { mergeCatalog, type CatalogRow } from "./catalogMerge";
 import type { EquipmentId, Exercise, Muscle, MovementPattern, TargetMuscle } from "./types";
 
-const CACHE_KEY = "forge.exercise-catalog.v1";
+// v2: caches the database rows (with their edit time) rather than a list
+// that already replaced the built-in one, so a cached copy is merged too.
+const CACHE_KEY = "forge.exercise-catalog.v2";
+
+/**
+ * The built-in list (data.ts + exerciseLibrary.ts) was last revised at this
+ * time. A database row for a built-in exercise that's older is a stale copy:
+ * the database's table was seeded once with 54 exercises and empty muscle
+ * targets, and used to replace the whole built-in list, so 63 built-in
+ * exercises never showed and swaps offered one or two near-copies. Such a
+ * row loses to the built-in version; a row saved later (an edit in the
+ * Exercises screen) wins. Bump this when the built-in list changes.
+ */
+export const BUILT_IN_REVISED_AT = "2026-10-01T18:00:00Z";
 
 /** The seeded list shipped with the app — used before the database answers. */
 export const SEED_EXERCISES: Exercise[] = EXERCISES.map((e) => ({ ...e }));
@@ -25,6 +39,12 @@ function apply(list: Exercise[]) {
   EXERCISES.splice(0, EXERCISES.length, ...list);
   emit();
 }
+
+const toRows = (data: Record<string, unknown>[]): CatalogRow[] =>
+  data.map((r) => ({
+    exercise: toExercise(r),
+    updatedAt: typeof r["updated_at"] === "string" ? r["updated_at"] : null,
+  }));
 
 const toExercise = (r: Record<string, unknown>): Exercise => {
   const primary_muscle = r["primary_muscle"] as Muscle;
@@ -48,7 +68,13 @@ export function loadCachedCatalog() {
   try {
     const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return;
-    apply(JSON.parse(raw) as Exercise[]);
+    apply(
+      mergeCatalog(
+        SEED_EXERCISES,
+        toRows(JSON.parse(raw) as Record<string, unknown>[]),
+        BUILT_IN_REVISED_AT,
+      ),
+    );
   } catch {
     /* ignore corrupt cache */
   }
@@ -60,11 +86,12 @@ export async function refreshCatalog(): Promise<{ ok: boolean }> {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error || !data) return { ok: false };
-  const list = data.map((r) => toExercise(r as unknown as Record<string, unknown>));
-  apply(list);
+  const raw = data as unknown as Record<string, unknown>[];
+  apply(mergeCatalog(SEED_EXERCISES, toRows(raw), BUILT_IN_REVISED_AT));
   if (typeof window !== "undefined") {
     try {
-      window.localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+      window.localStorage.removeItem("forge.exercise-catalog.v1");
+      window.localStorage.setItem(CACHE_KEY, JSON.stringify(raw));
     } catch {
       /* quota */
     }
