@@ -460,7 +460,7 @@ function NutritionTile({
         onClick();
       }}
       aria-label={t.home.nutritionAriaLabel}
-      className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-2 overflow-hidden rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.98]"
     >
       <div className="relative flex flex-col gap-2">
         <div className="relative flex items-center justify-between gap-3">
@@ -725,7 +725,7 @@ function WaterTile({
   const active = totalMl > 0;
 
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex flex-col gap-2">
         <button
           onClick={() => {
@@ -807,7 +807,7 @@ function ReadinessTile({
 }) {
   const t = useTranslation();
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex min-w-0 items-center gap-2.5">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Activity className="size-3.5" />
