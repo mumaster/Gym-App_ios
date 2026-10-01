@@ -346,10 +346,7 @@ function HomeScreen() {
               // flex factors left can add up to less than 1, and CSS grid
               // then hands out only that share of the spare room, leaving a
               // bigger gap under the tiles. Same proportions, scaled up.
-              gridTemplateRows: (readinessOpen
-                ? [0.84, 0.76, 0.64, 0.33, 0.38]
-                : [0.95, 0.95, 0.44, 0.5]
-              )
+              gridTemplateRows: (readinessOpen ? [0.84, 0.76, 0.64, 0.33, 0.38] : [1, 1, 0.38, 0.4])
                 .map((fr) => `minmax(min-content, ${fr * 100}fr)`)
                 .join(" "),
             }}
@@ -460,7 +457,7 @@ function NutritionTile({
         onClick();
       }}
       aria-label={t.home.nutritionAriaLabel}
-      className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-2 overflow-hidden rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col gap-2 overflow-hidden rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.98]"
     >
       <div className="relative flex flex-col gap-2">
         <div className="relative flex items-center justify-between gap-3">
@@ -510,26 +507,32 @@ function NutritionTile({
         ) : null}
       </div>
 
-      <div className="relative grid grid-cols-3 gap-2">
+      {/* The chips take whatever height the tile has left, and their
+          numbers grow with it (fill-cell), so a tall tile reads as three
+          stat cards rather than a short row floating in empty space. */}
+      <div className="relative grid flex-1 grid-cols-3 gap-2">
         {(["protein", "carbs", "fat"] as const).map((key) => {
           const goal = goals[key];
           const status = nutrientStatus(totals[key], goal);
           const pct = goal ? Math.min(100, (totals[key] / goal) * 100) : 0;
           return (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/60 px-2.5 py-1">
+            <div
+              key={key}
+              className="fill-cell flex min-h-[45px] min-w-0 flex-col justify-center rounded-2xl bg-muted/60 px-2.5 py-1"
+            >
               {/* Whole grams: a food label's own precision, and 14.2 next
                   to 75 read as inconsistent. */}
-              <p className="tabular truncate text-[15px] font-bold leading-none">
+              <p className="tabular truncate text-[length:clamp(15px,26cqh,26px)] font-bold leading-none">
                 {Math.round(totals[key])}
-                <span className="text-[10px] font-medium text-muted-foreground">
+                <span className="text-[length:clamp(10px,11cqh,13px)] font-medium text-muted-foreground">
                   {goal != null ? ` / ${Math.round(goal)} g` : " g"}
                 </span>
               </p>
-              <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
                 {key === "protein" ? t.home.protein : key === "carbs" ? t.home.carbs : t.home.fat}
               </p>
               {goal != null ? (
-                <div className="mt-1 h-1 overflow-hidden rounded-full bg-background/40">
+                <div className="mt-[clamp(4px,7cqh,10px)] h-1 overflow-hidden rounded-full bg-foreground/10">
                   <div
                     className={`h-full rounded-full ${barClass(status)}`}
                     style={{ width: `${pct}%` }}
@@ -725,7 +728,7 @@ function WaterTile({
   const active = totalMl > 0;
 
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex flex-col gap-2">
         <button
           onClick={() => {
@@ -763,15 +766,19 @@ function WaterTile({
         ) : null}
       </div>
 
-      <div className="relative grid grid-cols-4 gap-1.5">
+      {/* Like the macro chips: the buttons fill the tile's spare height,
+          with a drop above the amount once they're tall enough. */}
+      <div className="relative grid flex-1 grid-cols-4 gap-1.5">
         {waterQuickAdd.map((ml, i) => (
           <button
             key={i}
             onClick={() => onAdd(ml)}
             aria-label={t.home.addWater(ml)}
-            className="relative flex min-h-[36px] items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-foreground active:scale-95"
+            className="fill-cell relative flex min-h-[36px] flex-col items-center justify-center gap-1 rounded-2xl bg-primary/15 text-[length:clamp(12px,16cqh,15px)] font-bold text-foreground active:scale-95"
           >
-            <HapticSwitch />+{formatWaterAmount(ml)}
+            <HapticSwitch />
+            <Droplet className="fill-extra size-4 text-primary-text" aria-hidden />
+            <span>+{formatWaterAmount(ml)}</span>
           </button>
         ))}
       </div>
@@ -807,7 +814,7 @@ function ReadinessTile({
 }) {
   const t = useTranslation();
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-evenly gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex min-w-0 items-center gap-2.5">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Activity className="size-3.5" />
@@ -816,14 +823,14 @@ function ReadinessTile({
           {t.home.howAreYouFeeling}
         </span>
       </div>
-      <div className="relative grid grid-cols-5 gap-1.5">
+      <div className="relative grid flex-1 grid-cols-5 gap-1.5">
         {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
           <button
             key={score}
             onClick={() => onPick(score)}
             aria-label={t.readiness[score]}
             aria-pressed={current === score}
-            className={`flex min-h-[38px] items-center justify-center rounded-full text-[17px] leading-none active:scale-95 ${
+            className={`fill-cell flex min-h-[38px] items-center justify-center rounded-2xl text-[length:clamp(17px,40cqh,24px)] leading-none active:scale-95 ${
               current === score ? "bg-primary/25 ring-2 ring-primary" : "bg-muted"
             }`}
           >

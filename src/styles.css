@@ -410,6 +410,26 @@
   box-shadow: var(--glow-primary);
 }
 
+/* Home's macro chips, water quick-adds and check-in buttons stretch to fill
+   their tile, so their contents scale with the cell's own height (cqh).
+   Size containment means a cell's content never sets its height: the cell
+   is its min-height at the least (which must fit the content at that size)
+   and whatever the tile gives it beyond that. */
+@utility fill-cell {
+  container-type: size;
+}
+
+/* An extra line (the water drop) that only shows once a cell is tall
+   enough to hold it without crowding the number. */
+.fill-extra {
+  display: none;
+}
+@container (min-height: 60px) {
+  .fill-extra {
+    display: block;
+  }
+}
+
 @utility safe-top {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
