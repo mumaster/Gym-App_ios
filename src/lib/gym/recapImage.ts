@@ -258,13 +258,22 @@ export function drawRecap(
   // Exercise list.
   ctx.fillStyle = FAINT;
   ctx.fillRect(PAD, 640, RECAP_W - PAD * 2, 2);
-  const ROW = 96;
-  const maxRows = data.exercises.length > 5 ? 4 : 5;
+  // Up to 8 exercises are listed in full: rows get shorter (down to 72)
+  // and their text a little smaller as the list grows, using the space down
+  // to the footer. Past 8, the 8th line becomes "+ N more".
+  const MAX_ROWS = 8;
+  const more = data.exercises.length > MAX_ROWS;
+  const maxRows = more ? MAX_ROWS - 1 : MAX_ROWS;
   const rows = data.exercises.slice(0, maxRows);
+  const LIST_SPACE = 580 - (more ? 50 : 0);
+  const ROW = Math.min(96, Math.floor(LIST_SPACE / Math.max(1, rows.length)));
+  const k = ROW / 96;
+  const nameSize = Math.round(34 * Math.max(k, 0.88));
+  const subSize = Math.round(24 * Math.max(k, 0.88));
   rows.forEach((e, i) => {
     const y = 700 + i * ROW;
     const best = `${formatLoad(e.best.weight, e.bodyweight, copy.bw)} × ${e.best.reps}`;
-    ctx.font = font(700, 34);
+    ctx.font = font(700, nameSize);
     const bestW = ctx.measureText(best).width;
     let right = RECAP_W - PAD;
     ctx.fillStyle = INK;
@@ -282,17 +291,21 @@ export function drawRecap(
     }
     ctx.textAlign = "left";
     ctx.fillStyle = INK;
-    ctx.font = font(600, 34);
+    ctx.font = font(600, nameSize);
     ctx.fillText(fit(ctx, e.name, right - PAD), PAD, y + 12);
     ctx.fillStyle = MUTED;
-    ctx.font = font(500, 24);
-    ctx.fillText(copy.setsCount(e.sets), PAD, y + 48);
+    ctx.font = font(500, subSize);
+    const subY = y + 12 + Math.round(36 * Math.max(k, 0.8));
+    ctx.fillText(copy.setsCount(e.sets), PAD, subY);
     if (i < rows.length - 1) {
+      // Halfway between this row's "3 sets" and the next row's name.
+      const below = subY + subSize * 0.25;
+      const nextTop = y + ROW + 12 - nameSize * 0.72;
       ctx.fillStyle = FAINT;
-      ctx.fillRect(PAD, y + ROW - 22, RECAP_W - PAD * 2, 1);
+      ctx.fillRect(PAD, Math.round((below + nextTop) / 2), RECAP_W - PAD * 2, 1);
     }
   });
-  if (data.exercises.length > maxRows) {
+  if (more) {
     ctx.fillStyle = MUTED;
     ctx.font = font(600, 26);
     ctx.fillText(copy.more(data.exercises.length - maxRows), PAD, 700 + maxRows * ROW + 4);
@@ -302,8 +315,8 @@ export function drawRecap(
   let fx = PAD;
   // Right under the list, so a short session doesn't leave a hole in the
   // middle of the card; a full list pushes it down to the bottom band.
-  const listEnd = 700 + rows.length * ROW + (data.exercises.length > maxRows ? 50 : 0);
-  const fy = Math.min(1212, listEnd + 24);
+  const listEnd = 700 + rows.length * ROW + (more ? 50 : 0);
+  const fy = Math.min(1290, listEnd + 24);
   if (data.prCount) {
     fx +=
       pill(ctx, copy.prs(data.prCount), fx, fy, {
