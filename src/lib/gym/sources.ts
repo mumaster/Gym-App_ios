@@ -19,6 +19,7 @@ export interface SourceEntry {
 export type SourceId =
   | "rest"
   | "exerciseSelection"
+  | "exercisePopularity"
   | "progression"
   | "repRanges"
   | "rpe"
@@ -50,6 +51,14 @@ export type SourceId =
   | "water";
 
 export const SOURCES: SourceEntry[] = [
+  {
+    id: "exercisePopularity",
+    group: "training",
+    refs: [
+      "YouTube search results per exercise: views of the top 20 results naming it, measured 1 October 2026 (no published ranking of exercise popularity exists)",
+      "DeltaBolic (Andrew Kwong) YouTube channel: 981 videos and Shorts, used to find popular exercises the list lacked",
+    ],
+  },
   {
     id: "exerciseSelection",
     group: "training",

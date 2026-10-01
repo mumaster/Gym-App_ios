@@ -228,6 +228,8 @@ const en = {
       rest: "2 minutes of rest between sets",
       exerciseSelection:
         "Which exercises are in the list and offered as swaps (muscle-length, EMG and training studies)",
+      exercisePopularity:
+        "Which exercises are suggested first: the best-known ones, by how often people look them up",
       progression:
         "When to add weight (two sessions in a row at the top of the range), and by how much (2.5% upper body, 5% lower body)",
       repRanges: "Rep ranges",
@@ -1470,6 +1472,8 @@ const nl: Dict = {
       rest: "2 minuten rust tussen sets",
       exerciseSelection:
         "Welke oefeningen in de lijst staan en als alternatief worden aangeboden (onderzoek naar spierlengte, EMG en training)",
+      exercisePopularity:
+        "Welke oefeningen als eerste worden voorgesteld: de bekendste, naar hoe vaak mensen ze opzoeken",
       progression:
         "Wanneer je gewicht toevoegt (twee sessies op rij bovenin de range) en hoeveel (2,5% bovenlichaam, 5% onderlichaam)",
       repRanges: "Herhalingsbereiken",

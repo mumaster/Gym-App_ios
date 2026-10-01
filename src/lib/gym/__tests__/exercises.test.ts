@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PROFILES, EQUIPMENT, EXERCISES, TARGET_MUSCLE_GROUP } from "../data";
 import { mergeCatalog } from "../catalogMerge";
-import { alternativesFor, availableExercises, estimateSeconds } from "../generator";
+import { EXERCISE_POPULARITY, isNiche, popularityOf } from "../exercisePopularity";
+import {
+  alternativesFor,
+  availableExercises,
+  estimateSeconds,
+  generateWorkout,
+} from "../generator";
 import type { Exercise, Muscle, PlannedExercise } from "../types";
 
 const MUSCLES: Muscle[] = [
@@ -135,5 +141,35 @@ describe("mergeCatalog", () => {
     const own = { ...seed[0]!, id: "my-own", name: "My Own Exercise" };
     const out = mergeCatalog(seed, [{ exercise: own, updatedAt: "2026-09-01T00:00:00Z" }], revised);
     expect(out.map((e) => e.id)).toEqual(["rdl", "bulgarian-split", "good-morning", "my-own"]);
+  });
+});
+
+describe("popularity", () => {
+  it("has a measured popularity for every built-in exercise", () => {
+    for (const e of EXERCISES) expect(e.id in EXERCISE_POPULARITY, e.id).toBe(true);
+  });
+
+  it("builds the first plan from the most popular exercises", () => {
+    const gear = profile("home-gym");
+    const plan = generateWorkout({
+      duration: 45,
+      equipment: gear,
+      targets: ["Mid Chest", "Lats", "Quads"],
+    });
+    // Each target's top pick is a staple (10M+ matched YouTube views).
+    for (const p of plan)
+      expect(popularityOf(p.exercise_id), p.exercise_id).toBeGreaterThanOrEqual(10);
+  });
+
+  it("lists familiar swaps before niche ones", () => {
+    const gear = profile("home-gym");
+    for (const e of availableExercises(gear)) {
+      const niche = alternativesFor(e, gear).map((x) => isNiche(x.id));
+      // once a niche exercise appears, only niche ones follow
+      expect(
+        niche.indexOf(true) === -1 || !niche.slice(niche.indexOf(true)).includes(false),
+        e.id,
+      ).toBe(true);
+    }
   });
 });

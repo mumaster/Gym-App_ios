@@ -32,6 +32,7 @@ import {
   slugifyId,
   useExerciseCatalog,
 } from "../lib/gym/catalog";
+import { popularityOf } from "../lib/gym/exercisePopularity";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { useTapFocus } from "../lib/gym/tapFocus";
@@ -118,18 +119,21 @@ function ExercisesScreen() {
 
   const results = useMemo(
     () =>
-      exercises.filter((e) => {
-        if (muscle !== "All" && e.primary_muscle !== muscle) return false;
-        if (target !== "All" && !e.muscle_targets.includes(target)) return false;
-        if (query && !e.name.toLowerCase().includes(query.toLowerCase())) return false;
-        if (onlyLoved && !lovedExerciseIds.includes(e.id)) return false;
-        if (
-          onlyAvailable &&
-          !e.equipment_required.every((r) => profile.active_equipment_ids.includes(r))
-        )
-          return false;
-        return true;
-      }),
+      exercises
+        .filter((e) => {
+          if (muscle !== "All" && e.primary_muscle !== muscle) return false;
+          if (target !== "All" && !e.muscle_targets.includes(target)) return false;
+          if (query && !e.name.toLowerCase().includes(query.toLowerCase())) return false;
+          if (onlyLoved && !lovedExerciseIds.includes(e.id)) return false;
+          if (
+            onlyAvailable &&
+            !e.equipment_required.every((r) => profile.active_equipment_ids.includes(r))
+          )
+            return false;
+          return true;
+        })
+        // Most popular first (exercisePopularity.ts); your own after.
+        .sort((a, b) => popularityOf(b.id) - popularityOf(a.id)),
     [exercises, query, muscle, target, onlyAvailable, onlyLoved, lovedExerciseIds, profile],
   );
 

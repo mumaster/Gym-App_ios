@@ -218,18 +218,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
       "Lying on the floor, press the kettlebells up from the chest until the arms lock out.",
     cues: ["Bell rests on the back of the forearm", "Wrists straight"],
   },
-  {
-    id: "smith-decline-press",
-    name: "Smith Machine Decline Press",
-    primary_muscle: "Chest",
-    secondary_muscles: ["Arms"],
-    muscle_targets: ["Lower Chest", "Triceps"],
-    equipment_required: ["smith", "bench"],
-    movement_pattern: "push",
-    compound: true,
-    instructions: "On a slight decline under the Smith bar, lower to the lower chest and press.",
-    cues: ["Bar touches below the nipples", "Hips stay on the bench"],
-  },
 
   {
     id: "pseudo-planche-pushup",
@@ -243,6 +231,19 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Do push-ups with the hands turned out beside the lower ribs and the shoulders leaning forward past the hands.",
     cues: ["Lean forward before you lower", "Elbows tight to the body"],
+  },
+  {
+    id: "decline-bench",
+    name: "Decline Barbell Bench Press",
+    primary_muscle: "Chest",
+    secondary_muscles: ["Arms"],
+    muscle_targets: ["Lower Chest", "Triceps"],
+    equipment_required: ["barbell", "bench"],
+    movement_pattern: "push",
+    compound: true,
+    instructions:
+      "On a decline bench with the feet hooked, lower the bar to the lower chest and press.",
+    cues: ["Shoulder blades pinned", "Bar over the lower chest"],
   },
   /* -------------------------------- Back -------------------------------- */
   {
@@ -335,19 +336,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Kneel beside the high pulley and pull one handle down to the side of the chest, elbow to the hip.",
     cues: ["Reach up into a full stretch", "Elbow travels down and back"],
-  },
-  {
-    id: "kneeling-high-cable-row",
-    name: "Kneeling High Cable Row",
-    primary_muscle: "Back",
-    secondary_muscles: ["Arms", "Shoulders"],
-    muscle_targets: ["Lats", "Traps", "Rear Delts"],
-    equipment_required: ["cable_high"],
-    movement_pattern: "pull",
-    compound: true,
-    instructions:
-      "Kneel a step back from the high pulley and row the bar to the upper belly at a downward angle.",
-    cues: ["Lean back slightly and hold it", "Elbows close to the body"],
   },
   {
     id: "pullup-negative",
@@ -452,6 +440,56 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["No rolling the shoulders", "Pause at the top"],
   },
 
+  {
+    id: "back-extension",
+    name: "45° Back Extension",
+    primary_muscle: "Back",
+    secondary_muscles: ["Glutes", "Hamstrings"],
+    muscle_targets: ["Lower Back", "Glutes", "Hamstrings"],
+    equipment_required: ["machine"],
+    movement_pattern: "hinge",
+    compound: false,
+    instructions:
+      "On a 45-degree hyperextension bench, lower the torso by hinging at the hips and rise until the body is straight.",
+    cues: ["Pad just below the hip bones", "Don't overarch at the top"],
+  },
+  {
+    id: "close-grip-lat-pulldown",
+    name: "Close-Grip Lat Pulldown",
+    primary_muscle: "Back",
+    secondary_muscles: ["Arms"],
+    muscle_targets: ["Lats", "Biceps"],
+    equipment_required: ["cable_high"],
+    movement_pattern: "pull",
+    compound: true,
+    instructions:
+      "With a close neutral grip (V-handle), pull to the upper chest, elbows down and back.",
+    cues: ["Lean back slightly", "Full stretch at the top"],
+  },
+  {
+    id: "t-bar-row-machine",
+    name: "Chest-Supported T-Bar Row",
+    primary_muscle: "Back",
+    secondary_muscles: ["Arms", "Shoulders"],
+    muscle_targets: ["Lats", "Traps", "Rear Delts"],
+    equipment_required: ["machine"],
+    movement_pattern: "pull",
+    compound: true,
+    instructions: "Chest on the pad of a T-bar row machine, row the handles to the lower chest.",
+    cues: ["Chest stays on the pad", "Squeeze the shoulder blades"],
+  },
+  {
+    id: "smith-shrug",
+    name: "Smith Machine Shrug",
+    primary_muscle: "Back",
+    secondary_muscles: [],
+    muscle_targets: ["Traps"],
+    equipment_required: ["smith"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions: "Hold the Smith bar at arm's length and shrug the shoulders straight up.",
+    cues: ["Straight up, no rolling", "Pause at the top"],
+  },
   /* ------------------------------ Shoulders ------------------------------ */
   {
     id: "landmine-press",
@@ -504,47 +542,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     compound: true,
     instructions: "Press the handles overhead from shoulder height, back against the pad.",
     cues: ["Handles start at chin height", "Don't shrug at the top"],
-  },
-  {
-    id: "lean-away-lateral-raise",
-    name: "Lean-Away Lateral Raise",
-    primary_muscle: "Shoulders",
-    secondary_muscles: [],
-    muscle_targets: ["Side Delts"],
-    equipment_required: ["dumbbell"],
-    movement_pattern: "push",
-    compound: false,
-    unilateral: true,
-    instructions:
-      "Hold a door frame or rack and lean away, then raise one dumbbell out to the side to shoulder height.",
-    cues: ["The lean loads the bottom of the lift", "Lead with the elbow"],
-  },
-  {
-    id: "side-lying-lateral-raise",
-    name: "Incline Side-Lying Lateral Raise",
-    primary_muscle: "Shoulders",
-    secondary_muscles: [],
-    muscle_targets: ["Side Delts"],
-    equipment_required: ["dumbbell", "bench"],
-    movement_pattern: "push",
-    compound: false,
-    unilateral: true,
-    instructions:
-      "Lie on your side on an incline bench and raise the top dumbbell from in front of the hips to vertical.",
-    cues: ["Start with the arm hanging across the body", "Stop when the arm points up"],
-  },
-  {
-    id: "incline-y-raise",
-    name: "Incline Dumbbell Y-Raise",
-    primary_muscle: "Shoulders",
-    secondary_muscles: ["Back"],
-    muscle_targets: ["Side Delts", "Traps"],
-    equipment_required: ["dumbbell", "bench"],
-    movement_pattern: "push",
-    compound: false,
-    instructions:
-      "Lie chest-down on a 30-degree incline bench and raise the dumbbells up and out in a Y.",
-    cues: ["Light weight, thumbs up", "Arms in line with the torso at the top"],
   },
   {
     id: "seated-rear-lateral-raise",
@@ -600,18 +597,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Thumbs point back at the end", "Elbows high"],
   },
   {
-    id: "prone-t-raise",
-    name: "Prone T-Raise",
-    primary_muscle: "Shoulders",
-    secondary_muscles: ["Back"],
-    muscle_targets: ["Rear Delts", "Traps"],
-    equipment_required: ["bodyweight"],
-    movement_pattern: "pull",
-    compound: false,
-    instructions: "Lie face down with arms out in a T and lift them off the floor, thumbs up.",
-    cues: ["Squeeze the shoulder blades together", "Hold one second at the top"],
-  },
-  {
     id: "wall-handstand-pushup",
     name: "Wall Handstand Push-up",
     primary_muscle: "Shoulders",
@@ -653,6 +638,43 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Short, fast dip", "Lower slowly to the shoulders"],
   },
 
+  {
+    id: "reverse-pec-deck",
+    name: "Reverse Pec Deck",
+    primary_muscle: "Shoulders",
+    secondary_muscles: ["Back"],
+    muscle_targets: ["Rear Delts", "Traps"],
+    equipment_required: ["machine"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions: "Facing the pec deck, sweep the handles back and out with nearly straight arms.",
+    cues: ["Lead with the elbows", "Don't shrug"],
+  },
+  {
+    id: "cable-upright-row",
+    name: "Cable Upright Row",
+    primary_muscle: "Shoulders",
+    secondary_muscles: ["Back"],
+    muscle_targets: ["Side Delts", "Traps"],
+    equipment_required: ["cable"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions:
+      "From a low pulley, pull the bar or rope up along the body to chest height, elbows high.",
+    cues: ["Elbows above the hands", "Stop at chest height"],
+  },
+  {
+    id: "prone-t-raise",
+    name: "Prone T-Raise",
+    primary_muscle: "Shoulders",
+    secondary_muscles: ["Back"],
+    muscle_targets: ["Rear Delts", "Traps"],
+    equipment_required: ["bodyweight"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions: "Lie face down with arms out in a T and lift them off the floor, thumbs up.",
+    cues: ["Squeeze the shoulder blades together", "Hold one second at the top"],
+  },
   /* -------------------------------- Arms -------------------------------- */
   {
     id: "incline-db-curl",
@@ -786,18 +808,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Elbows by the sides", "No swinging"],
   },
   {
-    id: "smith-drag-curl",
-    name: "Smith Machine Drag Curl",
-    primary_muscle: "Arms",
-    secondary_muscles: [],
-    muscle_targets: ["Biceps"],
-    equipment_required: ["smith"],
-    movement_pattern: "pull",
-    compound: false,
-    instructions: "Curl the Smith bar up along the torso, driving the elbows back.",
-    cues: ["Shoulders stay down", "Squeeze at the top"],
-  },
-  {
     id: "close-grip-bench",
     name: "Close-Grip Bench Press",
     primary_muscle: "Arms",
@@ -809,18 +819,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Grip the bar shoulder-width apart and press, keeping the elbows close to the body.",
     cues: ["Hands just inside shoulder width", "Touch the lower chest"],
-  },
-  {
-    id: "smith-close-grip-bench",
-    name: "Smith Machine Close-Grip Press",
-    primary_muscle: "Arms",
-    secondary_muscles: ["Chest"],
-    muscle_targets: ["Triceps", "Mid Chest"],
-    equipment_required: ["smith", "bench"],
-    movement_pattern: "push",
-    compound: true,
-    instructions: "Press the Smith bar with a shoulder-width grip, elbows tucked.",
-    cues: ["Elbows track over the wrists", "Lock out fully"],
   },
   {
     id: "overhead-cable-extension",
@@ -849,19 +847,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Upper arms angled slightly back", "Elbows point at the ceiling"],
   },
   {
-    id: "tate-press",
-    name: "Dumbbell Tate Press",
-    primary_muscle: "Arms",
-    secondary_muscles: [],
-    muscle_targets: ["Triceps"],
-    equipment_required: ["dumbbell", "bench"],
-    movement_pattern: "push",
-    compound: false,
-    instructions:
-      "Lying on a bench, lower the dumbbells' heads to the chest with the elbows out, then press them back up.",
-    cues: ["Elbows flare to the sides", "Dumbbells touch end-to-end"],
-  },
-  {
     id: "smith-bodyweight-triceps-extension",
     name: "Smith Machine Bodyweight Triceps Extension",
     primary_muscle: "Arms",
@@ -886,18 +871,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Stand on a band or anchor it low behind you and extend the arms overhead from behind the head.",
     cues: ["Elbows point forward", "Full lockout overhead"],
-  },
-  {
-    id: "kb-overhead-triceps-extension",
-    name: "Kettlebell Overhead Triceps Extension",
-    primary_muscle: "Arms",
-    secondary_muscles: [],
-    muscle_targets: ["Triceps"],
-    equipment_required: ["kettlebell"],
-    movement_pattern: "push",
-    compound: false,
-    instructions: "Hold a kettlebell by the horns behind the head and extend it overhead.",
-    cues: ["Elbows narrow", "Ribs down, no arching"],
   },
   {
     id: "db-wrist-curl",
@@ -951,6 +924,42 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "From a plank on the forearms, press up onto the hands by straightening the elbows, then lower back to the forearms.",
     cues: ["Hands a little ahead of the shoulders", "Kneel to make it easier"],
+  },
+  {
+    id: "cable-curl",
+    name: "Cable Bicep Curl",
+    primary_muscle: "Arms",
+    secondary_muscles: [],
+    muscle_targets: ["Biceps", "Forearms"],
+    equipment_required: ["cable"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions: "Curl a straight bar or EZ handle from a low pulley up to the chest.",
+    cues: ["Elbows pinned to the sides", "Control the way down"],
+  },
+  {
+    id: "machine-preacher-curl",
+    name: "Machine Preacher Curl",
+    primary_muscle: "Arms",
+    secondary_muscles: [],
+    muscle_targets: ["Biceps"],
+    equipment_required: ["machine"],
+    movement_pattern: "pull",
+    compound: false,
+    instructions: "Arms on the pad, curl the handles up and lower them to a full stretch.",
+    cues: ["Armpits snug against the pad", "Straighten the arms fully"],
+  },
+  {
+    id: "machine-triceps-extension",
+    name: "Machine Triceps Extension",
+    primary_muscle: "Arms",
+    secondary_muscles: [],
+    muscle_targets: ["Triceps"],
+    equipment_required: ["machine"],
+    movement_pattern: "push",
+    compound: false,
+    instructions: "Elbows on the pad, extend the handles down until the arms are straight.",
+    cues: ["Elbows stay on the pad", "Squeeze at lockout"],
   },
   /* -------------------------------- Quads -------------------------------- */
   {
@@ -1034,20 +1043,6 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Kneel upright on a soft surface and lean back as far as you can control, keeping hips straight, then return.",
     cues: ["Squeeze the glutes the whole time", "Start with a small range"],
-  },
-  {
-    id: "box-pistol-squat",
-    name: "Box Pistol Squat",
-    primary_muscle: "Quads",
-    secondary_muscles: ["Glutes"],
-    muscle_targets: ["Quads", "Glutes"],
-    equipment_required: ["bodyweight", "bench"],
-    movement_pattern: "squat",
-    compound: true,
-    unilateral: true,
-    instructions:
-      "Stand on one leg in front of a bench, sit back to touch it with the other leg held out, and stand up.",
-    cues: ["Arms forward for balance", "Touch lightly, don't rest"],
   },
   {
     id: "db-lateral-lunge",
@@ -1170,6 +1165,30 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Thigh stays on the seat", "Squeeze at full extension"],
   },
 
+  {
+    id: "belt-squat",
+    name: "Belt Squat",
+    primary_muscle: "Quads",
+    secondary_muscles: ["Glutes"],
+    muscle_targets: ["Quads", "Glutes"],
+    equipment_required: ["machine"],
+    movement_pattern: "squat",
+    compound: true,
+    instructions: "With the belt around the hips, squat down between the feet and stand up.",
+    cues: ["Torso upright", "Knees track over the toes"],
+  },
+  {
+    id: "pendulum-squat",
+    name: "Pendulum Squat",
+    primary_muscle: "Quads",
+    secondary_muscles: ["Glutes"],
+    muscle_targets: ["Quads", "Glutes"],
+    equipment_required: ["machine"],
+    movement_pattern: "squat",
+    compound: true,
+    instructions: "Shoulders under the pads, sink as deep as you can and drive back up.",
+    cues: ["Feet mid-platform", "Full depth"],
+  },
   /* ------------------------------ Hamstrings ------------------------------ */
   {
     id: "good-morning",
@@ -1550,6 +1569,32 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Long step for more glute", "Front shin slightly forward"],
   },
 
+  {
+    id: "machine-hip-thrust",
+    name: "Machine Hip Thrust",
+    primary_muscle: "Glutes",
+    secondary_muscles: ["Hamstrings"],
+    muscle_targets: ["Glutes", "Hamstrings"],
+    equipment_required: ["machine"],
+    movement_pattern: "hinge",
+    compound: true,
+    instructions:
+      "Back against the pad and the belt over the hips, drive the hips up to full extension.",
+    cues: ["Chin tucked", "Pause at the top"],
+  },
+  {
+    id: "db-sumo-squat",
+    name: "Dumbbell Sumo Squat",
+    primary_muscle: "Glutes",
+    secondary_muscles: ["Quads"],
+    muscle_targets: ["Glutes", "Adductors", "Quads"],
+    equipment_required: ["dumbbell"],
+    movement_pattern: "squat",
+    compound: true,
+    instructions:
+      "From a wide stance with the toes out, hold one dumbbell by the head between the legs and squat down.",
+    cues: ["Knees push out", "Chest up"],
+  },
   /* --------------------------------- Core --------------------------------- */
   {
     id: "crunch",
@@ -1722,6 +1767,18 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     cues: ["Move only sideways, not forward", "Slow stretch at the bottom"],
   },
 
+  {
+    id: "ab-crunch-machine",
+    name: "Ab Crunch Machine",
+    primary_muscle: "Core",
+    secondary_muscles: [],
+    muscle_targets: ["Abs"],
+    equipment_required: ["machine"],
+    movement_pattern: "core",
+    compound: false,
+    instructions: "Curl the torso down against the pads, bringing the ribs toward the hips.",
+    cues: ["Round the spine, don't hinge", "Slow return"],
+  },
   /* -------------------------------- Calves -------------------------------- */
   {
     id: "smith-calf-raise",
@@ -1814,31 +1871,5 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     instructions:
       "Sitting with the legs straight and a band around the balls of the feet, point the toes against it.",
     cues: ["Hold the band ends tight", "Point fully, return slowly"],
-  },
-  {
-    id: "kb-calf-raise",
-    name: "Kettlebell Calf Raise",
-    primary_muscle: "Calves",
-    secondary_muscles: [],
-    muscle_targets: ["Calves"],
-    equipment_required: ["kettlebell"],
-    movement_pattern: "push",
-    compound: false,
-    instructions:
-      "Holding kettlebells, stand with the balls of the feet on a step and raise and lower the heels.",
-    cues: ["Straight knees", "Pause at the top"],
-  },
-  {
-    id: "farmer-walk-toes",
-    name: "Farmer's Walk on Toes",
-    primary_muscle: "Calves",
-    secondary_muscles: ["Arms"],
-    muscle_targets: ["Calves", "Forearms"],
-    equipment_required: ["dumbbell"],
-    movement_pattern: "carry",
-    compound: false,
-    instructions:
-      "Walk on the balls of the feet holding heavy dumbbells, heels never touching down.",
-    cues: ["Stay tall on the toes", "Count steps as reps"],
   },
 ];

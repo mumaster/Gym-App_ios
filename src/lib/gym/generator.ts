@@ -1,6 +1,7 @@
 import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
+import { isNiche, popularityOf } from "./exercisePopularity";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
@@ -20,12 +21,13 @@ export const availableExercises = (equipment: EquipmentId[], avoided: string[] =
   );
 
 /**
- * Swaps for an exercise: everything available for the same muscle group,
- * most similar first — the same main target, then shared targets, then the
- * same movement (hinge vs knee flexion, press vs fly) and the same
- * compound/isolation kind. The order is the app's own ranking, not a
- * published one; it puts the closest stand-in at the top while the list
- * still shows the different ways to train that muscle.
+ * Swaps for an exercise: everything available for the same muscle group.
+ * Familiar exercises come first (exercisePopularity.ts, asked for: swaps
+ * offered exercises the user had never heard of), niche ones after; within
+ * each, most similar first — the same main target, then shared targets,
+ * then the same movement (hinge vs knee flexion, press vs fly) and the same
+ * compound/isolation kind — and then the more popular. The order is the
+ * app's own ranking, not a published one.
  */
 export const alternativesFor = (
   exercise: Exercise,
@@ -39,8 +41,14 @@ export const alternativesFor = (
     (e.compound === exercise.compound ? 1 : 0);
   return availableExercises(equipment, avoided)
     .filter((e) => e.id !== exercise.id && e.primary_muscle === exercise.primary_muscle)
-    .map((e, i) => ({ e, i, score: similarity(e) }))
-    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((e, i) => ({ e, i, niche: isNiche(e.id), score: similarity(e) }))
+    .sort(
+      (a, b) =>
+        Number(a.niche) - Number(b.niche) ||
+        b.score - a.score ||
+        popularityOf(b.e.id) - popularityOf(a.e.id) ||
+        a.i - b.i,
+    )
     .map(({ e }) => e);
 };
 
@@ -454,9 +462,15 @@ export function generateWorkout({
       ? hitsTarget
       : free.filter((e) => e.primary_muscle === TARGET_MUSCLE_GROUP[target]);
     if (!forMuscle.length) return undefined;
-    const ranked = [...forMuscle].sort(
+    // Main focus first, then the most popular (exercisePopularity.ts): it
+    // used to be alphabetical, so the first plan opened with names like
+    // "45° Incline Rear Delt Row" and "Archer Push-up" (reported). Niche
+    // exercises only come in when no familiar one fits.
+    const familiar = forMuscle.filter((e) => !isNiche(e.id));
+    const ranked = [...(familiar.length ? familiar : forMuscle)].sort(
       (a, b) =>
         (a.muscle_targets[0] === target ? 0 : 1) - (b.muscle_targets[0] === target ? 0 : 1) ||
+        popularityOf(b.id) - popularityOf(a.id) ||
         a.name.localeCompare(b.name),
     );
     const preferred = ranked.filter((e) => e.compound === compound);
@@ -467,7 +481,11 @@ export function generateWorkout({
         ? preferred
         : [...preferred, ...ranked.filter((e) => e.compound !== compound)];
     if (!candidates.length) return undefined;
-    return candidates[(variation + plan.length) % candidates.length];
+    // The most popular first; each Shuffle moves one down the list. (It was
+    // offset by the plan's length too, so the fifth pick skipped the four
+    // most popular options even on the first plan; picks already in the
+    // plan are excluded anyway.)
+    return candidates[variation % candidates.length];
   };
 
   // balanced volume: always serve the target muscle with the fewest planned exercises

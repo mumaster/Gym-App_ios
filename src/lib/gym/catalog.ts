@@ -17,7 +17,7 @@ const CACHE_KEY = "forge.exercise-catalog.v2";
  * row loses to the built-in version; a row saved later (an edit in the
  * Exercises screen) wins. Bump this when the built-in list changes.
  */
-export const BUILT_IN_REVISED_AT = "2026-10-01T18:00:00Z";
+export const BUILT_IN_REVISED_AT = "2026-10-01T19:40:35Z";
 
 /** The seeded list shipped with the app — used before the database answers. */
 export const SEED_EXERCISES: Exercise[] = EXERCISES.map((e) => ({ ...e }));

@@ -1,3 +1,4 @@
+import { popularityOf } from "./exercisePopularity";
 import type { Exercise, Muscle } from "./types";
 
 /**
@@ -51,6 +52,10 @@ export const opposingLabel = (a: Exercise): string => {
 };
 
 /** Exercises from the pool that form a valid antagonist pair with `a`. */
+/** Partners that pair with `a` as an antagonist superset, most popular first
+ *  (exercisePopularity.ts). */
 export function antagonistAlternatives(a: Exercise, pool: Exercise[]): Exercise[] {
-  return pool.filter((e) => e.id !== a.id && isAntagonistPair(a, e));
+  return pool
+    .filter((e) => e.id !== a.id && isAntagonistPair(a, e))
+    .sort((x, y) => popularityOf(y.id) - popularityOf(x.id));
 }
