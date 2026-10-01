@@ -258,7 +258,7 @@ function HomeScreen() {
   return (
     <>
       <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
-        <header className="safe-top shrink-0 pb-1">
+        <header className="safe-top shrink-0">
           <div className={`relative flex min-h-[42px] items-center px-4 ${SETTINGS_BUTTON_GUTTER}`}>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -290,14 +290,18 @@ function HomeScreen() {
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))] pt-2">
+        {/* One gap (--home-gap) everywhere: under the header, between the
+            hero, every tile and the week strip, and above the tab bar (the
+            bottom padding is the pill plus its inset plus that gap). It
+            used to be 12, 8, 10, 8 and 30 px. */}
+        <main className="flex min-h-0 flex-1 flex-col gap-[var(--home-gap)] overflow-hidden px-4 pb-[calc(var(--tab-bar-height)+var(--tab-bar-clearance)+var(--home-gap))] pt-[var(--home-gap)]">
           <button
             onClick={() => {
               haptic(12);
               if (heroTarget === "cardio") setCardioLogOpen(true);
               else navigate({ to: heroTarget });
             }}
-            className="glass glow shrink-0 rounded-[28px] p-4 text-left transition-transform active:scale-[0.98]"
+            className="glass glow shrink-0 rounded-[28px] p-[var(--home-hero-pad)] text-left transition-transform active:scale-[0.98]"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -331,12 +335,24 @@ function HomeScreen() {
             ) : null}
           </button>
 
+          {/* Each row is at least as tall as its content (min-content), and
+              only the height left over is shared out in these proportions,
+              so a short screen squeezes the spare room, never a tile's
+              content, and a tall one gives every tile a bit more. */}
           <div
-            className={`grid min-h-0 flex-1 grid-cols-2 gap-2.5 ${
-              readinessOpen
-                ? "grid-rows-[0.84fr_0.76fr_0.64fr_0.33fr_0.38fr]"
-                : "grid-rows-[0.95fr_0.95fr_0.44fr_0.5fr]"
-            }`}
+            className="grid min-h-0 flex-1 grid-cols-2 gap-[var(--home-gap)]"
+            style={{
+              // ×100: once the bigger rows sit at their content height, the
+              // flex factors left can add up to less than 1, and CSS grid
+              // then hands out only that share of the spare room, leaving a
+              // bigger gap under the tiles. Same proportions, scaled up.
+              gridTemplateRows: (readinessOpen
+                ? [0.84, 0.76, 0.64, 0.33, 0.38]
+                : [0.95, 0.95, 0.44, 0.5]
+              )
+                .map((fr) => `minmax(min-content, ${fr * 100}fr)`)
+                .join(" "),
+            }}
           >
             <NutritionTile
               active={todayEntries.length > 0}
@@ -444,7 +460,7 @@ function NutritionTile({
         onClick();
       }}
       aria-label={t.home.nutritionAriaLabel}
-      className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-3xl p-3.5 text-left active:scale-[0.98]"
+      className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.98]"
     >
       <div className="relative flex flex-col gap-2">
         <div className="relative flex items-center justify-between gap-3">
@@ -565,7 +581,7 @@ function ActivityTile({
         haptic(10);
         onClick();
       }}
-      className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-3 text-left active:scale-[0.97]"
+      className="glass col-span-2 flex min-h-0 items-center gap-3 rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.97]"
     >
       {/* Weeks, not days — see streak.ts for why and the WHO source. */}
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -584,7 +600,7 @@ function ActivityTile({
               {t.home.weekStreak(streak)}
             </span>
           </p>
-          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
+          <p className="mt-1 truncate text-[10.5px] leading-tight text-muted-foreground">
             {longestStreak > streak ? t.home.best(longestStreak) : t.home.streakRule}
           </p>
         </div>
@@ -610,7 +626,7 @@ function ActivityTile({
               {t.home.trainingDays(daysThisWeek)}
             </span>
           </p>
-          <p className="mt-1 truncate text-[10.5px] text-muted-foreground">
+          <p className="mt-1 truncate text-[10.5px] leading-tight text-muted-foreground">
             {t.home.thisWeek} · {t.home.total(totalWorkouts)}
           </p>
         </div>
@@ -643,7 +659,7 @@ function LatestPrTile({
         haptic(10);
         onClick();
       }}
-      className="glass col-span-2 flex min-h-0 items-center gap-2.5 rounded-2xl p-2.5 text-left active:scale-[0.97]"
+      className="glass col-span-2 flex min-h-0 items-center gap-2.5 rounded-3xl p-[var(--home-tile-pad)] text-left active:scale-[0.97]"
     >
       <span
         className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
@@ -709,7 +725,7 @@ function WaterTile({
   const active = totalMl > 0;
 
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex flex-col gap-2">
         <button
           onClick={() => {
@@ -791,7 +807,7 @@ function ReadinessTile({
 }) {
   const t = useTranslation();
   return (
-    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-3.5">
+    <div className="glass relative col-span-2 flex min-h-0 flex-col justify-between gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
       <div className="relative flex min-w-0 items-center gap-2.5">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <Activity className="size-3.5" />

@@ -69,6 +69,41 @@
      via Playwright (getBoundingClientRect()s, not eyeballed) the same way
      the original 7rem value was. */
   --tab-bar-content-clearance: 5.75rem;
+  /* The tab bar pill's own height (TabBar.tsx: a 54px row plus py-1, no
+     border), measured. Home uses it to leave exactly --home-gap above the
+     bar, the same as between its own blocks. */
+  --tab-bar-height: 3.875rem;
+  /* Home is one fixed screen, so its spacing follows the screen's height
+     rather than fixed pixels. --home-gap is the one gap: under the header,
+     between the hero, every tile and the week strip, and above the tab bar.
+     The tiles' and hero's padding scale the same way. Each is its value at
+     844 pt tall (an iPhone 14/15/16) plus a slope per pt of height: steeper
+     below 844, so a shorter phone tightens the spacing instead of cutting
+     content off, and half as steep above, so a taller phone gets more air
+     but most of its extra height still goes to the tiles (min() picks the
+     steeper slope below 844 and the gentler one above).
+       gap:          8 px  (6.4 at 812, 10.2 at 932)
+       tile padding: 8.8 px (6.9 at 812, 11.4 at 932)
+       hero padding: 13.5 px (11.6 at 812, 16.1 at 932)
+     Sized so the tightest case, a program (the hero's week bar), the
+     check-in still open and the catalog's longest exercise name as the
+     latest PR, fits from 812 pt (iPhone mini, X, 11 Pro) up. Layout
+     choices, not measured values. */
+  --home-gap: clamp(
+    0.375rem,
+    calc(8px + min((100dvh - 844px) * 0.05, (100dvh - 844px) * 0.025)),
+    1rem
+  );
+  --home-tile-pad: clamp(
+    0.375rem,
+    calc(8.8px + min((100dvh - 844px) * 0.06, (100dvh - 844px) * 0.03)),
+    0.875rem
+  );
+  --home-hero-pad: clamp(
+    0.625rem,
+    calc(13.5px + min((100dvh - 844px) * 0.06, (100dvh - 844px) * 0.03)),
+    1.125rem
+  );
   --font-ios:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui,
     sans-serif;
