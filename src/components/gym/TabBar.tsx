@@ -178,13 +178,25 @@ export function TabBar() {
                 labels (Dutch "Oefeningen" was truncating at 390pt). */}
             {/* The glow only while Home is the current screen: always-on,
                 it read as the selected tab from every other screen too.
-                Elsewhere the circle is also dimmed (asked for: it should
-                look inactive off Home), still in the accent so it stays
-                the bar's one standout button. */}
+                Elsewhere it's a dim version of itself (asked for, twice:
+                55% opacity still read as active): the fill is the accent
+                mixed 30% into the page background (in oklab: oklch
+                interpolates the hue towards black's 0° and came out orange), so a dark tint in dark
+                mode and a pale one in light, with a muted icon and no
+                shadow. */}
             <span
-              className={`flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] transition-[box-shadow,opacity] duration-300 ${
-                homeActive ? "glow" : "opacity-55"
+              className={`flex aspect-square h-full items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-300 ${
+                homeActive
+                  ? "glow bg-primary text-primary-foreground shadow-[var(--shadow-float)]"
+                  : "text-foreground/55"
               }`}
+              style={
+                homeActive
+                  ? undefined
+                  : {
+                      backgroundColor: "color-mix(in oklab, var(--primary) 30%, var(--background))",
+                    }
+              }
             >
               <Home className="size-6" strokeWidth={2.2} />
             </span>
