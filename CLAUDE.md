@@ -502,14 +502,12 @@ Schedules are now ordered **Monday-first** (`weekIndex(dow) = (dow + 6) % 7`), m
   - The equipment profile shows one line ("14 items", "Edit ›" to `/equipment`) instead of every piece of gear as a paragraph.
   - The coarse "Target muscles" chip row is gone. It duplicated the muscle map's own region chips; `toggleMuscle` went with it.
   - The muscle-pairing suggestion ("Pair Chest with Triceps…", shown after picking one region) is a pop-up pinned to the top of the screen (`fixed`, `z-40`: above the sticky header, below sheets), not a card in the page. In the page it pushed the map and everything under it down when it appeared and back up when dismissed. It's solid `--background` (any translucency let the page title read through), drops in with `banner-down`, and puts "+ Add" on its own row so Dutch's longer button doesn't squeeze the sentence. Verified in Chromium: the map card moves 0 px on show, add and dismiss (390 and 430 wide, both themes, en/nl); it stays pinned while scrolling.
-- **History** (`history.index.tsx`). Order:
-  1. Streak.
-  2. Training load.
-  3. Sets this week (moved from Workout).
-  4. Progress.
-  5. Personal records.
-  6. Volume per muscle.
-  7. Sessions.
+- **History** (`history.index.tsx`) has three sub-tabs, an iOS segmented control (`HistoryTabs`) pinned in `Screen`'s sticky `toolbar`. It used to be one long page: streak, training load, cardio, sets this week, progress, records and volume all came before the sessions, which are what the tab is mostly for (reported as cluttered).
+  1. **Sessions** (default): a one-row summary (week streak · training days this week · sessions in the last 30 days, which opens Activity), then "Recent" with Import from watch and the week-grouped list. "Last 30 days" rather than "this month", which read 0 on the 1st.
+  2. **Progress**: the per-exercise chart, personal records, volume per muscle.
+  3. **Activity**: streak and calendar, training load, cardio this week, sets this week (moved from Workout) and muscles to grow.
+
+  The tab is in the URL (`validateSearch`, `?tab=progress|activity`, none for Sessions, switched with `replace` so it doesn't stack history), so Back from a session lands on the same tab, and Home links straight in: the Activity tile to Activity, the Latest PR tile to Progress. Switching scrolls to the top. Verified in Chromium at 390×844, nl/dark and en/light: the first session row at 320 px (it was below six cards), the tabs stay pinned while scrolling, the URL follows, Back from a session returns to Sessions, `?tab=progress` opens Progress, no sideways overflow, no page errors beyond the known first-visit light-mode cookie mismatch.
 
   Details:
   - **Progress** used to chart only your heaviest lift. It now charts any exercise done in 2+ sessions, picked from chips (most recently trained first; defaults to your top record). Tapping a record row selects that exercise and scrolls to the chart.

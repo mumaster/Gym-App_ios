@@ -375,10 +375,14 @@ function HomeScreen() {
               longestStreak={longestStreak}
               daysThisWeek={daysThisWeek}
               totalWorkouts={workouts.length}
-              onClick={() => navigate({ to: "/history" })}
+              onClick={() => navigate({ to: "/history", search: { tab: "activity" } })}
             />
 
-            <LatestPrTile pr={pr} today={today} onClick={() => navigate({ to: "/history" })} />
+            <LatestPrTile
+              pr={pr}
+              today={today}
+              onClick={() => navigate({ to: "/history", search: { tab: "progress" } })}
+            />
           </div>
 
           <WeekStrip
