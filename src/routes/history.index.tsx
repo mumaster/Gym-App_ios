@@ -217,14 +217,16 @@ function HistoryScreen() {
           ) : null}
 
           {/* Always shown: someone who only does cardio imports their first
-          session from here, before any Forge workout exists. */}
+          session from here, before any Forge workout exists. A text action
+          on the section label's line, like Manage on the Workout tab; as a
+          tinted pill it sat between the summary and the first week. */}
           <div className="flex items-end justify-between gap-2">
             <SectionLabel>{t.history.recent}</SectionLabel>
             <button
               onClick={() => setWatchOpen(true)}
-              className="mb-1.5 flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-semibold text-foreground active:scale-95"
+              className="mb-1.5 flex items-center gap-1 text-[13px] font-semibold text-primary-text active:opacity-70"
             >
-              <Watch className="size-4" /> {t.watch.importFromWatch}
+              <Watch className="size-3.5" /> {t.watch.importFromWatch}
             </button>
           </div>
           <WatchImportSheet open={watchOpen} onClose={() => setWatchOpen(false)} />
