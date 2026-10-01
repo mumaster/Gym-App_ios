@@ -618,6 +618,17 @@ const en = {
     weekAvg: (avg: string, goal: string | null, days: number) =>
       `Avg ${avg}${goal ? ` / ${goal}` : ""} kcal a day · ${days} ${days === 1 ? "day" : "days"} logged`,
     weekAvgNone: "Your weekly average shows once a full day is logged.",
+    tabs: { food: "Food", drinks: "Drinks", weight: "Weight" },
+    waterWeekAvg: (avg: string, goal: string | null, days: number) =>
+      `Avg ${avg}${goal ? ` / ${goal}` : ""} water a day · ${days} ${days === 1 ? "day" : "days"} logged`,
+    waterDayAria: (day: string, ml: number | null) =>
+      ml == null ? `${day}: no water logged` : `${day}: ${ml} ml of water`,
+    weightWeekAvg: (avg: string, n: number) =>
+      `Avg ${avg} kg · ${n} ${n === 1 ? "weigh-in" : "weigh-ins"}`,
+    weightWeekAvgNone: "No weigh-ins this week.",
+    weightDayAria: (day: string, kg: string | null) =>
+      kg == null ? `${day}: no weigh-in` : `${day}: ${kg} kg`,
+    noWeighIn: "No weigh-in that day.",
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: nothing logged` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} left`,
@@ -1844,6 +1855,17 @@ const nl: Dict = {
     weekAvg: (avg: string, goal: string | null, days: number) =>
       `Gem. ${avg}${goal ? ` / ${goal}` : ""} kcal per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
     weekAvgNone: "Je weekgemiddelde verschijnt zodra er een volledige dag is gelogd.",
+    tabs: { food: "Eten", drinks: "Drinken", weight: "Gewicht" },
+    waterWeekAvg: (avg: string, goal: string | null, days: number) =>
+      `Gem. ${avg}${goal ? ` / ${goal}` : ""} water per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
+    waterDayAria: (day: string, ml: number | null) =>
+      ml == null ? `${day}: geen water gelogd` : `${day}: ${ml} ml water`,
+    weightWeekAvg: (avg: string, n: number) =>
+      `Gem. ${avg} kg · ${n} ${n === 1 ? "weging" : "wegingen"}`,
+    weightWeekAvgNone: "Deze week nog niet gewogen.",
+    weightDayAria: (day: string, kg: string | null) =>
+      kg == null ? `${day}: niet gewogen` : `${day}: ${kg} kg`,
+    noWeighIn: "Die dag niet gewogen.",
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: niets gelogd` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} over`,

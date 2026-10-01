@@ -372,7 +372,7 @@ function HomeScreen() {
                 haptic(12);
                 logWater(ml);
               }}
-              onOpen={() => navigate({ to: "/nutrition" })}
+              onOpen={() => navigate({ to: "/nutrition", search: { tab: "drinks" } })}
             />
 
             {readinessOpen ? (

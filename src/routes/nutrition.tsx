@@ -26,6 +26,7 @@ import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSh
 import { CreateRecipeSheet } from "../components/gym/CreateRecipeSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import { SwipeToDelete } from "../components/gym/SwipeToDelete";
 import {
   addDays,
@@ -66,7 +67,17 @@ import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numeri
 import { mondayOf, parseDayKey } from "../lib/gym/schedule";
 import { haptic, useGym } from "../lib/gym/store";
 
+/** Food, drinks (water and coffee) and bodyweight, as sub-tabs like
+ *  History's. The week strip is on every tab and shows that tab's own
+ *  data per day; the picked day is shared, so switching keeps it. */
+const NUTRITION_TABS = ["food", "drinks", "weight"] as const;
+export type NutritionTab = (typeof NUTRITION_TABS)[number];
+
 export const Route = createFileRoute("/nutrition")({
+  validateSearch: (search: Record<string, unknown>): { tab?: NutritionTab } =>
+    NUTRITION_TABS.includes(search["tab"] as NutritionTab) && search["tab"] !== "food"
+      ? { tab: search["tab"] as NutritionTab }
+      : {},
   head: () => ({
     meta: [
       { title: "Nutrition — Forge" },
@@ -90,14 +101,21 @@ const barClass = (status: NutrientStatus) =>
   status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
 
 /**
- * Order follows use: the week and today's numbers, then Add food and what
- * you've eaten, then water and bodyweight. Saved meals and recipes live in
- * the Add food sheet, next to Favourites and Recent — logging one is the
- * same action as logging any food.
+ * Three sub-tabs, each with the week strip on top: Food (the day's numbers,
+ * Add food and what you've eaten), Drinks (water and coffee) and Weight
+ * (bodyweight). Saved meals and recipes live in the Add food sheet, next to
+ * Favourites and Recent — logging one is the same action as logging any food.
  */
 function NutritionScreen() {
   const t = useTranslation();
   const locale = useLocale();
+  const { tab = "food" } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const setTab = (next: NutritionTab) => {
+    void navigate({ search: next === "food" ? {} : { tab: next }, replace: true });
+    window.scrollTo({ top: 0 });
+  };
+  const resolveGoals = useDayGoalsResolver();
   const {
     foodEntries,
     waterEntries,
@@ -199,214 +217,335 @@ function NutritionScreen() {
     ? MEAL_ORDER
     : MEAL_ORDER.filter((m) => selectedEntries.some((e) => e.meal === m));
 
+  /** The week strip's mark under each day, per tab: calories against that
+   *  day's limit, water against the goal, or the day's weigh-in. */
+  const weighInOn = (key: string) =>
+    [...weightLog].reverse().find((e) => dayKeyFromDate(new Date(e.date)) === key) ?? null;
+  const kg = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 });
+  const stripDay = (date: Date, key: string): StripDay => {
+    const day = date.toLocaleDateString(locale, { weekday: "long", day: "numeric" });
+    if (tab === "drinks") {
+      const ml = entriesForDay(waterEntries, key).reduce((sum, e) => sum + e.ml, 0);
+      return {
+        pct: ml ? (waterGoalMl ? Math.min(100, (ml / waterGoalMl) * 100) : 100) : 0,
+        aria: t.nutrition.waterDayAria(day, ml || null),
+      };
+    }
+    if (tab === "weight") {
+      const w = weighInOn(key);
+      return {
+        label: w ? kg(w.kg) : null,
+        aria: t.nutrition.weightDayAria(day, w ? kg(w.kg) : null),
+      };
+    }
+    const entries = entriesForDay(foodEntries, key);
+    const calories = dailyTotals(entries).calories;
+    const goal = resolveGoals(date).goals.calories;
+    const pct = goal ? Math.min(100, (calories / goal) * 100) : entries.length ? 100 : 0;
+    return {
+      pct: entries.length ? pct : 0,
+      // Accent unless over: landing near the limit is the aim here.
+      over: entries.length > 0 && nutrientStatus(calories, goal) === "over",
+      aria: t.nutrition.dayAria(day, entries.length ? calories : null),
+    };
+  };
+  const stripFooter = (days: { date: Date; key: string }[]) => {
+    if (tab === "drinks") {
+      const avg = weeklyAverage(
+        days.map(({ key }) => {
+          const ml = entriesForDay(waterEntries, key).reduce((sum, e) => sum + e.ml, 0);
+          return { key, calories: ml, goal: waterGoalMl ?? undefined, logged: ml > 0 };
+        }),
+        todayKey,
+      );
+      return avg
+        ? t.nutrition.waterWeekAvg(
+            formatLiters(avg.calories),
+            avg.goal != null ? formatLiters(avg.goal) : null,
+            avg.days,
+          )
+        : t.nutrition.weekAvgNone;
+    }
+    if (tab === "weight") {
+      const weighed = days.map(({ key }) => weighInOn(key)).filter((w) => w != null);
+      return weighed.length
+        ? t.nutrition.weightWeekAvg(
+            kg(weighed.reduce((sum, w) => sum + w.kg, 0) / weighed.length),
+            weighed.length,
+          )
+        : t.nutrition.weightWeekAvgNone;
+    }
+    const avg = weeklyAverage(
+      days.map(({ date, key }) => {
+        const entries = entriesForDay(foodEntries, key);
+        return {
+          key,
+          calories: dailyTotals(entries).calories,
+          goal: resolveGoals(date).goals.calories,
+          logged: entries.length > 0,
+        };
+      }),
+      todayKey,
+    );
+    return avg
+      ? t.nutrition.weekAvg(
+          avg.calories.toLocaleString(locale),
+          avg.goal != null ? avg.goal.toLocaleString(locale) : null,
+          avg.days,
+        )
+      : t.nutrition.weekAvgNone;
+  };
+  const selectedWeighIn = weighInOn(selectedKey);
+
   if (!hydrated) return <Screen title={t.nutrition.title}>{null}</Screen>;
 
   return (
-    <Screen title={t.nutrition.title}>
-      <WeekStrip selectedKey={selectedKey} todayKey={todayKey} onSelect={setSelectedKey} />
-
-      <div className="mb-1.5 mt-4 flex items-center justify-between gap-2 px-1">
-        <p className="flex min-w-0 items-center gap-2 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-          <span className="truncate">{dayLabel}</span>
-          {dayNutrition.byDayType ? (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] normal-case tracking-normal text-foreground">
-              {dayNutrition.dayKind === "training" ? (
-                <Dumbbell className="size-3" />
-              ) : dayNutrition.dayKind === "cardio" ? (
-                <HeartPulse className="size-3" />
-              ) : (
-                <Moon className="size-3" />
-              )}
-              {dayNutrition.dayKind === "training"
-                ? t.nutrition.trainingDay
-                : dayNutrition.dayKind === "cardio"
-                  ? t.nutrition.cardioDay
-                  : t.nutrition.restDay}
-            </span>
-          ) : null}
-        </p>
-        <button
-          onClick={() => {
-            haptic(12);
-            setGoalsSheetOpen(true);
-          }}
-          aria-label={t.nutrition.setDailyLimits}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-        >
-          <Settings2 className="size-4" />
-        </button>
-      </div>
-      <DaySummary
-        totals={totals}
-        goals={dayGoals}
-        hasGoals={hasGoals}
-        onSetGoals={() => {
-          haptic(12);
-          setGoalsSheetOpen(true);
-        }}
+    <Screen
+      title={t.nutrition.title}
+      toolbar={
+        <SegmentedTabs
+          tabs={NUTRITION_TABS}
+          value={tab}
+          onChange={setTab}
+          labels={t.nutrition.tabs}
+        />
+      }
+    >
+      <WeekStrip
+        selectedKey={selectedKey}
+        todayKey={todayKey}
+        onSelect={setSelectedKey}
+        day={stripDay}
+        footer={stripFooter}
       />
 
-      {isToday ? (
-        <button
-          onClick={() => openAdd()}
-          className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-        >
-          <Plus className="size-5" /> {t.nutrition.addFood}
-        </button>
-      ) : null}
+      {tab === "food" ? (
+        <>
+          <div className="mb-1.5 mt-4 flex items-center justify-between gap-2 px-1">
+            <p className="flex min-w-0 items-center gap-2 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <span className="truncate">{dayLabel}</span>
+              {dayNutrition.byDayType ? (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] normal-case tracking-normal text-foreground">
+                  {dayNutrition.dayKind === "training" ? (
+                    <Dumbbell className="size-3" />
+                  ) : dayNutrition.dayKind === "cardio" ? (
+                    <HeartPulse className="size-3" />
+                  ) : (
+                    <Moon className="size-3" />
+                  )}
+                  {dayNutrition.dayKind === "training"
+                    ? t.nutrition.trainingDay
+                    : dayNutrition.dayKind === "cardio"
+                      ? t.nutrition.cardioDay
+                      : t.nutrition.restDay}
+                </span>
+              ) : null}
+            </p>
+            <button
+              onClick={() => {
+                haptic(12);
+                setGoalsSheetOpen(true);
+              }}
+              aria-label={t.nutrition.setDailyLimits}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            >
+              <Settings2 className="size-4" />
+            </button>
+          </div>
+          <DaySummary
+            totals={totals}
+            goals={dayGoals}
+            hasGoals={hasGoals}
+            onSetGoals={() => {
+              haptic(12);
+              setGoalsSheetOpen(true);
+            }}
+          />
 
-      <SectionLabel>{t.nutrition.log}</SectionLabel>
-      {meals.length === 0 ? (
-        <Card className="p-6 text-center text-[15px] text-muted-foreground">
-          {t.nutrition.nothingLoggedDay}
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {proteinTarget && selectedEntries.length ? (
-            <p className="-mt-1 px-1 text-[11.5px] leading-snug text-muted-foreground">
-              {t.nutrition.proteinLegend(proteinTarget)}
+          {isToday ? (
+            <button
+              onClick={() => openAdd()}
+              className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
+            >
+              <Plus className="size-5" /> {t.nutrition.addFood}
+            </button>
+          ) : null}
+
+          <SectionLabel>{t.nutrition.log}</SectionLabel>
+          {meals.length === 0 ? (
+            <Card className="p-6 text-center text-[15px] text-muted-foreground">
+              {t.nutrition.nothingLoggedDay}
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {proteinTarget && selectedEntries.length ? (
+                <p className="-mt-1 px-1 text-[11.5px] leading-snug text-muted-foreground">
+                  {t.nutrition.proteinLegend(proteinTarget)}
+                </p>
+              ) : null}
+              {meals.map((meal) => (
+                <MealGroup
+                  key={meal}
+                  meal={meal}
+                  entries={selectedEntries.filter((e) => e.meal === meal)}
+                  proteinTarget={proteinTarget}
+                  canAdd={isToday}
+                  onAdd={() => openAdd(meal)}
+                  onOpen={() => {
+                    haptic(12);
+                    setOverviewMeal(meal);
+                  }}
+                  onSaveAsMeal={() => saveMealFrom(meal)}
+                  onEdit={(entry) => {
+                    haptic(12);
+                    setFoodSheet(entry);
+                  }}
+                  onDelete={(entry) => {
+                    haptic(15);
+                    removeFoodEntry(entry.id);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* RIVM's conditions of use require this reference on nutritional
+          output based on NEVO data — shown whenever the day's figures
+          include a NEVO food (see nevoFoods.ts). */}
+          {selectedEntries.some((e) => e.nevo?.length) ? (
+            <p className="mt-6 px-1 text-[11px] leading-snug text-muted-foreground">
+              {t.nutrition.nevoReference}
             </p>
           ) : null}
-          {meals.map((meal) => (
-            <MealGroup
-              key={meal}
-              meal={meal}
-              entries={selectedEntries.filter((e) => e.meal === meal)}
-              proteinTarget={proteinTarget}
-              canAdd={isToday}
-              onAdd={() => openAdd(meal)}
-              onOpen={() => {
-                haptic(12);
-                setOverviewMeal(meal);
-              }}
-              onSaveAsMeal={() => saveMealFrom(meal)}
-              onEdit={(entry) => {
-                haptic(12);
-                setFoodSheet(entry);
-              }}
-              onDelete={(entry) => {
-                haptic(15);
-                removeFoodEntry(entry.id);
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <SectionLabel>{t.nutrition.water}</SectionLabel>
-      <Card className="p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="tabular text-[26px] font-bold leading-none">
-              {formatLiters(totalWaterMl)}
-            </p>
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              {waterGoalMl
-                ? t.nutrition.ofGoal(formatLiters(waterGoalMl))
-                : t.nutrition.loggedMl(totalWaterMl)}
-            </p>
-          </div>
-          <button
-            onClick={openWaterGoalEditor}
-            aria-label={t.nutrition.setWaterGoal}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-          >
-            <Settings2 className="size-4" />
-          </button>
-        </div>
-
-        {waterGoalEditing ? (
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              inputMode="numeric"
-              type="text"
-              value={waterGoalDraft}
-              onFocus={selectOnFocus}
-              onChange={(e) => {
-                if (DECIMAL_INPUT_RE.test(e.target.value)) setWaterGoalDraft(e.target.value);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && saveWaterGoal()}
-              placeholder={t.nutrition.mlPlaceholder}
-              className="tabular h-10 w-full min-w-0 flex-1 rounded-xl bg-muted px-3 text-[15px] font-semibold outline-none"
-            />
-            <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
-            <button
-              onClick={saveWaterGoal}
-              aria-label={t.nutrition.saveWaterGoal}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-            >
-              <Check className="size-4" />
-            </button>
-          </div>
-        ) : null}
-
-        {waterGoalEditing ? (
-          <WaterSuggestion
-            suggestedMl={suggestedWaterMl}
-            actionLabel={t.nutrition.waterUseSuggestion}
-            onUse={(ml) => {
-              haptic(10);
-              setWaterGoalDraft(String(ml));
-            }}
-            onNeedProfile={() => setGoalsSheetOpen(true)}
-          />
-        ) : !waterGoalMl && isToday ? (
-          <WaterSuggestion
-            suggestedMl={suggestedWaterMl}
-            actionLabel={t.nutrition.waterSetSuggestion}
-            onUse={(ml) => {
-              haptic(15);
-              update({ waterGoalMl: ml });
-            }}
-            onNeedProfile={() => setGoalsSheetOpen(true)}
-          />
-        ) : waterGoalMl ? (
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${waterPct}%` }}
-            />
-          </div>
-        ) : null}
-
-        {isToday ? <WaterShortcuts onLog={logWater} /> : null}
-      </Card>
-
-      {selectedWaterEntries.length > 0 ? (
-        <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-          {selectedWaterEntries.map((entry) => (
-            <button
-              key={entry.id}
-              onClick={() => {
-                haptic(10);
-                removeWaterEntry(entry.id);
-              }}
-              aria-label={t.nutrition.removeWaterEntry(entry.ml)}
-              className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
-            >
-              <Droplet className="size-3 text-primary-text" /> {entry.ml}ml <X className="size-3" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      <SectionLabel>{t.coffee.title}</SectionLabel>
-      <CoffeeCard dayKey={selectedKey} canAdd={isToday} />
-
-      {isToday ? (
-        <>
-          <SectionLabel>{t.bodyweight.title}</SectionLabel>
-          <BodyweightCard />
         </>
       ) : null}
 
-      {/* RIVM's conditions of use require this reference on nutritional
-          output based on NEVO data — shown whenever the day's figures
-          include a NEVO food (see nevoFoods.ts). */}
-      {selectedEntries.some((e) => e.nevo?.length) ? (
-        <p className="mt-6 px-1 text-[11px] leading-snug text-muted-foreground">
-          {t.nutrition.nevoReference}
-        </p>
+      {tab === "drinks" ? (
+        <>
+          <SectionLabel>
+            {t.nutrition.water} · {dayLabel}
+          </SectionLabel>
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="tabular text-[26px] font-bold leading-none">
+                  {formatLiters(totalWaterMl)}
+                </p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  {waterGoalMl
+                    ? t.nutrition.ofGoal(formatLiters(waterGoalMl))
+                    : t.nutrition.loggedMl(totalWaterMl)}
+                </p>
+              </div>
+              <button
+                onClick={openWaterGoalEditor}
+                aria-label={t.nutrition.setWaterGoal}
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+              >
+                <Settings2 className="size-4" />
+              </button>
+            </div>
+
+            {waterGoalEditing ? (
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  inputMode="numeric"
+                  type="text"
+                  value={waterGoalDraft}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => {
+                    if (DECIMAL_INPUT_RE.test(e.target.value)) setWaterGoalDraft(e.target.value);
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && saveWaterGoal()}
+                  placeholder={t.nutrition.mlPlaceholder}
+                  className="tabular h-10 w-full min-w-0 flex-1 rounded-xl bg-muted px-3 text-[15px] font-semibold outline-none"
+                />
+                <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
+                <button
+                  onClick={saveWaterGoal}
+                  aria-label={t.nutrition.saveWaterGoal}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                >
+                  <Check className="size-4" />
+                </button>
+              </div>
+            ) : null}
+
+            {waterGoalEditing ? (
+              <WaterSuggestion
+                suggestedMl={suggestedWaterMl}
+                actionLabel={t.nutrition.waterUseSuggestion}
+                onUse={(ml) => {
+                  haptic(10);
+                  setWaterGoalDraft(String(ml));
+                }}
+                onNeedProfile={() => setGoalsSheetOpen(true)}
+              />
+            ) : !waterGoalMl && isToday ? (
+              <WaterSuggestion
+                suggestedMl={suggestedWaterMl}
+                actionLabel={t.nutrition.waterSetSuggestion}
+                onUse={(ml) => {
+                  haptic(15);
+                  update({ waterGoalMl: ml });
+                }}
+                onNeedProfile={() => setGoalsSheetOpen(true)}
+              />
+            ) : waterGoalMl ? (
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${waterPct}%` }}
+                />
+              </div>
+            ) : null}
+
+            {isToday ? <WaterShortcuts onLog={logWater} /> : null}
+          </Card>
+
+          {selectedWaterEntries.length > 0 ? (
+            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+              {selectedWaterEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  onClick={() => {
+                    haptic(10);
+                    removeWaterEntry(entry.id);
+                  }}
+                  aria-label={t.nutrition.removeWaterEntry(entry.ml)}
+                  className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
+                >
+                  <Droplet className="size-3 text-primary-text" /> {entry.ml}ml{" "}
+                  <X className="size-3" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <SectionLabel>{t.coffee.title}</SectionLabel>
+          <CoffeeCard dayKey={selectedKey} canAdd={isToday} />
+        </>
+      ) : null}
+
+      {/* Weight: the trend, chart and log are the same whichever day is
+          picked; a past day shows its own weigh-in above them, and only
+          today can be logged, like food and water. */}
+      {tab === "weight" ? (
+        <>
+          <SectionLabel>
+            {t.bodyweight.title} · {dayLabel}
+          </SectionLabel>
+          {!isToday ? (
+            <Card className="mb-3 px-4 py-3 text-[15px] font-semibold">
+              {selectedWeighIn ? (
+                `${kg(selectedWeighIn.kg)} kg`
+              ) : (
+                <span className="font-normal text-muted-foreground">{t.nutrition.noWeighIn}</span>
+              )}
+            </Card>
+          ) : null}
+          <BodyweightCard canLog={isToday} />
+        </>
       ) : null}
 
       <AddFoodSheet
@@ -465,45 +604,37 @@ function NutritionScreen() {
   );
 }
 
+/** One day's mark in the week strip: a bar (`pct` of the day's limit or
+ *  goal, red when `over`) or a short `label` (the weigh-in). */
+type StripDay = { pct?: number; over?: boolean; label?: string | null; aria: string };
+
 /**
- * The week the selected day falls in, Monday first: each day's calories as
- * a small bar against that day's limit (training/rest-day limits included),
- * and the week's average over finished, logged days — when cutting, the
- * week's average is what moves weight, not any single day. Arrows move a
- * week at a time; days after today can't be picked.
+ * The week the selected day falls in, Monday first, on every tab: each
+ * day's mark comes from the tab (`day`) — calories against that day's
+ * limit, water against the goal, or the weigh-in — and the line under it
+ * is the tab's weekly summary (`footer`). Arrows move a week at a time;
+ * days after today can't be picked.
  */
 function WeekStrip({
   selectedKey,
   todayKey,
   onSelect,
+  day,
+  footer,
 }: {
   selectedKey: string;
   todayKey: string;
   onSelect: (key: string) => void;
+  day: (date: Date, key: string) => StripDay;
+  footer: (days: { date: Date; key: string }[]) => string;
 }) {
   const t = useTranslation();
   const locale = useLocale();
-  const { foodEntries } = useGym();
-  const resolve = useDayGoalsResolver();
   const monday = mondayOf(parseDayKey(selectedKey));
-  const days = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const date = addDays(monday, i);
-        const key = dayKeyFromDate(date);
-        const entries = entriesForDay(foodEntries, key);
-        return {
-          date,
-          key,
-          calories: dailyTotals(entries).calories,
-          goal: resolve(date).goals.calories,
-          logged: entries.length > 0,
-        };
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [monday.getTime(), foodEntries, resolve],
-  );
-  const avg = weeklyAverage(days, todayKey);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(monday, i);
+    return { date, key: dayKeyFromDate(date) };
+  });
   const thisMonday = mondayOf(parseDayKey(todayKey)).getTime();
   const weeksBack = Math.round((thisMonday - monday.getTime()) / (7 * 864e5));
   const title =
@@ -542,60 +673,56 @@ function WeekStrip({
         </button>
       </div>
       <div className="mt-2 grid grid-cols-7 gap-1">
-        {days.map((d) => {
-          const future = d.key > todayKey;
-          const selected = d.key === selectedKey;
-          const status = d.logged ? nutrientStatus(d.calories, d.goal) : "none";
-          const pct = d.goal ? Math.min(100, (d.calories / d.goal) * 100) : d.logged ? 100 : 0;
-          const name = t.common.dow[d.date.getDay()] ?? "";
+        {days.map(({ date, key }) => {
+          const future = key > todayKey;
+          const selected = key === selectedKey;
+          const mark = day(date, key);
+          const name = t.common.dow[date.getDay()] ?? "";
           return (
             <button
-              key={d.key}
+              key={key}
               disabled={future}
               onClick={() => {
                 haptic(10);
-                onSelect(d.key);
+                onSelect(key);
               }}
               aria-pressed={selected}
-              aria-label={t.nutrition.dayAria(
-                d.date.toLocaleDateString(locale, { weekday: "long", day: "numeric" }),
-                d.logged ? d.calories : null,
-              )}
+              aria-label={mark.aria}
               className={`flex flex-col items-center gap-1 rounded-xl py-1.5 disabled:opacity-35 ${
                 selected ? "bg-primary/15 ring-1 ring-primary" : ""
               }`}
             >
               <span
                 className={`text-[10.5px] font-semibold leading-none ${
-                  d.key === todayKey ? "text-foreground" : "text-muted-foreground"
+                  key === todayKey ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {name.charAt(0).toUpperCase()}
               </span>
-              <span className="tabular text-[15px] font-bold leading-none">{d.date.getDate()}</span>
-              <span className="h-1 w-6 overflow-hidden rounded-full bg-muted">
+              <span className="tabular text-[15px] font-bold leading-none">{date.getDate()}</span>
+              {mark.label !== undefined ? (
+                // Same height as the bar row would take with its gap, so
+                // switching tabs doesn't make the strip jump.
                 <span
-                  // Accent unless over: landing near the limit is the aim
-                  // here, not a warning.
-                  className={`block h-full rounded-full ${
-                    status === "over" ? "bg-destructive" : "bg-primary"
+                  className={`tabular flex h-1 items-center text-[9.5px] font-semibold leading-none ${
+                    mark.label ? "text-primary-text" : "text-muted-foreground"
                   }`}
-                  style={{ width: `${d.logged ? pct : 0}%` }}
-                />
-              </span>
+                >
+                  {mark.label ?? "·"}
+                </span>
+              ) : (
+                <span className="h-1 w-6 overflow-hidden rounded-full bg-muted">
+                  <span
+                    className={`block h-full rounded-full ${mark.over ? "bg-destructive" : "bg-primary"}`}
+                    style={{ width: `${mark.pct ?? 0}%` }}
+                  />
+                </span>
+              )}
             </button>
           );
         })}
       </div>
-      <p className="tabular mt-2 text-center text-[12px] text-muted-foreground">
-        {avg
-          ? t.nutrition.weekAvg(
-              avg.calories.toLocaleString(locale),
-              avg.goal != null ? avg.goal.toLocaleString(locale) : null,
-              avg.days,
-            )
-          : t.nutrition.weekAvgNone}
-      </p>
+      <p className="tabular mt-2 text-center text-[12px] text-muted-foreground">{footer(days)}</p>
     </Card>
   );
 }

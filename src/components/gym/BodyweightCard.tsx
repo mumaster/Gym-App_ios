@@ -20,7 +20,9 @@ const fmt = (n: number, digits: number, locale: string) =>
 /** Weigh-ins, the fitted trend, and — once there's enough data and a goal —
  *  a calorie change that would bring the real rate onto the target. The
  *  change is only a suggestion: nothing is applied without a tap. */
-export function BodyweightCard() {
+/** `canLog` false (a past day picked on Nutrition → Weight) hides the
+ *  input: like food and water, only today can be logged. */
+export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
   const t = useTranslation();
   const locale = useLocale();
   const {
@@ -62,29 +64,31 @@ export function BodyweightCard() {
 
   return (
     <Card className="space-y-3 p-4">
-      <div className="flex items-center gap-2">
-        <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
-          <Scale className="size-4 shrink-0 text-primary-text" />
-          <input
-            inputMode="decimal"
-            type="text"
-            value={draft}
-            onFocus={selectOnFocus}
-            onChange={(e) => DECIMAL_INPUT_RE.test(e.target.value) && setDraft(e.target.value)}
-            placeholder={latest ? fmt(latest.kg, 1, locale) : "75"}
-            aria-label={t.bodyweight.inputLabel}
-            className="min-w-0 flex-1 bg-transparent text-[16px] font-bold outline-none placeholder:font-normal placeholder:text-muted-foreground"
-          />
-          <span className="text-[12px] text-muted-foreground">kg</span>
-        </label>
-        <button
-          onClick={submit}
-          className="relative min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
-        >
-          <HapticSwitch />
-          {t.bodyweight.log}
-        </button>
-      </div>
+      {canLog ? (
+        <div className="flex items-center gap-2">
+          <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
+            <Scale className="size-4 shrink-0 text-primary-text" />
+            <input
+              inputMode="decimal"
+              type="text"
+              value={draft}
+              onFocus={selectOnFocus}
+              onChange={(e) => DECIMAL_INPUT_RE.test(e.target.value) && setDraft(e.target.value)}
+              placeholder={latest ? fmt(latest.kg, 1, locale) : "75"}
+              aria-label={t.bodyweight.inputLabel}
+              className="min-w-0 flex-1 bg-transparent text-[16px] font-bold outline-none placeholder:font-normal placeholder:text-muted-foreground"
+            />
+            <span className="text-[12px] text-muted-foreground">kg</span>
+          </label>
+          <button
+            onClick={submit}
+            className="relative min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
+          >
+            <HapticSwitch />
+            {t.bodyweight.log}
+          </button>
+        </div>
+      ) : null}
 
       {trend ? (
         <p className="text-[14px]">

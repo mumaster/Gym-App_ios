@@ -177,10 +177,13 @@ export function TabBar() {
                 circle, which leaves the four labelled tabs room for their
                 labels (Dutch "Oefeningen" was truncating at 390pt). */}
             {/* The glow only while Home is the current screen: always-on,
-                it read as the selected tab from every other screen too. */}
+                it read as the selected tab from every other screen too.
+                Elsewhere the circle is also dimmed (asked for: it should
+                look inactive off Home), still in the accent so it stays
+                the bar's one standout button. */}
             <span
-              className={`flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] transition-shadow duration-300 ${
-                homeActive ? "glow" : ""
+              className={`flex aspect-square h-full items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-float)] transition-[box-shadow,opacity] duration-300 ${
+                homeActive ? "glow" : "opacity-55"
               }`}
             >
               <Home className="size-6" strokeWidth={2.2} />
