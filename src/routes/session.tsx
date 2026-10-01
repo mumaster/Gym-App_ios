@@ -45,7 +45,7 @@ import {
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
-import { crossEstimate, heavierHint } from "../lib/gym/startWeight";
+import { crossEstimate, heavierHint, withRunning } from "../lib/gym/startWeight";
 import {
   cancelRestNotification,
   ensurePushSubscription,
@@ -55,7 +55,7 @@ import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
-import { warmupLoad } from "../lib/gym/warmup";
+import { WARMUP_REPS, warmupFractions, warmupLoad } from "../lib/gym/warmup";
 import {
   clearSessionResume,
   loadSessionResume,
@@ -1413,8 +1413,10 @@ function ExerciseBlock({
    *  heavier weight your own numbers support (startWeight.ts). */
   const estimate = useMemo(
     () =>
-      exercise && !previous ? crossEstimate(exercise, workouts, planned.target_reps, step) : null,
-    [exercise, previous, workouts, planned.target_reps, step],
+      exercise && !previous
+        ? crossEstimate(exercise, withRunning(workouts, activeWorkout), planned.target_reps, step)
+        : null,
+    [exercise, previous, workouts, activeWorkout, planned.target_reps, step],
   );
   const hint = useMemo(
     () => (exercise && suggestion ? heavierHint(exercise, workouts, suggestion, step) : null),
@@ -1457,6 +1459,10 @@ function ExerciseBlock({
           gear.includes("barbell") || gear.includes("smith") ? profile.bar_weight : 0,
         )
       : null;
+  /** A loaded exercise with nothing to go on: not done before, nothing
+   *  related done either (also not earlier in this workout). The card then
+   *  explains how to pick the first weight instead of offering 0 kg. */
+  const noReference = !bw && workingRef == null;
   const prefillWeight =
     setType === "warmup"
       ? (warmup?.weight ?? lastLogged?.weight ?? 0)
@@ -1472,7 +1478,13 @@ function ExerciseBlock({
   // field could read 12.)
   const prefillReps = warmup
     ? warmup.reps
-    : (lastWorking?.reps ?? suggestion?.reps ?? estimate?.reps ?? previous?.reps ?? targetTopReps);
+    : setType === "warmup" && noReference
+      ? WARMUP_REPS
+      : (lastWorking?.reps ??
+        suggestion?.reps ??
+        estimate?.reps ??
+        previous?.reps ??
+        targetTopReps);
 
   if (!exercise) return null;
 
@@ -1817,6 +1829,23 @@ function ExerciseBlock({
               </p>
             ) : null}
 
+            {noReference && setType === "warmup" ? (
+              <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+                {t.session.firstWarmupGuide(
+                  Math.min(warmupsLogged, warmupCount - 1) + 1,
+                  warmupCount,
+                  WARMUP_REPS,
+                  Math.round(
+                    warmupFractions(warmupCount)[Math.min(warmupsLogged, warmupCount - 1)]! * 100,
+                  ),
+                )}
+              </p>
+            ) : noReference && setType === "working" ? (
+              <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+                {t.session.firstSetGuide(currentReps)}
+              </p>
+            ) : null}
+
             {!lastLogged && estimate && estimateFrom && setType === "working" ? (
               <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
                 {t.session.estimatedFrom(
@@ -1887,7 +1916,7 @@ function ExerciseBlock({
                   type="text"
                   value={weight}
                   aria-label={t.session.weightAriaLabel}
-                  placeholder={`${prefillWeight}`}
+                  placeholder={noReference ? "–" : `${prefillWeight}`}
                   onFocus={selectOnFocus}
                   onChange={(e) => {
                     const re = bw ? SIGNED_DECIMAL_INPUT_RE : DECIMAL_INPUT_RE;
@@ -2073,6 +2102,7 @@ function NextUpPreview({
   const t = useTranslation();
   const {
     workouts,
+    activeWorkout,
     lastPerformance,
     exerciseNotes,
     profiles,
@@ -2109,7 +2139,7 @@ function NextUpPreview({
               ? null
               : crossEstimate(
                   exercise,
-                  workouts,
+                  withRunning(workouts, activeWorkout),
                   planned.target_reps,
                   plateStep(exercise, profile),
                 );

@@ -142,6 +142,15 @@ const usable = (e: Exercise | undefined): e is Exercise => !!e && !isBodyweightE
  * a published ratio when there is one, else a rough estimate (see above).
  * Reps are the top of the target range, like the first-time prefill.
  */
+/** History plus the workout in progress (newest first), so an exercise
+ *  logged earlier today can stand in for a related one later in the same
+ *  session — which is what makes a new user's first workout get estimates.
+ *  Those sets were done fresher or more tired than usual, but a set's e1RM
+ *  is what it is; the estimate errs light either way. */
+export function withRunning(workouts: Workout[], running: Workout | null | undefined): Workout[] {
+  return running?.completed_sets.length ? [running, ...workouts] : workouts;
+}
+
 export function crossEstimate(
   target: Exercise,
   workouts: Workout[],

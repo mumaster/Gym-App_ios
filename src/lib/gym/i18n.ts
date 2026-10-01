@@ -469,6 +469,10 @@ const en = {
     heavierWhyPersonal: (name: string) => `you've got stronger on ${name} since`,
     heavierWhyPublished: (name: string) => `based on your ${name}`,
     useWeight: "Use",
+    firstSetGuide: (reps: number) =>
+      `Pick a weight you can lift ${reps} times with about 2 reps left (RPE 8). Rate the set afterwards and the next one adjusts.`,
+    firstWarmupGuide: (n: number, of: number, reps: number, pct: number) =>
+      `Warm-up ${n} of ${of}: ${reps} easy reps at about ${pct}% of the weight you plan to lift.`,
     lessWeight: "Less weight",
     moreWeight: "More weight",
     weightAriaLabel: "Weight in kg",
@@ -1730,6 +1734,10 @@ const nl: Dict = {
     heavierWhyPersonal: (name: string) => `je bent sindsdien sterker geworden op ${name}`,
     heavierWhyPublished: (name: string) => `op basis van je ${name}`,
     useWeight: "Gebruik",
+    firstSetGuide: (reps: number) =>
+      `Kies een gewicht dat je ${reps} keer kunt tillen met nog ongeveer 2 herhalingen over (RPE 8). Geef de set daarna een RPE, dan past de volgende set zich aan.`,
+    firstWarmupGuide: (n: number, of: number, reps: number, pct: number) =>
+      `Warming-up ${n} van ${of}: ${reps} rustige herhalingen met ongeveer ${pct}% van het gewicht dat je wilt tillen.`,
     lessWeight: "Minder gewicht",
     moreWeight: "Meer gewicht",
     weightAriaLabel: "Gewicht in kg",

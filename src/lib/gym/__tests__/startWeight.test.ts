@@ -8,6 +8,7 @@ import {
   ROUGH_DISCOUNT,
   setE1rm,
   TARGET_RIR,
+  withRunning,
 } from "../startWeight";
 import type { LoggedSet, Workout } from "../types";
 
@@ -101,6 +102,24 @@ describe("crossEstimate", () => {
   it("isn't used for an exercise you've already done", () => {
     const history = [session(2, [set("bb-bench", 100, 5)]), session(9, [set("db-bench", 30, 10)])];
     expect(crossEstimate(ex("db-bench"), history, "8-12", 2)).toBeNull();
+  });
+});
+
+describe("a new user's first workout", () => {
+  it("estimates from an exercise logged earlier in the same workout", () => {
+    // No history at all; the running workout has bench 80 × 10 at RPE 10.
+    const running = { ...session(0, [set("bb-bench", 80, 10, 10)]), finished: false };
+    expect(crossEstimate(ex("db-bench"), [], "8-12", 2)).toBeNull();
+    const e = crossEstimate(ex("db-bench"), withRunning([], running), "8-12", 2)!;
+    expect(e.basis).toBe("published");
+    expect(e.fromId).toBe("bb-bench");
+    expect(e.weight).toBe(loadFor((0.83 / 2) * setE1rm({ weight: 80, reps: 10, rpe: 10 }), 12, 2));
+  });
+
+  it("leaves history alone when nothing is logged yet", () => {
+    const history = [session(3, [set("bb-bench", 80, 10)])];
+    expect(withRunning(history, { ...session(0, []), finished: false })).toBe(history);
+    expect(withRunning(history, null)).toBe(history);
   });
 });
 
