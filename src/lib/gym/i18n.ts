@@ -216,6 +216,27 @@ const en = {
     weekCaption: (sessions: number) =>
       sessions === 1 ? "1 cardio session this week" : `${sessions} cardio sessions this week`,
   },
+  knownLifts: {
+    row: "Your current lifts",
+    rowDesc: "Already training? Start with your own weights",
+    title: "Your current lifts",
+    intro:
+      "Already training? Enter a recent set for a few exercises. Your plans then start from these weights, and other exercises for the same muscles are worked out from them. Once you log an exercise in Forge, your logged sets take over. Nothing here shows up in History or your records.",
+    set: (kg: number, reps: number, rpe: number | null, perDumbbell: boolean) =>
+      `${kg} kg${perDumbbell ? " per dumbbell" : ""} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
+    loggedNow: "now from your logged sets",
+    remove: (name: string) => `Remove ${name}`,
+    addTitle: "Add a lift",
+    search: "Search exercises",
+    popular: "Popular for your equipment",
+    noMatch: "No matching exercise",
+    change: "Change",
+    kg: "kg",
+    kgPerDumbbell: "kg per dumbbell",
+    reps: "Reps",
+    rpe: "RPE (optional) — 10 = no reps left, 8 = 2 left",
+    add: "Add lift",
+  },
   sources: {
     title: "Sources",
     row: "Sources",
@@ -469,6 +490,8 @@ const en = {
     heavierWhyPersonal: (name: string) => `you've got stronger on ${name} since`,
     heavierWhyPublished: (name: string) => `based on your ${name}`,
     useWeight: "Use",
+    fromEnteredLift: (load: string, reps: number) =>
+      `From the lift you entered (${load} × ${reps}) — adjust after your first set`,
     firstSetGuide: (reps: number) =>
       `Pick a weight you can lift ${reps} times with about 2 reps left (RPE 8). Rate the set afterwards and the next one adjusts.`,
     firstWarmupGuide: (n: number, of: number, reps: number, pct: number) =>
@@ -1477,6 +1500,27 @@ const nl: Dict = {
     weekCaption: (sessions: number) =>
       sessions === 1 ? "1 cardiosessie deze week" : `${sessions} cardiosessies deze week`,
   },
+  knownLifts: {
+    row: "Je huidige gewichten",
+    rowDesc: "Train je al? Begin met je eigen gewichten",
+    title: "Je huidige gewichten",
+    intro:
+      "Train je al? Vul voor een paar oefeningen een recente set in. Je plannen beginnen dan met deze gewichten, en andere oefeningen voor dezelfde spieren worden ervan afgeleid. Zodra je een oefening in Forge logt, nemen je gelogde sets het over. Niets hiervan komt in je historie of records.",
+    set: (kg: number, reps: number, rpe: number | null, perDumbbell: boolean) =>
+      `${kg} kg${perDumbbell ? " per dumbbell" : ""} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
+    loggedNow: "nu op basis van je gelogde sets",
+    remove: (name: string) => `${name} verwijderen`,
+    addTitle: "Gewicht toevoegen",
+    search: "Zoek oefeningen",
+    popular: "Populair met jouw materiaal",
+    noMatch: "Geen oefening gevonden",
+    change: "Wijzigen",
+    kg: "kg",
+    kgPerDumbbell: "kg per dumbbell",
+    reps: "Herhalingen",
+    rpe: "RPE (optioneel) — 10 = niets meer over, 8 = nog 2 over",
+    add: "Toevoegen",
+  },
   sources: {
     title: "Bronnen",
     row: "Bronnen",
@@ -1734,6 +1778,8 @@ const nl: Dict = {
     heavierWhyPersonal: (name: string) => `je bent sindsdien sterker geworden op ${name}`,
     heavierWhyPublished: (name: string) => `op basis van je ${name}`,
     useWeight: "Gebruik",
+    fromEnteredLift: (load: string, reps: number) =>
+      `Op basis van je ingevulde gewicht (${load} × ${reps}) — pas aan na je eerste set`,
     firstSetGuide: (reps: number) =>
       `Kies een gewicht dat je ${reps} keer kunt tillen met nog ongeveer 2 herhalingen over (RPE 8). Geef de set daarna een RPE, dan past de volgende set zich aan.`,
     firstWarmupGuide: (n: number, of: number, reps: number, pct: number) =>

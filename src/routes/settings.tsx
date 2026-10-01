@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Cloud,
   CloudOff,
+  Dumbbell,
   LayoutGrid,
   LogOut,
   RefreshCw,
@@ -13,6 +14,7 @@ import {
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
+import { KnownLiftsSheet } from "../components/gym/KnownLiftsSheet";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SourcesSheet } from "../components/gym/SourcesSheet";
@@ -40,6 +42,7 @@ function SettingsScreen() {
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [liftsOpen, setLiftsOpen] = useState(false);
 
   const handleForceUpdate = () => {
     haptic(15);
@@ -117,6 +120,24 @@ function SettingsScreen() {
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
       </Link>
+      <button
+        onClick={() => {
+          haptic(10);
+          setLiftsOpen(true);
+        }}
+        className="glass mt-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+            <Dumbbell className="size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold">{t.knownLifts.row}</p>
+            <p className="truncate text-[12.5px] text-muted-foreground">{t.knownLifts.rowDesc}</p>
+          </div>
+        </div>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
+      </button>
 
       <SectionLabel>{t.settings.avatar}</SectionLabel>
       <Card className="p-0">
@@ -197,6 +218,7 @@ function SettingsScreen() {
 
       <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
       <SourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
+      <KnownLiftsSheet open={liftsOpen} onClose={() => setLiftsOpen(false)} />
     </Screen>
   );
 }

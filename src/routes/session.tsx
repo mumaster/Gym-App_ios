@@ -45,7 +45,7 @@ import {
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
-import { crossEstimate, heavierHint, withRunning } from "../lib/gym/startWeight";
+import { crossEstimate, heavierHint, withKnownLifts, withRunning } from "../lib/gym/startWeight";
 import {
   cancelRestNotification,
   ensurePushSubscription,
@@ -1320,6 +1320,7 @@ function ExerciseBlock({
   const {
     activeWorkout,
     workouts,
+    knownLifts,
     logSet,
     updateSet,
     removeSetAt,
@@ -1414,9 +1415,14 @@ function ExerciseBlock({
   const estimate = useMemo(
     () =>
       exercise && !previous
-        ? crossEstimate(exercise, withRunning(workouts, activeWorkout), planned.target_reps, step)
+        ? crossEstimate(
+            exercise,
+            withKnownLifts(withRunning(workouts, activeWorkout), knownLifts),
+            planned.target_reps,
+            step,
+          )
         : null,
-    [exercise, previous, workouts, activeWorkout, planned.target_reps, step],
+    [exercise, previous, workouts, activeWorkout, knownLifts, planned.target_reps, step],
   );
   const hint = useMemo(
     () => (exercise && suggestion ? heavierHint(exercise, workouts, suggestion, step) : null),
@@ -1848,12 +1854,14 @@ function ExerciseBlock({
 
             {!lastLogged && estimate && estimateFrom && setType === "working" ? (
               <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
-                {t.session.estimatedFrom(
-                  estimateFrom.name,
-                  load(estimate.fromSet.weight),
-                  estimate.fromSet.reps,
-                  estimate.basis === "rough",
-                )}
+                {estimate.basis === "entered"
+                  ? t.session.fromEnteredLift(load(estimate.fromSet.weight), estimate.fromSet.reps)
+                  : t.session.estimatedFrom(
+                      estimateFrom.name,
+                      load(estimate.fromSet.weight),
+                      estimate.fromSet.reps,
+                      estimate.basis === "rough",
+                    )}
               </p>
             ) : null}
 
@@ -2103,6 +2111,7 @@ function NextUpPreview({
   const {
     workouts,
     activeWorkout,
+    knownLifts,
     lastPerformance,
     exerciseNotes,
     profiles,
@@ -2139,7 +2148,7 @@ function NextUpPreview({
               ? null
               : crossEstimate(
                   exercise,
-                  withRunning(workouts, activeWorkout),
+                  withKnownLifts(withRunning(workouts, activeWorkout), knownLifts),
                   planned.target_reps,
                   plateStep(exercise, profile),
                 );

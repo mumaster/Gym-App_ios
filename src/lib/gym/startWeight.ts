@@ -124,7 +124,9 @@ const VS_BARBELL: Record<Exclude<Family, "other">, number> = {
   smith: 0.95,
 };
 
-export type EstimateBasis = "published" | "personal" | "rough";
+/** "entered": the exercise's own lift entered in Settings → Your current
+ *  lifts, before it's been logged in the app. */
+export type EstimateBasis = "published" | "personal" | "rough" | "entered";
 
 export interface WeightEstimate {
   weight: number;
@@ -151,14 +153,66 @@ export function withRunning(workouts: Workout[], running: Workout | null | undef
   return running?.completed_sets.length ? [running, ...workouts] : workouts;
 }
 
+/** A recent set entered in Settings → Your current lifts, for someone who
+ *  already trains: it gives the first plan starting weights. It only ever
+ *  feeds the estimates below — never History, records, volume or the
+ *  streak — and stops counting for an exercise once it's logged in the app. */
+export interface KnownLift {
+  exercise_id: string;
+  weight: number;
+  reps: number;
+  rpe?: number;
+  /** When it was entered (ISO). */
+  date: string;
+}
+
+export const KNOWN_LIFTS_ID = "known-lifts";
+
+/** History plus the entered lifts as one pseudo-session placed after it
+ *  (oldest), so anything logged in the app is preferred as a reference. */
+export function withKnownLifts(workouts: Workout[], lifts: KnownLift[] | undefined): Workout[] {
+  if (!lifts?.length) return workouts;
+  const date = lifts.reduce((a, l) => (l.date < a ? l.date : a), lifts[0]!.date);
+  return [
+    ...workouts,
+    {
+      id: KNOWN_LIFTS_ID,
+      date,
+      duration_minutes: 0,
+      target_muscles: [],
+      unit: "kg",
+      finished: true,
+      plan: [],
+      completed_sets: lifts.map((l, i) => ({
+        exercise_id: l.exercise_id,
+        set_number: i + 1,
+        set_type: "working",
+        weight: l.weight,
+        reps: l.reps,
+        ...(l.rpe != null ? { rpe: l.rpe } : {}),
+        completed_at: l.date,
+      })),
+    },
+  ];
+}
+
 export function crossEstimate(
   target: Exercise,
   workouts: Workout[],
   targetReps: string,
   step: number,
 ): WeightEstimate | null {
-  if (!usable(target) || sessionsWith(target.id, workouts).length) return null;
+  if (!usable(target)) return null;
   const reps = repRange(targetReps)[1];
+  const own = sessionsWith(target.id, workouts);
+  if (own.some((w) => w.id !== KNOWN_LIFTS_ID)) return null;
+  // Entered in Settings and not logged yet: its own lift at RIR 2.
+  const entered = own[0] && bestSet(own[0], target.id);
+  if (entered) {
+    const weight = loadFor(entered.e1rm, reps, step);
+    if (weight > 0)
+      return { weight, reps, basis: "entered", fromId: target.id, fromSet: entered.set };
+  }
 
   for (const r of RATIOS.filter((x) => x.to === target.id)) {
     const s = sessionsWith(r.from, workouts)[0];

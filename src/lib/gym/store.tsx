@@ -1,3 +1,4 @@
+import type { KnownLift } from "./startWeight";
 import {
   createContext,
   useContext,
@@ -169,6 +170,9 @@ interface GymState {
   /** A note per exercise id ("seat on 4", "narrow grip"), shown every time
    *  that exercise comes up in a workout. */
   exerciseNotes: Record<string, string>;
+  /** Recent sets entered in Settings → Your current lifts, for someone who
+   *  already trains; only feeds starting-weight estimates (startWeight.ts). */
+  knownLifts: KnownLift[];
   /** Named, reusable workout plans the user can start exactly as saved. */
   workoutTemplates: WorkoutTemplate[];
   /** Saved recipes (ingredients + serving count) — see lib/gym/nutrition.ts's Recipe. */
@@ -230,6 +234,7 @@ const initialState: GymState = {
   favoriteFoods: [],
   myFoods: [],
   exerciseNotes: {},
+  knownLifts: [],
   workoutTemplates: [],
   recipes: [],
   waterEntries: [],
@@ -374,6 +379,7 @@ function migrate(raw: Partial<GymState>): GymState {
     mealTemplates: raw.mealTemplates ?? [],
     favoriteFoods: raw.favoriteFoods ?? [],
     exerciseNotes: raw.exerciseNotes ?? {},
+    knownLifts: Array.isArray(raw.knownLifts) ? raw.knownLifts : [],
     workoutTemplates: raw.workoutTemplates ?? [],
     recipes: raw.recipes ?? [],
     waterEntries: raw.waterEntries ?? [],

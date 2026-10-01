@@ -8,8 +8,10 @@ import {
   ROUGH_DISCOUNT,
   setE1rm,
   TARGET_RIR,
+  withKnownLifts,
   withRunning,
 } from "../startWeight";
+import type { KnownLift } from "../startWeight";
 import type { LoggedSet, Workout } from "../types";
 
 const ex = (id: string) => EXERCISES.find((e) => e.id === id)!;
@@ -179,6 +181,55 @@ describe("in a generated plan", () => {
       equipment: ["dumbbell", "bench"],
       targets: ["Mid Chest"],
       history,
+    });
+    const db = plan.find((p) => p.exercise_id === "db-bench");
+    expect(db?.suggested_basis).toBe("published");
+    expect(db?.suggested_weight).toBeGreaterThan(0);
+  });
+});
+
+describe("lifts entered in Settings", () => {
+  const lift = (exercise_id: string, weight: number, reps: number, rpe?: number): KnownLift => ({
+    exercise_id,
+    weight,
+    reps,
+    ...(rpe != null ? { rpe } : {}),
+    date: "2026-09-30T10:00:00Z",
+  });
+  const known = [lift("bb-bench", 100, 5, 8)];
+
+  it("gives the exercise itself its own lift at RIR 2", () => {
+    const e = crossEstimate(ex("bb-bench"), withKnownLifts([], known), "8-12", 2.5)!;
+    expect(e.basis).toBe("entered");
+    expect(e.weight).toBe(loadFor(setE1rm({ weight: 100, reps: 5, rpe: 8 }), 12, 2.5));
+  });
+
+  it("works out related exercises from it", () => {
+    const e = crossEstimate(ex("db-bench"), withKnownLifts([], known), "8-12", 2)!;
+    expect(e.basis).toBe("published");
+    expect(e.fromId).toBe("bb-bench");
+  });
+
+  it("stops counting once the exercise is logged in the app", () => {
+    const history = [session(2, [set("bb-bench", 60, 10)])];
+    expect(crossEstimate(ex("bb-bench"), withKnownLifts(history, known), "8-12", 2.5)).toBeNull();
+    // and a logged set is the reference for a related exercise, not the entry
+    const e = crossEstimate(ex("db-bench"), withKnownLifts(history, known), "8-12", 2)!;
+    expect(e.fromSet.weight).toBe(60);
+  });
+
+  it("changes nothing when there are none", () => {
+    const history = [session(2, [set("bb-bench", 60, 10)])];
+    expect(withKnownLifts(history, [])).toBe(history);
+  });
+
+  it("gives a first plan starting weights without any history", async () => {
+    const { generateWorkout } = await import("../generator");
+    const plan = generateWorkout({
+      duration: 30,
+      equipment: ["dumbbell", "bench"],
+      targets: ["Mid Chest"],
+      knownLifts: known,
     });
     const db = plan.find((p) => p.exercise_id === "db-bench");
     expect(db?.suggested_basis).toBe("published");

@@ -49,7 +49,7 @@ import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
-import { crossEstimate, heavierHint } from "../lib/gym/startWeight";
+import { crossEstimate, heavierHint, withKnownLifts } from "../lib/gym/startWeight";
 import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
 import {
@@ -105,6 +105,7 @@ function WorkoutHome() {
     activeProfileId,
     activeWorkout,
     workouts,
+    knownLifts,
     update,
     startWorkout,
     hydrated,
@@ -269,6 +270,7 @@ function WorkoutHome() {
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
         history: workouts,
+        knownLifts,
         profile,
         bodyKg: latestBodyKg(weightLog, nutritionProfile),
         ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
@@ -1230,7 +1232,12 @@ function WorkoutHome() {
                   // Never done: a starting weight from a related exercise.
                   const estimate = suggestion
                     ? null
-                    : crossEstimate(ex, workouts, p.target_reps, plateStep(ex, profile));
+                    : crossEstimate(
+                        ex,
+                        withKnownLifts(workouts, knownLifts),
+                        p.target_reps,
+                        plateStep(ex, profile),
+                      );
                   const pick = suggestion ?? estimate;
                   return {
                     ...rest,

@@ -2,7 +2,7 @@ import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
 import { isNiche, popularityOf } from "./exercisePopularity";
-import { crossEstimate } from "./startWeight";
+import { crossEstimate, withKnownLifts, type KnownLift } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
@@ -229,6 +229,9 @@ interface GenerateArgs {
   avoided?: string[];
   /** Finished workout history — used to attach progressive-overload weight suggestions. */
   history?: Workout[];
+  /** Lifts entered in Settings → Your current lifts: starting weights for
+   *  exercises not logged in the app yet (startWeight.ts). */
+  knownLifts?: KnownLift[];
   /** Active equipment profile — enables plate/dumbbell-realistic rounding of
    *  suggested weights (see lib/gym/plates.ts's `plateStep`). Falls back to a
    *  plain 0.5kg round when omitted. */
@@ -377,6 +380,7 @@ export function generateWorkout({
   loved = [],
   avoided = [],
   history = [],
+  knownLifts = [],
   profile,
   bodyKg = null,
   intensityMultiplier = 1,
@@ -412,8 +416,11 @@ export function generateWorkout({
       ? suggestWeight(choice.id, history, target_reps, step, undefined, bw ? bodyKg : null)
       : null;
     // Never done: a starting weight from a related exercise (startWeight.ts).
+    // Lifts entered in Settings count too, after anything logged in the app.
     const estimate =
-      !own && history.length ? crossEstimate(choice, history, target_reps, step) : null;
+      !own && (history.length || knownLifts.length)
+        ? crossEstimate(choice, withKnownLifts(history, knownLifts), target_reps, step)
+        : null;
     const suggestion = own ?? estimate;
     // A deload's intensity applies to what's actually lifted — for a
     // bodyweight exercise that's bodyweight plus the external load, so
