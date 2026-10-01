@@ -16,7 +16,6 @@ import {
   Settings2,
   Snowflake,
   Sparkles,
-  Timer,
   TrendingUp,
   X,
   Zap,
@@ -50,7 +49,7 @@ import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
-import { plannedDate } from "../lib/gym/schedule";
+import { mondayOf, plannedDate } from "../lib/gym/schedule";
 import {
   musclesForSlot,
   splitDayLabel,
@@ -110,6 +109,8 @@ function WorkoutHome() {
     avatarId,
     weightLog,
     nutritionProfile,
+    cardioPlan,
+    cardioSessions,
   } = useGym();
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
@@ -393,6 +394,43 @@ function WorkoutHome() {
 
   const hasPlan = !!(program || weeklyScheme);
   /** The program or weekly-plan card, or the prompt to set one up. */
+  /** One-tap starts: the last three sessions (the first is "Repeat last
+   *  workout") and saved templates, in one row instead of two sections. */
+  const quickStarts: {
+    key: string;
+    icon: "repeat" | "template";
+    eyebrow: string;
+    title: string;
+    detail: string;
+    start: () => void;
+  }[] = [
+    ...workouts.slice(0, 3).map((w, i) => ({
+      key: w.id,
+      icon: "repeat" as const,
+      eyebrow:
+        i === 0
+          ? t.generate.lastWorkout
+          : new Date(w.date).toLocaleDateString(locale, { day: "numeric", month: "short" }),
+      title: w.target_muscles.join(" · ") || t.generate.fullBody,
+      detail: t.generate.exerciseCount(w.plan.length, estimateMinutes(w.plan)),
+      start: () => repeat(w),
+    })),
+    ...workoutTemplates.slice(0, 6).map((tpl) => ({
+      key: tpl.id,
+      icon: "template" as const,
+      eyebrow: t.generate.template,
+      title: tpl.name,
+      detail: t.generate.exerciseCount(tpl.plan.length, estimateMinutes(tpl.plan)),
+      start: () => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles),
+    })),
+  ];
+  // Cardio this week only when there's cardio to show (a plan, or a session
+  // logged this week); setting one up lives on History → Activity.
+  const showCardio =
+    hydrated &&
+    (cardioPlan.length > 0 ||
+      cardioSessions.some((c) => Date.parse(c.date) >= mondayOf(new Date()).getTime()));
+
   const planCard = (
     <>
       <SectionLabel>{program ? t.generate.yourProgram : t.generate.thisWeek}</SectionLabel>
@@ -575,65 +613,60 @@ function WorkoutHome() {
         </Card>
       ) : null}
 
-      {/* With a program or weekly plan, today's session is the first thing
-          on the page; time and gear are settings under it. Without one the
-          page reads as the generator: time, gear, then the optional plan. */}
+      {/* Your plan first (today's session), then one row of one-tap
+          starts, then the builder. The page used to stack a big Repeat card
+          and its own row, saved templates, cardio, then time, equipment and
+          two switches as four separate blocks before the muscle map. */}
       {hasPlan ? planCard : null}
-      {hasPlan && hydrated ? <CardioWeekCard className="mb-4" /> : null}
+      {showCardio ? <CardioWeekCard className="mb-4" /> : null}
 
-      {hydrated && !activeWorkout && workouts.length > 0 ? (
-        <div className="mb-4">
-          <Card className="p-4 glow" onClick={() => repeat(workouts[0]!)}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-                  <Repeat className="size-3.5" /> {t.generate.repeatLastWorkout}
-                </p>
-                <p className="mt-1 truncate text-lg font-bold">
-                  {workouts[0]!.target_muscles.join(" · ") || t.generate.fullBody}
-                </p>
-                <p className="text-[13px] text-muted-foreground">
-                  {t.generate.exerciseCount(
-                    workouts[0]!.plan.length,
-                    estimateMinutes(workouts[0]!.plan),
-                  )}
-                </p>
-              </div>
-              <Play className="size-6 shrink-0 text-primary-text" />
-            </div>
-          </Card>
-          {workouts.length > 1 ? (
-            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-              {workouts.slice(1, 4).map((w) => (
-                <button
-                  key={w.id}
-                  onClick={() => repeat(w)}
-                  className="glass shrink-0 rounded-2xl px-4 py-2 text-left"
+      {hydrated && !activeWorkout && quickStarts.length > 0 ? (
+        <>
+          <div className="flex items-end justify-between gap-2">
+            <SectionLabel>{t.generate.quickStart}</SectionLabel>
+            {workoutTemplates.length ? (
+              <button
+                onClick={() => setTemplatesOpen(true)}
+                className="mb-1.5 text-[13px] font-semibold text-primary-text"
+              >
+                {t.common.manage}
+              </button>
+            ) : null}
+          </div>
+          <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4">
+            {quickStarts.map((q, i) => (
+              <button
+                key={q.key}
+                onClick={q.start}
+                className={`glass w-[14.5rem] shrink-0 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.985] ${
+                  i === 0 ? "ring-1 ring-primary/50" : ""
+                }`}
+              >
+                <p
+                  className={`flex items-center gap-1 truncate text-[11px] font-semibold uppercase tracking-wider ${
+                    i === 0 ? "text-primary-text" : "text-muted-foreground"
+                  }`}
                 >
-                  <p className="text-[13px] font-semibold">
-                    {w.target_muscles.join(" · ") || t.generate.fullBody}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {t.generate.setsAndDate(
-                      w.completed_sets.filter((s) => s.set_type === "working").length,
-                      new Date(w.date).toLocaleDateString(locale, {
-                        month: "short",
-                        day: "numeric",
-                      }),
-                    )}
-                  </p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+                  {q.icon === "template" ? (
+                    <Bookmark className="size-3 shrink-0" />
+                  ) : (
+                    <Repeat className="size-3 shrink-0" />
+                  )}
+                  <span className="truncate">{q.eyebrow}</span>
+                </p>
+                <p className="mt-1 truncate text-[15px] font-semibold">{q.title}</p>
+                <p className="truncate text-[12px] text-muted-foreground">{q.detail}</p>
+              </button>
+            ))}
+          </div>
+        </>
       ) : null}
 
-      <SectionLabel>{t.generate.availableTime}</SectionLabel>
-      <Card className="p-4">
-        {/* One row — the shortcuts and your own number — instead of the
-            shortcuts above a full-width minutes field. */}
-        <div className="flex items-center gap-2">
+      <SectionLabel>{t.generate.buildYourOwn}</SectionLabel>
+      {/* Time, equipment and the two switches as one grouped list, like an
+          iOS settings card, instead of four blocks. */}
+      <Card className="divide-y divide-border p-0">
+        <div className="flex items-center gap-2 px-4 py-3">
           {SHORTCUTS.map((d) => (
             <button
               key={d}
@@ -642,7 +675,7 @@ function WorkoutHome() {
                 setDuration(d);
                 setCustomInput(String(d));
               }}
-              className={`min-h-[44px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+              className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
                 duration === d
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-secondary-foreground"
@@ -652,7 +685,7 @@ function WorkoutHome() {
             </button>
           ))}
           <label
-            className={`flex min-h-[44px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+            className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
               SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
             }`}
           >
@@ -684,80 +717,62 @@ function WorkoutHome() {
             <span className="text-[12px] font-semibold text-muted-foreground">min</span>
           </label>
         </div>
-        <p className="mt-3 flex items-center gap-2 text-[13px] text-muted-foreground">
-          <Timer className="size-4 text-primary-text" />
-          {duration <= 30
-            ? t.generate.durationShort
-            : duration <= 45
-              ? t.generate.durationMedium
-              : t.generate.durationLong}
-        </p>
-      </Card>
-
-      <SectionLabel>{t.generate.equipmentProfile}</SectionLabel>
-      <Card className="p-4">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {profiles.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                haptic(12);
-                update({ activeProfileId: p.id });
-              }}
-              className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold ${
-                p.id === profile.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 py-2.5 pl-4 pr-2">
+          {profiles.length > 1 ? (
+            <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+              {profiles.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    haptic(12);
+                    update({ activeProfileId: p.id });
+                  }}
+                  className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                    p.id === profile.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{profile.name}</p>
+          )}
+          {/* The profile's own screen lists and edits the gear. */}
+          <Link
+            to="/equipment"
+            aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+          >
+            <Settings2 className="size-4" />
+          </Link>
         </div>
-        {/* One line, not the full gear list — that ran to a paragraph of
-            17 items. The profile's own screen lists and edits it. */}
-        <Link
-          to="/equipment"
-          className="mt-3 flex items-center justify-between gap-2 text-[13px] text-muted-foreground"
-        >
-          <span>{t.generate.equipmentSummary(profile.active_equipment_ids.length)}</span>
-          <span className="flex items-center gap-0.5 font-semibold text-foreground">
-            {t.generate.editEquipment} <ChevronRight className="size-4" />
-          </span>
-        </Link>
+        <SwitchRow
+          label={t.generate.supersets}
+          desc={t.generate.supersetsDesc}
+          ariaLabel={t.generate.enableSupersets}
+          on={supersetsEnabled}
+          onToggle={() => {
+            haptic(12);
+            update({ supersetsEnabled: !supersetsEnabled });
+          }}
+        />
+        <SwitchRow
+          label={t.generate.warmups}
+          desc={t.generate.warmupsDesc}
+          ariaLabel={t.generate.warmups}
+          on={warmupsEnabled}
+          onToggle={() => {
+            haptic(12);
+            update({ warmupsEnabled: !warmupsEnabled });
+          }}
+        />
       </Card>
-
-      {!hasPlan ? planCard : null}
-      {!hasPlan && hydrated ? <CardioWeekCard className="mb-4" /> : null}
-
-      {hydrated && workoutTemplates.length > 0 ? (
-        <div className="mb-4">
-          <SectionLabel>{t.generate.savedTemplates}</SectionLabel>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {workoutTemplates.slice(0, 6).map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles)}
-                className="glass shrink-0 rounded-2xl px-4 py-2 text-left active:scale-[0.985]"
-              >
-                <p className="text-[13px] font-semibold">{tpl.name}</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {t.generate.exerciseCount(tpl.plan.length, estimateMinutes(tpl.plan))}
-                </p>
-              </button>
-            ))}
-            <button
-              onClick={() => setTemplatesOpen(true)}
-              className="glass shrink-0 rounded-2xl px-4 py-2 text-[13px] font-semibold text-primary-text active:scale-[0.985]"
-            >
-              {t.common.manage}
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       {hydrated && !weeklyScheme && !program && workouts.length > 0 && regions.length === 0 ? (
-        <Card className="mb-4 p-4">
+        <Card className="mt-3 p-4">
           <div className="flex items-start gap-3">
             <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary-text" />
             <div className="min-w-0 flex-1">
@@ -912,55 +927,6 @@ function WorkoutHome() {
           </div>
         </div>
       ) : null}
-
-      <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold">{t.generate.supersets}</p>
-          <p className="text-[12.5px] text-muted-foreground">{t.generate.supersetsDesc}</p>
-        </div>
-        <button
-          role="switch"
-          aria-checked={supersetsEnabled}
-          aria-label={t.generate.enableSupersets}
-          onClick={() => {
-            haptic(12);
-            update({ supersetsEnabled: !supersetsEnabled });
-          }}
-          className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
-            supersetsEnabled ? "bg-primary" : "bg-secondary"
-          }`}
-        >
-          <span
-            className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
-              supersetsEnabled ? "left-[22px]" : "left-[2px]"
-            }`}
-          />
-        </button>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold">{t.generate.warmups}</p>
-          <p className="text-[12.5px] text-muted-foreground">{t.generate.warmupsDesc}</p>
-        </div>
-        <button
-          role="switch"
-          aria-checked={warmupsEnabled}
-          aria-label={t.generate.warmups}
-          onClick={() => {
-            haptic(12);
-            update({ warmupsEnabled: !warmupsEnabled });
-          }}
-          className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
-            warmupsEnabled ? "bg-primary" : "bg-secondary"
-          }`}
-        >
-          <span
-            className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
-              warmupsEnabled ? "left-[22px]" : "left-[2px]"
-            }`}
-          />
-        </button>
-      </div>
 
       {/* Sticky: the form above is about three screens tall, so the button
           stays in reach just above the tab bar (whose pill top sits
@@ -1131,6 +1097,10 @@ function WorkoutHome() {
         </>
       ) : null}
 
+      {/* Without a plan, the offer to set one up comes after the builder,
+          and not while a generated plan is showing above its Start bar. */}
+      {hydrated && !hasPlan && !shownPlan ? <div className="mt-6">{planCard}</div> : null}
+
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
@@ -1190,5 +1160,45 @@ function WorkoutHome() {
         onStart={startTemplate}
       />
     </Screen>
+  );
+}
+
+/** One row of the builder's settings card: a label and short description
+ *  with an iOS switch. The knob is always white, like the platform's. */
+function SwitchRow({
+  label,
+  desc,
+  ariaLabel,
+  on,
+  onToggle,
+}: {
+  label: string;
+  desc: string;
+  ariaLabel: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-[15px] font-semibold">{label}</p>
+        <p className="text-[12px] leading-snug text-muted-foreground">{desc}</p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={on}
+        aria-label={ariaLabel}
+        onClick={onToggle}
+        className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
+          on ? "bg-primary" : "bg-secondary"
+        }`}
+      >
+        <span
+          className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
+            on ? "left-[22px]" : "left-[2px]"
+          }`}
+        />
+      </button>
+    </div>
   );
 }
