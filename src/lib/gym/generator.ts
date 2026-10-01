@@ -2,6 +2,7 @@ import { isAntagonistPair } from "./antagonist";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
 import { isNiche, popularityOf } from "./exercisePopularity";
+import { crossEstimate } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
@@ -407,9 +408,13 @@ export function generateWorkout({
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
     const step = profile ? plateStep(choice, profile) : 0.5;
     const bw = isBodyweightExercise(choice);
-    const suggestion = history.length
+    const own = history.length
       ? suggestWeight(choice.id, history, target_reps, step, undefined, bw ? bodyKg : null)
       : null;
+    // Never done: a starting weight from a related exercise (startWeight.ts).
+    const estimate =
+      !own && history.length ? crossEstimate(choice, history, target_reps, step) : null;
+    const suggestion = own ?? estimate;
     // A deload's intensity applies to what's actually lifted — for a
     // bodyweight exercise that's bodyweight plus the external load, so
     // without a known bodyweight it's left as is.
@@ -431,6 +436,7 @@ export function generateWorkout({
       rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
       ...(suggestedWeight !== undefined ? { suggested_weight: suggestedWeight } : {}),
       ...(suggestion ? { suggested_reps: suggestion.reps } : {}),
+      ...(estimate && estimate.basis !== "personal" ? { suggested_basis: estimate.basis } : {}),
     };
   };
 

@@ -230,6 +230,8 @@ const en = {
         "Which exercises are in the list and offered as swaps (muscle-length, EMG and training studies)",
       exercisePopularity:
         "Which exercises are suggested first: the best-known ones, by how often people look them up",
+      startWeights:
+        'Starting weights from related exercises, and "you could go heavier" when your RPE showed reps to spare',
       progression:
         "When to add weight (two sessions in a row at the top of the range), and by how much (2.5% upper body, 5% lower body)",
       repRanges: "Rep ranges",
@@ -362,6 +364,9 @@ const en = {
     restSuffix: (seconds: number) => `${seconds}s rest · `,
     suggestedWeight: (load: string, reps?: number) =>
       `Suggested ${load}${reps ? ` × ${reps}` : ""}`,
+    estimatedWeight: (load: string, reps: number | undefined, rough: boolean) =>
+      `≈ ${load}${reps ? ` × ${reps}` : ""} · ${rough ? "rough estimate" : "estimate"}`,
+    couldGoHeavier: (load: string, reps: number) => `You could go heavier: ${load} × ${reps}`,
     moveUp: "Move up",
     moveDown: "Move down",
     swapExercise: "Swap exercise",
@@ -456,6 +461,14 @@ const en = {
     firstTime: "First time on this one",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Suggested ${load} × ${reps} — ${reason}`,
+    estimatedFrom: (name: string, load: string, reps: number, rough: boolean) =>
+      `${rough ? "Rough estimate" : "Estimated"} from your ${name} (${load} × ${reps}) — adjust after your first set`,
+    heavierNote: (load: string, reps: number, why: string) =>
+      `You could go heavier: ${load} × ${reps} — ${why}`,
+    heavierWhyRpe: (rpe: number) => `your last sets were RPE ${rpe}`,
+    heavierWhyPersonal: (name: string) => `you've got stronger on ${name} since`,
+    heavierWhyPublished: (name: string) => `based on your ${name}`,
+    useWeight: "Use",
     lessWeight: "Less weight",
     moreWeight: "More weight",
     weightAriaLabel: "Weight in kg",
@@ -1474,6 +1487,8 @@ const nl: Dict = {
         "Welke oefeningen in de lijst staan en als alternatief worden aangeboden (onderzoek naar spierlengte, EMG en training)",
       exercisePopularity:
         "Welke oefeningen als eerste worden voorgesteld: de bekendste, naar hoe vaak mensen ze opzoeken",
+      startWeights:
+        'Startgewichten op basis van verwante oefeningen, en "je kunt zwaarder" als je RPE liet zien dat er reps over waren',
       progression:
         "Wanneer je gewicht toevoegt (twee sessies op rij bovenin de range) en hoeveel (2,5% bovenlichaam, 5% onderlichaam)",
       repRanges: "Herhalingsbereiken",
@@ -1610,6 +1625,9 @@ const nl: Dict = {
     restSuffix: (seconds: number) => `${seconds}s rust · `,
     suggestedWeight: (load: string, reps?: number) =>
       `Voorgesteld ${load}${reps ? ` × ${reps}` : ""}`,
+    estimatedWeight: (load: string, reps: number | undefined, rough: boolean) =>
+      `≈ ${load}${reps ? ` × ${reps}` : ""} · ${rough ? "ruwe schatting" : "schatting"}`,
+    couldGoHeavier: (load: string, reps: number) => `Je kunt zwaarder: ${load} × ${reps}`,
     moveUp: "Omhoog verplaatsen",
     moveDown: "Omlaag verplaatsen",
     swapExercise: "Oefening wisselen",
@@ -1704,6 +1722,14 @@ const nl: Dict = {
     firstTime: "Eerste keer met deze oefening",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Voorgesteld ${load} × ${reps} — ${reason}`,
+    estimatedFrom: (name: string, load: string, reps: number, rough: boolean) =>
+      `${rough ? "Ruwe schatting" : "Geschat"} op basis van je ${name} (${load} × ${reps}) — pas aan na je eerste set`,
+    heavierNote: (load: string, reps: number, why: string) =>
+      `Je kunt zwaarder: ${load} × ${reps} — ${why}`,
+    heavierWhyRpe: (rpe: number) => `je laatste sets waren RPE ${rpe}`,
+    heavierWhyPersonal: (name: string) => `je bent sindsdien sterker geworden op ${name}`,
+    heavierWhyPublished: (name: string) => `op basis van je ${name}`,
+    useWeight: "Gebruik",
     lessWeight: "Minder gewicht",
     moreWeight: "Meer gewicht",
     weightAriaLabel: "Gewicht in kg",

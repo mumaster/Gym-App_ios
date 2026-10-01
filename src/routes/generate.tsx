@@ -49,6 +49,7 @@ import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
+import { crossEstimate, heavierHint } from "../lib/gym/startWeight";
 import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
 import {
@@ -1102,12 +1103,43 @@ function WorkoutHome() {
                       (p.suggested_weight !== 0 || isBodyweightExercise(ex)) ? (
                         <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary-text">
                           <TrendingUp className="size-3.5" />{" "}
-                          {t.generate.suggestedWeight(
-                            formatLoad(p.suggested_weight, isBodyweightExercise(ex), t.session.bw),
-                            p.suggested_reps,
-                          )}
+                          {p.suggested_basis
+                            ? t.generate.estimatedWeight(
+                                formatLoad(p.suggested_weight, false, t.session.bw),
+                                p.suggested_reps,
+                                p.suggested_basis === "rough",
+                              )
+                            : t.generate.suggestedWeight(
+                                formatLoad(
+                                  p.suggested_weight,
+                                  isBodyweightExercise(ex),
+                                  t.session.bw,
+                                ),
+                                p.suggested_reps,
+                              )}
                         </p>
                       ) : null}
+                      {(() => {
+                        // Your own numbers say heavier (startWeight.ts):
+                        // only for a suggestion from this exercise's history.
+                        if (p.suggested_basis || p.suggested_weight == null || !p.suggested_reps)
+                          return null;
+                        const hint = heavierHint(
+                          ex,
+                          workouts,
+                          { weight: p.suggested_weight, reps: p.suggested_reps },
+                          plateStep(ex, profile),
+                        );
+                        return hint ? (
+                          <p className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-foreground">
+                            <ArrowUp className="size-3.5 text-primary-text" />{" "}
+                            {t.generate.couldGoHeavier(
+                              formatLoad(hint.weight, false, t.session.bw),
+                              hint.reps,
+                            )}
+                          </p>
+                        ) : null;
+                      })()}
                     </div>
                     <div className="flex gap-1">
                       <button
@@ -1181,7 +1213,12 @@ function WorkoutHome() {
             cur
               ? cur.map((p, i) => {
                   if (i !== swapIndex) return p;
-                  const { suggested_weight: _dropped, suggested_reps: _droppedReps, ...rest } = p;
+                  const {
+                    suggested_weight: _dropped,
+                    suggested_reps: _droppedReps,
+                    suggested_basis: _droppedBasis,
+                    ...rest
+                  } = p;
                   const suggestion = suggestWeight(
                     ex.id,
                     workouts,
@@ -1190,11 +1227,17 @@ function WorkoutHome() {
                     t.progression,
                     isBodyweightExercise(ex) ? latestBodyKg(weightLog, nutritionProfile) : null,
                   );
+                  // Never done: a starting weight from a related exercise.
+                  const estimate = suggestion
+                    ? null
+                    : crossEstimate(ex, workouts, p.target_reps, plateStep(ex, profile));
+                  const pick = suggestion ?? estimate;
                   return {
                     ...rest,
                     exercise_id: ex.id,
-                    ...(suggestion
-                      ? { suggested_weight: suggestion.weight, suggested_reps: suggestion.reps }
+                    ...(pick ? { suggested_weight: pick.weight, suggested_reps: pick.reps } : {}),
+                    ...(estimate && estimate.basis !== "personal"
+                      ? { suggested_basis: estimate.basis }
                       : {}),
                   };
                 })

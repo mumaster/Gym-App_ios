@@ -16,6 +16,7 @@ import {
   Repeat,
   TrendingDown,
   TrendingUp,
+  ArrowUp,
   Trophy,
   Undo2,
   Youtube,
@@ -44,6 +45,7 @@ import {
 import { plateStep } from "../lib/gym/plates";
 import { estimated1RM } from "../lib/gym/progress";
 import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
+import { crossEstimate, heavierHint } from "../lib/gym/startWeight";
 import {
   cancelRestNotification,
   ensurePushSubscription,
@@ -1407,6 +1409,20 @@ function ExerciseBlock({
     [workouts, planned.exercise_id, planned.target_reps, step, t, bodyKg],
   );
 
+  /** Never done: a starting weight from a related exercise; done: a
+   *  heavier weight your own numbers support (startWeight.ts). */
+  const estimate = useMemo(
+    () =>
+      exercise && !previous ? crossEstimate(exercise, workouts, planned.target_reps, step) : null,
+    [exercise, previous, workouts, planned.target_reps, step],
+  );
+  const hint = useMemo(
+    () => (exercise && suggestion ? heavierHint(exercise, workouts, suggestion, step) : null),
+    [exercise, suggestion, workouts, step],
+  );
+  const estimateFrom = estimate ? exerciseById(estimate.fromId) : undefined;
+  const hintFrom = hint?.fromId ? exerciseById(hint.fromId) : undefined;
+
   useEffect(() => {
     if (!warmupDue) setSetType((t) => (t === "warmup" ? "working" : t));
   }, [warmupDue]);
@@ -1425,7 +1441,8 @@ function ExerciseBlock({
   // Working sets carry on from the last *working* set — after warm-ups the
   // last logged set is a light one, which used to become the prefill.
   const lastWorking = [...logged].reverse().find((s) => s.set_type === "working");
-  const workingRef = lastWorking?.weight ?? suggestion?.weight ?? previous?.weight ?? null;
+  const workingRef =
+    lastWorking?.weight ?? suggestion?.weight ?? estimate?.weight ?? previous?.weight ?? null;
   const gear = exercise?.equipment_required ?? [];
   const warmupCount = Math.max(plannedWarmups, 1);
   // Sourced warm-up ramp (see warmup.ts); not for bodyweight exercises,
@@ -1446,6 +1463,7 @@ function ExerciseBlock({
       : (rpeAdjustment?.weight ??
         lastWorking?.weight ??
         suggestion?.weight ??
+        estimate?.weight ??
         previous?.weight ??
         0);
   // Reps carry on from the last working set too, like the weight; before
@@ -1454,7 +1472,7 @@ function ExerciseBlock({
   // field could read 12.)
   const prefillReps = warmup
     ? warmup.reps
-    : (lastWorking?.reps ?? suggestion?.reps ?? previous?.reps ?? targetTopReps);
+    : (lastWorking?.reps ?? suggestion?.reps ?? estimate?.reps ?? previous?.reps ?? targetTopReps);
 
   if (!exercise) return null;
 
@@ -1799,6 +1817,46 @@ function ExerciseBlock({
               </p>
             ) : null}
 
+            {!lastLogged && estimate && estimateFrom && setType === "working" ? (
+              <p className="rounded-xl bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">
+                {t.session.estimatedFrom(
+                  estimateFrom.name,
+                  load(estimate.fromSet.weight),
+                  estimate.fromSet.reps,
+                  estimate.basis === "rough",
+                )}
+              </p>
+            ) : null}
+
+            {!lastLogged && hint ? (
+              // Your own numbers say heavier than the suggestion: a note, and
+              // Use fills the fields; the suggestion itself stays as it was.
+              <div className="flex items-center gap-2 rounded-xl bg-primary/15 py-1.5 pl-3 pr-1.5">
+                <ArrowUp className="size-4 shrink-0 text-primary-text" />
+                <p className="min-w-0 flex-1 text-[12.5px] font-semibold leading-snug text-foreground">
+                  {t.session.heavierNote(
+                    load(hint.weight),
+                    hint.reps,
+                    hint.why === "rpe"
+                      ? t.session.heavierWhyRpe(hint.rpe!)
+                      : hint.why === "personal"
+                        ? t.session.heavierWhyPersonal(hintFrom?.name ?? "")
+                        : t.session.heavierWhyPublished(hintFrom?.name ?? ""),
+                  )}
+                </p>
+                <button
+                  onClick={() => {
+                    haptic(12);
+                    setWeight(String(hint.weight));
+                    setReps(String(hint.reps));
+                  }}
+                  className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12.5px] font-bold text-primary-foreground active:scale-95"
+                >
+                  {t.session.useWeight}
+                </button>
+              </div>
+            ) : null}
+
             {!lastLogged && suggestion && suggestion.direction !== "same" ? (
               <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary-text">
                 {suggestion.direction === "up" ? (
@@ -2046,11 +2104,25 @@ function NextUpPreview({
             bodyKg,
           );
           const previous = lastPerformance(planned.exercise_id);
+          const estimate =
+            suggestion || previous
+              ? null
+              : crossEstimate(
+                  exercise,
+                  workouts,
+                  planned.target_reps,
+                  plateStep(exercise, profile),
+                );
           const nums = (planned.target_reps.match(/\d+/g) ?? []).map(Number);
           // A bodyweight exercise starts at bodyweight (0 external load),
           // like its card; a loaded one without history has no weight yet.
-          const weight = suggestion?.weight ?? previous?.weight ?? (bw ? 0 : null);
-          const reps = suggestion?.reps ?? previous?.reps ?? (nums.length ? Math.max(...nums) : 8);
+          const weight =
+            suggestion?.weight ?? estimate?.weight ?? previous?.weight ?? (bw ? 0 : null);
+          const reps =
+            suggestion?.reps ??
+            estimate?.reps ??
+            previous?.reps ??
+            (nums.length ? Math.max(...nums) : 8);
           const note = exerciseNotes[planned.exercise_id];
           return (
             <div
@@ -2066,6 +2138,7 @@ function NextUpPreview({
                 </p>
                 {weight != null ? (
                   <span className="tabular shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-bold">
+                    {estimate ? "≈ " : ""}
                     {formatLoad(weight, bw, t.session.bw)} × {reps}
                   </span>
                 ) : (

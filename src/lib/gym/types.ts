@@ -94,6 +94,10 @@ export interface PlannedExercise {
   suggested_weight?: number;
   /** Reps to aim for on working sets, paired with `suggested_weight` — see lib/gym/progression.ts. */
   suggested_reps?: number;
+  /** Set when `suggested_weight` is a starting weight worked out from
+   *  another exercise (lib/gym/startWeight.ts) rather than this one's own
+   *  history: from a published ratio, or a rough estimate. */
+  suggested_basis?: "published" | "rough";
 }
 
 export interface Workout {

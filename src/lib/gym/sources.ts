@@ -20,6 +20,7 @@ export type SourceId =
   | "rest"
   | "exerciseSelection"
   | "exercisePopularity"
+  | "startWeights"
   | "progression"
   | "repRanges"
   | "rpe"
@@ -51,6 +52,18 @@ export type SourceId =
   | "water";
 
 export const SOURCES: SourceEntry[] = [
+  {
+    id: "startWeights",
+    group: "training",
+    refs: [
+      "Zourdos et al., J Strength Cond Res 2016; Helms et al., Strength Cond J 2016 (RPE as reps in reserve)",
+      "Saeterbakken et al., J Strength Cond Res 2011 (barbell vs dumbbell bench press 1RM)",
+      "Korean J Appl Biomech 2006 (flat vs incline bench press 1RM regression)",
+      "Cotterman et al., J Strength Cond Res 2005 (Smith machine vs free-weight bench press 1RM)",
+      "Saeterbakken & Fimland, J Strength Cond Res 2013 (barbell vs dumbbell, seated vs standing shoulder press 1RM)",
+      "Rough estimates between other exercises have no published source and are marked as rough in the app",
+    ],
+  },
   {
     id: "exercisePopularity",
     group: "training",
