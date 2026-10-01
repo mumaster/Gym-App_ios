@@ -19,9 +19,16 @@ import { Card } from "./Screen";
  * This week's cardio: moderate-equivalent minutes against the WHO minimum,
  * a Monday–Sunday strip (a filled mark for a day with cardio logged, a ring
  * for planned cardio still to do), and the Log / plan buttons. Shown on the
- * Workout tab and on History.
+ * Workout tab and on History. `compact` (the Workout tab) leaves out the
+ * explanation lines; History → Activity keeps them.
  */
-export function CardioWeekCard({ className = "" }: { className?: string }) {
+export function CardioWeekCard({
+  className = "",
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
   const t = useTranslation();
   const locale = useLocale();
   const { cardioSessions, cardioPlan, hydrated } = useGym();
@@ -71,9 +78,11 @@ export function CardioWeekCard({ className = "" }: { className?: string }) {
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
         </div>
-        <p className="mt-1.5 text-[12px] text-muted-foreground">
-          {minutes >= WHO_WEEKLY_MINUTES ? t.cardio.reached : t.cardio.explain}
-        </p>
+        {compact ? null : (
+          <p className="mt-1.5 text-[12px] text-muted-foreground">
+            {minutes >= WHO_WEEKLY_MINUTES ? t.cardio.reached : t.cardio.explain}
+          </p>
+        )}
 
         <div className="mt-3 grid grid-cols-7">
           {days.map((d) => {
@@ -113,7 +122,7 @@ export function CardioWeekCard({ className = "" }: { className?: string }) {
           })}
         </div>
 
-        {!cardioPlan.length && !cardioSessions.length ? (
+        {!compact && !cardioPlan.length && !cardioSessions.length ? (
           <p className="mt-3 text-[13px] text-muted-foreground">{t.cardio.noPlan}</p>
         ) : null}
 

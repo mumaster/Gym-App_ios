@@ -35,6 +35,7 @@ import {
   trainingDaysThisWeek,
 } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
+import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import type { CardioSession, Muscle, Workout } from "../lib/gym/types";
 
 /** A row in the sessions list: a Forge strength session or watch-only cardio. */
@@ -172,7 +173,9 @@ function HistoryScreen() {
     <Screen
       title={t.history.title}
       subtitle={t.history.completedSessions(workouts.length + cardioSessions.length)}
-      toolbar={<HistoryTabs value={tab} onChange={setTab} />}
+      toolbar={
+        <SegmentedTabs tabs={HISTORY_TABS} value={tab} onChange={setTab} labels={t.history.tabs} />
+      }
     >
       {tab === "sessions" ? (
         <>
@@ -506,37 +509,6 @@ function HistoryScreen() {
         </>
       ) : null}
     </Screen>
-  );
-}
-
-/** iOS-style segmented control for History's sub-tabs, pinned in the
- *  sticky header so switching never needs a scroll back up. */
-function HistoryTabs({
-  value,
-  onChange,
-}: {
-  value: HistoryTab;
-  onChange: (tab: HistoryTab) => void;
-}) {
-  const t = useTranslation();
-  return (
-    <div role="tablist" className="grid grid-cols-3 gap-1 rounded-full bg-secondary p-1">
-      {HISTORY_TABS.map((id) => (
-        <button
-          key={id}
-          role="tab"
-          aria-selected={id === value}
-          onClick={() => onChange(id)}
-          className={`min-h-[34px] rounded-full text-[13.5px] font-semibold transition-colors ${
-            id === value
-              ? "bg-background text-foreground shadow-[0_1px_3px_oklch(0_0_0/25%)]"
-              : "text-muted-foreground"
-          }`}
-        >
-          {t.history.tabs[id]}
-        </button>
-      ))}
-    </div>
   );
 }
 

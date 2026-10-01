@@ -28,6 +28,7 @@ import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
@@ -49,7 +50,7 @@ import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { todaysCheckIn } from "../lib/gym/readiness";
-import { mondayOf, plannedDate } from "../lib/gym/schedule";
+import { plannedDate } from "../lib/gym/schedule";
 import {
   musclesForSlot,
   splitDayLabel,
@@ -63,7 +64,15 @@ import { focusMuscles } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 
+/** With a program or weekly plan the tab has two sub-tabs: the plan (the
+ *  default) and building your own. Without one there are no tabs and the
+ *  page is the builder. */
+const WORKOUT_TABS = ["plan", "build"] as const;
+type WorkoutTab = (typeof WORKOUT_TABS)[number];
+
 export const Route = createFileRoute("/generate")({
+  validateSearch: (search: Record<string, unknown>): { tab?: "build" } =>
+    search["tab"] === "build" ? { tab: "build" } : {},
   head: () => ({
     meta: [
       { title: "Generate Workout — Forge" },
@@ -86,6 +95,8 @@ const SHORTCUTS = [30, 45, 60];
 
 function WorkoutHome() {
   const navigate = useNavigate();
+  const { tab = "plan" } = Route.useSearch();
+  const navigateTab = Route.useNavigate();
   const t = useTranslation();
   const locale = useLocale();
   const {
@@ -109,8 +120,6 @@ function WorkoutHome() {
     avatarId,
     weightLog,
     nutritionProfile,
-    cardioPlan,
-    cardioSessions,
   } = useGym();
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
@@ -223,19 +232,27 @@ function WorkoutHome() {
   useEffect(() => {
     if (!scrollToPlan) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    planRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    const el = planRef.current;
+    if (!el) return;
+    // Just under the sticky header, measured rather than assumed: it's
+    // taller with the sub-tabs, and the status-bar inset varies.
+    const headerBottom = document.querySelector("header")?.getBoundingClientRect().bottom ?? 0;
+    window.scrollTo({
+      top: window.scrollY + el.getBoundingClientRect().top - headerBottom - 12,
+      behavior: reduce ? "auto" : "smooth",
+    });
   }, [scrollToPlan]);
 
   /** Builds a plan from the current selection, or from `from` — a split day
    *  sets its muscles and builds in the same tap, before state has caught up. */
   const build = (
     nextVariation: number,
-    from?: { regions: RegionId[]; followingProgram: boolean },
+    from?: { regions: RegionId[]; focus?: TargetMuscle[]; followingProgram: boolean },
   ) => {
     haptic(25);
     setVariation(nextVariation);
     const rs = from?.regions ?? regions;
-    const fs = from ? [] : focus;
+    const fs = from ? (from.focus ?? []) : focus;
     const week =
       (from?.followingProgram ?? followingProgram) && program ? currentProgramWeek(program) : null;
     setPlanKey(inputKey(rs, fs));
@@ -268,7 +285,11 @@ function WorkoutHome() {
 
   // Builds, then brings the plan into view: it used to appear below the
   // fold, and the button only changed its label, so nothing seemed to happen.
-  const generate = (from?: { regions: RegionId[]; followingProgram: boolean }) => {
+  const generate = (from?: {
+    regions: RegionId[];
+    focus?: TargetMuscle[];
+    followingProgram: boolean;
+  }) => {
     if (generating) return;
     haptic(15);
     setGenerating(true);
@@ -280,6 +301,13 @@ function WorkoutHome() {
     }, 1500);
   };
   const shuffle = () => build(variation + 1);
+  /** The builder's Generate: an own session, never the plan's day, even
+   *  when the map still holds the muscles a "Build {day} day" filled in. */
+  const generateOwn = () => {
+    setFollowingSchedule(false);
+    setFollowingProgram(false);
+    generate({ regions, focus, followingProgram: false });
+  };
 
   const move = (index: number, delta: number) => {
     setPlan((cur) => {
@@ -424,16 +452,21 @@ function WorkoutHome() {
       start: () => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles),
     })),
   ];
-  // Cardio this week only when there's cardio to show (a plan, or a session
-  // logged this week); setting one up lives on History → Activity.
-  const showCardio =
-    hydrated &&
-    (cardioPlan.length > 0 ||
-      cardioSessions.some((c) => Date.parse(c.date) >= mondayOf(new Date()).getTime()));
+  /** Sub-tabs only once there's a plan to put on the first one. */
+  const tabbed = hydrated && hasPlan;
+  const setTab = (next: WorkoutTab) => {
+    setProposal(null);
+    void navigateTab({ search: next === "plan" ? {} : { tab: next }, replace: true });
+    window.scrollTo({ top: 0 });
+  };
+  const showBuilder = !tabbed || tab === "build";
+  /** A plan shows on the tab it was built from: a split day's on My plan,
+   *  the builder's on Build your own. */
+  const planOrigin: WorkoutTab = followingProgram || followingSchedule ? "plan" : "build";
+  const planHere = shownPlan && (!tabbed || planOrigin === tab) ? shownPlan : null;
 
   const planCard = (
     <>
-      <SectionLabel>{program ? t.generate.yourProgram : t.generate.thisWeek}</SectionLabel>
       <Card className="mb-4 p-4">
         {program && programWeek ? (
           <>
@@ -565,35 +598,49 @@ function WorkoutHome() {
             </button>
           </>
         ) : (
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[16px] font-semibold">{t.generate.planYourTraining}</p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">
-                {t.generate.planYourTrainingDesc}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col gap-2">
+          <>
+            {/* Text full width, the two choices side by side under it, like
+                the cardio card's buttons below it: stacked beside the text
+                they squeezed it to four lines. */}
+            <p className="text-[16px] font-semibold">{t.generate.planYourTraining}</p>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
+              {t.generate.planYourTrainingDesc}
+            </p>
+            <div className="mt-3 flex gap-2">
               <button
                 onClick={() => setPlanSheetOpen(true)}
-                className="min-h-[36px] rounded-full bg-secondary px-4 text-[13px] font-bold text-secondary-foreground active:scale-95"
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-muted text-[14px] font-bold text-secondary-foreground active:scale-95"
               >
                 {t.generate.weeklyPlan}
               </button>
               <button
                 onClick={() => setProgramSheetOpen(true)}
-                className="min-h-[36px] rounded-full bg-primary px-4 text-[13px] font-bold text-primary-foreground active:scale-95"
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-primary text-[14px] font-bold text-primary-foreground active:scale-95"
               >
                 {t.generate.program}
               </button>
             </div>
-          </div>
+          </>
         )}
       </Card>
     </>
   );
 
   return (
-    <Screen title={t.generate.title} subtitle={t.generate.subtitle}>
+    <Screen
+      title={t.generate.title}
+      subtitle={tabbed ? undefined : t.generate.subtitle}
+      toolbar={
+        tabbed ? (
+          <SegmentedTabs
+            tabs={WORKOUT_TABS}
+            value={tab}
+            onChange={setTab}
+            labels={t.generate.tabs}
+          />
+        ) : undefined
+      }
+    >
       {hydrated && activeWorkout ? (
         <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
           <div className="flex items-center justify-between">
@@ -613,362 +660,366 @@ function WorkoutHome() {
         </Card>
       ) : null}
 
-      {/* Your plan first (today's session), then one row of one-tap
-          starts, then the builder. The page used to stack a big Repeat card
-          and its own row, saved templates, cardio, then time, equipment and
-          two switches as four separate blocks before the muscle map. */}
-      {hasPlan ? planCard : null}
-      {showCardio ? <CardioWeekCard className="mb-4" /> : null}
-
-      {hydrated && !activeWorkout && quickStarts.length > 0 ? (
+      {/* My plan: the program or weekly plan, then this week's cardio (hidden
+          while a split day's plan shows under the card, so its Start bar
+          stays last on the page). */}
+      {tabbed && tab === "plan" ? (
         <>
-          <div className="flex items-end justify-between gap-2">
-            <SectionLabel>{t.generate.quickStart}</SectionLabel>
-            {workoutTemplates.length ? (
-              <button
-                onClick={() => setTemplatesOpen(true)}
-                className="mb-1.5 text-[13px] font-semibold text-primary-text"
-              >
-                {t.common.manage}
-              </button>
-            ) : null}
-          </div>
-          <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4">
-            {quickStarts.map((q, i) => (
-              <button
-                key={q.key}
-                onClick={q.start}
-                className={`glass w-[14.5rem] shrink-0 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.985] ${
-                  i === 0 ? "ring-1 ring-primary/50" : ""
-                }`}
-              >
-                <p
-                  className={`flex items-center gap-1 truncate text-[11px] font-semibold uppercase tracking-wider ${
-                    i === 0 ? "text-primary-text" : "text-muted-foreground"
-                  }`}
-                >
-                  {q.icon === "template" ? (
-                    <Bookmark className="size-3 shrink-0" />
-                  ) : (
-                    <Repeat className="size-3 shrink-0" />
-                  )}
-                  <span className="truncate">{q.eyebrow}</span>
-                </p>
-                <p className="mt-1 truncate text-[15px] font-semibold">{q.title}</p>
-                <p className="truncate text-[12px] text-muted-foreground">{q.detail}</p>
-              </button>
-            ))}
-          </div>
+          {planCard}
+          {planHere ? null : <CardioWeekCard compact />}
         </>
       ) : null}
 
-      <SectionLabel>{t.generate.buildYourOwn}</SectionLabel>
-      {/* Time, equipment and the two switches as one grouped list, like an
+      {/* Build your own: one row of one-tap starts, then the builder. */}
+      {showBuilder ? (
+        <>
+          {hydrated && !activeWorkout && quickStarts.length > 0 ? (
+            <>
+              <div className="flex items-end justify-between gap-2">
+                <SectionLabel>{t.generate.quickStart}</SectionLabel>
+                {workoutTemplates.length ? (
+                  <button
+                    onClick={() => setTemplatesOpen(true)}
+                    className="mb-1.5 text-[13px] font-semibold text-primary-text"
+                  >
+                    {t.common.manage}
+                  </button>
+                ) : null}
+              </div>
+              <div className="no-scrollbar -mx-4 mb-2 flex gap-2 overflow-x-auto px-4">
+                {quickStarts.map((q, i) => (
+                  <button
+                    key={q.key}
+                    onClick={q.start}
+                    className={`glass w-[14.5rem] shrink-0 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.985] ${
+                      i === 0 ? "ring-1 ring-primary/50" : ""
+                    }`}
+                  >
+                    <p
+                      className={`flex items-center gap-1 truncate text-[11px] font-semibold uppercase tracking-wider ${
+                        i === 0 ? "text-primary-text" : "text-muted-foreground"
+                      }`}
+                    >
+                      {q.icon === "template" ? (
+                        <Bookmark className="size-3 shrink-0" />
+                      ) : (
+                        <Repeat className="size-3 shrink-0" />
+                      )}
+                      <span className="truncate">{q.eyebrow}</span>
+                    </p>
+                    <p className="mt-1 truncate text-[15px] font-semibold">{q.title}</p>
+                    <p className="truncate text-[12px] text-muted-foreground">{q.detail}</p>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {tabbed ? null : <SectionLabel>{t.generate.buildYourOwn}</SectionLabel>}
+          {/* Time, equipment and the two switches as one grouped list, like an
           iOS settings card, instead of four blocks. */}
-      <Card className="divide-y divide-border p-0">
-        <div className="flex items-center gap-2 px-4 py-3">
-          {SHORTCUTS.map((d) => (
-            <button
-              key={d}
-              onClick={() => {
-                haptic(12);
-                setDuration(d);
-                setCustomInput(String(d));
-              }}
-              className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
-                duration === d
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {d}m
-            </button>
-          ))}
-          <label
-            className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
-              SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
-            }`}
-          >
-            <input
-              type="text"
-              inputMode="numeric"
-              aria-label={t.generate.minutes}
-              value={customInput}
-              onFocus={selectOnFocus}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (!DECIMAL_INPUT_RE.test(raw)) return;
-                setCustomInput(raw);
-                const n = Math.round(parseDecimal(raw));
-                if (raw !== "" && Number.isFinite(n) && n > 0) {
-                  setDuration(Math.min(180, n));
-                }
-              }}
-              onBlur={() => {
-                const clamped = Math.max(
-                  5,
-                  Math.min(180, Math.round(parseDecimal(customInput) || 45)),
-                );
-                setDuration(clamped);
-                setCustomInput(String(clamped));
-              }}
-              className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
-            />
-            <span className="text-[12px] font-semibold text-muted-foreground">min</span>
-          </label>
-        </div>
-        <div className="flex items-center gap-2 py-2.5 pl-4 pr-2">
-          {profiles.length > 1 ? (
-            <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
-              {profiles.map((p) => (
+          <Card className={`divide-y divide-border p-0 ${tabbed ? "mt-3" : ""}`}>
+            <div className="flex items-center gap-2 px-4 py-3">
+              {SHORTCUTS.map((d) => (
                 <button
-                  key={p.id}
+                  key={d}
                   onClick={() => {
                     haptic(12);
-                    update({ activeProfileId: p.id });
+                    setDuration(d);
+                    setCustomInput(String(d));
                   }}
-                  className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
-                    p.id === profile.id
+                  className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+                    duration === d
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  {p.name}
+                  {d}m
                 </button>
               ))}
+              <label
+                className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+                  SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
+                }`}
+              >
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label={t.generate.minutes}
+                  value={customInput}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (!DECIMAL_INPUT_RE.test(raw)) return;
+                    setCustomInput(raw);
+                    const n = Math.round(parseDecimal(raw));
+                    if (raw !== "" && Number.isFinite(n) && n > 0) {
+                      setDuration(Math.min(180, n));
+                    }
+                  }}
+                  onBlur={() => {
+                    const clamped = Math.max(
+                      5,
+                      Math.min(180, Math.round(parseDecimal(customInput) || 45)),
+                    );
+                    setDuration(clamped);
+                    setCustomInput(String(clamped));
+                  }}
+                  className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
+                />
+                <span className="text-[12px] font-semibold text-muted-foreground">min</span>
+              </label>
             </div>
-          ) : (
-            <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{profile.name}</p>
-          )}
-          {/* The profile's own screen lists and edits the gear. */}
-          <Link
-            to="/equipment"
-            aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-          >
-            <Settings2 className="size-4" />
-          </Link>
-        </div>
-        <SwitchRow
-          label={t.generate.supersets}
-          desc={t.generate.supersetsDesc}
-          ariaLabel={t.generate.enableSupersets}
-          on={supersetsEnabled}
-          onToggle={() => {
-            haptic(12);
-            update({ supersetsEnabled: !supersetsEnabled });
-          }}
-        />
-        <SwitchRow
-          label={t.generate.warmups}
-          desc={t.generate.warmupsDesc}
-          ariaLabel={t.generate.warmups}
-          on={warmupsEnabled}
-          onToggle={() => {
-            haptic(12);
-            update({ warmupsEnabled: !warmupsEnabled });
-          }}
-        />
-      </Card>
-
-      {hydrated && !weeklyScheme && !program && workouts.length > 0 && regions.length === 0 ? (
-        <Card className="mt-3 p-4">
-          <div className="flex items-start gap-3">
-            <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary-text" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-                {t.generate.recommendedToday}
-              </p>
-              <p className="mt-1 text-[15px] leading-snug">
-                {recommended
-                  .map((r) => t.generate.setsThisWeek(r.muscle, r.done, r.target))
-                  .join(" · ")}
-              </p>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                {t.generate.recommendedTodayDesc}
-              </p>
+            <div className="flex items-center gap-2 py-2.5 pl-4 pr-2">
+              {profiles.length > 1 ? (
+                <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                  {profiles.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        haptic(12);
+                        update({ activeProfileId: p.id });
+                      }}
+                      className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                        p.id === profile.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground"
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">{profile.name}</p>
+              )}
+              {/* The profile's own screen lists and edits the gear. */}
+              <Link
+                to="/equipment"
+                aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+              >
+                <Settings2 className="size-4" />
+              </Link>
             </div>
-            <button
-              onClick={applyRecommendation}
-              className="min-h-[36px] shrink-0 rounded-full bg-primary px-3.5 text-[13px] font-bold text-primary-foreground active:scale-95"
-            >
-              {t.generate.use}
-            </button>
-          </div>
-        </Card>
-      ) : null}
+            <SwitchRow
+              label={t.generate.supersets}
+              desc={t.generate.supersetsDesc}
+              ariaLabel={t.generate.enableSupersets}
+              on={supersetsEnabled}
+              onToggle={() => {
+                haptic(12);
+                update({ supersetsEnabled: !supersetsEnabled });
+              }}
+            />
+            <SwitchRow
+              label={t.generate.warmups}
+              desc={t.generate.warmupsDesc}
+              ariaLabel={t.generate.warmups}
+              on={warmupsEnabled}
+              onToggle={() => {
+                haptic(12);
+                update({ warmupsEnabled: !warmupsEnabled });
+              }}
+            />
+          </Card>
 
-      <SectionLabel>{t.generate.muscleMap}</SectionLabel>
+          {hydrated && !weeklyScheme && !program && workouts.length > 0 && regions.length === 0 ? (
+            <Card className="mt-3 p-4">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
+                    {t.generate.recommendedToday}
+                  </p>
+                  <p className="mt-1 text-[15px] leading-snug">
+                    {recommended
+                      .map((r) => t.generate.setsThisWeek(r.muscle, r.done, r.target))
+                      .join(" · ")}
+                  </p>
+                </div>
+                <button
+                  onClick={applyRecommendation}
+                  className="min-h-[36px] shrink-0 rounded-full bg-primary px-3.5 text-[13px] font-bold text-primary-foreground active:scale-95"
+                >
+                  {t.generate.use}
+                </button>
+              </div>
+            </Card>
+          ) : null}
 
-      {/* A pop-up pinned to the top of the screen, not a card in the page:
+          <SectionLabel>{t.generate.muscleMap}</SectionLabel>
+
+          {/* A pop-up pinned to the top of the screen, not a card in the page:
           in the page it pushed the map (and everything under it) down when it
           appeared and back up when dismissed. Above the sticky header (z-30),
           below sheets (z-50); only the banner itself takes taps. */}
-      {proposalPair ? (
-        <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4">
-          <div
-            role="status"
-            aria-live="polite"
-            className="pointer-events-auto flex w-full max-w-xl animate-[banner-down_0.25s_ease-out] flex-col gap-2 rounded-2xl border p-3 motion-reduce:animate-none"
-            style={{
-              // Solid: any translucency let the page title and cards
-              // underneath read through the sentence.
-              backgroundColor: "var(--background)",
-              borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
-              boxShadow: `0 8px 28px oklch(0 0 0 / 30%), 0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
-            }}
-          >
-            {/* Sentence and ✕ on one row, Add on its own: side by side, the
-                Dutch "+ Triceps toevoegen" squeezed the sentence to a word a line. */}
-            <div className="flex items-start gap-2.5">
-              <Sparkles className="mt-0.5 size-5 shrink-0" style={{ color: SUGGESTED_COLOR }} />
-              <p className="min-w-0 flex-1 pt-0.5 text-[13.5px] leading-snug">
-                {t.generate.pairSuggestion(
-                  regionById(proposal!).label,
-                  regionById(proposalPair.with).label,
-                  proposalPair.relation.includes("·")
-                    ? t.generate.pairSuggestionFor(proposalPair.relation.split("·")[1]!.trim())
-                    : "",
-                )}
-              </p>
-              <button
-                onClick={() => setProposal(null)}
-                aria-label={t.generate.dismissSuggestion}
-                className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+          {proposalPair ? (
+            <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4">
+              <div
+                role="status"
+                aria-live="polite"
+                className="pointer-events-auto flex w-full max-w-xl animate-[banner-down_0.25s_ease-out] flex-col gap-2 rounded-2xl border p-3 motion-reduce:animate-none"
+                style={{
+                  // Solid: any translucency let the page title and cards
+                  // underneath read through the sentence.
+                  backgroundColor: "var(--background)",
+                  borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
+                  boxShadow: `0 8px 28px oklch(0 0 0 / 30%), 0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
+                }}
               >
-                <X className="size-4" />
-              </button>
+                {/* Sentence and ✕ on one row, Add on its own: side by side, the
+                Dutch "+ Triceps toevoegen" squeezed the sentence to a word a line. */}
+                <div className="flex items-start gap-2.5">
+                  <Sparkles className="mt-0.5 size-5 shrink-0" style={{ color: SUGGESTED_COLOR }} />
+                  <p className="min-w-0 flex-1 pt-0.5 text-[13.5px] leading-snug">
+                    {t.generate.pairSuggestion(
+                      regionById(proposal!).label,
+                      regionById(proposalPair.with).label,
+                      proposalPair.relation.includes("·")
+                        ? t.generate.pairSuggestionFor(proposalPair.relation.split("·")[1]!.trim())
+                        : "",
+                    )}
+                  </p>
+                  <button
+                    onClick={() => setProposal(null)}
+                    aria-label={t.generate.dismissSuggestion}
+                    className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <button
+                  onClick={acceptProposal}
+                  className="flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
+                  style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
+                >
+                  <Plus className="size-3.5" strokeWidth={3} />
+                  {t.generate.addMuscle(regionById(proposalPair.with).label)}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={acceptProposal}
-              className="flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
-              style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
-            >
-              <Plus className="size-3.5" strokeWidth={3} />
-              {t.generate.addMuscle(regionById(proposalPair.with).label)}
-            </button>
-          </div>
-        </div>
-      ) : null}
+          ) : null}
 
-      <Card className="p-4">
-        <AnatomyMap
-          selected={regions}
-          suggested={proposalPair?.with ?? null}
-          onToggle={toggleRegion}
-        />
-      </Card>
+          <Card className="p-4">
+            <AnatomyMap
+              selected={regions}
+              suggested={proposalPair?.with ?? null}
+              onToggle={toggleRegion}
+            />
+          </Card>
 
-      {focusGroups.length ? (
-        <div className="mt-4">
-          <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-            {t.generate.focusOptional}
-          </p>
-          <div className="space-y-2">
-            {focusGroups.map(({ group, heads }) => (
-              <div key={group} className="flex flex-wrap items-center gap-2">
-                <span className="w-16 shrink-0 text-[13px] font-semibold text-muted-foreground">
-                  {group}
-                </span>
-                {heads.map((t) => {
-                  const on = focus.includes(t);
+          {focusGroups.length ? (
+            <div className="mt-4">
+              <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                {t.generate.focusOptional}
+              </p>
+              <div className="space-y-2">
+                {focusGroups.map(({ group, heads }) => (
+                  <div key={group} className="flex flex-wrap items-center gap-2">
+                    <span className="w-16 shrink-0 text-[13px] font-semibold text-muted-foreground">
+                      {group}
+                    </span>
+                    {heads.map((t) => {
+                      const on = focus.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => toggleFocus(t)}
+                          className={`min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+                            on
+                              ? "bg-primary text-primary-foreground"
+                              : "glass text-secondary-foreground"
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {muscles.length > 2 && !curatedSelection ? (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
+              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
+              <p className="text-[14px] leading-snug text-foreground">
+                {t.generate.warningTooManyGroups}
+              </p>
+            </div>
+          ) : null}
+
+          {lovedExerciseIds.length ? (
+            <div className="mt-4">
+              <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
+                <Heart className="size-3.5 fill-current text-primary-text" />
+                {t.generate.alwaysIncluded}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {lovedExerciseIds.map((id) => {
+                  const ex = exerciseById(id);
                   return (
                     <button
-                      key={t}
-                      onClick={() => toggleFocus(t)}
-                      className={`min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-                        on
-                          ? "bg-primary text-primary-foreground"
-                          : "glass text-secondary-foreground"
-                      }`}
+                      key={id}
+                      onClick={() => {
+                        haptic(12);
+                        toggleLovedExercise(id);
+                      }}
+                      className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/15 px-3 text-[14px] font-semibold text-primary-text"
                     >
-                      {t}
+                      {ex?.name ?? id}
+                      <X className="size-3.5" />
                     </button>
                   );
                 })}
               </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+            </div>
+          ) : null}
 
-      {muscles.length > 2 && !curatedSelection ? (
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
-          <p className="text-[14px] leading-snug text-foreground">
-            {t.generate.warningTooManyGroups}
-          </p>
-        </div>
-      ) : null}
-
-      {lovedExerciseIds.length ? (
-        <div className="mt-4">
-          <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
-            <Heart className="size-3.5 fill-current text-primary-text" />
-            {t.generate.alwaysIncluded}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {lovedExerciseIds.map((id) => {
-              const ex = exerciseById(id);
-              return (
-                <button
-                  key={id}
-                  onClick={() => {
-                    haptic(12);
-                    toggleLovedExercise(id);
-                  }}
-                  className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/15 px-3 text-[14px] font-semibold text-primary-text"
-                >
-                  {ex?.name ?? id}
-                  <X className="size-3.5" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Sticky: the form above is about three screens tall, so the button
+          {/* Sticky: the form above is about three screens tall, so the button
           stays in reach just above the tab bar (whose pill top sits
           --tab-bar-clearance + 4rem up) until you scroll down to its place.
           Once a plan matches the selection, the Start bar below takes over. */}
-      {/* Floats only once there's a selection to build from: before that,
+          {/* Floats only once there's a selection to build from: before that,
           on a program user's first screen it was a second big green button
           under "Build Push day", covering the card it sat over. */}
-      {shownPlan ? null : (
-        <div
-          className={`${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3`}
-        >
-          {regions.length || generating ? <div aria-hidden className="dock-backdrop" /> : null}
-          <button
-            onClick={() => generate()}
-            disabled={generating}
-            className="glow flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
-          >
-            {generating ? (
-              <>
-                <DumbbellLoader size={26} className="text-primary-foreground" />
-                {t.generate.buildingSession}
-              </>
-            ) : (
-              <>
-                <Zap className="size-5" />
-                {t.generate.generateWorkout}
-              </>
-            )}
-          </button>
-        </div>
-      )}
+          {planHere ? null : (
+            <div
+              className={`${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3`}
+            >
+              {regions.length || generating ? <div aria-hidden className="dock-backdrop" /> : null}
+              <button
+                onClick={generateOwn}
+                disabled={generating}
+                className="glow flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
+              >
+                {generating ? (
+                  <>
+                    <DumbbellLoader size={26} className="text-primary-foreground" />
+                    {t.generate.buildingSession}
+                  </>
+                ) : (
+                  <>
+                    <Zap className="size-5" />
+                    {t.generate.generateWorkout}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </>
+      ) : null}
 
-      {shownPlan ? (
+      {planHere ? (
         <>
           <div
             ref={planRef}
             className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1"
-            style={{ scrollMarginTop: "calc(max(env(safe-area-inset-top), 0.75rem) + 5.5rem)" }}
+            data-plan-header
           >
             <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.yourPlan(estimateMinutes(shownPlan), shownPlan.length)}
+              {t.generate.yourPlan(estimateMinutes(planHere), planHere.length)}
             </p>
             <button
               onClick={() => {
@@ -981,7 +1032,7 @@ function WorkoutHome() {
             </button>
           </div>
           <div className="space-y-2">
-            {shownPlan.map((p, i) => {
+            {planHere.map((p, i) => {
               const ex = exerciseById(p.exercise_id);
               if (!ex) return null;
               const loved = lovedExerciseIds.includes(p.exercise_id);
@@ -1056,7 +1107,7 @@ function WorkoutHome() {
                       </button>
                       <button
                         onClick={() => move(i, 1)}
-                        disabled={i === shownPlan.length - 1}
+                        disabled={i === planHere.length - 1}
                         aria-label={t.generate.moveDown}
                         className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
@@ -1097,9 +1148,16 @@ function WorkoutHome() {
         </>
       ) : null}
 
-      {/* Without a plan, the offer to set one up comes after the builder,
-          and not while a generated plan is showing above its Start bar. */}
-      {hydrated && !hasPlan && !shownPlan ? <div className="mt-6">{planCard}</div> : null}
+      {/* Without a plan, the offer to set one up and this week's cardio
+          come after the builder, and not while a generated plan is showing
+          above its Start bar. */}
+      {hydrated && !hasPlan && !shownPlan ? (
+        <div className="mt-6">
+          <SectionLabel>{t.generate.thisWeek}</SectionLabel>
+          {planCard}
+          <CardioWeekCard compact />
+        </div>
+      ) : null}
 
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet

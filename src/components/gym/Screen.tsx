@@ -10,7 +10,7 @@ export function Screen({
   padBottom = true,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: string | undefined;
   action?: ReactNode;
   /** Pinned in the sticky header under the title (a search field), so it
    *  stays at the top of the screen however far the page scrolls. */

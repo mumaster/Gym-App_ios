@@ -295,7 +295,8 @@ const en = {
   },
   generate: {
     title: "Workout",
-    subtitle: "Build a session around today's constraints",
+    subtitle: "Build a session for today",
+    tabs: { plan: "My plan", build: "Build your own" },
     sessionInProgress: "Session in progress",
     sessionTitle: (exercises: number, sets: number) =>
       `${exercises} exercises · ${sets} sets logged`,
@@ -308,7 +309,6 @@ const en = {
     minutes: "Minutes",
     equipmentSummary: (n: number) => `${n} ${n === 1 ? "item" : "items"}`,
     editEquipment: "Edit",
-    yourProgram: "Your program",
     thisWeek: "This week",
     weekOf: (n: number, m: number, deload: boolean) =>
       `Week ${n} of ${m}${deload ? " · Deload" : ""}`,
@@ -328,7 +328,6 @@ const en = {
     recommendedToday: "Recommended today",
     neverTrained: (muscle: string) => `${muscle} (never trained)`,
     daysAgo: (muscle: string, days: number) => `${muscle} (${days}d ago)`,
-    recommendedTodayDesc: "Furthest below their weekly set target.",
     setsThisWeek: (muscle: string, done: number, target: number) =>
       `${muscle} ${done}/${target} sets`,
     use: "Use",
@@ -342,10 +341,10 @@ const en = {
       "Warning: Targeting more than 2 major muscle groups in a single session may reduce focus, increase system fatigue, and slow down strength progress.",
     alwaysIncluded: "Always included",
     supersets: "Supersets",
-    supersetsDesc: "Pair exercises back-to-back, rounds set by intensity",
+    supersetsDesc: "Pair exercises back-to-back",
     enableSupersets: "Enable supersets",
     warmups: "Warm-up sets",
-    warmupsDesc: "Lighter sets before the big lifts; off gives that time to working sets",
+    warmupsDesc: "Lighter sets before the big lifts",
     buildingSession: "Building your session…",
     generateWorkout: "Generate workout",
     yourPlan: (min: number, exercises: number) =>
@@ -1520,7 +1519,8 @@ const nl: Dict = {
   },
   generate: {
     title: "Training",
-    subtitle: "Stel een sessie samen rond de mogelijkheden van vandaag",
+    subtitle: "Stel een sessie samen voor vandaag",
+    tabs: { plan: "Mijn schema", build: "Zelf samenstellen" },
     sessionInProgress: "Sessie bezig",
     sessionTitle: (exercises: number, sets: number) =>
       `${exercises} oefeningen · ${sets} sets gelogd`,
@@ -1533,7 +1533,6 @@ const nl: Dict = {
     minutes: "Minuten",
     equipmentSummary: (n: number) => `${n} ${n === 1 ? "item" : "items"}`,
     editEquipment: "Bewerken",
-    yourProgram: "Jouw programma",
     thisWeek: "Deze week",
     weekOf: (n: number, m: number, deload: boolean) =>
       `Week ${n} van ${m}${deload ? " · Deload" : ""}`,
@@ -1553,7 +1552,6 @@ const nl: Dict = {
     recommendedToday: "Vandaag aanbevolen",
     neverTrained: (muscle: string) => `${muscle} (nog nooit getraind)`,
     daysAgo: (muscle: string, days: number) => `${muscle} (${days}d geleden)`,
-    recommendedTodayDesc: "Het verst onder hun wekelijkse setdoel.",
     setsThisWeek: (muscle: string, done: number, target: number) =>
       `${muscle} ${String(done).replace(".", ",")}/${target} sets`,
     use: "Gebruik",
@@ -1567,10 +1565,10 @@ const nl: Dict = {
       "Waarschuwing: meer dan 2 grote spiergroepen in één sessie trainen kan de focus verminderen, de systemische vermoeidheid verhogen en de krachtvooruitgang vertragen.",
     alwaysIncluded: "Altijd inbegrepen",
     supersets: "Supersets",
-    supersetsDesc: "Combineer oefeningen achter elkaar, rondes bepaald door intensiteit",
+    supersetsDesc: "Oefeningen in paren achter elkaar",
     enableSupersets: "Supersets inschakelen",
     warmups: "Warming-upsets",
-    warmupsDesc: "Lichtere sets voor de zware oefeningen; uit geeft die tijd aan werksets",
+    warmupsDesc: "Lichtere sets vóór de zware oefeningen",
     buildingSession: "Je sessie wordt samengesteld…",
     generateWorkout: "Genereer training",
     yourPlan: (min: number, exercises: number) =>
