@@ -430,6 +430,16 @@
   }
 }
 
+/* A macro chip's "/ 160 g" sits next to the number while the chip is
+   short, and on its own line once the chip is tall and the number big, so
+   the limit is never truncated. */
+@container (min-height: 70px) {
+  .fill-stack {
+    display: block;
+    margin-top: 0.2em;
+  }
+}
+
 @utility safe-top {
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }

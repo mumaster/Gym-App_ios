@@ -522,9 +522,12 @@ function NutritionTile({
             >
               {/* Whole grams: a food label's own precision, and 14.2 next
                   to 75 read as inconsistent. */}
-              <p className="tabular truncate text-[length:clamp(15px,26cqh,26px)] font-bold leading-none">
+              {/* Short chip: "75 / 160 g" on one line. Tall chip
+                  (fill-stack): the number grows, so the limit moves to its
+                  own line under it rather than being cut off. */}
+              <p className="tabular truncate text-[length:clamp(15px,min(26cqh,24cqw),26px)] font-bold leading-none">
                 {Math.round(totals[key])}
-                <span className="text-[length:clamp(10px,11cqh,13px)] font-medium text-muted-foreground">
+                <span className="fill-stack text-[length:clamp(10px,11cqh,13px)] font-medium text-muted-foreground">
                   {goal != null ? ` / ${Math.round(goal)} g` : " g"}
                 </span>
               </p>
