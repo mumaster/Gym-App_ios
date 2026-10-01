@@ -217,18 +217,17 @@ function HistoryScreen() {
           ) : null}
 
           {/* Always shown: someone who only does cardio imports their first
-          session from here, before any Forge workout exists. A text action
-          on the section label's line, like Manage on the Workout tab; as a
-          tinted pill it sat between the summary and the first week. */}
-          <div className="flex items-end justify-between gap-2">
-            <SectionLabel>{t.history.recent}</SectionLabel>
-            <button
-              onClick={() => setWatchOpen(true)}
-              className="mb-1.5 flex items-center gap-1 text-[13px] font-semibold text-primary-text active:opacity-70"
-            >
-              <Watch className="size-3.5" /> {t.watch.importFromWatch}
-            </button>
-          </div>
+          session from here, before any Forge workout exists. A full-width
+          button on its own row, in the secondary style the plan card's
+          "Adjust this week" uses: squeezed onto the Recent label's line it
+          looked out of place. */}
+          <button
+            onClick={() => setWatchOpen(true)}
+            className="mt-3 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[14px] font-bold text-secondary-foreground active:scale-[0.985]"
+          >
+            <Watch className="size-4" /> {t.watch.importFromWatch}
+          </button>
+          <SectionLabel>{t.history.recent}</SectionLabel>
           <WatchImportSheet open={watchOpen} onClose={() => setWatchOpen(false)} />
           {/* Grouped by week: an ever-growing list of identical cards was the
           longest thing in the app (20 sessions ≈ 1,700px). */}
