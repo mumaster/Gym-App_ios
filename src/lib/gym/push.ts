@@ -14,6 +14,38 @@ const RESTORED_KEY = "forge.push-restored.v1";
  *  subscription row on the server. */
 const FK_VIOLATION = "23503";
 
+type DbError = { code?: string; message: string } | null;
+/** PostgREST: no function with that name (the migration adding it,
+ *  20261001200000_rest_notification_rpcs.sql, isn't applied yet). */
+const NO_FUNCTION = "PGRST202";
+/** Whether the RPCs below exist on the server: unknown until the first call. */
+let rpcAvailable: boolean | null = null;
+
+/**
+ * Writes go through SECURITY DEFINER functions rather than the tables:
+ * the tables have no SELECT policy (no device may read another's push
+ * endpoint), and PostgreSQL applies SELECT policies to an UPDATE or DELETE
+ * whose WHERE reads a column, so `update/delete … where device_id = …`
+ * silently matched nothing. Skip rest, Undo and +30 s never reached the
+ * server, and the push came at the original time. Returns null when the
+ * functions don't exist yet, so the caller can use the old table writes.
+ */
+async function rpc(fn: string, args: Record<string, unknown>): Promise<{ error: DbError } | null> {
+  if (rpcAvailable === false) return null;
+  // The generated Supabase types don't know these functions yet.
+  const call = supabase.rpc.bind(supabase) as unknown as (
+    name: string,
+    params: Record<string, unknown>,
+  ) => PromiseLike<{ error: DbError }>;
+  const { error } = await call(fn, args);
+  if (error?.code === NO_FUNCTION) {
+    rpcAvailable = false;
+    return null;
+  }
+  rpcAvailable = true;
+  return { error };
+}
+
 function getDeviceId(): string {
   let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
@@ -66,40 +98,27 @@ export async function ensurePushSubscription({ renew = false }: { renew?: boolea
       return { ok: false, reason: "subscription missing endpoint/keys" };
     }
     const deviceId = getDeviceId();
-    const row = {
+    const viaRpc = await rpc("save_push_subscription", {
+      p_device_id: deviceId,
+      p_endpoint: json.endpoint,
+      p_p256dh: json.keys["p256dh"],
+      p_auth: json.keys["auth"],
+    });
+    if (viaRpc) {
+      if (viaRpc.error) return { ok: false, reason: `Supabase: ${viaRpc.error.message}` };
+      return { ok: true, endpoint: json.endpoint };
+    }
+    // Without the function (migration not applied): insert, which works for
+    // a new device; an existing row can't be changed this way (see rpc).
+    const { error: insertError } = await supabase.from("push_subscriptions").insert({
+      device_id: deviceId,
       endpoint: json.endpoint,
       p256dh: json.keys["p256dh"],
       auth: json.keys["auth"],
       updated_at: new Date().toISOString(),
-    };
-    // A plain UPDATE, falling back to INSERT when nothing matched, instead
-    // of `.upsert()`: its `ON CONFLICT DO UPDATE` needs a SELECT policy to
-    // check the conflicting row's visibility, which this table deliberately
-    // doesn't grant (that would let any client read every device's push
-    // endpoint/keys). UPDATE ... RETURNING needs no such policy.
-    const { data: updated, error: updateError } = await supabase
-      .from("push_subscriptions")
-      .update(row)
-      .eq("device_id", deviceId)
-      .select("device_id");
-    if (updateError) return { ok: false, reason: `Supabase: ${updateError.message}` };
-    if (!updated || updated.length === 0) {
-      const { error: insertError } = await supabase
-        .from("push_subscriptions")
-        .insert({ device_id: deviceId, ...row });
-      if (insertError) {
-        // Lost a race with a concurrent call that inserted first (e.g. the
-        // notify toggle fired twice) — the row exists now, so fall back to
-        // an update rather than erroring out on a spurious conflict.
-        if (insertError.code !== "23505")
-          return { ok: false, reason: `Supabase: ${insertError.message}` };
-        const { error: retryError } = await supabase
-          .from("push_subscriptions")
-          .update(row)
-          .eq("device_id", deviceId);
-        if (retryError) return { ok: false, reason: `Supabase: ${retryError.message}` };
-      }
-    }
+    });
+    if (insertError && insertError.code !== "23505")
+      return { ok: false, reason: `Supabase: ${insertError.message}` };
     return { ok: true, endpoint: json.endpoint };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
@@ -142,48 +161,51 @@ async function restoreSubscription(): Promise<PushSubscribeResult> {
   return result;
 }
 
-async function insertRestNotification(deviceId: string, fire_at: string) {
+/** Sets this device's rest notification to `fire_at` (insert or move). */
+async function writeRestNotification(deviceId: string, fire_at: string): Promise<DbError> {
+  const viaRpc = await rpc("schedule_rest_notification", {
+    p_device_id: deviceId,
+    p_fire_at: fire_at,
+  });
+  if (viaRpc) return viaRpc.error;
+  // Without the function: an insert only works while no row is pending.
   const { error } = await supabase
     .from("rest_timer_notifications")
     .insert({ device_id: deviceId, fire_at });
   return error;
 }
 
+/** Rest-notification writes run one after another, in the order they were
+ *  made: Skip right after logging a set would otherwise send its cancel
+ *  while the schedule is still on its way, and the schedule could land last. */
+let restWrites: Promise<unknown> = Promise.resolve();
+function inOrder<T>(write: () => Promise<T>): Promise<T> {
+  const next = restWrites.then(write, write);
+  restWrites = next.catch(() => undefined);
+  return next;
+}
+
 /** Schedules a server-sent push for when the current rest period ends. */
-export async function scheduleRestNotification(
-  secondsFromNow: number,
-): Promise<PushSubscribeResult> {
+export function scheduleRestNotification(secondsFromNow: number): Promise<PushSubscribeResult> {
+  // The end time is fixed now, not when the queued write runs.
+  const fire_at = new Date(Date.now() + secondsFromNow * 1000).toISOString();
+  return inOrder(() => writeRestEnd(fire_at));
+}
+
+async function writeRestEnd(fire_at: string): Promise<PushSubscribeResult> {
   try {
     const deviceId = getDeviceId();
-    const fire_at = new Date(Date.now() + secondsFromNow * 1000).toISOString();
-    // Same UPDATE-then-INSERT reasoning as ensurePushSubscription above.
-    const { data: updated, error: updateError } = await supabase
-      .from("rest_timer_notifications")
-      .update({ fire_at })
-      .eq("device_id", deviceId)
-      .select("device_id");
-    if (updateError) return { ok: false, reason: `Supabase: ${updateError.message}` };
-    if (!updated || updated.length === 0) {
-      let insertError = await insertRestNotification(deviceId, fire_at);
-      if (insertError?.code === FK_VIOLATION) {
-        // No subscription row for this device on the server: put it back
-        // and try once more, rather than failing on every rest.
-        const restored = await restoreSubscription();
-        if (!restored.ok) return restored;
-        insertError = await insertRestNotification(deviceId, fire_at);
-      }
-      if (insertError) {
-        if (insertError.code !== "23505")
-          return { ok: false, reason: `Supabase: ${insertError.message}` };
-        // Same race as ensurePushSubscription: a concurrent call inserted
-        // first, so make sure this call's fire_at (the most recent one) wins.
-        const { error: retryError } = await supabase
-          .from("rest_timer_notifications")
-          .update({ fire_at })
-          .eq("device_id", deviceId);
-        if (retryError) return { ok: false, reason: `Supabase: ${retryError.message}` };
-      }
+    let error = await writeRestNotification(deviceId, fire_at);
+    if (error?.code === FK_VIOLATION) {
+      // No subscription row for this device on the server: put it back
+      // and try once more, rather than failing on every rest.
+      const restored = await restoreSubscription();
+      if (!restored.ok) return restored;
+      error = await writeRestNotification(deviceId, fire_at);
     }
+    // 23505 only comes from the fallback insert: a push is already pending
+    // and can't be moved without the migration. Not something to report.
+    if (error && error.code !== "23505") return { ok: false, reason: `Supabase: ${error.message}` };
     return { ok: true };
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) };
@@ -191,12 +213,17 @@ export async function scheduleRestNotification(
 }
 
 /** Cancels this device's pending rest notification, if any (rest ended, was skipped, or workout stopped). */
-export async function cancelRestNotification(): Promise<void> {
+export function cancelRestNotification(): Promise<void> {
+  return inOrder(removeRestEnd);
+}
+
+async function removeRestEnd(): Promise<void> {
   try {
-    const { error } = await supabase
-      .from("rest_timer_notifications")
-      .delete()
-      .eq("device_id", getDeviceId());
+    const deviceId = getDeviceId();
+    const viaRpc = await rpc("cancel_rest_notification", { p_device_id: deviceId });
+    const error = viaRpc
+      ? viaRpc.error
+      : (await supabase.from("rest_timer_notifications").delete().eq("device_id", deviceId)).error;
     if (error) console.error("cancelRestNotification:", error.message);
   } catch (err) {
     console.error("cancelRestNotification:", err);

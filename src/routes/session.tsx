@@ -149,6 +149,9 @@ function SessionScreen() {
   };
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
   const [restNext, setRestNext] = useState<string | null>(null);
+  /** The block shown as a preview during the rest, set only on the rest
+   *  after an exercise or superset is finished (not between sets or rounds). */
+  const [restPreview, setRestPreview] = useState<number | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   /** Exercise whose page is open (tapped its title). */
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
@@ -232,6 +235,7 @@ function SessionScreen() {
     onDismiss: () => {
       const target = afterRest.current;
       afterRest.current = null;
+      setRestPreview(null);
       if (target) setPos(target);
     },
   });
@@ -297,6 +301,13 @@ function SessionScreen() {
     setPos(saved.pos);
     afterRest.current = saved.afterRest;
     setRestNext(saved.restNext);
+    // A rest that moves to another block was the one after finishing a
+    // block, so it had the preview.
+    setRestPreview(
+      saved.rest && saved.afterRest && saved.afterRest.block !== saved.pos.block
+        ? saved.afterRest.block
+        : null,
+    );
     if (saved.rest) rest.resume(saved.rest.endsAt, saved.rest.duration);
   }, [activeWorkout?.id, rest]);
 
@@ -393,6 +404,30 @@ function SessionScreen() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }, [pos.block, pos.slot, pos.round]);
+
+  /** The set that finishes the workout hides the entry form and brings up
+   *  the finish panel, which left the page scrolled down to the form tips
+   *  (reported). Bring the card's top back under the header, like moving
+   *  to a new exercise does. Only on that moment: an extra set logged
+   *  afterwards doesn't scroll again. */
+  const workoutDone = blockDone && blockIndex >= blocks.length - 1;
+  const wasWorkoutDone = useRef(workoutDone);
+  useEffect(() => {
+    const was = wasWorkoutDone.current;
+    wasWorkoutDone.current = workoutDone;
+    if (!workoutDone || was) return;
+    // After the form is gone and the panel is up, so the page has its
+    // final height.
+    const id = requestAnimationFrame(() => {
+      const card = activeCardRef.current;
+      if (!card) return;
+      const headerBottom = headerRef.current?.getBoundingClientRect().bottom ?? 0;
+      const top = card.getBoundingClientRect().top + window.scrollY - headerBottom - CARD_GAP_PX;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [workoutDone]);
 
   // The page keeps room to scroll its last content clear of the dock
   // while it's showing.
@@ -666,6 +701,7 @@ function SessionScreen() {
         setRestNext(null);
         return;
       }
+      setRestPreview(willComplete && blockIndex < blocks.length - 1 ? blockIndex + 1 : null);
       setRestNext(
         !willComplete
           ? t.session.restNextSet(loggedWorking(planIndex) + 2, planned?.target_sets ?? 0)
@@ -703,6 +739,7 @@ function SessionScreen() {
     const nextSlotName =
       nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
     setRestNext(nextSlotName ? t.session.restNextExercise(nextSlotName) : null);
+    setRestPreview(nextSlot < 0 && blockIndex < blocks.length - 1 ? blockIndex + 1 : null);
     afterRest.current =
       nextSlot >= 0
         ? { block: blockIndex, slot: nextSlot, round: pos.round + 1 }
@@ -746,6 +783,7 @@ function SessionScreen() {
     void cancelRestNotification();
     removeSetAt(activeWorkout.completed_sets.length - 1);
     setRestNext(null);
+    setRestPreview(null);
   };
 
   /** The set that started this rest, rated from the rest panel. */
@@ -1045,6 +1083,15 @@ function SessionScreen() {
         <div
           aria-hidden
           className="animate-in fade-in fixed inset-0 z-[35] bg-background/40 backdrop-blur-md duration-300"
+        />
+      ) : null}
+      {rest.phase !== "idle" && restPreview != null && blocks[restPreview] ? (
+        <NextUpPreview
+          entries={blocks[restPreview]!.indices.map((i) => ({
+            planned: plan[i]!,
+            rest: restFor(i),
+          }))}
+          bottom={navHeight}
         />
       ) : null}
       {rest.phase !== "idle" || (isLastBlock && blockComplete) ? (
@@ -1468,7 +1515,9 @@ function ExerciseBlock({
     estimated1RM({ weight: currentWeight, reps: currentReps }) > estimated1RM(best);
   const nextPrevious = previousSets[logged.filter((s) => s.set_type === "working").length];
 
-  const GRID = "grid grid-cols-[2rem_2.75rem_1fr_minmax(3.5rem,1fr)] items-center gap-1.5";
+  // The set column is as wide as the next set's round button (size-11) and
+  // centred, so a logged set's number sits right above that button's.
+  const GRID = "grid grid-cols-[2.75rem_2.75rem_1fr_minmax(3.5rem,1fr)] items-center gap-1.5";
   const sentence = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
   return (
@@ -1595,9 +1644,9 @@ function ExerciseBlock({
 
       <div className="mt-4 space-y-1.5">
         <div
-          className={`${GRID} px-0.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground`}
+          className={`${GRID} text-[11px] font-semibold uppercase tracking-widest text-muted-foreground`}
         >
-          <span>{t.session.setCol}</span>
+          <span className="text-center">{t.session.setCol}</span>
           <span>{t.session.prevCol}</span>
           <span className="text-center">{t.session.kgCol}</span>
           <span className="text-center">{t.session.repsCol}</span>
@@ -1678,9 +1727,9 @@ function ExerciseBlock({
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
               aria-label={t.session.editSet(s.set_number)}
-              className={`${GRID} w-full rounded-xl bg-primary/15 px-0.5 py-2 text-left active:scale-[0.99]`}
+              className={`${GRID} w-full rounded-xl bg-primary/15 py-2 text-left active:scale-[0.99]`}
             >
-              <span className="tabular text-[15px] font-bold text-primary-text">
+              <span className="tabular text-center text-[15px] font-bold text-primary-text">
                 {s.set_type === "warmup" ? "W" : s.set_number}
               </span>
               <span className="tabular text-[13px] text-muted-foreground">
@@ -1949,6 +1998,105 @@ function formatRest(seconds: number): string {
  * "next" line short. Here it covers only the logging buttons, which are
  * locked too, and sits under the thumb.
  */
+/** What's next, shown in the blurred area above the rest panel on the rest
+ *  after an exercise or superset is finished: each exercise's name, target
+ *  and rest, the first line of how it's done, your saved note, and the
+ *  weight × reps its card will start on — the same prefill the card uses
+ *  before a set is logged (the progression suggestion, else last session,
+ *  else the top of the rep range). */
+function NextUpPreview({
+  entries,
+  bottom,
+}: {
+  entries: { planned: PlannedExercise; rest: number }[];
+  /** The rest panel's height, to sit just above it. */
+  bottom: number;
+}) {
+  const t = useTranslation();
+  const {
+    workouts,
+    lastPerformance,
+    exerciseNotes,
+    profiles,
+    activeProfileId,
+    weightLog,
+    nutritionProfile,
+  } = useGym();
+  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
+  return (
+    <div
+      className="animate-in fade-in slide-in-from-bottom-2 fixed inset-x-0 z-[36] mx-auto max-w-xl px-4 duration-300"
+      style={{ bottom: bottom + 12 }}
+    >
+      <div className="max-h-[calc(100dvh-14rem)] overflow-y-auto rounded-3xl border border-border bg-background/90 p-4 shadow-[var(--shadow-float)]">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-text">
+          {entries.length > 1 ? t.session.upNextSuperset : t.session.nextUpTitle}
+        </p>
+        {entries.map(({ planned, rest }, i) => {
+          const exercise = exerciseById(planned.exercise_id);
+          if (!exercise) return null;
+          const bw = isBodyweightExercise(exercise);
+          const bodyKg = bw ? latestBodyKg(weightLog, nutritionProfile) : null;
+          const suggestion = suggestWeight(
+            planned.exercise_id,
+            workouts,
+            planned.target_reps,
+            plateStep(exercise, profile),
+            t.progression,
+            bodyKg,
+          );
+          const previous = lastPerformance(planned.exercise_id);
+          const nums = (planned.target_reps.match(/\d+/g) ?? []).map(Number);
+          // A bodyweight exercise starts at bodyweight (0 external load),
+          // like its card; a loaded one without history has no weight yet.
+          const weight = suggestion?.weight ?? previous?.weight ?? (bw ? 0 : null);
+          const reps = suggestion?.reps ?? previous?.reps ?? (nums.length ? Math.max(...nums) : 8);
+          const note = exerciseNotes[planned.exercise_id];
+          return (
+            <div
+              key={planned.exercise_id + i}
+              className={i > 0 ? "mt-3 border-t border-border pt-3" : "mt-1.5"}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 text-[17px] font-bold leading-snug">
+                  {entries.length > 1 ? (
+                    <span className="mr-1.5 text-primary-text">{i === 0 ? "A" : "B"}</span>
+                  ) : null}
+                  {exercise.name}
+                </p>
+                {weight != null ? (
+                  <span className="tabular shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-bold">
+                    {formatLoad(weight, bw, t.session.bw)} × {reps}
+                  </span>
+                ) : (
+                  <span className="shrink-0 pt-0.5 text-[12px] text-muted-foreground">
+                    {t.session.firstTime}
+                  </span>
+                )}
+              </div>
+              <p className="tabular mt-0.5 text-[12.5px] text-muted-foreground">
+                {t.session.targetLine(planned.target_sets, planned.target_reps, rest)}
+                <span className="capitalize">{exercise.primary_muscle}</span>
+              </p>
+              {exercise.instructions ? (
+                <p className="mt-1 line-clamp-2 text-[13px] leading-snug">
+                  {exercise.instructions}
+                </p>
+              ) : null}
+              {note ? (
+                <p className="mt-1.5 flex gap-1.5 text-[13px] leading-snug text-muted-foreground">
+                  <StickyNote className="mt-0.5 size-3.5 shrink-0 text-primary-text" />
+                  <span className="min-w-0">{note}</span>
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RestPanel({
   done,
   secondsLeft,
