@@ -572,10 +572,13 @@ const en = {
     ofGoal: (goal: string) => `of ${goal} goal`,
     loggedMl: (ml: number) => `${ml}ml logged`,
     setWaterGoal: "Set water goal",
+    waterSettings: "Water settings",
+    waterGoal: "Daily goal",
     saveWaterGoal: "Save water goal",
     waterSuggested: (l: string) => `Suggested for you: ${l} a day`,
     waterUseSuggestion: "Use",
     waterSetSuggestion: "Set as goal",
+    waterSetSuggested: (l: string) => `Use suggested goal: ${l} a day`,
     waterSuggestionWhy:
       "From your energy needs at your activity level: about 1 ml of water per kcal, 80% of it from drinks and the rest from food. Drink more on hot days and during long sessions. You can always change the goal.",
     waterSuggestNeedsProfile:
@@ -906,9 +909,11 @@ const en = {
     title: "Coffee",
     cups: (n: number) => (n === 1 ? "1 cup" : `${n} cups`),
     caffeine: (mg: number, limit: number) => `≈${mg} of ${limit} mg caffeine`,
+    caffeineShort: (mg: number, limit: number) => `≈${mg} / ${limit} mg`,
     over: (mg: number) => `${mg} mg over the daily limit`,
     note: (limit: number, pregnancy: number) =>
       `Up to ${limit} mg of caffeine a day is safe for most adults, ${pregnancy} mg when pregnant or breastfeeding.`,
+    aboutLimit: "About the caffeine limit",
     kinds: { espresso: "Espresso", filter: "Coffee", milk: "Cappuccino" } as Record<
       "espresso" | "filter" | "milk",
       string
@@ -1811,10 +1816,13 @@ const nl: Dict = {
     ofGoal: (goal: string) => `van ${goal} doel`,
     loggedMl: (ml: number) => `${ml}ml gelogd`,
     setWaterGoal: "Waterdoel instellen",
+    waterSettings: "Water-instellingen",
+    waterGoal: "Dagdoel",
     saveWaterGoal: "Waterdoel opslaan",
     waterSuggested: (l: string) => `Voorstel voor jou: ${l} per dag`,
     waterUseSuggestion: "Gebruik",
     waterSetSuggestion: "Als doel instellen",
+    waterSetSuggested: (l: string) => `Voorstel als doel: ${l} per dag`,
     waterSuggestionWhy:
       "Op basis van je energiebehoefte bij je activiteitsniveau: ongeveer 1 ml water per kcal, waarvan 80% uit drinken en de rest uit eten. Drink meer op warme dagen en bij lange trainingen. Je kunt het doel altijd aanpassen.",
     waterSuggestNeedsProfile:
@@ -2149,9 +2157,11 @@ const nl: Dict = {
     title: "Koffie",
     cups: (n: number) => (n === 1 ? "1 kopje" : `${n} kopjes`),
     caffeine: (mg: number, limit: number) => `≈${mg} van ${limit} mg cafeïne`,
+    caffeineShort: (mg: number, limit: number) => `≈${mg} / ${limit} mg`,
     over: (mg: number) => `${mg} mg boven de daggrens`,
     note: (limit: number, pregnancy: number) =>
       `Tot ${limit} mg cafeïne per dag is veilig voor de meeste volwassenen, ${pregnancy} mg bij zwangerschap of borstvoeding.`,
+    aboutLimit: "Over de cafeïnegrens",
     kinds: { espresso: "Espresso", filter: "Koffie", milk: "Cappuccino" },
     add: (kind: string) => `${kind} loggen`,
     remove: (kind: string) => `${kind} verwijderen`,

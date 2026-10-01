@@ -6,13 +6,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Pencil,
-  RotateCcw,
-  Coffee,
-  Droplet,
   Plus,
   Settings2,
-  X,
   Dumbbell,
   HeartPulse,
   Moon,
@@ -28,13 +23,9 @@ import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import { SwipeToDelete } from "../components/gym/SwipeToDelete";
+import { DrinksTab } from "../components/gym/DrinksTab";
 import {
   addDays,
-  CAFFEINE_DAILY_LIMIT_MG,
-  CAFFEINE_PREGNANCY_LIMIT_MG,
-  caffeineMg,
-  COFFEE_CAFFEINE_MG,
-  COFFEE_KINDS,
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
@@ -44,13 +35,8 @@ import {
   nutrientStatus,
   proteinPerMealTarget,
   scaledMacros,
-  suggestWaterGoalMl,
   formatLiters,
   weeklyAverage,
-  WATER_AMOUNT_MAX_ML,
-  WATER_QUICK_ADD,
-  formatWaterAmount,
-  parseWaterMl,
   type FoodEntry,
   type Macros,
   type MealIngredient,
@@ -63,7 +49,6 @@ import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useDayGoalsResolver, useDayNutrition } from "../lib/gym/dayNutrition";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { latestBodyKg } from "../lib/gym/load";
-import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { mondayOf, parseDayKey } from "../lib/gym/schedule";
 import { haptic, useGym } from "../lib/gym/store";
 
@@ -122,9 +107,6 @@ function NutritionScreen() {
     waterGoalMl,
     hydrated,
     removeFoodEntry,
-    logWater,
-    removeWaterEntry,
-    update,
     weightLog,
     nutritionProfile,
   } = useGym();
@@ -141,8 +123,6 @@ function NutritionScreen() {
     meal: MealType;
   } | null>(null);
   const [createRecipeOpen, setCreateRecipeOpen] = useState(false);
-  const [waterGoalEditing, setWaterGoalEditing] = useState(false);
-  const [waterGoalDraft, setWaterGoalDraft] = useState("");
   const todayKey = dayKeyFromDate(new Date());
   /** The day shown. Only today allows adding. */
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -159,35 +139,6 @@ function NutritionScreen() {
   const isToday = selectedKey === todayKey;
   const proteinTarget = proteinPerMealTarget(latestBodyKg(weightLog, nutritionProfile));
 
-  const selectedWaterEntries = useMemo(
-    () => entriesForDay(waterEntries, selectedKey),
-    [waterEntries, selectedKey],
-  );
-  const totalWaterMl = useMemo(
-    () => selectedWaterEntries.reduce((sum, e) => sum + e.ml, 0),
-    [selectedWaterEntries],
-  );
-  const waterPct = waterGoalMl ? Math.min(100, (totalWaterMl / waterGoalMl) * 100) : 0;
-  // A starting point from EFSA's water reference values and your energy
-  // need at your activity level (nutrition.ts); the goal itself stays yours.
-  // The latest weigh-in beats the questionnaire's one-off weight.
-  const suggestedWaterMl = useMemo(() => {
-    if (!nutritionProfile) return null;
-    const weightKg = latestBodyKg(weightLog, nutritionProfile) ?? nutritionProfile.weightKg;
-    return suggestWaterGoalMl({ ...nutritionProfile, weightKg });
-  }, [nutritionProfile, weightLog]);
-
-  const openWaterGoalEditor = () => {
-    haptic(12);
-    setWaterGoalDraft(waterGoalMl ? String(waterGoalMl) : "");
-    setWaterGoalEditing(true);
-  };
-  const saveWaterGoal = () => {
-    haptic(15);
-    const n = Math.round(parseDecimal(waterGoalDraft));
-    update({ waterGoalMl: n > 0 ? n : null });
-    setWaterGoalEditing(false);
-  };
   const yesterdayKey = dayKeyFromDate(addDays(new Date(), -1));
   const dayLabel = isToday
     ? t.nutrition.today
@@ -421,110 +372,12 @@ function NutritionScreen() {
       ) : null}
 
       {tab === "drinks" ? (
-        <>
-          <SectionLabel>
-            {t.nutrition.water} · {dayLabel}
-          </SectionLabel>
-          <Card className="p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="tabular text-[26px] font-bold leading-none">
-                  {formatLiters(totalWaterMl)}
-                </p>
-                <p className="mt-1 text-[12px] text-muted-foreground">
-                  {waterGoalMl
-                    ? t.nutrition.ofGoal(formatLiters(waterGoalMl))
-                    : t.nutrition.loggedMl(totalWaterMl)}
-                </p>
-              </div>
-              <button
-                onClick={openWaterGoalEditor}
-                aria-label={t.nutrition.setWaterGoal}
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-              >
-                <Settings2 className="size-4" />
-              </button>
-            </div>
-
-            {waterGoalEditing ? (
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  inputMode="numeric"
-                  type="text"
-                  value={waterGoalDraft}
-                  onFocus={selectOnFocus}
-                  onChange={(e) => {
-                    if (DECIMAL_INPUT_RE.test(e.target.value)) setWaterGoalDraft(e.target.value);
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && saveWaterGoal()}
-                  placeholder={t.nutrition.mlPlaceholder}
-                  className="tabular h-10 w-full min-w-0 flex-1 rounded-xl bg-muted px-3 text-[15px] font-semibold outline-none"
-                />
-                <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
-                <button
-                  onClick={saveWaterGoal}
-                  aria-label={t.nutrition.saveWaterGoal}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                >
-                  <Check className="size-4" />
-                </button>
-              </div>
-            ) : null}
-
-            {waterGoalEditing ? (
-              <WaterSuggestion
-                suggestedMl={suggestedWaterMl}
-                actionLabel={t.nutrition.waterUseSuggestion}
-                onUse={(ml) => {
-                  haptic(10);
-                  setWaterGoalDraft(String(ml));
-                }}
-                onNeedProfile={() => setGoalsSheetOpen(true)}
-              />
-            ) : !waterGoalMl && isToday ? (
-              <WaterSuggestion
-                suggestedMl={suggestedWaterMl}
-                actionLabel={t.nutrition.waterSetSuggestion}
-                onUse={(ml) => {
-                  haptic(15);
-                  update({ waterGoalMl: ml });
-                }}
-                onNeedProfile={() => setGoalsSheetOpen(true)}
-              />
-            ) : waterGoalMl ? (
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${waterPct}%` }}
-                />
-              </div>
-            ) : null}
-
-            {isToday ? <WaterShortcuts onLog={logWater} /> : null}
-          </Card>
-
-          {selectedWaterEntries.length > 0 ? (
-            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-              {selectedWaterEntries.map((entry) => (
-                <button
-                  key={entry.id}
-                  onClick={() => {
-                    haptic(10);
-                    removeWaterEntry(entry.id);
-                  }}
-                  aria-label={t.nutrition.removeWaterEntry(entry.ml)}
-                  className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
-                >
-                  <Droplet className="size-3 text-primary-text" /> {entry.ml}ml{" "}
-                  <X className="size-3" />
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          <SectionLabel>{t.coffee.title}</SectionLabel>
-          <CoffeeCard dayKey={selectedKey} canAdd={isToday} />
-        </>
+        <DrinksTab
+          dayKey={selectedKey}
+          dayLabel={dayLabel}
+          isToday={isToday}
+          onNeedProfile={() => setGoalsSheetOpen(true)}
+        />
       ) : null}
 
       {/* Weight: the trend, chart and log are the same whichever day is
@@ -653,12 +506,12 @@ function WeekStrip({
   };
 
   return (
-    <Card className="mt-1 p-3">
+    <Card className="mt-1 p-2.5">
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => move(-1)}
           aria-label={t.nutrition.previousWeek}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -667,12 +520,12 @@ function WeekStrip({
           onClick={() => move(1)}
           disabled={weeksBack === 0}
           aria-label={t.nutrition.nextWeek}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
         >
           <ChevronRight className="size-4" />
         </button>
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-1">
+      <div className="mt-1.5 grid grid-cols-7 gap-1">
         {days.map(({ date, key }) => {
           const future = key > todayKey;
           const selected = key === selectedKey;
@@ -722,7 +575,7 @@ function WeekStrip({
           );
         })}
       </div>
-      <p className="tabular mt-2 text-center text-[12px] text-muted-foreground">{footer(days)}</p>
+      <p className="tabular mt-1.5 text-center text-[12px] text-muted-foreground">{footer(days)}</p>
     </Card>
   );
 }
@@ -976,277 +829,5 @@ function MealGroup({
         );
       })}
     </Card>
-  );
-}
-
-/** Coffee, logged by the cup like water, with the day's caffeine against
- *  EFSA's daily limit (see nutrition.ts's COFFEE_CAFFEINE_MG). */
-function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
-  const t = useTranslation();
-  const { coffeeEntries, logCoffee, removeCoffeeEntry } = useGym();
-  const entries = useMemo(() => entriesForDay(coffeeEntries, dayKey), [coffeeEntries, dayKey]);
-  const mg = caffeineMg(entries);
-  const status = nutrientStatus(mg, CAFFEINE_DAILY_LIMIT_MG);
-  return (
-    <>
-      <Card className="p-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
-            <Coffee className="size-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="tabular text-[22px] font-bold leading-none">
-              {t.coffee.cups(entries.length)}
-            </p>
-            <p
-              className={`tabular mt-1 text-[12.5px] ${status === "over" ? "font-semibold text-destructive" : "text-muted-foreground"}`}
-            >
-              {status === "over"
-                ? t.coffee.over(mg - CAFFEINE_DAILY_LIMIT_MG)
-                : t.coffee.caffeine(mg, CAFFEINE_DAILY_LIMIT_MG)}
-            </p>
-          </div>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full transition-all ${barClass(status)}`}
-            style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
-          />
-        </div>
-        {canAdd ? (
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {COFFEE_KINDS.map((kind) => (
-              <button
-                key={kind}
-                onClick={() => {
-                  haptic(15);
-                  logCoffee(kind);
-                }}
-                aria-label={t.coffee.add(t.coffee.kinds[kind])}
-                className="glass relative flex flex-col items-center gap-0.5 rounded-2xl py-2.5 active:scale-95"
-              >
-                <HapticSwitch />
-                <Coffee className="size-4 text-primary-text" />
-                <span className="text-[12.5px] font-semibold">+ {t.coffee.kinds[kind]}</span>
-                <span className="tabular text-[11px] text-muted-foreground">
-                  {COFFEE_CAFFEINE_MG[kind]} mg
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <p className="mt-3 text-[11.5px] leading-snug text-muted-foreground">
-          {t.coffee.note(CAFFEINE_DAILY_LIMIT_MG, CAFFEINE_PREGNANCY_LIMIT_MG)}
-        </p>
-      </Card>
-      {entries.length > 0 ? (
-        <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
-          {entries.map((entry) => (
-            <button
-              key={entry.id}
-              onClick={() => {
-                haptic(10);
-                removeCoffeeEntry(entry.id);
-              }}
-              aria-label={t.coffee.remove(t.coffee.kinds[entry.kind])}
-              className="glass flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold text-muted-foreground active:scale-95"
-            >
-              <Coffee className="size-3 text-primary-text" /> {t.coffee.kinds[entry.kind]}{" "}
-              <X className="size-3" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </>
-  );
-}
-
-/** The water quick-adds: four one-tap shortcuts (amounts the user can
- *  change, shared with Home's Water tile), plus a field for a one-off
- *  amount such as a 600 ml bottle. */
-/** The suggested water goal with a button to take it (or, without a
- *  profile to base it on, a way to the questionnaire). Under the goal
- *  field while editing; on its own while no goal is set. */
-function WaterSuggestion({
-  suggestedMl,
-  actionLabel,
-  onUse,
-  onNeedProfile,
-}: {
-  suggestedMl: number | null;
-  actionLabel: string;
-  onUse: (ml: number) => void;
-  onNeedProfile: () => void;
-}) {
-  const t = useTranslation();
-  if (suggestedMl == null) {
-    return (
-      <button
-        onClick={onNeedProfile}
-        className="mt-3 flex w-full items-center justify-between gap-2 rounded-xl bg-muted px-3 py-2.5 text-left text-[12.5px] text-muted-foreground active:scale-[0.985]"
-      >
-        {t.nutrition.waterSuggestNeedsProfile}
-        <ChevronRight className="size-4 shrink-0" />
-      </button>
-    );
-  }
-  return (
-    <div className="mt-3 rounded-xl bg-muted px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[13.5px] font-semibold">
-          {t.nutrition.waterSuggested(formatLiters(suggestedMl))}
-        </p>
-        <button
-          onClick={() => onUse(suggestedMl)}
-          className="shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[12.5px] font-bold text-foreground active:scale-95"
-        >
-          {actionLabel}
-        </button>
-      </div>
-      <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
-        {t.nutrition.waterSuggestionWhy}
-      </p>
-    </div>
-  );
-}
-
-function WaterShortcuts({ onLog }: { onLog: (ml: number) => void }) {
-  const t = useTranslation();
-  const { waterQuickAdd, update } = useGym();
-  const [custom, setCustom] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [drafts, setDrafts] = useState<string[]>([]);
-  const customMl = parseWaterMl(custom);
-  const draftMl = drafts.map(parseWaterMl);
-  const draftsValid = draftMl.every((ml) => ml != null);
-
-  const logCustom = () => {
-    if (customMl == null) return;
-    haptic(15);
-    onLog(customMl);
-    setCustom("");
-  };
-  const startEditing = () => {
-    haptic(12);
-    setDrafts(waterQuickAdd.map(String));
-    setEditing(true);
-  };
-  const saveShortcuts = () => {
-    if (!draftsValid) return;
-    haptic(15);
-    update({ waterQuickAdd: draftMl as number[] });
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <div className="mt-4">
-        <p className="text-[12.5px] text-muted-foreground">{t.nutrition.waterShortcutsHint}</p>
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {drafts.map((value, i) => (
-            <label
-              key={i}
-              className={`flex flex-col items-center gap-0.5 rounded-2xl px-1.5 py-2 ${
-                draftMl[i] == null ? "bg-destructive/10 ring-1 ring-destructive/50" : "bg-muted"
-              }`}
-            >
-              <span className="sr-only">{t.nutrition.waterShortcut(i + 1)}</span>
-              <input
-                inputMode="numeric"
-                type="text"
-                value={value}
-                onFocus={selectOnFocus}
-                onChange={(e) => {
-                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-                  const next = [...drafts];
-                  next[i] = e.target.value;
-                  setDrafts(next);
-                }}
-                className="tabular h-8 w-full min-w-0 bg-transparent text-center text-[16px] font-bold outline-none"
-              />
-              <span className="text-[11px] text-muted-foreground">ml</span>
-            </label>
-          ))}
-        </div>
-        {!draftsValid ? (
-          <p className="mt-1.5 text-[12px] text-destructive">
-            {t.nutrition.waterInvalid(WATER_AMOUNT_MAX_ML)}
-          </p>
-        ) : null}
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={() => {
-              haptic(10);
-              setDrafts(WATER_QUICK_ADD.map(String));
-            }}
-            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl bg-secondary px-4 text-[14px] font-semibold"
-          >
-            <RotateCcw className="size-4" /> {t.nutrition.waterResetShortcuts}
-          </button>
-          <button
-            onClick={saveShortcuts}
-            disabled={!draftsValid}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground disabled:opacity-40"
-          >
-            <Check className="size-4" /> {t.nutrition.waterSaveShortcuts}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {waterQuickAdd.map((ml, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              haptic(15);
-              onLog(ml);
-            }}
-            className="glass relative flex flex-col items-center gap-1 rounded-2xl py-3 active:scale-95"
-          >
-            <HapticSwitch />
-            <Droplet className="size-4 text-primary-text" />
-            <span className="text-[12px] font-semibold">+{formatWaterAmount(ml)}</span>
-          </button>
-        ))}
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
-          <span className="sr-only">{t.nutrition.waterOther}</span>
-          <input
-            inputMode="numeric"
-            type="text"
-            value={custom}
-            onFocus={selectOnFocus}
-            onChange={(e) => {
-              if (DECIMAL_INPUT_RE.test(e.target.value)) setCustom(e.target.value);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && logCustom()}
-            placeholder={t.nutrition.waterOther}
-            className="tabular h-full w-full min-w-0 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground"
-          />
-          <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
-        </label>
-        <button
-          onClick={logCustom}
-          disabled={customMl == null}
-          aria-label={t.nutrition.waterAddOtherAria}
-          className="relative flex h-11 shrink-0 items-center gap-1 rounded-xl bg-primary px-3.5 text-[14px] font-bold text-primary-foreground disabled:opacity-40"
-        >
-          <Plus className="size-4" /> {t.nutrition.waterAddOther}
-        </button>
-        <button
-          onClick={startEditing}
-          aria-label={t.nutrition.waterEditShortcuts}
-          title={t.nutrition.waterEditShortcuts}
-          className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground"
-        >
-          <Pencil className="size-4" />
-        </button>
-      </div>
-    </>
   );
 }
