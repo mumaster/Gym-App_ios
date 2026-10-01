@@ -317,6 +317,7 @@ const en = {
     nextDay: (day: string) => `Next: ${day}`,
     suggestedDay: (day: string) => `Suggested ${day}`,
     startDayType: (day: string) => `Build ${day} day`,
+    sessionLength: "Time for this session",
     buildProgramInstead: "Build a program instead",
     planYourTraining: "Plan your training",
     planYourTrainingDesc:
@@ -543,7 +544,8 @@ const en = {
     recent: "Recent",
     perExercise: "Per exercise",
     last30Days: "Last 30 days",
-    overviewAria: "Week streak, training days this week and sessions in the last 30 days. Show activity",
+    overviewAria:
+      "Week streak, training days this week and sessions in the last 30 days. Show activity",
   },
   historyDetail: {
     title: "Session",
@@ -1552,6 +1554,7 @@ const nl: Dict = {
     nextDay: (day: string) => `Volgende: ${day}`,
     suggestedDay: (day: string) => `Voorgesteld ${day}`,
     startDayType: (day: string) => `${day}-dag samenstellen`,
+    sessionLength: "Tijd voor deze training",
     buildProgramInstead: "Stel in plaats daarvan een programma samen",
     planYourTraining: "Plan je training",
     planYourTrainingDesc:
@@ -1780,7 +1783,8 @@ const nl: Dict = {
     recent: "Recent",
     perExercise: "Per oefening",
     last30Days: "Laatste 30 dagen",
-    overviewAria: "Weken op rij, trainingsdagen deze week en sessies in de laatste 30 dagen. Toon activiteit",
+    overviewAria:
+      "Weken op rij, trainingsdagen deze week en sessies in de laatste 30 dagen. Toon activiteit",
   },
   historyDetail: {
     title: "Sessie",

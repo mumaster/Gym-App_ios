@@ -465,6 +465,61 @@ function WorkoutHome() {
   const planOrigin: WorkoutTab = followingProgram || followingSchedule ? "plan" : "build";
   const planHere = shownPlan && (!tabbed || planOrigin === tab) ? shownPlan : null;
 
+  /** Session length: the builder's first row, and on My plan right above
+   *  "Build {day} day", since the time you have differs from day to day.
+   *  One value for both (the two never show at once). Changing it hides a
+   *  plan built for another length, like every other input (inputKey). */
+  const durationPicker = (
+    <div className="flex items-center gap-2">
+      {SHORTCUTS.map((d) => (
+        <button
+          key={d}
+          onClick={() => {
+            haptic(12);
+            setDuration(d);
+            setCustomInput(String(d));
+          }}
+          className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+            duration === d
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground"
+          }`}
+        >
+          {d}m
+        </button>
+      ))}
+      <label
+        className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+          SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
+        }`}
+      >
+        <input
+          type="text"
+          inputMode="numeric"
+          aria-label={t.generate.minutes}
+          value={customInput}
+          onFocus={selectOnFocus}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (!DECIMAL_INPUT_RE.test(raw)) return;
+            setCustomInput(raw);
+            const n = Math.round(parseDecimal(raw));
+            if (raw !== "" && Number.isFinite(n) && n > 0) {
+              setDuration(Math.min(180, n));
+            }
+          }}
+          onBlur={() => {
+            const clamped = Math.max(5, Math.min(180, Math.round(parseDecimal(customInput) || 45)));
+            setDuration(clamped);
+            setCustomInput(String(clamped));
+          }}
+          className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
+        />
+        <span className="text-[12px] font-semibold text-muted-foreground">min</span>
+      </label>
+    </div>
+  );
+
   const planCard = (
     <>
       <Card className="mb-4 p-4">
@@ -530,6 +585,10 @@ function WorkoutHome() {
               onDoToday={startProgramDay}
             />
 
+            <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t.generate.sessionLength}
+            </p>
+            {durationPicker}
             <button
               onClick={startProgramDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
@@ -578,6 +637,10 @@ function WorkoutHome() {
               onDoToday={startScheduledDay}
             />
 
+            <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t.generate.sessionLength}
+            </p>
+            {durationPicker}
             <button
               onClick={startScheduledDay}
               className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
@@ -719,57 +782,7 @@ function WorkoutHome() {
           {/* Time, equipment and the two switches as one grouped list, like an
           iOS settings card, instead of four blocks. */}
           <Card className={`divide-y divide-border p-0 ${tabbed ? "mt-3" : ""}`}>
-            <div className="flex items-center gap-2 px-4 py-3">
-              {SHORTCUTS.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => {
-                    haptic(12);
-                    setDuration(d);
-                    setCustomInput(String(d));
-                  }}
-                  className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
-                    duration === d
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {d}m
-                </button>
-              ))}
-              <label
-                className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
-                  SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
-                }`}
-              >
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  aria-label={t.generate.minutes}
-                  value={customInput}
-                  onFocus={selectOnFocus}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (!DECIMAL_INPUT_RE.test(raw)) return;
-                    setCustomInput(raw);
-                    const n = Math.round(parseDecimal(raw));
-                    if (raw !== "" && Number.isFinite(n) && n > 0) {
-                      setDuration(Math.min(180, n));
-                    }
-                  }}
-                  onBlur={() => {
-                    const clamped = Math.max(
-                      5,
-                      Math.min(180, Math.round(parseDecimal(customInput) || 45)),
-                    );
-                    setDuration(clamped);
-                    setCustomInput(String(clamped));
-                  }}
-                  className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
-                />
-                <span className="text-[12px] font-semibold text-muted-foreground">min</span>
-              </label>
-            </div>
+            <div className="px-4 py-3">{durationPicker}</div>
             <div className="flex items-center gap-2 py-2.5 pl-4 pr-2">
               {profiles.length > 1 ? (
                 <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
