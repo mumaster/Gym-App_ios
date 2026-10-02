@@ -709,9 +709,10 @@ const MEAL_ICONS: Record<MealType, typeof Sun> = {
 /** One meal as one card: a header (icon, name, the meal's kcal and protein,
  *  save and "+") with its foods listed under it — name and P/C/F on the
  *  left, calories on the right; swipe a row left to delete it (also possible
- *  from its edit sheet). The header opens the meal's overview. A check marks
- *  a meal that reached the protein-per-meal amount. The icon is solid once
- *  the meal has food and muted while it's empty, like Home's badges. */
+ *  from its edit sheet). The header opens the meal's overview, or Add food
+ *  when the meal is empty. A check marks a meal that reached the
+ *  protein-per-meal amount. The icon is solid once the meal has food and
+ *  muted while it's empty, like Home's badges. */
 function MealGroup({
   meal,
   entries,
@@ -742,11 +743,15 @@ function MealGroup({
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex items-center gap-2 px-3 py-2.5">
-        {/* Tapping the header opens the meal's nutrition overview. */}
+        {/* The header opens the meal's overview; an empty meal's adds food, like "+". */}
         <button
-          onClick={onOpen}
-          disabled={!hasFood}
-          aria-label={t.mealOverview.open(t.mealTypes[meal])}
+          onClick={hasFood ? onOpen : onAdd}
+          disabled={!hasFood && !canAdd}
+          aria-label={
+            hasFood
+              ? t.mealOverview.open(t.mealTypes[meal])
+              : t.nutrition.addToMeal(t.mealTypes[meal])
+          }
           className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-xl px-1 text-left active:bg-foreground/5 disabled:active:bg-transparent"
         >
           <span
