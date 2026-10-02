@@ -322,6 +322,13 @@
   border: 1px solid var(--border);
 }
 
+/* A card's header band (the meal cards on Nutrition → Food and the drink
+   cards): a tint of the accent, so a heading stands out from a long list of
+   foods under it instead of reading as one more row. A layout choice. */
+@utility card-head {
+  background-color: color-mix(in oklab, var(--primary) 11%, transparent);
+}
+
 @utility glass-strong {
   background-color: var(--surface-strong);
   backdrop-filter: blur(32px) saturate(180%);

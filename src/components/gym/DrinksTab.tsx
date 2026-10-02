@@ -111,27 +111,40 @@ function barClass(status: NutrientStatus) {
   return status === "over" ? "bg-destructive" : status === "near" ? "bg-amber-500" : "bg-primary";
 }
 
-/** The card header both drinks share: a badge, the day as a small label
- *  and the total, with an optional trailing control. */
+/** The card header every drink card shares: a badge, the day as a small
+ *  label and the total, with an optional trailing control. It's the card's
+ *  tinted header band (`card-head`, full width: the card is `p-4`), like a
+ *  meal's header on the Food tab, and its badge is solid once something is
+ *  logged and muted while empty, like a meal's. */
 function DrinkHeader({
   icon,
+  active,
   eyebrow,
   value,
   sub,
   valueEnd,
+  caption,
   trailing,
 }: {
   icon: ReactNode;
+  /** Something is logged that day. */
+  active: boolean;
   eyebrow: string;
   value: ReactNode;
   sub?: ReactNode;
   /** Right after the value and never truncated (a small info button). */
   valueEnd?: ReactNode;
+  /** A small line under the value. */
+  caption?: ReactNode;
   trailing?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+    <div className="card-head -mx-4 -mt-4 flex items-center gap-3 px-4 py-3">
+      <span
+        className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+          active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+        }`}
+      >
         {icon}
       </span>
       <div className="min-w-0 flex-1">
@@ -145,6 +158,9 @@ function DrinkHeader({
           </p>
           {valueEnd}
         </div>
+        {caption ? (
+          <p className="tabular mt-1 truncate text-[13px] text-muted-foreground">{caption}</p>
+        ) : null}
       </div>
       {trailing}
     </div>
@@ -194,9 +210,10 @@ function WaterCard({
   };
 
   return (
-    <Card className="p-4">
+    <Card className="overflow-hidden p-4">
       <DrinkHeader
         icon={<Droplet className="size-5" />}
+        active={totalMl > 0}
         eyebrow={`${t.nutrition.water} · ${dayLabel}`}
         value={formatLiters(totalMl)}
         sub={
@@ -353,9 +370,10 @@ function CoffeeCard({
    *  card stays compact; the card itself always shows the daily limit. */
   const [noteOpen, setNoteOpen] = useState(false);
   return (
-    <Card className="p-4">
+    <Card className="overflow-hidden p-4">
       <DrinkHeader
         icon={<Coffee className="size-5" />}
+        active={entries.length > 0}
         eyebrow={`${t.coffee.title} · ${dayLabel}`}
         value={t.coffee.cups(entries.length)}
         trailing={
@@ -501,11 +519,17 @@ function AlcoholCard({
 
   return (
     <>
-      <Card className="p-4">
+      <Card className="overflow-hidden p-4">
         <DrinkHeader
           icon={<Beer className="size-5" />}
+          active={entries.length > 0}
           eyebrow={`${t.alcohol.title} · ${dayLabel}`}
           value={t.alcohol.drinks(entries.length)}
+          caption={
+            // Under the count rather than beside it, so the count never
+            // truncates on a narrow phone.
+            entries.length ? `${t.nutrition.kcal(kcal)} · ${t.alcohol.glasses(glasses)}` : null
+          }
           valueEnd={
             <button
               onClick={() => setNoteOpen((v) => !v)}
@@ -517,14 +541,6 @@ function AlcoholCard({
             </button>
           }
         />
-        {/* Calories and glasses on their own line under the count (aligned
-            with the text, past the badge), so the count never truncates on
-            a narrow phone. */}
-        {entries.length ? (
-          <p className="tabular mt-1 truncate pl-[3.25rem] text-[13px] text-muted-foreground">
-            {t.nutrition.kcal(kcal)} · {t.alcohol.glasses(glasses)}
-          </p>
-        ) : null}
         {canLog ? (
           <div className="mt-4 flex gap-2">
             {choices.map(({ id, ml }) => {

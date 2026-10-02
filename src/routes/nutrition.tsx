@@ -743,7 +743,7 @@ function MealGroup({
   const hasFood = entries.length > 0;
   return (
     <Card className="overflow-hidden p-0">
-      <div className="flex items-center gap-2 px-3 py-2.5">
+      <div className="card-head flex items-center gap-2 px-3 py-2.5">
         {/* The header opens the meal's overview; an empty meal's adds food, like "+". */}
         <button
           onClick={hasFood ? onOpen : onAdd}
@@ -801,7 +801,7 @@ function MealGroup({
             <button
               onClick={onAdd}
               aria-label={t.nutrition.addToMeal(t.mealTypes[meal])}
-              className="relative flex size-8 items-center justify-center rounded-full bg-primary/15 text-foreground active:scale-90"
+              className="relative flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
             >
               <HapticSwitch />
               <Plus className="size-4" />
