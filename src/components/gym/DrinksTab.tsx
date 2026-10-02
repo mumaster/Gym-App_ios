@@ -53,8 +53,8 @@ import { latestBodyKg } from "../../lib/gym/load";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
-/** Nutrition → Drinks: water, coffee and alcohol for the picked day, sized
- *  to fit on one screen under the week strip without scrolling. Everything you do
+/** Nutrition → Drinks: water, coffee and alcohol for the picked day, at the
+ *  Food tab's sizes (card padding, gaps, type, button heights). Everything you do
  *  daily (the totals, the quick-adds, today's entries) is on the cards;
  *  what you set once (the water goal and its suggestion, your quick-add
  *  amounts) is in a sheet behind the water card's settings button. */
@@ -72,7 +72,7 @@ export function DrinksTab({
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <div className="mt-1.5 space-y-1.5">
+    <div className="mt-4 space-y-4">
       <WaterCard
         dayKey={dayKey}
         dayLabel={dayLabel}
@@ -131,14 +131,14 @@ function DrinkHeader({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[10.5px] font-semibold uppercase leading-none tracking-widest text-muted-foreground">
+        <p className="truncate text-[12px] font-semibold uppercase leading-none tracking-widest text-muted-foreground">
           {eyebrow}
         </p>
-        <div className="tabular mt-px flex items-center text-[20px] font-bold leading-none">
+        <div className="tabular mt-1.5 flex items-center text-[26px] font-bold leading-none">
           <p className="min-w-0 truncate">
             {value}
             {sub}
@@ -153,13 +153,11 @@ function DrinkHeader({
 
 /** A day's logged entries as removable chips, scrolling sideways. */
 function EntryChips({ children }: { children: ReactNode }) {
-  return (
-    <div className="no-scrollbar -mx-2.5 mt-1 flex gap-1.5 overflow-x-auto px-2.5">{children}</div>
-  );
+  return <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">{children}</div>;
 }
 
 const chipClass =
-  "flex h-5 shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 text-[11.5px] font-semibold text-muted-foreground active:scale-95";
+  "flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-[13px] font-semibold text-muted-foreground active:scale-95";
 
 function WaterCard({
   dayKey,
@@ -196,14 +194,14 @@ function WaterCard({
   };
 
   return (
-    <Card className="p-2.5">
+    <Card className="p-4">
       <DrinkHeader
-        icon={<Droplet className="size-4" />}
+        icon={<Droplet className="size-5" />}
         eyebrow={`${t.nutrition.water} · ${dayLabel}`}
         value={formatLiters(totalMl)}
         sub={
           waterGoalMl ? (
-            <span className="text-[13px] font-medium text-muted-foreground">
+            <span className="text-[15px] font-medium text-muted-foreground">
               {" "}
               / {formatLiters(waterGoalMl)}
             </span>
@@ -213,7 +211,7 @@ function WaterCard({
           <button
             onClick={onOpenSettings}
             aria-label={t.nutrition.waterSettings}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
           >
             <Settings2 className="size-4" />
           </button>
@@ -221,7 +219,7 @@ function WaterCard({
       />
 
       {waterGoalMl ? (
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${pct}%` }}
@@ -235,7 +233,7 @@ function WaterCard({
             if (suggestedMl != null) update({ waterGoalMl: suggestedMl });
             else onOpenSettings();
           }}
-          className="mt-1 flex w-full items-center gap-1 text-left text-[12.5px] leading-tight font-semibold text-primary-text"
+          className="mt-3 flex w-full items-center gap-1 text-left text-[14px] leading-tight font-semibold text-primary-text"
         >
           <span className="min-w-0 leading-snug">
             {suggestedMl != null
@@ -248,8 +246,8 @@ function WaterCard({
 
       {isToday ? (
         otherOpen ? (
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
+          <div className="mt-4 flex items-center gap-2">
+            <label className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-muted px-3.5">
               <span className="sr-only">{t.nutrition.waterOther}</span>
               <input
                 ref={otherRef}
@@ -262,7 +260,7 @@ function WaterCard({
                 }}
                 onKeyDown={(e) => e.key === "Enter" && logOther()}
                 placeholder={t.nutrition.waterOther}
-                className="tabular h-full w-full min-w-0 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground"
+                className="tabular h-full w-full min-w-0 bg-transparent text-[17px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground"
               />
               <span className="shrink-0 text-[13px] text-muted-foreground">ml</span>
             </label>
@@ -270,7 +268,7 @@ function WaterCard({
               onClick={logOther}
               disabled={otherMl == null}
               aria-label={t.nutrition.waterAddOtherAria}
-              className="relative flex h-10 shrink-0 items-center gap-1 rounded-xl bg-primary px-3.5 text-[14px] font-bold text-primary-foreground disabled:opacity-40"
+              className="relative flex h-12 shrink-0 items-center gap-1 rounded-2xl bg-primary px-4 text-[15px] font-bold text-primary-foreground disabled:opacity-40"
             >
               <Plus className="size-4" /> {t.nutrition.waterAddOther}
             </button>
@@ -280,13 +278,13 @@ function WaterCard({
                 setOtherOpen(false);
               }}
               aria-label={t.common.cancel}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground"
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground"
             >
               <X className="size-4" />
             </button>
           </div>
         ) : (
-          <div className="mt-1.5 grid grid-cols-5 gap-1.5">
+          <div className="mt-4 grid grid-cols-5 gap-2">
             {waterQuickAdd.map((ml, i) => (
               <button
                 key={i}
@@ -295,7 +293,7 @@ function WaterCard({
                   logWater(ml);
                 }}
                 aria-label={t.home.addWater(ml)}
-                className="relative flex h-9 items-center justify-center rounded-xl bg-primary/15 text-[12.5px] font-bold text-foreground active:scale-95"
+                className="relative flex h-12 items-center justify-center rounded-2xl bg-primary/15 text-[13.5px] font-bold text-foreground active:scale-95"
               >
                 <HapticSwitch />+{formatWaterAmount(ml)}
               </button>
@@ -306,9 +304,9 @@ function WaterCard({
                 setOtherOpen(true);
               }}
               aria-label={t.nutrition.waterOther}
-              className="flex h-9 items-center justify-center gap-0.5 rounded-xl bg-secondary text-[12.5px] font-bold text-secondary-foreground active:scale-95"
+              className="flex h-12 items-center justify-center gap-0.5 rounded-2xl bg-secondary text-[13.5px] font-bold text-secondary-foreground active:scale-95"
             >
-              <Plus className="size-3.5" />
+              <Plus className="size-4" />
               ml
             </button>
           </div>
@@ -327,8 +325,8 @@ function WaterCard({
               aria-label={t.nutrition.removeWaterEntry(entry.ml)}
               className={chipClass}
             >
-              <Droplet className="size-3 text-primary-text" /> {formatWaterAmount(entry.ml)}
-              <X className="size-3" />
+              <Droplet className="size-3.5 text-primary-text" /> {formatWaterAmount(entry.ml)}
+              <X className="size-3.5" />
             </button>
           ))}
         </EntryChips>
@@ -352,12 +350,12 @@ function CoffeeCard({
   const mg = caffeineMg(entries);
   const status = nutrientStatus(mg, CAFFEINE_DAILY_LIMIT_MG);
   /** The limits' note (with the lower one in pregnancy) on request, so the
-   *  card fits the screen; the card itself always shows the daily limit. */
+   *  card stays compact; the card itself always shows the daily limit. */
   const [noteOpen, setNoteOpen] = useState(false);
   return (
-    <Card className="p-2.5">
+    <Card className="p-4">
       <DrinkHeader
-        icon={<Coffee className="size-4" />}
+        icon={<Coffee className="size-5" />}
         eyebrow={`${t.coffee.title} · ${dayLabel}`}
         value={t.coffee.cups(entries.length)}
         trailing={
@@ -365,25 +363,25 @@ function CoffeeCard({
             onClick={() => setNoteOpen((v) => !v)}
             aria-expanded={noteOpen}
             aria-label={t.coffee.aboutLimit}
-            className={`tabular flex shrink-0 items-center gap-1 text-right text-[12.5px] leading-tight ${
+            className={`tabular flex shrink-0 items-center gap-1 text-right text-[13px] leading-tight ${
               status === "over" ? "font-semibold text-destructive" : "text-muted-foreground"
             }`}
           >
             {status === "over"
               ? t.coffee.over(mg - CAFFEINE_DAILY_LIMIT_MG)
               : t.coffee.caffeineShort(mg, CAFFEINE_DAILY_LIMIT_MG)}
-            <Info className="size-3.5 shrink-0" />
+            <Info className="size-4 shrink-0" />
           </button>
         }
       />
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all ${barClass(status)}`}
           style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
         />
       </div>
       {canAdd ? (
-        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           {COFFEE_KINDS.map((kind) => (
             <button
               key={kind}
@@ -392,13 +390,13 @@ function CoffeeCard({
                 logCoffee(kind);
               }}
               aria-label={t.coffee.add(t.coffee.kinds[kind])}
-              className="relative flex h-9 flex-col items-center justify-center rounded-xl bg-primary/15 active:scale-95"
+              className="relative flex h-14 flex-col items-center justify-center rounded-2xl bg-primary/15 active:scale-95"
             >
               <HapticSwitch />
-              <span className="text-[12.5px] font-bold leading-tight">
+              <span className="w-full truncate px-1 text-center text-[13px] font-bold leading-tight">
                 + {t.coffee.kinds[kind]}
               </span>
-              <span className="tabular text-[10.5px] leading-tight text-muted-foreground">
+              <span className="tabular mt-0.5 text-[12px] leading-tight text-muted-foreground">
                 {COFFEE_CAFFEINE_MG[kind]} mg
               </span>
             </button>
@@ -417,14 +415,14 @@ function CoffeeCard({
               aria-label={t.coffee.remove(t.coffee.kinds[entry.kind])}
               className={chipClass}
             >
-              <Coffee className="size-3 text-primary-text" /> {t.coffee.kinds[entry.kind]}
-              <X className="size-3" />
+              <Coffee className="size-3.5 text-primary-text" /> {t.coffee.kinds[entry.kind]}
+              <X className="size-3.5" />
             </button>
           ))}
         </EntryChips>
       ) : null}
       {noteOpen ? (
-        <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+        <p className="mt-3 text-[12.5px] leading-snug text-muted-foreground">
           {t.coffee.note(CAFFEINE_DAILY_LIMIT_MG, CAFFEINE_PREGNANCY_LIMIT_MG)}
         </p>
       ) : null}
@@ -503,9 +501,9 @@ function AlcoholCard({
 
   return (
     <>
-      <Card className="p-2.5">
+      <Card className="p-4">
         <DrinkHeader
-          icon={<Beer className="size-4" />}
+          icon={<Beer className="size-5" />}
           eyebrow={`${t.alcohol.title} · ${dayLabel}`}
           value={t.alcohol.drinks(entries.length)}
           valueEnd={
@@ -513,24 +511,22 @@ function AlcoholCard({
               onClick={() => setNoteOpen((v) => !v)}
               aria-expanded={noteOpen}
               aria-label={t.alcohol.aboutLabel}
-              className="ml-1 inline-flex size-5 shrink-0 items-center justify-center text-muted-foreground"
+              className="ml-1.5 inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground"
             >
-              <Info className="size-3.5" />
+              <Info className="size-4" />
             </button>
           }
-          trailing={
-            entries.length ? (
-              <span className="tabular shrink-0 text-right leading-tight text-muted-foreground">
-                <span className="block text-[13px] font-semibold text-foreground">
-                  {t.nutrition.kcal(kcal)}
-                </span>
-                <span className="block text-[11px]">{t.alcohol.glasses(glasses)}</span>
-              </span>
-            ) : undefined
-          }
         />
+        {/* Calories and glasses on their own line under the count (aligned
+            with the text, past the badge), so the count never truncates on
+            a narrow phone. */}
+        {entries.length ? (
+          <p className="tabular mt-1 truncate pl-[3.25rem] text-[13px] text-muted-foreground">
+            {t.nutrition.kcal(kcal)} · {t.alcohol.glasses(glasses)}
+          </p>
+        ) : null}
         {canLog ? (
-          <div className="mt-1.5 flex gap-1.5">
+          <div className="mt-4 flex gap-2">
             {choices.map(({ id, ml }) => {
               const drink = alcoholDrinkById(id)!;
               const name = t.alcohol.names[id];
@@ -539,13 +535,13 @@ function AlcoholCard({
                   key={`${id}-${ml}`}
                   onClick={() => log(drink, ml)}
                   aria-label={t.alcohol.logAria(name, ml)}
-                  className="relative flex h-9 min-w-0 flex-1 flex-col items-center justify-center rounded-xl bg-primary/15 px-1 active:scale-95"
+                  className="relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-2xl bg-primary/15 px-1.5 active:scale-95"
                 >
                   <HapticSwitch />
-                  <span className="w-full truncate text-center text-[12.5px] font-bold leading-tight">
+                  <span className="w-full truncate text-center text-[13.5px] font-bold leading-tight">
                     + {name}
                   </span>
-                  <span className="tabular text-[10.5px] leading-tight text-muted-foreground">
+                  <span className="tabular mt-0.5 text-[12px] leading-tight text-muted-foreground">
                     {ml} ml
                   </span>
                 </button>
@@ -557,9 +553,9 @@ function AlcoholCard({
                 setSheetOpen(true);
               }}
               aria-label={t.alcohol.addDrinkAria}
-              className="flex h-9 w-[4.75rem] shrink-0 items-center justify-center gap-0.5 rounded-xl bg-secondary text-[12.5px] font-bold text-secondary-foreground active:scale-95"
+              className="flex h-14 w-[5.25rem] shrink-0 items-center justify-center gap-0.5 rounded-2xl bg-secondary text-[13.5px] font-bold text-secondary-foreground active:scale-95"
             >
-              <Plus className="size-3.5" />
+              <Plus className="size-4" />
               {t.alcohol.addDrink}
             </button>
           </div>
@@ -579,15 +575,15 @@ function AlcoholCard({
                   aria-label={t.alcohol.removeAria(name, entry.grams)}
                   className={chipClass}
                 >
-                  {drinkIcon(drink.category, "size-3 text-primary-text")} {name} {entry.grams} ml
-                  <X className="size-3" />
+                  {drinkIcon(drink.category, "size-3.5 text-primary-text")} {name} {entry.grams} ml
+                  <X className="size-3.5" />
                 </button>
               );
             })}
           </EntryChips>
         ) : null}
         {noteOpen ? (
-          <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+          <p className="mt-3 text-[12.5px] leading-snug text-muted-foreground">
             {t.alcohol.note} {t.nutrition.nevoReference}
           </p>
         ) : null}
