@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
 
 export function Screen({
@@ -8,6 +8,7 @@ export function Screen({
   toolbar,
   children,
   padBottom = true,
+  fitWhenShort = false,
 }: {
   title: string;
   subtitle?: string | undefined;
@@ -17,7 +18,18 @@ export function Screen({
   toolbar?: ReactNode;
   children: ReactNode;
   padBottom?: boolean;
+  /** Drop the tab-bar padding while the content already ends above the tab
+   *  bar, so a page that fits on one screen can't be scrolled into empty
+   *  space. Longer content keeps the padding and scrolls as before. */
+  fitWhenShort?: boolean;
 }) {
+  const mainRef = useRef<HTMLElement>(null);
+  const fits = useFitsAboveTabBar(mainRef, fitWhenShort);
+  const pb = fits
+    ? "pb-0"
+    : padBottom
+      ? "pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))]"
+      : "pb-8";
   return (
     <div className="min-h-[100dvh] bg-background">
       <header className="safe-top sticky top-0 z-30 pb-2">
@@ -49,13 +61,50 @@ export function Screen({
           <div className="relative mx-auto w-full max-w-xl px-4 pt-2">{toolbar}</div>
         ) : null}
       </header>
-      <main
-        className={`mx-auto w-full max-w-xl px-4 pt-3 ${padBottom ? "pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))]" : "pb-8"}`}
-      >
+      <main ref={mainRef} className={`mx-auto w-full max-w-xl px-4 pt-3 ${pb}`}>
         {children}
       </main>
     </div>
   );
+}
+
+/** Space kept between the content and the tab bar's top for it to count as
+ *  fitting (a layout choice, the same 12 px gap used elsewhere). */
+const FIT_GAP_PX = 12;
+
+/** Whether `main`'s content ends at least FIT_GAP_PX above the floating tab
+ *  bar's pill. Measured without main's own bottom padding, so dropping the
+ *  padding doesn't change the answer. */
+function useFitsAboveTabBar(mainRef: RefObject<HTMLElement | null>, enabled: boolean) {
+  const [fits, setFits] = useState(false);
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!enabled || !main) {
+      setFits(false);
+      return;
+    }
+    const check = () => {
+      const pill = document.querySelector("nav .glass-bar");
+      if (!pill) return setFits(false);
+      const pad = parseFloat(getComputedStyle(main).paddingBottom) || 0;
+      const contentBottom = main.getBoundingClientRect().bottom - pad + window.scrollY;
+      setFits(contentBottom + FIT_GAP_PX <= pill.getBoundingClientRect().top);
+    };
+    check();
+    // The header (status-bar inset) and the tab bar (home-indicator inset)
+    // move the content or the pill without resizing main, so watch them too.
+    const ro = new ResizeObserver(check);
+    for (const el of [main, main.previousElementSibling, document.querySelector("nav")]) {
+      // border-box: the insets are padding, which content-box sizes miss.
+      if (el) ro.observe(el, { box: "border-box" });
+    }
+    window.addEventListener("resize", check);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", check);
+    };
+  }, [mainRef, enabled]);
+  return fits;
 }
 
 export function Card({

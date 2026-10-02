@@ -697,6 +697,7 @@ function WorkoutHome() {
     <Screen
       title={t.generate.title}
       subtitle={tabbed ? undefined : t.generate.subtitle}
+      fitWhenShort={tabbed && tab === "plan" && !planHere}
       toolbar={
         tabbed ? (
           <SegmentedTabs
