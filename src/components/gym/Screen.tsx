@@ -18,9 +18,10 @@ export function Screen({
   toolbar?: ReactNode;
   children: ReactNode;
   padBottom?: boolean;
-  /** Drop the tab-bar padding while the content already ends above the tab
-   *  bar, so a page that fits on one screen can't be scrolled into empty
-   *  space. Longer content keeps the padding and scrolls as before. */
+  /** While the content already ends above the tab bar, drop the tab-bar
+   *  padding and pin the page like Home's, so a page that fits on one screen
+   *  can't be scrolled or bounced. Longer content keeps the padding and
+   *  scrolls as before. */
   fitWhenShort?: boolean;
 }) {
   const mainRef = useRef<HTMLElement>(null);
@@ -31,7 +32,13 @@ export function Screen({
       ? "pb-[calc(var(--tab-bar-content-clearance)+var(--tab-bar-clearance))]"
       : "pb-8";
   return (
-    <div className="min-h-[100dvh] bg-background">
+    // While it fits, the page is pinned like Home's (fixed, overflow hidden):
+    // a document exactly the screen's height still rubber-bands on iOS.
+    <div
+      className={
+        fits ? "fixed inset-0 overflow-hidden bg-background" : "min-h-[100dvh] bg-background"
+      }
+    >
       <header className="safe-top sticky top-0 z-30 pb-2">
         {/* Separate layer for the blur: WebKit can bleed backdrop-filter
             onto an element's own text when applied directly to the element
