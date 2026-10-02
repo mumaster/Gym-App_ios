@@ -60,12 +60,10 @@ import { haptic, useGym } from "../../lib/gym/store";
  *  amounts) is in a sheet behind the water card's settings button. */
 export function DrinksTab({
   dayKey,
-  dayLabel,
   isToday,
   onNeedProfile,
 }: {
   dayKey: string;
-  dayLabel: string;
   isToday: boolean;
   /** Opens the limits questionnaire, which the water suggestion is based on. */
   onNeedProfile: () => void;
@@ -75,15 +73,15 @@ export function DrinksTab({
     <div className="mt-4 space-y-4">
       <WaterCard
         dayKey={dayKey}
-        dayLabel={dayLabel}
+
         isToday={isToday}
         onOpenSettings={() => {
           haptic(12);
           setSettingsOpen(true);
         }}
       />
-      <CoffeeCard dayKey={dayKey} dayLabel={dayLabel} canAdd={isToday} />
-      <AlcoholCard dayKey={dayKey} dayLabel={dayLabel} canAdd={isToday} />
+      <CoffeeCard dayKey={dayKey} canAdd={isToday} />
+      <AlcoholCard dayKey={dayKey} canAdd={isToday} />
       <WaterSettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -111,8 +109,8 @@ function barClass(status: NutrientStatus) {
   return status === "over" ? "bg-destructive" : status === "near" ? "bg-amber-500" : "bg-primary";
 }
 
-/** The card header every drink card shares: a badge, the day as a small
- *  label and the total, with an optional trailing control. It's the card's
+/** The card header every drink card shares: a badge, the drink as a small
+ *  label (no day: the week strip shows which day is picked) and the total, with an optional trailing control. It's the card's
  *  tinted header band (`card-head`, full width: the card is `p-4`), like a
  *  meal's header on the Food tab, and its badge is solid once something is
  *  logged and muted while empty, like a meal's. */
@@ -177,12 +175,10 @@ const chipClass =
 
 function WaterCard({
   dayKey,
-  dayLabel,
   isToday,
   onOpenSettings,
 }: {
   dayKey: string;
-  dayLabel: string;
   isToday: boolean;
   onOpenSettings: () => void;
 }) {
@@ -214,7 +210,7 @@ function WaterCard({
       <DrinkHeader
         icon={<Droplet className="size-5" />}
         active={totalMl > 0}
-        eyebrow={`${t.nutrition.water} · ${dayLabel}`}
+        eyebrow={t.nutrition.water}
         value={formatLiters(totalMl)}
         sub={
           waterGoalMl ? (
@@ -352,15 +348,7 @@ function WaterCard({
   );
 }
 
-function CoffeeCard({
-  dayKey,
-  dayLabel,
-  canAdd,
-}: {
-  dayKey: string;
-  dayLabel: string;
-  canAdd: boolean;
-}) {
+function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
   const t = useTranslation();
   const { coffeeEntries, logCoffee, removeCoffeeEntry } = useGym();
   const entries = useMemo(() => entriesForDay(coffeeEntries, dayKey), [coffeeEntries, dayKey]);
@@ -374,7 +362,7 @@ function CoffeeCard({
       <DrinkHeader
         icon={<Coffee className="size-5" />}
         active={entries.length > 0}
-        eyebrow={`${t.coffee.title} · ${dayLabel}`}
+        eyebrow={t.coffee.title}
         value={t.coffee.cups(entries.length)}
         trailing={
           <button
@@ -476,15 +464,7 @@ function useNevoDrinks(enabled: boolean) {
  *  calories count in the day like any food. Today has one-tap choices (your
  *  latest drink + size combinations) and a sheet with every type and its
  *  usual sizes; past days only list what was logged. */
-function AlcoholCard({
-  dayKey,
-  dayLabel,
-  canAdd,
-}: {
-  dayKey: string;
-  dayLabel: string;
-  canAdd: boolean;
-}) {
+function AlcoholCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
   const t = useTranslation();
   const { foodEntries, language, addFoodEntry, removeFoodEntry, alcoholEnabled, alcoholWeekdays } =
     useGym();
@@ -523,7 +503,7 @@ function AlcoholCard({
         <DrinkHeader
           icon={<Beer className="size-5" />}
           active={entries.length > 0}
-          eyebrow={`${t.alcohol.title} · ${dayLabel}`}
+          eyebrow={t.alcohol.title}
           value={t.alcohol.drinks(entries.length)}
           caption={
             // Under the count rather than beside it, so the count never

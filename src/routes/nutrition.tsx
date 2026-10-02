@@ -375,7 +375,6 @@ function NutritionScreen() {
       {tab === "drinks" ? (
         <DrinksTab
           dayKey={selectedKey}
-          dayLabel={dayLabel}
           isToday={isToday}
           onNeedProfile={() => setGoalsSheetOpen(true)}
         />
