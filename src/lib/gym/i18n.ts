@@ -1,4 +1,5 @@
 import { useGym } from "./store";
+import type { AlcoholDrinkId } from "./alcohol";
 import type { Language } from "./types";
 
 /** Metadata for the language picker in Settings — id used for storage/lookup,
@@ -267,7 +268,12 @@ const en = {
       weightTrend: "Weight trend needing 2+ weeks of weigh-ins, and 7700 kcal per kg",
       energy: "Daily energy needs, from measured energy use by activity level",
       foodComposition:
-        "Nutrition values of unpackaged food (fruit, vegetables, meat…); salt from sodium",
+        "Nutrition values of unpackaged food (fruit, vegetables, meat…) and of beer and wine; salt from sodium",
+      alcoholGlass:
+        "A standard glass of alcohol: 10 g of pure alcohol, 250 ml of 5% beer or 100 ml of 12% wine",
+      alcoholAdvice: "The note that no amount of alcohol is known to be safe",
+      wineMeasures: "Wine servings of 125 ml and 175 ml, the UK's legal measures for a glass",
+      bottleSize: "A bottle of wine as 750 ml, the EU bottle size",
       sessionEnergy: "Energy of a training session",
       cut: "Cutting pace: 0.5–1% of bodyweight a week",
       bulk: "Bulking surplus of 10–20%",
@@ -967,6 +973,35 @@ const en = {
     add: (kind: string) => `Log ${kind.toLowerCase()}`,
     remove: (kind: string) => `Remove ${kind.toLowerCase()}`,
   },
+  alcohol: {
+    title: "Alcohol",
+    drinks: (n: number) => (n === 1 ? "1 drink" : `${n} drinks`),
+    glasses: (g: number) => `≈ ${g.toFixed(1)} standard glasses`,
+    aboutLabel: "About standard glasses",
+    note: "A standard glass holds about 10 g of pure alcohol: 250 ml of 5% beer or 100 ml of 12% wine. The Dutch Health Council says there is no safe lower limit for alcohol — the less, the better. Your drinks count towards your calories for the day.",
+    names: {
+      pils: "Pils",
+      witbier: "Wheat beer",
+      strongBeer: "Strong beer (>7%)",
+      radler: "Radler",
+      alcoholFreeBeer: "Alcohol-free beer",
+      redWine: "Red wine",
+      whiteWine: "White wine (dry)",
+      rose: "Rosé",
+      sweetWine: "Sweet white wine",
+      alcoholFreeWine: "Alcohol-free wine",
+    } as Record<AlcoholDrinkId, string>,
+    categories: { beer: "Beer", wine: "Wine" } as Record<"beer" | "wine", string>,
+    addDrink: "Drink",
+    addDrinkAria: "Log a beer or wine",
+    sheetTitle: "Add a drink",
+    sheetHint: "Tap a size to log it.",
+    logAria: (name: string, ml: number) => `Log ${name}, ${ml} ml`,
+    removeAria: (name: string, ml: number) => `Remove ${name}, ${ml} ml`,
+    sizeLabel: (ml: number, kcal: number | null) =>
+      kcal == null ? `${ml} ml` : `${ml} ml · ${kcal} kcal`,
+    loading: "Loading nutrition values…",
+  },
   mealOverview: {
     open: (meal: string) => `${meal}: nutrition overview`,
     title: (meal: string, day: string) => `${meal} · ${day}`,
@@ -1554,7 +1589,12 @@ const nl: Dict = {
       weightTrend: "Gewichtstrend na 2+ weken wegen, en 7700 kcal per kg",
       energy: "Dagelijkse energiebehoefte, uit gemeten energieverbruik per activiteitsniveau",
       foodComposition:
-        "Voedingswaarden van onverpakt voedsel (fruit, groente, vlees…); zout uit natrium",
+        "Voedingswaarden van onverpakt voedsel (fruit, groente, vlees…) en van bier en wijn; zout uit natrium",
+      alcoholGlass:
+        "Een standaardglas alcohol: 10 g pure alcohol, 250 ml bier van 5% of 100 ml wijn van 12%",
+      alcoholAdvice: "De opmerking dat geen enkele hoeveelheid alcohol bekend staat als veilig",
+      wineMeasures: "Wijnporties van 125 ml en 175 ml, de Britse wettelijke maten voor een glas",
+      bottleSize: "Een fles wijn als 750 ml, de EU-flesmaat",
       sessionEnergy: "Energie van een trainingssessie",
       cut: "Afvaltempo: 0,5–1% van je lichaamsgewicht per week",
       bulk: "Overschot van 10–20% bij aankomen",
@@ -1958,7 +1998,7 @@ const nl: Dict = {
     nextWeek: "Volgende week",
     weekAvg: (avg: string, goal: string | null, days: number) =>
       `Gem. ${avg}${goal ? ` / ${goal}` : ""} kcal per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
-    weekAvgNone: "Je weekgemiddelde verschijnt zodra er een volledige dag is gelogd.",
+    weekAvgNone: "Je weekgemiddelde verschijnt na een volledige dag.",
     tabs: { food: "Eten", drinks: "Drinken", weight: "Gewicht" },
     waterWeekAvg: (avg: string, goal: string | null, days: number) =>
       `Gem. ${avg}${goal ? ` / ${goal}` : ""} water per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
@@ -2257,6 +2297,35 @@ const nl: Dict = {
     kinds: { espresso: "Espresso", filter: "Koffie", milk: "Cappuccino" },
     add: (kind: string) => `${kind} loggen`,
     remove: (kind: string) => `${kind} verwijderen`,
+  },
+  alcohol: {
+    title: "Alcohol",
+    drinks: (n: number) => (n === 1 ? "1 drankje" : `${n} drankjes`),
+    glasses: (g: number) => `≈ ${g.toFixed(1).replace(".", ",")} standaardglazen`,
+    aboutLabel: "Over standaardglazen",
+    note: "Een standaardglas bevat ongeveer 10 g pure alcohol: 250 ml bier van 5% of 100 ml wijn van 12%. De Gezondheidsraad zegt dat er geen veilige ondergrens is voor alcohol — hoe minder, hoe beter. Je drankjes tellen mee in je calorieën van de dag.",
+    names: {
+      pils: "Pils",
+      witbier: "Witbier",
+      strongBeer: "Zwaar bier (>7%)",
+      radler: "Radler",
+      alcoholFreeBeer: "Alcoholvrij bier",
+      redWine: "Rode wijn",
+      whiteWine: "Witte wijn (droog)",
+      rose: "Rosé",
+      sweetWine: "Zoete witte wijn",
+      alcoholFreeWine: "Alcoholvrije wijn",
+    },
+    categories: { beer: "Bier", wine: "Wijn" },
+    addDrink: "Drankje",
+    addDrinkAria: "Bier of wijn loggen",
+    sheetTitle: "Drankje toevoegen",
+    sheetHint: "Tik op een maat om te loggen.",
+    logAria: (name: string, ml: number) => `${name}, ${ml} ml loggen`,
+    removeAria: (name: string, ml: number) => `${name}, ${ml} ml verwijderen`,
+    sizeLabel: (ml: number, kcal: number | null) =>
+      kcal == null ? `${ml} ml` : `${ml} ml · ${kcal} kcal`,
+    loading: "Voedingswaarden laden…",
   },
   mealOverview: {
     open: (meal: string) => `${meal}: voedingsoverzicht`,

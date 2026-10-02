@@ -1,5 +1,6 @@
 import { BookmarkPlus, Check, Plus } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { drinkOf } from "../../lib/gym/alcohol";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import {
   dailyTotals,
@@ -156,7 +157,12 @@ export function MealOverviewSheet({
                       <span className="block truncate text-[14.5px] font-semibold">
                         {entry.name}
                       </span>
-                      <PortionLine grams={entry.grams} macros={m} className="text-[12px]" />
+                      <PortionLine
+                        grams={entry.grams}
+                        unit={drinkOf(entry) ? "ml" : "g"}
+                        macros={m}
+                        className="text-[12px]"
+                      />
                     </span>
                     <span className="tabular shrink-0 text-[14px] font-semibold">
                       {t.nutrition.kcal(m.calories)}
@@ -207,10 +213,13 @@ export function MealOverviewSheet({
  */
 export function PortionLine({
   grams,
+  unit = "g",
   macros,
   className = "",
 }: {
   grams: number;
+  /** Drinks are logged in ml (counted as g), everything else in g. */
+  unit?: "g" | "ml";
   macros: Pick<Macros, "protein" | "carbs" | "fat">;
   className?: string;
 }) {
@@ -218,7 +227,7 @@ export function PortionLine({
   return (
     <span className={`tabular mt-0.5 flex min-w-0 items-center gap-1.5 ${className}`}>
       <span className="shrink-0 rounded-md bg-foreground/10 px-1.5 py-px font-semibold text-foreground">
-        {grams} g
+        {grams} {unit}
       </span>
       <span className="truncate text-muted-foreground">
         {t.nutrition.entryMacros(

@@ -47,6 +47,7 @@ import {
 import { BodyweightCard } from "../components/gym/BodyweightCard";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useDayGoalsResolver, useDayNutrition } from "../lib/gym/dayNutrition";
+import { drinkOf } from "../lib/gym/alcohol";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { latestBodyKg } from "../lib/gym/load";
 import { mondayOf, parseDayKey } from "../lib/gym/schedule";
@@ -823,7 +824,12 @@ function MealGroup({
               >
                 <div className="min-w-0">
                   <p className="truncate text-[15px] font-semibold">{entry.name}</p>
-                  <PortionLine grams={entry.grams} macros={m} className="text-[12.5px]" />
+                  <PortionLine
+                    grams={entry.grams}
+                    unit={drinkOf(entry) ? "ml" : "g"}
+                    macros={m}
+                    className="text-[12.5px]"
+                  />
                 </div>
                 <p className="tabular shrink-0 text-[14px] font-semibold">
                   {t.nutrition.kcal(m.calories)}

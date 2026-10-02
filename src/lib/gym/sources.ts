@@ -49,7 +49,11 @@ export type SourceId =
   | "concurrent"
   | "cardioMinutes"
   | "cardioMets"
-  | "water";
+  | "water"
+  | "alcoholGlass"
+  | "alcoholAdvice"
+  | "wineMeasures"
+  | "bottleSize";
 
 export const SOURCES: SourceEntry[] = [
   {
@@ -207,6 +211,28 @@ export const SOURCES: SourceEntry[] = [
       "EFSA NDA Panel, Scientific opinion on dietary reference values for water, EFSA Journal 2010",
       "ACSM position stand on exercise and fluid replacement (Sawka et al., 2007)",
     ],
+  },
+  {
+    id: "alcoholGlass",
+    group: "nutrition",
+    refs: ["Trimbos-instituut, standard glass of alcohol (about 10 g of pure alcohol)"],
+  },
+  {
+    id: "alcoholAdvice",
+    group: "nutrition",
+    refs: ["Gezondheidsraad (Dutch Health Council), advice on alcohol, June 2026"],
+  },
+  {
+    id: "wineMeasures",
+    group: "nutrition",
+    refs: [
+      "The Weights and Measures (Specified Quantities) (Unwrapped Bread and Intoxicating Liquor) Order 2011 (UK; wine by the glass in 125 ml and 175 ml)",
+    ],
+  },
+  {
+    id: "bottleSize",
+    group: "nutrition",
+    refs: ["Directive 2007/45/EC (EU nominal bottle sizes; still wine in 750 ml)"],
   },
   {
     id: "caffeine",

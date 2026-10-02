@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NEVO_FOODS, NEVO_VERSION } from "../nevoFoods.data";
+import { NEVO_FOODS, NEVO_GROUPS, NEVO_VERSION } from "../nevoFoods.data";
 import {
   SALT_PER_SODIUM,
   foldText,
@@ -17,6 +17,23 @@ describe("NEVO data", () => {
   it("is the version the references name", () => {
     expect(NEVO_VERSION).toBe("2025/9.0");
     expect(foods.length).toBeGreaterThan(1000);
+  });
+
+  it("has the beer, wine and other drinks groups, whole", () => {
+    expect(foods.length).toBe(1486);
+    const inGroup = (name: string) => {
+      const gi = NEVO_GROUPS.findIndex(([nl]) => nl === name);
+      return foods.filter((f) => f.group === gi).length;
+    };
+    expect(inGroup("Alcoholische dranken")).toBe(41);
+    expect(inGroup("Niet-alcoholische dranken")).toBe(112);
+  });
+
+  it("carries NEVO's alcohol (ALC) only where it's above 0", () => {
+    // Bier pils: ALC 4.3 g per 100 g; Banaan has none.
+    expect(foods.find((f) => f.code === 390)!.alcohol).toBe(4.3);
+    expect(foods.find((f) => f.code === 151)!.alcohol).toBe(0);
+    expect(NEVO_FOODS.find((r) => r[0] === 151)).toHaveLength(11);
   });
 
   it("keeps NEVO's values unchanged (spot checks against the 2025/9.0 file)", () => {
@@ -40,11 +57,12 @@ describe("NEVO data", () => {
   });
 
   it("has energy roughly matching its macros (a sanity check on parsing)", () => {
-    // NEVO's energy also counts alcohol, organic acids and polyols, so only
-    // gross mistakes (a missed decimal comma) would fail this.
+    // NEVO's energy also counts alcohol (7 kcal/g, EU Regulation 1169/2011
+    // Annex XIV), organic acids and polyols, so only gross mistakes (a
+    // missed decimal comma) would fail this.
     const off = foods.filter((f) => {
       const { calories, protein, carbs, fat, fiber } = f.per100;
-      const est = 4 * protein + 4 * carbs + 9 * fat + 2 * fiber;
+      const est = 4 * protein + 4 * carbs + 9 * fat + 2 * fiber + 7 * f.alcohol;
       return calories > 50 && Math.abs(est - calories) / calories > 0.25;
     });
     expect(off.length / foods.length).toBeLessThan(0.02);

@@ -3,7 +3,8 @@
  * Builds src/lib/gym/nevoFoods.data.ts from the NEVO online dataset (RIVM,
  * the Dutch food composition table) — unpackaged food with no barcode or
  * label: fruit, vegetables, potatoes, grains, bread, eggs, meat, fish,
- * dairy, nuts, legumes, fats and oils.
+ * dairy, nuts, legumes, fats and oils, and drinks (a beer at a bar or a
+ * glass of wine has no label either).
  *
  *   node scripts/build-nevo-foods.mjs path/to/NEVO2025_v9.0.csv
  *
@@ -27,8 +28,10 @@ import { fileURLToPath } from "node:url";
 const NEVO_VERSION = "2025/9.0";
 
 /** Food groups taken whole (Dutch group names, as in the dataset). Left out:
- *  drinks, sweets, sauces, snacks, spreads, mixed dishes, soups and special
- *  nutrition, which come with a label or aren't single foods. */
+ *  sweets, sauces, snacks, spreads, mixed dishes, soups and special
+ *  nutrition, which come with a label or aren't single foods. Drinks are in
+ *  (alcoholic and non-alcoholic) since a beer at a bar or a glass of wine
+ *  has no label; alcohol.ts uses the beers and wines. */
 const GROUPS = [
   "Fruit",
   "Groente",
@@ -43,6 +46,8 @@ const GROUPS = [
   "Noten en zaden",
   "Peulvruchten",
   "Vetten en oliën",
+  "Alcoholische dranken",
+  "Niet-alcoholische dranken",
 ];
 
 const COLUMNS = {
@@ -59,6 +64,7 @@ const COLUMNS = {
   fat: "FAT (g)",
   fiber: "FIBT (g)",
   sodium: "NA (mg)",
+  alcohol: "ALC (g)",
 };
 
 /** Parses NEVO's `|`-separated, double-quoted CSV. */
@@ -111,6 +117,7 @@ for (const r of rows) {
   if ([kcal, protein, carbs, fat, fiber].some((v) => v === null)) {
     throw new Error(`Missing energy or macronutrient for NEVO code ${r[COLUMNS.code]}`);
   }
+  const alcohol = num(r[COLUMNS.alcohol]);
   foods.push([
     Number(r[COLUMNS.code]),
     r[COLUMNS.nl],
@@ -123,6 +130,8 @@ for (const r of rows) {
     fat,
     fiber,
     num(r[COLUMNS.sodium]),
+    // Alcohol g per 100 g, only where NEVO has a value above 0.
+    ...(alcohol ? [alcohol] : []),
   ]);
 }
 foods.sort((a, b) => a[0] - b[0]);
@@ -139,7 +148,8 @@ export const NEVO_GROUPS: [string, string][] = ${JSON.stringify(groups)};
 
 /** [code, Dutch name, English name, Dutch synonyms ("/"-separated), group,
  *  kcal, protein g, available carbohydrate g, fat g, fibre g, sodium mg
- *  (null when NEVO has no value)] — all per 100 g. */
+ *  (null when NEVO has no value), alcohol g (only present when above 0)] —
+ *  all per 100 g. */
 export type NevoRow = [
   number,
   string,
@@ -152,6 +162,7 @@ export type NevoRow = [
   number,
   number,
   number | null,
+  number?,
 ];
 
 export const NEVO_FOODS: NevoRow[] = [

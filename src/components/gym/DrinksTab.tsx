@@ -1,14 +1,42 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronRight, Coffee, Droplet, Info, Plus, RotateCcw, Settings2, X } from "lucide-react";
+import {
+  Beer,
+  ChevronRight,
+  Coffee,
+  Droplet,
+  Info,
+  Plus,
+  RotateCcw,
+  Settings2,
+  Wine,
+  X,
+} from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
 import { HapticSwitch } from "./HapticSwitch";
+import {
+  ALCOHOL_CATEGORIES,
+  ALCOHOL_DRINKS,
+  alcoholCardVisible,
+  alcoholDrinkById,
+  buildDrinkEntry,
+  drinkEntries,
+  drinkOf,
+  isWeekend,
+  quickDrinkChoices,
+  servingKcal,
+  standardGlasses,
+  type AlcoholCategory,
+  type AlcoholDrink,
+} from "../../lib/gym/alcohol";
+import { loadNevoFoods, type NevoFood } from "../../lib/gym/nevoFoods";
 import {
   CAFFEINE_DAILY_LIMIT_MG,
   CAFFEINE_PREGNANCY_LIMIT_MG,
   caffeineMg,
   COFFEE_CAFFEINE_MG,
   COFFEE_KINDS,
+  dailyTotals,
   entriesForDay,
   formatLiters,
   formatWaterAmount,
@@ -20,12 +48,13 @@ import {
   type NutrientStatus,
 } from "../../lib/gym/nutrition";
 import { useTranslation } from "../../lib/gym/i18n";
+import { parseDayKey } from "../../lib/gym/schedule";
 import { latestBodyKg } from "../../lib/gym/load";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 
-/** Nutrition → Drinks: water and coffee for the picked day, sized to fit on
- *  one screen under the week strip without scrolling. Everything you do
+/** Nutrition → Drinks: water, coffee and alcohol for the picked day, sized
+ *  to fit on one screen under the week strip without scrolling. Everything you do
  *  daily (the totals, the quick-adds, today's entries) is on the cards;
  *  what you set once (the water goal and its suggestion, your quick-add
  *  amounts) is in a sheet behind the water card's settings button. */
@@ -43,7 +72,7 @@ export function DrinksTab({
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <div className="mt-2.5 space-y-2.5">
+    <div className="mt-1.5 space-y-1.5">
       <WaterCard
         dayKey={dayKey}
         dayLabel={dayLabel}
@@ -54,6 +83,7 @@ export function DrinksTab({
         }}
       />
       <CoffeeCard dayKey={dayKey} dayLabel={dayLabel} canAdd={isToday} />
+      <AlcoholCard dayKey={dayKey} dayLabel={dayLabel} canAdd={isToday} />
       <WaterSettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -88,27 +118,33 @@ function DrinkHeader({
   eyebrow,
   value,
   sub,
+  valueEnd,
   trailing,
 }: {
   icon: ReactNode;
   eyebrow: string;
   value: ReactNode;
   sub?: ReactNode;
+  /** Right after the value and never truncated (a small info button). */
+  valueEnd?: ReactNode;
   trailing?: ReactNode;
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="truncate text-[10.5px] font-semibold uppercase leading-none tracking-widest text-muted-foreground">
           {eyebrow}
         </p>
-        <p className="tabular mt-0.5 truncate text-[22px] font-bold leading-none">
-          {value}
-          {sub}
-        </p>
+        <div className="tabular mt-px flex items-center text-[20px] font-bold leading-none">
+          <p className="min-w-0 truncate">
+            {value}
+            {sub}
+          </p>
+          {valueEnd}
+        </div>
       </div>
       {trailing}
     </div>
@@ -118,12 +154,12 @@ function DrinkHeader({
 /** A day's logged entries as removable chips, scrolling sideways. */
 function EntryChips({ children }: { children: ReactNode }) {
   return (
-    <div className="no-scrollbar -mx-3.5 mt-2 flex gap-1.5 overflow-x-auto px-3.5">{children}</div>
+    <div className="no-scrollbar -mx-2.5 mt-1 flex gap-1.5 overflow-x-auto px-2.5">{children}</div>
   );
 }
 
 const chipClass =
-  "flex h-6 shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 text-[11.5px] font-semibold text-muted-foreground active:scale-95";
+  "flex h-5 shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 text-[11.5px] font-semibold text-muted-foreground active:scale-95";
 
 function WaterCard({
   dayKey,
@@ -160,9 +196,9 @@ function WaterCard({
   };
 
   return (
-    <Card className="p-3.5">
+    <Card className="p-2.5">
       <DrinkHeader
-        icon={<Droplet className="size-[18px]" />}
+        icon={<Droplet className="size-4" />}
         eyebrow={`${t.nutrition.water} · ${dayLabel}`}
         value={formatLiters(totalMl)}
         sub={
@@ -177,7 +213,7 @@ function WaterCard({
           <button
             onClick={onOpenSettings}
             aria-label={t.nutrition.waterSettings}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
           >
             <Settings2 className="size-4" />
           </button>
@@ -185,7 +221,7 @@ function WaterCard({
       />
 
       {waterGoalMl ? (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${pct}%` }}
@@ -199,7 +235,7 @@ function WaterCard({
             if (suggestedMl != null) update({ waterGoalMl: suggestedMl });
             else onOpenSettings();
           }}
-          className="mt-2.5 flex w-full items-center gap-1 text-left text-[13px] font-semibold text-primary-text"
+          className="mt-1 flex w-full items-center gap-1 text-left text-[12.5px] leading-tight font-semibold text-primary-text"
         >
           <span className="min-w-0 leading-snug">
             {suggestedMl != null
@@ -212,7 +248,7 @@ function WaterCard({
 
       {isToday ? (
         otherOpen ? (
-          <div className="mt-3 flex items-center gap-1.5">
+          <div className="mt-1.5 flex items-center gap-1.5">
             <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">
               <span className="sr-only">{t.nutrition.waterOther}</span>
               <input
@@ -250,7 +286,7 @@ function WaterCard({
             </button>
           </div>
         ) : (
-          <div className="mt-3 grid grid-cols-5 gap-1.5">
+          <div className="mt-1.5 grid grid-cols-5 gap-1.5">
             {waterQuickAdd.map((ml, i) => (
               <button
                 key={i}
@@ -259,7 +295,7 @@ function WaterCard({
                   logWater(ml);
                 }}
                 aria-label={t.home.addWater(ml)}
-                className="relative flex h-10 items-center justify-center rounded-xl bg-primary/15 text-[12.5px] font-bold text-foreground active:scale-95"
+                className="relative flex h-9 items-center justify-center rounded-xl bg-primary/15 text-[12.5px] font-bold text-foreground active:scale-95"
               >
                 <HapticSwitch />+{formatWaterAmount(ml)}
               </button>
@@ -270,7 +306,7 @@ function WaterCard({
                 setOtherOpen(true);
               }}
               aria-label={t.nutrition.waterOther}
-              className="flex h-10 items-center justify-center gap-0.5 rounded-xl bg-secondary text-[12.5px] font-bold text-secondary-foreground active:scale-95"
+              className="flex h-9 items-center justify-center gap-0.5 rounded-xl bg-secondary text-[12.5px] font-bold text-secondary-foreground active:scale-95"
             >
               <Plus className="size-3.5" />
               ml
@@ -319,9 +355,9 @@ function CoffeeCard({
    *  card fits the screen; the card itself always shows the daily limit. */
   const [noteOpen, setNoteOpen] = useState(false);
   return (
-    <Card className="p-3.5">
+    <Card className="p-2.5">
       <DrinkHeader
-        icon={<Coffee className="size-[18px]" />}
+        icon={<Coffee className="size-4" />}
         eyebrow={`${t.coffee.title} · ${dayLabel}`}
         value={t.coffee.cups(entries.length)}
         trailing={
@@ -340,14 +376,14 @@ function CoffeeCard({
           </button>
         }
       />
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all ${barClass(status)}`}
           style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
         />
       </div>
       {canAdd ? (
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
+        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
           {COFFEE_KINDS.map((kind) => (
             <button
               key={kind}
@@ -356,7 +392,7 @@ function CoffeeCard({
                 logCoffee(kind);
               }}
               aria-label={t.coffee.add(t.coffee.kinds[kind])}
-              className="relative flex h-11 flex-col items-center justify-center rounded-xl bg-primary/15 active:scale-95"
+              className="relative flex h-9 flex-col items-center justify-center rounded-xl bg-primary/15 active:scale-95"
             >
               <HapticSwitch />
               <span className="text-[12.5px] font-bold leading-tight">
@@ -393,6 +429,231 @@ function CoffeeCard({
         </p>
       ) : null}
     </Card>
+  );
+}
+
+const drinkIcon = (category: AlcoholCategory, className: string) =>
+  category === "beer" ? <Beer className={className} /> : <Wine className={className} />;
+
+/** NEVO's beers and wines by code, loaded (a lazy chunk) as soon as the
+ *  card is on screen so the first tap logs at once. */
+function useNevoDrinks(enabled: boolean) {
+  const [byCode, setByCode] = useState<Map<number, NevoFood> | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    const wanted = new Set(ALCOHOL_DRINKS.map((d) => d.nevo));
+    loadNevoFoods()
+      .then((foods) => {
+        if (alive)
+          setByCode(new Map(foods.filter((f) => wanted.has(f.code)).map((f) => [f.code, f])));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [enabled]);
+  return byCode;
+}
+
+/** Beer and wine, logged as ordinary foods from NEVO (alcohol.ts), so the
+ *  calories count in the day like any food. Today has one-tap choices (your
+ *  latest drink + size combinations) and a sheet with every type and its
+ *  usual sizes; past days only list what was logged. */
+function AlcoholCard({
+  dayKey,
+  dayLabel,
+  canAdd,
+}: {
+  dayKey: string;
+  dayLabel: string;
+  canAdd: boolean;
+}) {
+  const t = useTranslation();
+  const { foodEntries, language, addFoodEntry, removeFoodEntry } = useGym();
+  const day = useMemo(() => parseDayKey(dayKey), [dayKey]);
+  /** Quick-adds: only today, and only when today is a weekend day. */
+  const canLog = canAdd && isWeekend(day);
+  const byCode = useNevoDrinks(canLog);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const entries = useMemo(
+    () => drinkEntries(entriesForDay(foodEntries, dayKey)),
+    [foodEntries, dayKey],
+  );
+  const kcal = Math.round(dailyTotals(entries).calories);
+  const glasses = standardGlasses(entries);
+  const choices = useMemo(() => quickDrinkChoices(foodEntries), [foodEntries]);
+  if (!alcoholCardVisible(day, entries.length)) return null;
+
+  /** Logs one serving; if the NEVO chunk is still on its way, waits for it. */
+  const log = (drink: AlcoholDrink, ml: number) => {
+    haptic(15);
+    const add = (food: NevoFood | undefined) =>
+      food && addFoodEntry(buildDrinkEntry(drink, ml, food, language));
+    const food = byCode?.get(drink.nevo);
+    if (food) add(food);
+    else void loadNevoFoods().then((foods) => add(foods.find((f) => f.code === drink.nevo)));
+  };
+
+  return (
+    <>
+      <Card className="p-2.5">
+        <DrinkHeader
+          icon={<Beer className="size-4" />}
+          eyebrow={`${t.alcohol.title} · ${dayLabel}`}
+          value={t.alcohol.drinks(entries.length)}
+          valueEnd={
+            <button
+              onClick={() => setNoteOpen((v) => !v)}
+              aria-expanded={noteOpen}
+              aria-label={t.alcohol.aboutLabel}
+              className="ml-1 inline-flex size-5 shrink-0 items-center justify-center text-muted-foreground"
+            >
+              <Info className="size-3.5" />
+            </button>
+          }
+          trailing={
+            entries.length ? (
+              <span className="tabular shrink-0 text-right leading-tight text-muted-foreground">
+                <span className="block text-[13px] font-semibold text-foreground">
+                  {t.nutrition.kcal(kcal)}
+                </span>
+                <span className="block text-[11px]">{t.alcohol.glasses(glasses)}</span>
+              </span>
+            ) : undefined
+          }
+        />
+        {canLog ? (
+          <div className="mt-1.5 flex gap-1.5">
+            {choices.map(({ id, ml }) => {
+              const drink = alcoholDrinkById(id)!;
+              const name = t.alcohol.names[id];
+              return (
+                <button
+                  key={`${id}-${ml}`}
+                  onClick={() => log(drink, ml)}
+                  aria-label={t.alcohol.logAria(name, ml)}
+                  className="relative flex h-9 min-w-0 flex-1 flex-col items-center justify-center rounded-xl bg-primary/15 px-1 active:scale-95"
+                >
+                  <HapticSwitch />
+                  <span className="w-full truncate text-center text-[12.5px] font-bold leading-tight">
+                    + {name}
+                  </span>
+                  <span className="tabular text-[10.5px] leading-tight text-muted-foreground">
+                    {ml} ml
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => {
+                haptic(10);
+                setSheetOpen(true);
+              }}
+              aria-label={t.alcohol.addDrinkAria}
+              className="flex h-9 w-[4.75rem] shrink-0 items-center justify-center gap-0.5 rounded-xl bg-secondary text-[12.5px] font-bold text-secondary-foreground active:scale-95"
+            >
+              <Plus className="size-3.5" />
+              {t.alcohol.addDrink}
+            </button>
+          </div>
+        ) : null}
+        {entries.length > 0 ? (
+          <EntryChips>
+            {entries.map((entry) => {
+              const drink = drinkOf(entry)!;
+              const name = t.alcohol.names[drink.id];
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => {
+                    haptic(10);
+                    removeFoodEntry(entry.id);
+                  }}
+                  aria-label={t.alcohol.removeAria(name, entry.grams)}
+                  className={chipClass}
+                >
+                  {drinkIcon(drink.category, "size-3 text-primary-text")} {name} {entry.grams} ml
+                  <X className="size-3" />
+                </button>
+              );
+            })}
+          </EntryChips>
+        ) : null}
+        {noteOpen ? (
+          <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+            {t.alcohol.note} {t.nutrition.nevoReference}
+          </p>
+        ) : null}
+      </Card>
+      <AlcoholSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        byCode={byCode}
+        onPick={(drink, ml) => {
+          log(drink, ml);
+          setSheetOpen(false);
+        }}
+      />
+    </>
+  );
+}
+
+/** Every beer and wine with its usual sizes and what a serving comes to;
+ *  tapping a size logs it and closes the sheet. */
+function AlcoholSheet({
+  open,
+  onClose,
+  byCode,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  byCode: Map<number, NevoFood> | null;
+  onPick: (drink: AlcoholDrink, ml: number) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <BottomSheet open={open} onClose={onClose} title={t.alcohol.sheetTitle}>
+      <p className="mb-3 px-1 text-[13px] text-muted-foreground">{t.alcohol.sheetHint}</p>
+      {ALCOHOL_CATEGORIES.map((category) => (
+        <section key={category} className="mb-4">
+          <p className="mb-1.5 flex items-center gap-1.5 px-1 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {drinkIcon(category, "size-3.5")} {t.alcohol.categories[category]}
+          </p>
+          <div className="space-y-2">
+            {ALCOHOL_DRINKS.filter((d) => d.category === category).map((drink) => {
+              const food = byCode?.get(drink.nevo);
+              return (
+                <div key={drink.id} className="rounded-2xl bg-muted px-3 py-2.5">
+                  <p className="mb-1.5 text-[14.5px] font-semibold">{t.alcohol.names[drink.id]}</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {drink.sizes.map((ml) => (
+                      <button
+                        key={ml}
+                        onClick={() => onPick(drink, ml)}
+                        aria-label={t.alcohol.logAria(t.alcohol.names[drink.id], ml)}
+                        className="relative flex h-12 min-w-0 flex-col items-center justify-center rounded-xl bg-primary/15 active:scale-95"
+                      >
+                        <HapticSwitch />
+                        <span className="tabular text-[13px] font-bold leading-tight">{ml} ml</span>
+                        <span className="tabular text-[10.5px] leading-tight text-muted-foreground">
+                          {food ? t.nutrition.kcal(servingKcal(food, ml)) : "…"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      <p className="px-1 text-[11.5px] leading-snug text-muted-foreground">
+        {t.nutrition.nevoReference}
+      </p>
+    </BottomSheet>
   );
 }
 

@@ -45,6 +45,11 @@ export interface FoodEntry {
    *  ingredients), so the NEVO reference shows where the day uses it.
    *  Dropped once the user changes a value. */
   nevo?: number[];
+  /** Set on a beer or wine logged from Nutrition → Drinks (alcohol.ts's
+   *  drink id), so it counts as a drink even after an edit drops the NEVO
+   *  mark. The values are still the entry's own: calories count like any
+   *  food. */
+  drink?: string;
 }
 
 export interface Macros {

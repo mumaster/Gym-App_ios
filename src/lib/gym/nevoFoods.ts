@@ -1,6 +1,6 @@
 /**
  * Unpackaged food — fruit, vegetables, potatoes, grains, eggs, meat, fish,
- * dairy, nuts — from NEVO online (RIVM, the Dutch food composition table),
+ * dairy, nuts, drinks — from NEVO online (RIVM, the Dutch food composition table),
  * extracted by scripts/build-nevo-foods.mjs into nevoFoods.data.ts.
  *
  * Why NEVO and not Open Food Facts (which the barcode path uses): OFF's
@@ -34,10 +34,13 @@ export interface NevoFood {
   per100: Macros;
   /** False when NEVO has no sodium value, so salt is unknown (0, flagged). */
   saltKnown: boolean;
+  /** NEVO's alcohol (ALC) in g per 100 g, unchanged; 0 when NEVO lists none. */
+  alcohol: number;
 }
 
 export function nevoFoodFromRow(row: NevoRow): NevoFood {
-  const [code, nl, en, synonyms, group, calories, protein, carbs, fat, fiber, sodiumMg] = row;
+  const [code, nl, en, synonyms, group, calories, protein, carbs, fat, fiber, sodiumMg, alcohol] =
+    row;
   return {
     code,
     nl,
@@ -56,6 +59,7 @@ export function nevoFoodFromRow(row: NevoRow): NevoFood {
       salt: sodiumMg == null ? 0 : Math.round(sodiumMg * SALT_PER_SODIUM) / 1000,
     },
     saltKnown: sodiumMg != null,
+    alcohol: alcohol ?? 0,
   };
 }
 
