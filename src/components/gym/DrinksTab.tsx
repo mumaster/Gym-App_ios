@@ -19,10 +19,10 @@ import {
   ALCOHOL_DRINKS,
   alcoholCardVisible,
   alcoholDrinkById,
+  alcoholLoggable,
   buildDrinkEntry,
   drinkEntries,
   drinkOf,
-  isWeekend,
   quickDrinkChoices,
   servingKcal,
   standardGlasses,
@@ -470,10 +470,15 @@ function AlcoholCard({
   canAdd: boolean;
 }) {
   const t = useTranslation();
-  const { foodEntries, language, addFoodEntry, removeFoodEntry } = useGym();
+  const { foodEntries, language, addFoodEntry, removeFoodEntry, alcoholEnabled, alcoholWeekdays } =
+    useGym();
+  const settings = useMemo(
+    () => ({ enabled: alcoholEnabled, weekdays: alcoholWeekdays }),
+    [alcoholEnabled, alcoholWeekdays],
+  );
   const day = useMemo(() => parseDayKey(dayKey), [dayKey]);
-  /** Quick-adds: only today, and only when today is a weekend day. */
-  const canLog = canAdd && isWeekend(day);
+  /** Quick-adds: only today, and only on a day the card is for. */
+  const canLog = alcoholLoggable(day, canAdd, settings);
   const byCode = useNevoDrinks(canLog);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
@@ -484,7 +489,7 @@ function AlcoholCard({
   const kcal = Math.round(dailyTotals(entries).calories);
   const glasses = standardGlasses(entries);
   const choices = useMemo(() => quickDrinkChoices(foodEntries), [foodEntries]);
-  if (!alcoholCardVisible(day, entries.length)) return null;
+  if (!alcoholCardVisible(day, entries.length, settings)) return null;
 
   /** Logs one serving; if the NEVO chunk is still on its way, waits for it. */
   const log = (drink: AlcoholDrink, ml: number) => {

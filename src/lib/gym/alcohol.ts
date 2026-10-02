@@ -28,11 +28,14 @@
  *    2007/45/EC). 300 ml (the Dutch standard beer bottle), 330 ml (a can)
  *    and 500 ml (a large can, half a litre) are package sizes, not nutrition
  *    numbers. A strong beer comes as 250 or 330 ml.
- *  - Weekends only. The Alcohol card on Nutrition → Drinks appears on
+ *  - Weekends by default. The Alcohol card on Nutrition → Drinks appears on
  *    Saturdays and Sundays (local time), the user's own choice for a light,
  *    fun feature: `isWeekend`, `alcoholCardVisible`. Other days show it only
  *    when that day already has drinks (logged through Add food's search),
- *    read-only. Quick-adds are for today only, as with water and coffee.
+ *    read-only. Quick-adds are for today only, as with water and coffee
+ *    (`alcoholLoggable`). Two Settings switches change this: "Track alcohol"
+ *    off hides the card on every day (logged drinks stay in the food log),
+ *    and "Also on weekdays" shows it every day like a weekend.
  *  - Guidance (shown only in a note, never as a limit, bar or warning
  *    colour): the Dutch Health Council (Gezondheidsraad, June 2026 advice)
  *    says there is no safe lower limit for alcohol, the less the better; it
@@ -106,10 +109,37 @@ export const alcoholDrinkById = (id: string): AlcoholDrink | undefined =>
 /** Saturday or Sunday, in local time. */
 export const isWeekend = (date: Date): boolean => date.getDay() === 0 || date.getDay() === 6;
 
-/** The Alcohol card shows on a weekend day, and on any other day only when
- *  it already has drinks (then read-only). */
-export const alcoholCardVisible = (day: Date, drinkCount: number): boolean =>
-  isWeekend(day) || drinkCount > 0;
+/** The two Settings switches for the Alcohol card (GymState.alcoholEnabled,
+ *  alcoholWeekdays). */
+export interface AlcoholSettings {
+  /** Off: the card never shows, whatever the day holds. */
+  enabled: boolean;
+  /** On: the card is there every day, not only on Saturday and Sunday. */
+  weekdays: boolean;
+}
+
+/** Tracking on, weekends only: how it was before the switches existed. */
+export const DEFAULT_ALCOHOL_SETTINGS: AlcoholSettings = { enabled: true, weekdays: false };
+
+/** Whether this day is one the card is offered on (so drinks can be added):
+ *  every day with "also on weekdays", otherwise Saturday and Sunday. */
+const alcoholDayOn = (day: Date, { weekdays }: AlcoholSettings): boolean =>
+  weekdays || isWeekend(day);
+
+/** The Alcohol card shows on its days, and on any other day only when it
+ *  already has drinks (then read-only). Tracking off hides it everywhere. */
+export const alcoholCardVisible = (
+  day: Date,
+  drinkCount: number,
+  settings: AlcoholSettings = DEFAULT_ALCOHOL_SETTINGS,
+): boolean => settings.enabled && (alcoholDayOn(day, settings) || drinkCount > 0);
+
+/** Quick-adds and "+ Drink": only today, only on a day the card is for. */
+export const alcoholLoggable = (
+  day: Date,
+  isToday: boolean,
+  settings: AlcoholSettings = DEFAULT_ALCOHOL_SETTINGS,
+): boolean => settings.enabled && isToday && alcoholDayOn(day, settings);
 
 /** What the quick-add row offers before anything has been logged. */
 export const DEFAULT_DRINK_CHOICES: { id: AlcoholDrinkId; ml: number }[] = [

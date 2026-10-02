@@ -17,6 +17,7 @@ import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
 import { KnownLiftsSheet } from "../components/gym/KnownLiftsSheet";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SwitchRow } from "../components/gym/SwitchRow";
 import { SourcesSheet } from "../components/gym/SourcesSheet";
 import { ThemePicker } from "../components/gym/ThemePicker";
 import { useTranslation } from "../lib/gym/i18n";
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsScreen() {
-  const { session, syncStatus, signOut, update } = useGym();
+  const { session, syncStatus, signOut, update, alcoholEnabled, alcoholWeekdays } = useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -138,6 +139,31 @@ function SettingsScreen() {
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
       </button>
+
+      <SectionLabel>{t.settings.alcohol}</SectionLabel>
+      <Card className="divide-y divide-border p-0">
+        <SwitchRow
+          label={t.settings.alcoholTrack}
+          desc={t.settings.alcoholTrackDesc}
+          ariaLabel={t.settings.alcoholTrack}
+          on={alcoholEnabled}
+          onToggle={() => {
+            haptic(12);
+            update({ alcoholEnabled: !alcoholEnabled });
+          }}
+        />
+        <SwitchRow
+          label={t.settings.alcoholWeekdays}
+          desc={t.settings.alcoholWeekdaysDesc}
+          ariaLabel={t.settings.alcoholWeekdays}
+          on={alcoholWeekdays}
+          disabled={!alcoholEnabled}
+          onToggle={() => {
+            haptic(12);
+            update({ alcoholWeekdays: !alcoholWeekdays });
+          }}
+        />
+      </Card>
 
       <SectionLabel>{t.settings.avatar}</SectionLabel>
       <Card className="p-0">

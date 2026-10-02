@@ -120,6 +120,12 @@ interface GymState {
   /** Warm-up sets before compound exercises. Off: none are planned, and a
    *  running workout starts every exercise on a working set. */
   warmupsEnabled: boolean;
+  /** Settings → "Track alcohol". Off hides the Alcohol card on Nutrition →
+   *  Drinks everywhere; drinks already logged stay in the food log. */
+  alcoholEnabled: boolean;
+  /** Settings → "Also on weekdays". On: the Alcohol card shows every day, not
+   *  only Saturday and Sunday. Only matters while `alcoholEnabled`. */
+  alcoholWeekdays: boolean;
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
   growthFocus: FocusGroup[];
@@ -215,6 +221,8 @@ const initialState: GymState = {
   welcomeSeen: false,
   supersetsEnabled: false,
   warmupsEnabled: true,
+  alcoholEnabled: true,
+  alcoholWeekdays: false,
   growthFocus: [],
   supersetRounds: 3,
   lovedExerciseIds: [],
@@ -362,6 +370,8 @@ function migrate(raw: Partial<GymState>): GymState {
       ),
     supersetsEnabled: raw.supersetsEnabled ?? false,
     warmupsEnabled: raw.warmupsEnabled ?? true,
+    alcoholEnabled: raw.alcoholEnabled ?? true,
+    alcoholWeekdays: raw.alcoholWeekdays ?? false,
     growthFocus: raw.growthFocus ?? [],
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],

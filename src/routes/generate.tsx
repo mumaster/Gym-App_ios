@@ -29,6 +29,7 @@ import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
+import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
@@ -1281,45 +1282,5 @@ function WorkoutHome() {
         onStart={startTemplate}
       />
     </Screen>
-  );
-}
-
-/** One row of the builder's settings card: a label and short description
- *  with an iOS switch. The knob is always white, like the platform's. */
-function SwitchRow({
-  label,
-  desc,
-  ariaLabel,
-  on,
-  onToggle,
-}: {
-  label: string;
-  desc: string;
-  ariaLabel: string;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <div className="min-w-0">
-        <p className="text-[15px] font-semibold">{label}</p>
-        <p className="text-[12px] leading-snug text-muted-foreground">{desc}</p>
-      </div>
-      <button
-        role="switch"
-        aria-checked={on}
-        aria-label={ariaLabel}
-        onClick={onToggle}
-        className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
-          on ? "bg-primary" : "bg-secondary"
-        }`}
-      >
-        <span
-          className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
-            on ? "left-[22px]" : "left-[2px]"
-          }`}
-        />
-      </button>
-    </div>
   );
 }

@@ -3,11 +3,13 @@ import { NEVO_FOODS } from "../nevoFoods.data";
 import { nevoFoodFromRow } from "../nevoFoods";
 import {
   ALCOHOL_DRINKS,
+  DEFAULT_ALCOHOL_SETTINGS,
   DEFAULT_DRINK_CHOICES,
   STANDARD_GLASS_ALCOHOL_G,
   alcoholCardVisible,
   alcoholDrinkById,
   alcoholGrams,
+  alcoholLoggable,
   buildDrinkEntry,
   drinkEntries,
   drinkOf,
@@ -224,5 +226,43 @@ describe("weekends only", () => {
     expect(alcoholCardVisible(new Date(2026, 9, 3), 0)).toBe(true);
     expect(alcoholCardVisible(new Date(2026, 9, 2), 0)).toBe(false);
     expect(alcoholCardVisible(new Date(2026, 9, 2), 1)).toBe(true);
+  });
+});
+
+describe("alcohol settings", () => {
+  const FRIDAY = new Date(2026, 9, 2);
+  const SATURDAY = new Date(2026, 9, 3);
+  const on = { enabled: true, weekdays: false };
+  const everyDay = { enabled: true, weekdays: true };
+  const off = { enabled: false, weekdays: false };
+  const offWithWeekdays = { enabled: false, weekdays: true };
+
+  it("defaults to tracking on, weekends only", () => {
+    expect(DEFAULT_ALCOHOL_SETTINGS).toEqual(on);
+    expect(alcoholCardVisible(FRIDAY, 0)).toBe(false);
+    expect(alcoholCardVisible(SATURDAY, 0)).toBe(true);
+  });
+
+  it("with weekdays on, shows the card every day", () => {
+    expect(alcoholCardVisible(FRIDAY, 0, everyDay)).toBe(true);
+    expect(alcoholCardVisible(SATURDAY, 0, everyDay)).toBe(true);
+  });
+
+  it("with tracking off, never shows it, even on a day with drinks", () => {
+    expect(alcoholCardVisible(SATURDAY, 0, off)).toBe(false);
+    expect(alcoholCardVisible(SATURDAY, 3, off)).toBe(false);
+    expect(alcoholCardVisible(FRIDAY, 2, off)).toBe(false);
+    expect(alcoholCardVisible(FRIDAY, 0, offWithWeekdays)).toBe(false);
+  });
+
+  it("lets you add drinks only today, on a day the card is for", () => {
+    expect(alcoholLoggable(SATURDAY, true, on)).toBe(true);
+    expect(alcoholLoggable(SATURDAY, false, on)).toBe(false);
+    expect(alcoholLoggable(FRIDAY, true, on)).toBe(false);
+    expect(alcoholLoggable(FRIDAY, true, everyDay)).toBe(true);
+    expect(alcoholLoggable(FRIDAY, false, everyDay)).toBe(false);
+    expect(alcoholLoggable(SATURDAY, true, off)).toBe(false);
+    expect(alcoholLoggable(FRIDAY, true, offWithWeekdays)).toBe(false);
+    expect(alcoholLoggable(SATURDAY, true)).toBe(true);
   });
 });
