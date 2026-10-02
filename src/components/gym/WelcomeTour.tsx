@@ -1033,8 +1033,10 @@ function DrinksMock() {
             {["+250ml", "+500ml", "+750ml", "+1L", "+ ml"].map((q, i) => (
               <span
                 key={q}
-                className={`flex h-10 items-center justify-center rounded-xl text-[12px] font-bold ${
-                  i === 4 ? "bg-secondary" : "bg-primary/15"
+                className={`flex h-10 items-center justify-center rounded-lg text-[12px] font-bold tracking-tight ${
+                  i === 4
+                    ? "border-[1.5px] border-dashed border-foreground/25 text-muted-foreground"
+                    : "border-[1.5px] border-primary/60"
                 }`}
               >
                 {q}
@@ -1060,7 +1062,7 @@ function DrinksMock() {
             {kinds.map((k) => (
               <span
                 key={k}
-                className="flex h-12 flex-col items-center justify-center rounded-xl bg-primary/15"
+                className="flex h-12 flex-col items-center justify-center rounded-lg border-[1.5px] border-primary/60"
               >
                 <span className="w-full truncate px-1 text-center text-[12px] font-bold leading-tight">
                   + {t.coffee.kinds[k]}
