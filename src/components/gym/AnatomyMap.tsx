@@ -110,11 +110,13 @@ function Body({
   selected,
   suggested,
   onToggle,
+  showLabel = true,
 }: {
   view: "front" | "back";
   selected: RegionId[];
   suggested?: RegionId | null;
   onToggle: (id: RegionId) => void;
+  showLabel?: boolean;
 }) {
   const t = useTranslation();
   const paths = PATHS[view];
@@ -123,9 +125,11 @@ function Body({
 
   return (
     <div className="min-w-0 flex-1 rounded-3xl bg-gradient-to-b from-muted/45 to-muted/15 px-1.5 pb-2.5 pt-2 ring-1 ring-inset ring-border/60">
-      <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
-        {label}
-      </p>
+      {showLabel ? (
+        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+          {label}
+        </p>
+      ) : null}
       <svg
         viewBox="0 0 200 430"
         role="group"
@@ -271,13 +275,21 @@ function MapDefs() {
 
 /** Both figures with some regions lit, not interactive (used as an
  *  illustration, e.g. in the welcome tour). */
-export function AnatomyPreview({ selected }: { selected: RegionId[] }) {
+/** Both figures, lit and not interactive. `labels: false` drops the
+ *  Front/Back captions for a preview too small to fit them. */
+export function AnatomyPreview({
+  selected,
+  labels = true,
+}: {
+  selected: RegionId[];
+  labels?: boolean;
+}) {
   return (
     <div inert aria-hidden className="pointer-events-none">
       <MapDefs />
       <div className="flex gap-2">
-        <Body view="front" selected={selected} onToggle={() => {}} />
-        <Body view="back" selected={selected} onToggle={() => {}} />
+        <Body view="front" selected={selected} onToggle={() => {}} showLabel={labels} />
+        <Body view="back" selected={selected} onToggle={() => {}} showLabel={labels} />
       </div>
     </div>
   );
