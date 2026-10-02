@@ -41,6 +41,7 @@ export function BottomSheet({
   children,
   toolbar,
   fullHeight = false,
+  tall = false,
   scrollKey,
 }: {
   open: boolean;
@@ -52,6 +53,9 @@ export function BottomSheet({
   /** Fill the screen above the keyboard at a fixed height, so the content
    *  changing (search results as you type) never moves the sheet. */
   fullHeight?: boolean;
+  /** Allow the sheet to grow up to the status bar (instead of 82% of the
+   *  screen), for a form that should fit without scrolling. */
+  tall?: boolean;
   /** Scroll the content back to the top whenever this changes. */
   scrollKey?: unknown;
 }) {
@@ -282,7 +286,7 @@ export function BottomSheet({
         tabIndex={-1}
         className={`glass-strong relative flex flex-col overflow-hidden rounded-t-3xl shadow-[var(--shadow-float)] duration-300 animate-in slide-in-from-bottom outline-none motion-reduce:!transition-none ${
           keyboardOpen ? "" : "safe-bottom"
-        } ${fullHeight ? "" : "max-h-[82vh]"}`}
+        } ${fullHeight ? "" : tall ? "sheet-tall" : "max-h-[82vh]"}`}
         style={{
           height: fullHeight ? "calc(100% - env(safe-area-inset-top) - 0.5rem)" : undefined,
           transform: dragY ? `translateY(${dragY}px)` : undefined,
@@ -306,7 +310,7 @@ export function BottomSheet({
         {toolbar ? <div className="shrink-0 px-5 pb-3">{toolbar}</div> : null}
         <div
           ref={scrollRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6"
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 ${tall ? "pb-3" : "pb-6"}`}
         >
           {children}
         </div>

@@ -448,6 +448,12 @@
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
+/* A bottom sheet allowed to reach just under the status bar (BottomSheet's
+   `tall`), for a form that has to fit without scrolling. */
+@utility sheet-tall {
+  max-height: calc(100% - max(env(safe-area-inset-top), 0.75rem) - 0.5rem);
+}
+
 @utility safe-bottom-tab {
   padding-bottom: var(--tab-bar-clearance);
 }

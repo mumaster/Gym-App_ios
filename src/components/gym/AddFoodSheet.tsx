@@ -572,6 +572,7 @@ export function AddFoodSheet({
         }
         toolbar={step === "start" ? searchField : undefined}
         fullHeight={step === "start" && searchMode}
+        tall={step === "review"}
         scrollKey={q}
       >
         <input
@@ -777,10 +778,10 @@ export function AddFoodSheet({
         ) : null}
 
         {step === "review" ? (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {unmatched.size > 0 ? (
-              <p className="flex items-start gap-2 rounded-2xl bg-amber-400/10 px-4 py-3 text-[13px] text-amber-300">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" />{" "}
+              <p className="flex items-start gap-2 rounded-2xl bg-amber-400/10 px-4 py-2 text-[13px] leading-snug text-amber-300">
+                <AlertTriangle className="mt-px size-4 shrink-0" />{" "}
                 {(nevoSource ? t.addFood.notInNevo : t.addFood.couldntRead)(
                   [...unmatched]
                     .map((k) => MACRO_FIELDS.find((f) => f.key === k)!.label)
@@ -790,7 +791,7 @@ export function AddFoodSheet({
             ) : null}
 
             <div className="flex items-center gap-2">
-              <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-muted px-4 py-3">
+              <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-muted px-4 py-1">
                 <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
                   {t.addFood.food}
                 </span>
@@ -833,7 +834,7 @@ export function AddFoodSheet({
             </div>
 
             {onIngredientCaptured ? null : (
-              <MealPicker label={t.addFood.meal} meal={meal} onPick={setMeal} />
+              <MealPicker label={t.addFood.meal} meal={meal} onPick={setMeal} compact />
             )}
 
             {suggestedGrams && !gramsTouched ? (
@@ -845,7 +846,7 @@ export function AddFoodSheet({
                   setGramsTouched(true);
                   setSuggestedGrams(null);
                 }}
-                className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
+                className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 text-left active:scale-[0.985]"
               >
                 <span className="text-[14px] font-semibold text-primary-text">
                   {t.addFood.useServingSize(suggestedGrams)}
@@ -854,7 +855,7 @@ export function AddFoodSheet({
               </button>
             ) : null}
 
-            <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
+            <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-1">
               <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
                 {onIngredientCaptured ? t.addFood.gramsInMeal : t.addFood.gramsEaten}
               </span>
@@ -875,11 +876,11 @@ export function AddFoodSheet({
 
             {/* What this portion adds up to, right under the grams that set
                 it and above the per-100 g values it's worked out from. */}
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
+            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2">
               <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
                 {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
               </p>
-              <p className="tabular mt-1 text-[15px] font-semibold">
+              <p className="tabular mt-0.5 text-[15px] font-semibold leading-snug">
                 {t.addFood.macroSummary(
                   preview.calories,
                   preview.protein,
@@ -892,14 +893,14 @@ export function AddFoodSheet({
             </div>
 
             <div>
-              <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+              <p className="mb-1.5 text-[13px] font-semibold text-muted-foreground">
                 {t.addFood.per100g}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {MACRO_FIELDS.map(({ key, label, unit }) => (
                   <label
                     key={key}
-                    className={`flex flex-col gap-1 rounded-2xl px-3.5 py-2.5 ${
+                    className={`flex flex-col rounded-2xl px-3.5 py-1.5 ${
                       unmatched.has(key) ? "bg-amber-400/10" : "bg-muted"
                     }`}
                   >
@@ -922,7 +923,7 @@ export function AddFoodSheet({
                           });
                         }}
                         placeholder="0"
-                        className="tabular h-7 w-full min-w-0 bg-transparent text-[17px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
+                        className="tabular h-6 w-full min-w-0 bg-transparent text-[17px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
                       />
                       <span className="shrink-0 text-[12px] text-muted-foreground">{unit}</span>
                     </div>
@@ -932,7 +933,7 @@ export function AddFoodSheet({
               {/* RIVM's conditions: say the values are NEVO's, and mark the
                   app's own addition (salt from sodium) as one. */}
               {currentNevo() ? (
-                <p className="mt-2 px-1 text-[11px] leading-snug text-muted-foreground">
+                <p className="mt-1.5 px-1 text-[11px] leading-snug text-muted-foreground">
                   {t.addFood.nevoSaltNote} {t.nutrition.nevoReference}
                 </p>
               ) : null}
@@ -954,7 +955,7 @@ export function AddFoodSheet({
               <button
                 onClick={save}
                 disabled={!canSave}
-                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
               >
                 <Check className="size-5" />{" "}
                 {onIngredientCaptured ? t.addFood.addIngredient : t.addFood.addToLog}
@@ -1078,15 +1079,22 @@ function MealPicker({
   label,
   meal,
   onPick,
+  compact = false,
 }: {
   label: string;
   meal: MealType;
   onPick: (meal: MealType) => void;
+  /** Tighter, for the review form that has to fit on one screen. */
+  compact?: boolean;
 }) {
   const t = useTranslation();
   return (
     <div>
-      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{label}</p>
+      <p
+        className={`${compact ? "mb-1.5" : "mb-2"} text-[13px] font-semibold text-muted-foreground`}
+      >
+        {label}
+      </p>
       <div className="flex gap-2">
         {MEAL_ORDER.map((m) => (
           <button
@@ -1097,7 +1105,7 @@ function MealPicker({
               onPick(m);
             }}
             aria-pressed={meal === m}
-            className={`min-h-[40px] flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
+            className={`${compact ? "min-h-[36px]" : "min-h-[40px]"} flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
               meal === m
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-secondary-foreground"
