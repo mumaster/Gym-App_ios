@@ -14,6 +14,7 @@ import {
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
 import { HapticSwitch } from "./HapticSwitch";
+import { button } from "./ui";
 import {
   ALCOHOL_CATEGORIES,
   ALCOHOL_DRINKS,
@@ -170,12 +171,6 @@ function EntryChips({ children }: { children: ReactNode }) {
   return <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">{children}</div>;
 }
 
-/** The look of a button that logs a drink (outlined, so a card full of
- *  them stays calm), and of the one that opens more choices. */
-const ADD_BUTTON = "border-[1.5px] border-primary/60 active:bg-primary/10";
-const MORE_BUTTON =
-  "border-[1.5px] border-dashed border-foreground/25 text-muted-foreground active:bg-foreground/5";
-
 const chipClass =
   "flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-[13px] font-semibold text-muted-foreground active:scale-95";
 
@@ -312,7 +307,7 @@ function WaterCard({
                   logWater(ml);
                 }}
                 aria-label={t.home.addWater(ml)}
-                className={`relative flex h-12 items-center justify-center rounded-lg text-[12.5px] font-bold tracking-tight text-foreground active:scale-95 ${ADD_BUTTON}`}
+                className={`${button.add} h-12 text-[12.5px] font-bold tracking-tight`}
               >
                 <HapticSwitch />+{formatWaterAmount(ml)}
               </button>
@@ -323,7 +318,7 @@ function WaterCard({
                 setOtherOpen(true);
               }}
               aria-label={t.nutrition.waterOther}
-              className={`flex h-12 items-center justify-center gap-0.5 rounded-lg text-[12.5px] font-bold tracking-tight active:scale-95 ${MORE_BUTTON}`}
+              className={`${button.more} h-12 text-[12.5px] font-bold tracking-tight`}
             >
               <Plus className="size-4" />
               ml
@@ -402,7 +397,7 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
                 logCoffee(kind);
               }}
               aria-label={t.coffee.add(t.coffee.kinds[kind])}
-              className={`relative flex h-14 flex-col items-center justify-center rounded-lg active:scale-95 ${ADD_BUTTON}`}
+              className={`${button.add} h-14 flex-col`}
             >
               <HapticSwitch />
               <span className="w-full truncate px-1 text-center text-[13px] font-bold leading-tight">
@@ -537,7 +532,7 @@ function AlcoholCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
                   key={`${id}-${ml}`}
                   onClick={() => log(drink, ml)}
                   aria-label={t.alcohol.logAria(name, ml)}
-                  className={`relative flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-1.5 active:scale-95 ${ADD_BUTTON}`}
+                  className={`${button.add} h-14 min-w-0 flex-1 flex-col px-1.5`}
                 >
                   <HapticSwitch />
                   <span className="w-full truncate text-center text-[13.5px] font-bold leading-tight">
@@ -555,7 +550,7 @@ function AlcoholCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
                 setSheetOpen(true);
               }}
               aria-label={t.alcohol.addDrinkAria}
-              className={`flex h-14 w-[5.25rem] shrink-0 items-center justify-center gap-0.5 rounded-lg text-[13.5px] font-bold active:scale-95 ${MORE_BUTTON}`}
+              className={`${button.more} h-14 w-[5.25rem] shrink-0 text-[13.5px] font-bold`}
             >
               <Plus className="size-4" />
               {t.alcohol.addDrink}
@@ -637,7 +632,7 @@ function AlcoholSheet({
                         key={ml}
                         onClick={() => onPick(drink, ml)}
                         aria-label={t.alcohol.logAria(t.alcohol.names[drink.id], ml)}
-                        className={`relative flex h-12 min-w-0 flex-col items-center justify-center rounded-lg active:scale-95 ${ADD_BUTTON}`}
+                        className={`${button.add} h-12 min-w-0 flex-col`}
                       >
                         <HapticSwitch />
                         <span className="tabular text-[13px] font-bold leading-tight">{ml} ml</span>

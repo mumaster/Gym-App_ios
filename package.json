@@ -11,7 +11,8 @@
     "deploy": "vite build && npx nitro deploy --prebuilt",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ui-check": "node scripts/ui-check.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

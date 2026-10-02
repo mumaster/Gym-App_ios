@@ -305,7 +305,7 @@ function ExercisesScreen() {
                 <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
                   {(e.muscle_targets.length ? e.muscle_targets : [e.primary_muscle]).join(" · ")}
                 </p>
-                <p className="mt-0.5 truncate text-[12px] text-muted-foreground/70">
+                <p data-cut-ok className="mt-0.5 truncate text-[12px] text-muted-foreground/70">
                   {e.movement_pattern} ·{" "}
                   {e.equipment_required
                     .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)

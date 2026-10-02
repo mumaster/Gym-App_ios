@@ -16,6 +16,7 @@ npm run preview   # preview a production build
 npm run lint      # eslint .
 npm run format    # prettier --write .
 npm test          # vitest run — unit tests for the pure lib/gym calculation code
+npm run ui-check  # layout check of the running dev server (DESIGN.md §14)
 ```
 
 Type-check with `npx tsc --noEmit`. Tests live in `src/lib/gym/__tests__/*.test.ts` and cover the pure calculation modules (schedule, progression, nutrition, programs, generator, streak and others); they run in CI before every deploy (`.github/workflows/deploy.yml`), so a failing test blocks the deploy. `vitest.config.ts` is deliberately separate from `vite.config.ts` so tests don't load the pre-bundled TanStack Start/Nitro plugins. When a sourced constant changes, update the test that pins it — the tests double as a record of which published number each rule uses.
@@ -23,6 +24,10 @@ Type-check with `npx tsc --noEmit`. Tests live in `src/lib/gym/__tests__/*.test.
 ## Fixed numbers must name their source
 
 The user wants the app built on evidence "with little to no guesses." Any fixed training or nutrition number (a percentage, a rest time, a multiplier, a threshold) needs a published source — a position stand, guideline, or study — cited in a comment next to the constant. **In the UI, keep citations to a minimum** (the user's request, after cards and hints had each grown their own source line): screens don't name studies or authors. Every source is listed once, on Settings → Sources (`SourcesSheet.tsx`, backed by `lib/gym/sources.ts` plus i18n's `sources.uses`); add an entry there whenever you add a sourced number. A short plain-language explanation of what a number means ("Load = how hard the session was × minutes", "A week counts with 2+ training days") is fine on a screen; a citation isn't. Where a source gives a range, say which end was picked and why (e.g. "conservative end"). If no source exists, say so in the comment and tell the user rather than presenting a guess as fact. Journal sites are blocked by this environment's network policy, so sources are usually confirmed through web search results; note that where it applies.
+
+## Design guide
+
+`DESIGN.md` is the app's design guide (colour, type, spacing, shapes, components, motion, copy, sizes). **Follow it for every new feature and every UI change**, and use the house styles in `src/components/gym/ui.ts` (`button`, `badge`, `text`) rather than retyping their utilities. When a change decides something new about the look, update `DESIGN.md` in the same commit. Before calling UI work done, go through its checklist (§14), including `npm run ui-check` (with the dev server running; `--routes`, `--seed`, `--shots`) on the routes you changed: it checks the four iPhone sizes with the safe-area insets, en/dark and nl/light, for sideways overflow, content left under the tab bar, page errors and cut-off text. Older screens predate the guide; move them over when you're changing them anyway.
 
 ## Architecture
 

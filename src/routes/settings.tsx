@@ -114,7 +114,7 @@ function SettingsScreen() {
           </div>
           <div className="min-w-0">
             <p className="text-[15px] font-semibold">{t.settings.equipmentProfiles}</p>
-            <p className="truncate text-[12.5px] text-muted-foreground">
+            <p className="line-clamp-2 text-[12.5px] leading-snug text-muted-foreground">
               {t.settings.equipmentProfilesDesc}
             </p>
           </div>
@@ -134,7 +134,9 @@ function SettingsScreen() {
           </div>
           <div className="min-w-0">
             <p className="text-[15px] font-semibold">{t.knownLifts.row}</p>
-            <p className="truncate text-[12.5px] text-muted-foreground">{t.knownLifts.rowDesc}</p>
+            <p className="line-clamp-2 text-[12.5px] leading-snug text-muted-foreground">
+              {t.knownLifts.rowDesc}
+            </p>
           </div>
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
@@ -204,7 +206,9 @@ function SettingsScreen() {
           </div>
           <div className="min-w-0">
             <p className="text-[15px] font-semibold">{t.welcome.replay}</p>
-            <p className="truncate text-[12.5px] text-muted-foreground">{t.welcome.replayDesc}</p>
+            <p className="line-clamp-2 text-[12.5px] leading-snug text-muted-foreground">
+              {t.welcome.replayDesc}
+            </p>
           </div>
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
@@ -222,7 +226,9 @@ function SettingsScreen() {
           </div>
           <div className="min-w-0">
             <p className="text-[15px] font-semibold">{t.sources.row}</p>
-            <p className="truncate text-[12.5px] text-muted-foreground">{t.sources.rowDesc}</p>
+            <p className="line-clamp-2 text-[12.5px] leading-snug text-muted-foreground">
+              {t.sources.rowDesc}
+            </p>
           </div>
         </div>
         <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
