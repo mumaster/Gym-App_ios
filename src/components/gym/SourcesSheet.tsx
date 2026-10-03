@@ -37,7 +37,7 @@ export function SourcesSheet({ open, onClose }: { open: boolean; onClose: () => 
           </ul>
         </section>
       ))}
-      <p className="mt-4 text-[11.5px] leading-snug text-muted-foreground">{t.sources.note}</p>
+      <p className="mt-4 text-[12px] leading-snug text-muted-foreground">{t.sources.note}</p>
     </BottomSheet>
   );
 }

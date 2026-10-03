@@ -4,7 +4,7 @@ How Forge looks, and how every new screen, card, sheet or button should look. Re
 
 The guide describes the app as it is. Where older code doesn't match it, the guide wins for new work. Move older code over when you're changing it anyway, not in a separate sweep.
 
-The shared class strings are in `src/components/gym/ui.ts` (`button`, `badge`, `text`). Use them by name rather than retyping their utilities. The layout primitives are in `Screen.tsx` (`Screen`, `Card`, `SectionLabel`). The checklist at the end is the definition of done.
+The shared class strings are in `src/components/gym/ui.ts` (`button`, `chip`, `badge`, `text`). Use them by name rather than retyping their utilities. The layout primitives are in `Screen.tsx` (`Screen`, `Card`, `SectionLabel`). The checklist at the end is the definition of done.
 
 ## 1. Principles
 
@@ -15,7 +15,7 @@ The shared class strings are in `src/components/gym/ui.ts` (`button`, `badge`, `
    - a badge that says "something is here";
    - progress (bars, rings, a done day).
 
-   Buttons repeated in a row or grid (quick-adds) are outlined (`button.add`). A card full of solid buttons reads as noise and hides the one that matters.
+   Buttons repeated in a row or grid (quick-adds, the "+" on every food row) are outlined (`button.add`). A picked chip is tonal (`chip.on`), not solid. A card full of solid buttons reads as noise and hides the one that matters.
 
 4. **Evidence, with few citations on screen.** A sourced number gets a short plain-language explanation ("A week counts with 2+ training days"), never a study name. Sources live on Settings → Sources (see CLAUDE.md). The one exception is NEVO's reference line, which RIVM's conditions require.
 5. **Thumb first.** Things you tap often sit low (the docked rest panel, pinned Start, the quick-adds). Things you read sit high. Nothing you need is hidden behind the tab bar once you've scrolled to the end.
@@ -27,20 +27,20 @@ The shared class strings are in `src/components/gym/ui.ts` (`button`, `badge`, `
 
 All colours are tokens in `src/styles.css` (oklch). Dark is `:root` and light is `.light`. The accent comes from `.accent-*` classes, or from inline variables for a custom colour.
 
-| Role                       | Use                                                       | Notes                                                                                                                                                  |
-| -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Page                       | `bg-background`, `text-foreground`                        | Pure black in dark mode, `#f2f2f7`-like off-white in light.                                                                                            |
-| Card                       | `glass` (via `Card`)                                      | A translucent surface with a hairline border.                                                                                                          |
-| Card header band           | `card-head`                                               | The accent mixed in at 11%. Used for a meal's header and a drink card's header. Put it at `-mx-4 -mt-4 px-4 py-3` inside a `p-4 overflow-hidden` card. |
-| Secondary fill             | `bg-secondary text-secondary-foreground`                  | For quiet buttons and icon buttons.                                                                                                                    |
-| Empty / inactive           | `bg-muted text-muted-foreground`                          | For an empty badge, a chip, a disabled-looking tile.                                                                                                   |
-| Secondary text             | `text-muted-foreground`                                   | Captions, meta lines, notes.                                                                                                                           |
-| Accent fill                | `bg-primary text-primary-foreground`                      | For the main action, a badge with content, progress. `text-primary-foreground` is dark on bright accents, so never hardcode white on accent.           |
-| Accent text                | `text-primary-text`                                       | **Never `text-primary` for text.** `--primary-text` is contrast-adjusted for custom accents.                                                           |
-| Tonal accent               | `bg-primary/15` (`/25` on a `card-head` band)             | For a soft, secondary accent surface: a selected chip, a small "+".                                                                                    |
-| Hairlines                  | `border-border`, `bg-foreground/10`                       | Bar tracks are `bg-foreground/10`, which works on both themes.                                                                                         |
-| Near a limit               | `bg-amber-500` / `text-amber-600 dark:text-amber-400`     | For nutrients and caffeine. Not for calories, where landing near the limit is the goal.                                                                |
-| Over a limit / destructive | `bg-destructive`, `text-destructive`, `bg-destructive/10` |                                                                                                                                                        |
+| Role                       | Use                                                                             | Notes                                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page                       | `bg-background`, `text-foreground`                                              | Pure black in dark mode, `#f2f2f7`-like off-white in light.                                                                                                                                   |
+| Card                       | `glass` (via `Card`)                                                            | A translucent surface with a hairline border.                                                                                                                                                 |
+| Card header band           | `card-head`                                                                     | The accent mixed in at 11%. Used for a meal's header and a drink card's header. Put it at `-mx-4 -mt-4 px-4 py-3` inside a `p-4 overflow-hidden` card.                                        |
+| Secondary fill             | `bg-secondary text-secondary-foreground`                                        | For quiet buttons and icon buttons.                                                                                                                                                           |
+| Empty / inactive           | `bg-muted text-muted-foreground`                                                | For an empty badge, a chip, a disabled-looking tile.                                                                                                                                          |
+| Secondary text             | `text-muted-foreground`                                                         | Captions, meta lines, notes.                                                                                                                                                                  |
+| Accent fill                | `bg-primary text-primary-foreground`                                            | For the main action, a badge with content, progress. `text-primary-foreground` is near-black on every preset in the dark theme and white in the light one, so never hardcode white on accent. |
+| Accent text                | `text-primary-text`                                                             | **Never `text-primary` for text.** `--primary-text` reaches 4.5:1 in both themes (see "Accents in the light theme" below).                                                                    |
+| Tonal accent               | `bg-primary/10` + `text-primary-text` (`chip.on` adds a `ring-primary/50` ring) | A picked chip, a quiet accent action ("Do it today", "Apply to my limits"). Behind an icon only, `/15`–`/25` is fine; with text, stay at `/10` or the text drops under 4.5:1 in light mode.   |
+| Hairlines                  | `border-border`, `bg-foreground/10`                                             | Bar tracks are `bg-foreground/10`, which works on both themes.                                                                                                                                |
+| Near a limit, warnings     | `bg-warning`, `text-warning-text`, `bg-warning/10 border-warning/50`            | Amber, per theme. Bars for nutrients and caffeine near their limit (not calories, where landing near the limit is the goal), and warning notes. Never `amber-*` utilities.                    |
+| Over a limit / destructive | `bg-destructive`, `text-destructive-text`, `bg-destructive/10`                  | Red text always uses `text-destructive-text`, which reads at 4.5:1 on a card and on a red tint.                                                                                               |
 
 **Content-intrinsic exceptions** (fixed on purpose, documented where they're set):
 
@@ -50,31 +50,36 @@ All colours are tokens in `src/styles.css` (oklch). Dark is `:root` and light is
 - the camera's always-dark chrome;
 - the white switch knob;
 - the per-avatar `bg`/`ink`;
-- the recap image (always dark).
+- the recap image (always dark);
+- the muscle-pairing pop-up's yellow (`SUGGESTED_COLOR`, matching the hatch on the map).
 
 Add new ones only with a reason, here and in a comment.
 
+**Accents in the light theme.** The six presets are bright colours made to glow on black; on the off-white page they all fail as text (green 1.2:1). In the light theme each preset is one colour (`.light.accent-*` in `styles.css`): the preset blended towards black until it reaches 4.5:1 against `#e6e7ea`, used for text, fills, bars and rings alike, with white on top (5.3–5.8:1). A custom colour follows the same rule (`readableAccentText`), and its dark-theme fill gets 3:1 (`visibleAccentFill`). In the dark theme every preset carries near-black ink, since white on the blue, purple and pink fills was only 2.3–2.9:1. `accentInk.test.ts` pins the values.
+
 **Fixed-identity surfaces.** `bg-foreground`/`text-background` flip with the theme. Use them only on surfaces meant to follow the page. On something with its own colour (an accent swatch, an avatar, a knob), use that thing's paired ink.
 
-**Never colour alone.** Every state that colour shows also has a shape, an icon or text. Done is a check. Missed is a dashed ring plus words. Over is "120 over".
+**Never colour alone.** Every state that colour shows also has a shape, an icon or text. Done is a check. A missed session is said in words ("Missed Monday"). Over is "120 over".
 
 ## 3. Typography
 
 The system font (SF on iOS). Sizes are pixel values on purpose, because iOS's own scale isn't Tailwind's. Use these roles; `text.*` in `ui.ts` names the common ones.
 
-| px      | Weight                                 | Role                                                                                                              |
-| ------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 30      | bold                                   | A hero number (Home's hero, the summary's big stat).                                                              |
-| 26      | bold, `leading-tight tracking-tight`   | A screen title (`Screen` draws it), or a card's headline total (`text.total`, with `tabular`).                    |
-| 20      | bold                                   | A sheet title (`BottomSheet` draws it).                                                                           |
-| 17      | bold                                   | A card's or meal's own name (`text.cardTitle`).                                                                   |
-| 16      | bold                                   | A primary button. **Every text input is 16 px**, or iOS zooms in on focus.                                        |
-| 15      | semibold                               | A list row's main line (`text.rowTitle`).                                                                         |
-| 14      | bold or semibold                       | Secondary buttons, values in rows.                                                                                |
-| 13–13.5 | semibold                               | Chips, secondary lines, the labels on two-line buttons.                                                           |
-| 12.5    | regular                                | Meta lines and notes (`text.meta`, `text.note`).                                                                  |
-| 12      | semibold, uppercase, `tracking-widest` | An eyebrow or section label (`text.eyebrow`, `SectionLabel`).                                                     |
-| 11 / 10 | semibold                               | Captions under a value; tab-bar labels (10). Use these sparingly, and never for anything you have to read to act. |
+| px      | Weight                                 | Role                                                                                                                                                                  |
+| ------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 30      | bold                                   | A hero number (the summary's big stat, a meal's calories).                                                                                                            |
+| 26      | bold, `leading-tight tracking-tight`   | A screen title (`Screen` draws it), a session's exercise name, or a card's headline total (`text.total`, with `tabular`).                                             |
+| 20      | bold                                   | A sheet title (`BottomSheet` draws it), Home's hero title, a tile's total.                                                                                            |
+| 17      | bold                                   | A card's or meal's own name (`text.cardTitle`).                                                                                                                       |
+| 16      | bold                                   | A primary button. **Every text input is 16 px**, or iOS zooms in on focus.                                                                                            |
+| 15      | semibold                               | A list row's main line (`text.rowTitle`).                                                                                                                             |
+| 14      | bold or semibold                       | Secondary buttons, values in rows.                                                                                                                                    |
+| 13–13.5 | semibold                               | Chips, secondary lines, the labels on two-line buttons.                                                                                                               |
+| 12.5    | regular                                | Meta lines and notes (`text.meta`, `text.note`).                                                                                                                      |
+| 12      | semibold, uppercase, `tracking-widest` | An eyebrow or section label (`text.eyebrow`, `SectionLabel`).                                                                                                         |
+| 11 / 10 | semibold                               | Captions under a value; tab-bar labels and week-strip initials (10). Use these sparingly, and never for anything you have to read to act. Nothing is smaller than 10. |
+
+No other sizes: no `text-sm`/`text-lg` and no in-between pixel values (11.5, 14.5, 18…).
 
 Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg", "BW +10 kg"). Dates use `useLocale()`. Thousands use the locale's separator (`toLocaleString(locale)`).
 
@@ -90,7 +95,13 @@ Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg",
   - rows inside a list card are `px-4 py-3` with dividers;
   - a card's header row has a badge (`size-10`), the label and the value, then the content below it with `mt-3`.
 - **Sheets:** `px-5` content. The title and Done come from `BottomSheet`.
-- **Touch targets** are at least 44 px tall: buttons, rows, chips you tap. Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines). Icon buttons are `size-9`, with the row giving them 44 px of hit area.
+- **Touch targets** take taps from at least 44 × 44 pt (Apple's Human Interface Guidelines). A control can be drawn smaller (a 36 pt chip, a 32 pt icon button) when it carries `tap-target`, which centres a 44 × 44 pt hit area on it and grows the haptic overlay with it. Then:
+  - keep 44 pt between neighbours' centres (36 pt chips in wrapping rows: `gap-y-2`), or their areas overlap;
+  - give a sideways-scrolling row vertical room (`-my-1 py-1` for 36 pt chips), since it clips what sticks out;
+  - put it on a static or relative control (it sets `position: relative`), and not on one with `overflow-hidden` or `truncate` (put `truncate` on an inner span).
+
+  Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows) and the water row at the top of Home's fixed tile.
+
 - **Fixed screens** (Home) split their height with `minmax(min-content, N fr)` rows. Their spacing scales with `100dvh` (see CLAUDE.md, "Equal spacing").
 
 ## 5. Shape
@@ -135,31 +146,32 @@ z-order:
 Reuse these before building anything new. A new pattern that will appear twice goes into `ui.ts` or `components/gym/` and into this list.
 
 - **Buttons** (`button.*` in `ui.ts`):
-  - `primary` is the one main action, 52 px. In a tight sheet it may drop to 48.
+  - `primary` is the one main action, 52 pt, 16 px bold. Two exceptions: the session's Log set is 56, the button pressed dozens of times a workout with tired hands; Add food's review form uses 48 so it fits without scrolling.
   - `secondary` is a quieter action, 44 px.
   - `add` is an outlined one-tap key. It is repeated, so it is never solid.
   - `more` is a dashed key that opens more choices next to `add` keys.
   - `destructive` is a tinted red action. Deleting something big takes two taps (the button turns into "Tap again to delete").
   - `icon` is a round icon-only button. It always has an `aria-label`.
-- **Badges** (`badge.on`/`off`): the round icon at the start of a card or row. Solid once there is content (a meal with food, a drink logged today), muted while empty.
-- **Chips:**
-  - a filter or choice chip is `rounded-full h-8–9 px-3 text-[13px]`, with `bg-primary/15 text-primary-text` (or solid) when selected and `bg-muted` otherwise;
+- **Badges** (`badge.on`/`off`): the round icon at the start of a card or row. Solid once there is content (a meal with food, a drink logged today), muted while empty. A Settings row's icon is always solid, like iOS Settings.
+- **Chips** (`chip.*` in `ui.ts`):
+  - a filter or choice chip is 32–40 pt tall with `tap-target`; the picked one is `chip.on` (tonal: a light accent wash, accent text, a thin accent ring), the others `bg-muted`/`bg-secondary`/`glass`. Never solid: solid accent is for the main action;
   - an entry chip with ✕ removes that entry;
-  - chip rows that can overflow scroll sideways (`no-scrollbar -mx-4 px-4 overflow-x-auto`) rather than wrap into a wall.
+  - chip rows that can overflow scroll sideways (`no-scrollbar -mx-4 px-4 overflow-x-auto`, plus vertical room for the tap areas) rather than wrap into a wall.
 - **Sub-tabs:** `SegmentedTabs`, in `Screen`'s `toolbar`, with the tab in the URL (`validateSearch`, `?tab=`, `replace`, scrolled to the top on switch). Use 2–3 tabs. The first is the default and has no query.
-- **Switches:** `SwitchRow` (white knob, label and one-line description). Settings apply straight away, with no save button.
+- **Switches:** `SwitchRow` (white knob, label and optional one-line description; `className` replaces its padding inside a padded card). Every on/off setting uses it, never an "On/Off" pill. Settings apply straight away, with no save button.
 - **Bottom sheets:** `BottomSheet`.
   - Done, the backdrop and a pull down all close it, and **a filled-in form is saved on close**. Multi-step setup wizards are the exception.
   - Use `tall` for a form that should fit without scrolling, `fullHeight` + `toolbar` for search, and `scrollKey` to reset the scroll.
 - **Week strips:** Monday first, a weekday initial from `t.common.dow`, and today highlighted with `bg-foreground/[0.06]`. A day's marks:
   - done: a solid accent circle with a check;
   - planned: an accent ring;
-  - missed: a dashed amber ring;
   - nothing: a faint dot.
+
+  A plan's own strip (`RotationWeekStrip`) marks the next session with a tonal cell, a done one with an outline and a check, and a skipped one struck through; done cells aren't faded (that dropped them under 4.5:1).
 
   Each cell has an `aria-label` that says it in words.
 
-- **Progress bars:** `h-2` on a card, `h-1.5` compact, `rounded-full`, with a `bg-foreground/10` track. The fill is `bg-primary`, or amber/destructive by status.
+- **Progress bars:** `h-2` on a card, `h-1.5` compact, `rounded-full`, with a `bg-foreground/10` track. The fill is `bg-primary`, or `bg-warning`/`bg-destructive` by status.
 - **Empty states:** one muted line saying what goes here ("Nothing yet"), plus the action that fills it if there is one. No illustrations, no exclamation marks.
 - **Loading:** `DumbbellLoader` (never a spinner of your own). A wait under about 300 ms gets no loader.
 - **Lists of things you delete:** `SwipeToDelete`, plus a delete button in the item's own editor for keyboard and screen-reader users.
@@ -196,7 +208,7 @@ A decorative icon gets `aria-hidden`.
 
   Nothing in the UI should take longer than about 400 ms.
 
-- **Reduce Motion** is always respected: no slides or scale, a fade at most. Check `prefers-reduced-motion` for every new animation.
+- **Reduce Motion** is always respected: no slides or scale, a fade at most. `styles.css` has a fallback for the common cases (every `animate-in`/`animate-out` keeps its fade and loses its slide, zoom and spin; the card flash and confetti go), but check `prefers-reduced-motion` for every new animation of your own.
 - Don't animate on first paint from SSR without `fill-mode-both` (see CLAUDE.md, Splash screen).
 
 ## 10. Haptics
@@ -205,7 +217,7 @@ A decorative icon gets `aria-hidden`.
 
 ## 11. Accessibility
 
-- **Text contrast:** 4.5:1 for text, 3:1 for the graphics you need (WCAG 2.x). Accent text uses `text-primary-text`.
+- **Text contrast:** 4.5:1 for text (3:1 from 24 px, or 18.66 px bold), 3:1 for the graphics you need (WCAG 2.x). The tokens are built to pass (`text-primary-text`, `text-warning-text`, `text-destructive-text`, `text-muted-foreground`); fading text with an opacity (`/70`, `opacity-50` on a whole cell) is what usually breaks it. Disabled controls are exempt.
 - **Labels:**
   - an icon-only button has an `aria-label`;
   - a toggle has `aria-pressed` or `role="switch"`;
@@ -219,7 +231,7 @@ A decorative icon gets `aria-hidden`.
 
 ## 12. Copy and languages
 
-- **Every visible string lives in `lib/gym/i18n.ts`,** in both `en` and `nl` (the type enforces it). Exercise names, muscles and split names stay English (see CLAUDE.md).
+- **Every visible string lives in `lib/gym/i18n.ts`,** in both `en` and `nl` (the type enforces it), units included in sentences ("1/3 sets · 6–10 reps"). A page that can render outside `GymProvider` (the 404 and error pages) reads the language itself and uses `dictFor`. Exercise names, muscles and split names stay English (see CLAUDE.md).
 - **Tone:**
   - sentence case;
   - short;
@@ -252,6 +264,13 @@ A decorative icon gets `aria-hidden`.
    - Icon buttons are labelled.
    - The HTML is valid, with no nested controls.
    - Reduce Motion is handled.
-5. **Run `npm run ui-check`** (with `npm run dev` running) on the routes you changed. It reports sideways overflow, cut-off text, content left under the tab bar and page errors, at the four sizes in en/dark and nl/light. Fix every finding. A truncation that's intended gets `data-cut-ok` rather than being ignored. Pass `--seed` with data that exercises the new UI; an empty app hides most problems.
+5. **Run `npm run ui-check`** (with `npm run dev` running) on the routes you changed, and with `--open "<button name>"` on each sheet you added or changed. At the four sizes in en/dark and nl/light, with realistic demo data by default, it reports:
+   - sideways overflow and content left under the tab bar;
+   - text under 4.5:1 (3:1 large) and tap areas under 44 pt;
+   - page errors and cut-off text;
+   - more than one solid accent control (a warning).
+
+   Fix every finding. A deliberate exception gets `data-cut-ok`, `data-target-ok` or `data-solid-ok` and a comment saying why, rather than being ignored. If the demo data doesn't reach the new UI, pass `--seed` with data that does.
+
 6. **Look at the screenshots** (`--shots`) in both themes. The script checks layout, not taste.
 7. **Updated this guide** if you decided something new, and CLAUDE.md's feature section as usual.

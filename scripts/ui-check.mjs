@@ -36,6 +36,9 @@
  *             that answers)
  *   --strict  cut-off text fails the check too
  *   --verbose list every finding (otherwise the first six)
+ *   --open    a control's name (its aria-label or text, from the start): tap
+ *             it on each route and check the sheet it opens, scrolled to the
+ *             top and to the end, instead of the page
  *   --system-font  keep Chromium's fallback font; by default Liberation Sans
  *             is used, whose widths are close to SF's (the fallback is wider
  *             and cuts text an iPhone wouldn't)
@@ -255,6 +258,7 @@ const seed =
       ? {}
       : JSON.parse(readFileSync(seedArg, "utf8"));
 const LIST = args.verbose ? Infinity : 6;
+const sheet = args.open ? String(args.open) : null;
 const shots = args.shots ? String(args.shots) : null;
 if (shots) mkdirSync(shots, { recursive: true });
 
@@ -389,7 +393,8 @@ function inspect(vw) {
  *  still lands on it (tap-target's extra area counts), checked for controls
  *  fully on screen between the header and the tab bar. Solid accent counts
  *  the controls painted in the accent. */
-function designChecks() {
+function designChecks(rootSelector) {
+  const root = (rootSelector && document.querySelector(rootSelector)) || document.body;
   const cv = document.createElement("canvas");
   cv.width = cv.height = 1;
   const cx = cv.getContext("2d", { willReadFrequently: true });
@@ -446,7 +451,7 @@ function designChecks() {
 
   const contrast = [];
   const seen = new Set();
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const node = walker.currentNode;
     const el = node.parentElement;
@@ -472,12 +477,13 @@ function designChecks() {
   }
 
   const controls = [
-    ...document.querySelectorAll(
+    ...root.querySelectorAll(
       "button, a[href], [role=button], [role=tab], [role=switch], input:not([type=hidden]), select, textarea",
     ),
   ].filter(
     (el) =>
       !el.closest("nav, [data-haptic-switch], [data-target-ok], svg") &&
+      !el.matches(":disabled, [aria-disabled=true]") &&
       !(el.matches("input") && el.closest("[data-haptic-switch]")) &&
       !hidden(el),
   );
@@ -487,8 +493,7 @@ function designChecks() {
       (h) => h.getBoundingClientRect().bottom,
     ),
   );
-  const navTop =
-    document.querySelector("nav .glass-bar")?.getBoundingClientRect().top ?? innerHeight;
+  const navTop = document.querySelector("nav")?.getBoundingClientRect().top ?? innerHeight;
   const dockTop =
     document.querySelector("[data-session-dock]")?.getBoundingClientRect().top ?? innerHeight;
   const bottom = Math.min(navTop, dockTop);
@@ -500,6 +505,16 @@ function designChecks() {
     const cyp = r.top + r.height / 2;
     if (cyp - 22 < headerBottom || cyp + 22 > bottom || cxp - 22 < 0 || cxp + 22 > innerWidth)
       continue;
+    // Skip a control partly scrolled out of view: it can't be tapped there.
+    let clipped = false;
+    for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      const p = n.getBoundingClientRect();
+      if (r.left < p.left - 0.5 || r.right > p.right + 0.5) clipped = true;
+      if (r.top < p.top - 0.5 || r.bottom > p.bottom + 0.5) clipped = true;
+    }
+    if (clipped) continue;
     const probes = [];
     if (r.height < 43.5) probes.push([cxp, cyp - 21], [cxp, cyp + 21]);
     if (r.width < 43.5) probes.push([cxp - 21, cyp], [cxp + 21, cyp]);
@@ -545,6 +560,11 @@ for (const [lang, scheme] of combos) {
     // The server reads the colour scheme from this cookie; without it a
     // light-mode first visit renders dark first and React reports a mismatch.
     await context.addCookies([{ name: "forge-color-scheme", value: scheme, url: base }]);
+    // Supabase (catalog, sync, push) answers with nothing, so the check
+    // doesn't depend on the network and logs no fetch errors.
+    await context.route(/supabase\.co/, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+    );
     const { activeWorkoutForSession, ...seedState } = seed;
     const state = { ...seedState, language: lang, colorScheme: scheme, welcomeSeen: true };
     await context.addInitScript(
@@ -574,14 +594,39 @@ for (const [lang, scheme] of combos) {
       await page.waitForTimeout(400);
 
       const name = `${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "home"}-${lang}-${scheme}-${w}x${h}`;
+      // --open: tap the control with that name (aria-label or text, from the
+      // start, any case) and check the sheet it opens instead of the page.
+      let openFailed = false;
+      if (sheet) {
+        openFailed = !(await page.evaluate((label) => {
+          const want = label.toLowerCase();
+          const hit = [...document.querySelectorAll("button, a[href], [role=button]")].find((el) =>
+            (el.getAttribute("aria-label") || el.innerText || "")
+              .trim()
+              .toLowerCase()
+              .startsWith(want),
+          );
+          hit?.click();
+          return !!hit;
+        }, sheet));
+        await page.waitForTimeout(700);
+      }
+      const scope = sheet ? "[role=dialog]" : undefined;
       const top = await page.evaluate(inspect, w);
-      const designTop = await page.evaluate(designChecks);
+      const designTop = await page.evaluate(designChecks, scope);
       if (shots) await page.screenshot({ path: join(shots, `${name}-top.png`) });
       // Scrolled to the end, nothing may still be behind the bar.
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.evaluate((inSheet) => {
+        if (!inSheet) return window.scrollTo(0, document.documentElement.scrollHeight);
+        for (const n of document.querySelectorAll("[role=dialog] *")) {
+          const cs = getComputedStyle(n);
+          if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight)
+            n.scrollTop = n.scrollHeight;
+        }
+      }, !!sheet);
       await page.waitForTimeout(250);
       const end = await page.evaluate(inspect, w);
-      const designEnd = await page.evaluate(designChecks);
+      const designEnd = await page.evaluate(designChecks, scope);
       // Screen-sized shots rather than one full-page shot, which draws the
       // fixed tab bar halfway down the page.
       if (shots && (await page.evaluate(() => window.scrollY > 0)))
@@ -597,7 +642,8 @@ for (const [lang, scheme] of combos) {
       const warnings = [];
       if (overflow.length)
         problems.push(`sideways overflow: ${overflow.slice(0, LIST).join("; ")}`);
-      if (end.under.length)
+      if (openFailed) problems.push(`nothing named "${sheet}" to open`);
+      if (!sheet && end.under.length)
         problems.push(`under the tab bar at the end: ${end.under.slice(0, LIST).join("; ")}`);
       if (realErrors.length) problems.push(`page errors: ${realErrors.slice(0, 3).join(" | ")}`);
       if (cut.length)

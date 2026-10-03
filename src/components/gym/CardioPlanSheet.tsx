@@ -13,6 +13,7 @@ import type { CardioPlanDay } from "../../lib/gym/types";
 import { BottomSheet } from "./BottomSheet";
 import { ActivityPicker, EffortPicker } from "./CardioControls";
 import { CARDIO_ICONS } from "./cardioDisplay";
+import { chip } from "./ui";
 
 /** Monday-first weekdays, as Date#getDay values. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
@@ -170,9 +171,7 @@ function PlanDayEditor({
                 onChange({ dow });
               }}
               className={`min-h-[40px] rounded-xl text-[13px] font-bold active:scale-95 ${
-                day.dow === dow
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
+                day.dow === dow ? chip.on : "bg-secondary text-secondary-foreground"
               }`}
             >
               {t.common.dow[dow]}
@@ -213,7 +212,7 @@ function PlanDayEditor({
           type="button"
           onClick={onRemove}
           aria-label={t.cardio.remove}
-          className="flex h-11 items-center gap-1.5 rounded-xl bg-destructive/15 px-3 text-[13.5px] font-bold text-destructive active:scale-95"
+          className="flex h-11 items-center gap-1.5 rounded-xl bg-destructive/15 px-3 text-[13.5px] font-bold text-destructive-text active:scale-95"
         >
           <Trash2 className="size-4" /> {t.cardio.remove}
         </button>

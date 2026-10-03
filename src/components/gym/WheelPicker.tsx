@@ -41,12 +41,12 @@ export function WheelPicker({
         {values.map((v) => (
           <div
             key={v}
-            className={`flex h-11 snap-center items-center justify-center text-xl font-semibold tabular ${
+            className={`flex h-11 snap-center items-center justify-center text-[20px] font-semibold tabular ${
               v === value ? "text-primary-text" : "text-muted-foreground"
             }`}
           >
             {v}
-            {suffix ? <span className="ml-1 text-sm">{suffix}</span> : null}
+            {suffix ? <span className="ml-1 text-[14px]">{suffix}</span> : null}
           </div>
         ))}
       </div>

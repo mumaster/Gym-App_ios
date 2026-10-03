@@ -102,7 +102,7 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
               >
                 <Minus className="size-4" />
               </button>
-              <span className="tabular w-6 text-center text-[18px] font-bold">{servings}</span>
+              <span className="tabular w-6 text-center text-[17px] font-bold">{servings}</span>
               <button
                 onClick={() => {
                   haptic(10);

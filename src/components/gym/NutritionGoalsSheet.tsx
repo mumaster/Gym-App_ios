@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dumbbell, Moon, Sparkles } from "lucide-react";
+import { SwitchRow } from "./SwitchRow";
 import { BottomSheet } from "./BottomSheet";
 import { NutritionQuestionnaireSheet } from "./NutritionQuestionnaireSheet";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -16,6 +17,7 @@ import { useSessionEnergy, useSessionShape } from "../../lib/gym/dayNutrition";
 import { plannedWeeklyCardioKcal } from "../../lib/gym/cardio";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 type Draft = Record<keyof NutritionGoals, string>;
 
@@ -125,40 +127,27 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
             </span>
           </button>
 
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-[14px] font-semibold">{t.nutritionGoals.byDayType}</p>
-              <p className="text-[12.5px] text-muted-foreground">
-                {session
-                  ? t.nutritionGoals.byDayTypeDesc(
-                      session.kcal,
-                      session.minutes,
-                      session.met,
-                      session.weightKg,
-                    )
-                  : t.nutritionGoals.byDayTypeNeedsWeight}
-              </p>
-            </div>
-            <button
-              role="switch"
-              aria-checked={byDayType}
-              aria-label={t.nutritionGoals.byDayType}
-              onClick={() => {
-                haptic(12);
-                setByDayType((v) => !v);
-                setTab("training");
-              }}
-              className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
-                byDayType ? "bg-primary" : "bg-secondary"
-              }`}
-            >
-              <span
-                className={`absolute top-[2px] size-[27px] rounded-full bg-white shadow-[0_1px_3px_oklch(0_0_0/35%)] transition-all ${
-                  byDayType ? "left-[22px]" : "left-[2px]"
-                }`}
-              />
-            </button>
-          </div>
+          <SwitchRow
+            className="rounded-2xl bg-muted px-4 py-3"
+            label={t.nutritionGoals.byDayType}
+            desc={
+              session
+                ? t.nutritionGoals.byDayTypeDesc(
+                    session.kcal,
+                    session.minutes,
+                    session.met,
+                    session.weightKg,
+                  )
+                : t.nutritionGoals.byDayTypeNeedsWeight
+            }
+            ariaLabel={t.nutritionGoals.byDayType}
+            on={byDayType}
+            onToggle={() => {
+              haptic(12);
+              setByDayType((v) => !v);
+              setTab("training");
+            }}
+          />
 
           {byDayType ? (
             <div className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
@@ -172,7 +161,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
                       setTab(id);
                     }}
                     className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl text-[13px] font-bold ${
-                      tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      tab === id ? chip.on : "text-muted-foreground"
                     }`}
                   >
                     <Icon className="size-4" />

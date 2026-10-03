@@ -90,7 +90,7 @@ export function WorkoutTemplatesSheet({
                   deleteWorkoutTemplate(tpl.id);
                 }}
                 aria-label={t.workoutTemplates.deleteTemplate(tpl.name)}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive active:scale-95"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive-text active:scale-95"
               >
                 <Trash2 className="size-4" />
               </button>

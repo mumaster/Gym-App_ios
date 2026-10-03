@@ -35,7 +35,7 @@ export function GrowthFocusCard() {
         <p className="text-[15px] font-semibold">{t.volume.growTitle}</p>
         <p className="text-[12.5px] text-muted-foreground">{t.volume.growDesc}</p>
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-x-1.5 gap-y-2.5">
         {FOCUS_GROUPS.map((g) => {
           const on = growthFocus.includes(g.id);
           return (

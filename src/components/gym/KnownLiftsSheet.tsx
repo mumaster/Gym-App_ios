@@ -11,6 +11,7 @@ import type { KnownLift } from "../../lib/gym/startWeight";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Exercise } from "../../lib/gym/types";
 import { BottomSheet } from "./BottomSheet";
+import { chip } from "./ui";
 
 /** Typo guards, not training numbers. */
 const MAX_KG = 500;
@@ -109,7 +110,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                 className={`flex items-center gap-3 px-4 py-3 ${i ? "border-t border-border" : ""}`}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14.5px] font-semibold">{e?.name ?? l.exercise_id}</p>
+                  <p className="truncate text-[15px] font-semibold">{e?.name ?? l.exercise_id}</p>
                   <p className="text-[12.5px] text-muted-foreground">
                     {t.knownLifts.set(l.weight, l.reps, l.rpe ?? null, !!e && perDumbbell(e))}
                     {logged.has(l.exercise_id) ? ` · ${t.knownLifts.loggedNow}` : ""}
@@ -159,7 +160,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                 value={weight}
                 onFocus={selectOnFocus}
                 onChange={(e) => DECIMAL_INPUT_RE.test(e.target.value) && setWeight(e.target.value)}
-                className="tabular h-12 w-full rounded-xl bg-background px-3 text-center text-base font-bold outline-none focus:ring-2 focus:ring-ring"
+                className="tabular h-12 w-full rounded-xl bg-background px-3 text-center text-[16px] font-bold outline-none focus:ring-2 focus:ring-ring"
               />
             </label>
             <label className="block">
@@ -172,7 +173,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                 value={reps}
                 onFocus={selectOnFocus}
                 onChange={(e) => /^\d*$/.test(e.target.value) && setReps(e.target.value)}
-                className="tabular h-12 w-full rounded-xl bg-background px-3 text-center text-base font-bold outline-none focus:ring-2 focus:ring-ring"
+                className="tabular h-12 w-full rounded-xl bg-background px-3 text-center text-[16px] font-bold outline-none focus:ring-2 focus:ring-ring"
               />
             </label>
           </div>
@@ -184,7 +185,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                 onClick={() => setRpe((r) => (r === v ? null : v))}
                 aria-pressed={rpe === v}
                 className={`tabular h-10 rounded-xl text-[15px] font-bold active:scale-95 ${
-                  rpe === v ? "bg-primary text-primary-foreground" : "bg-background text-foreground"
+                  rpe === v ? chip.on : "bg-background text-foreground"
                 }`}
               >
                 {v}
@@ -229,7 +230,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                     setReps("");
                     setRpe(null);
                   }}
-                  className={`block w-full px-4 py-3 text-left text-[14.5px] font-medium active:bg-foreground/5 ${
+                  className={`block w-full px-4 py-3 text-left text-[15px] font-medium active:bg-foreground/5 ${
                     i ? "border-t border-border" : ""
                   }`}
                 >

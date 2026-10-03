@@ -6,6 +6,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { formatLoad, isBodyweightExercise } from "../../lib/gym/load";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Exercise, LoggedSet, Workout } from "../../lib/gym/types";
+import { chip } from "./ui";
 
 /**
  * An exercise's page: love/avoid, your history with it, the technique video,
@@ -45,9 +46,7 @@ export function ExerciseDetailSheet({
                 toggleLovedExercise(exercise.id);
               }}
               className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
-                lovedExerciseIds.includes(exercise.id)
-                  ? "bg-primary text-primary-foreground"
-                  : "glass text-secondary-foreground"
+                lovedExerciseIds.includes(exercise.id) ? chip.on : "glass text-secondary-foreground"
               }`}
             >
               <Heart
@@ -118,9 +117,7 @@ export function ExerciseDetailSheet({
                 <span
                   key={m}
                   className={`rounded-full px-3 py-1.5 text-[13px] font-semibold ${
-                    i === 0
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-primary/15 text-primary-text"
+                    i === 0 ? chip.on : "bg-primary/15 text-primary-text"
                   }`}
                 >
                   {m}

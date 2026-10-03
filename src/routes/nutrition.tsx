@@ -317,7 +317,7 @@ function NutritionScreen() {
           {isToday ? (
             <button
               onClick={() => openAdd()}
-              className="glow mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
+              className="glow mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
             >
               <Plus className="size-5" /> {t.nutrition.addFood}
             </button>
@@ -331,7 +331,7 @@ function NutritionScreen() {
           ) : (
             <div className="space-y-4">
               {proteinTarget && selectedEntries.length ? (
-                <p className="-mt-1 px-1 text-[11.5px] leading-snug text-muted-foreground">
+                <p className="-mt-1 px-1 text-[12px] leading-snug text-muted-foreground">
                   {t.nutrition.proteinLegend(proteinTarget)}
                 </p>
               ) : null}
@@ -506,7 +506,7 @@ function WeekStrip({
   };
 
   return (
-    <Card className="mt-1 p-2.5">
+    <Card className="mt-1 p-2">
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => move(-1)}
@@ -525,7 +525,7 @@ function WeekStrip({
           <ChevronRight className="size-4" />
         </button>
       </div>
-      <div className="mt-1.5 grid grid-cols-7 gap-1">
+      <div className="mt-1.5 grid grid-cols-7 gap-0.5">
         {days.map(({ date, key }) => {
           const future = key > todayKey;
           const selected = key === selectedKey;
@@ -546,7 +546,7 @@ function WeekStrip({
               }`}
             >
               <span
-                className={`text-[10.5px] font-semibold leading-none ${
+                className={`text-[11px] font-semibold leading-none ${
                   key === todayKey ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
@@ -557,7 +557,7 @@ function WeekStrip({
                 // Same height as the bar row would take with its gap, so
                 // switching tabs doesn't make the strip jump.
                 <span
-                  className={`tabular flex h-1 items-center text-[9.5px] font-semibold leading-none ${
+                  className={`tabular flex h-1 items-center text-[10px] font-semibold leading-none ${
                     mark.label ? "text-primary-text" : "text-muted-foreground"
                   }`}
                 >
@@ -624,7 +624,7 @@ function DaySummary({
           {diff != null ? (
             <p
               className={`tabular flex items-center gap-1 text-[13px] font-semibold ${
-                diff < 0 ? "text-destructive" : "text-muted-foreground"
+                diff < 0 ? "text-destructive-text" : "text-muted-foreground"
               }`}
             >
               {diff < 0 ? <AlertTriangle className="size-3.5" /> : null}
@@ -656,7 +656,7 @@ function DaySummary({
               </p>
               <p className="tabular mt-0.5 truncate leading-tight">
                 <span
-                  className={`text-[16px] font-bold ${status === "over" ? "text-destructive" : ""}`}
+                  className={`text-[16px] font-bold ${status === "over" ? "text-destructive-text" : ""}`}
                 >
                   {value}
                 </span>
@@ -681,7 +681,7 @@ function DaySummary({
         {minor.map((m, i) => (
           <span key={m.key}>
             {i > 0 ? " · " : ""}
-            <span className={m.over ? "font-semibold text-destructive" : ""}>{m.text}</span>
+            <span className={m.over ? "font-semibold text-destructive-text" : ""}>{m.text}</span>
           </span>
         ))}
       </p>

@@ -542,7 +542,7 @@ function WorkoutHome() {
                     programWeek.type === "deload",
                   )}
                 </p>
-                <p className="mt-1 truncate text-[18px] font-bold">
+                <p className="mt-1 truncate text-[17px] font-bold">
                   {t.generate.nextDay(programDayLabel)}
                 </p>
                 <p className="text-[13px] text-muted-foreground">
@@ -594,7 +594,7 @@ function WorkoutHome() {
             {durationPicker}
             <button
               onClick={startProgramDay}
-              className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+              className="glow mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
             >
               <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
             </button>
@@ -612,7 +612,7 @@ function WorkoutHome() {
                 <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                   {splitTemplateById(weeklyScheme.templateId).label}
                 </p>
-                <p className="mt-1 truncate text-[18px] font-bold">
+                <p className="mt-1 truncate text-[17px] font-bold">
                   {t.generate.nextDay(scheduledDayLabel)}
                 </p>
                 {scheduledSlot ? (
@@ -646,7 +646,7 @@ function WorkoutHome() {
             {durationPicker}
             <button
               onClick={startScheduledDay}
-              className="glow mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+              className="glow mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
             >
               <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
             </button>
@@ -715,7 +715,7 @@ function WorkoutHome() {
               <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
                 {t.generate.sessionInProgress}
               </p>
-              <p className="mt-1 text-lg font-bold">
+              <p className="mt-1 text-[17px] font-bold">
                 {t.generate.sessionTitle(
                   activeWorkout.plan.length,
                   activeWorkout.completed_sets.length,
@@ -789,7 +789,7 @@ function WorkoutHome() {
             <div className="px-4 py-3">{durationPicker}</div>
             <div className="flex items-center gap-2 py-2.5 pl-4 pr-2">
               {profiles.length > 1 ? (
-                <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                <div className="no-scrollbar -my-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-1">
                   {profiles.map((p) => (
                     <button
                       key={p.id}
@@ -956,7 +956,7 @@ function WorkoutHome() {
 
           {muscles.length > 2 && !curatedSelection ? (
             <div className="mt-4 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
-              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
+              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive-text" />
               <p className="text-[14px] leading-snug text-foreground">
                 {t.generate.warningTooManyGroups}
               </p>
@@ -1005,7 +1005,7 @@ function WorkoutHome() {
               <button
                 onClick={generateOwn}
                 disabled={generating}
-                className="glow flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
+                className="glow flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
               >
                 {generating ? (
                   <>
@@ -1052,7 +1052,9 @@ function WorkoutHome() {
               return (
                 <Card key={`${p.exercise_id}-${i}`} className="p-4">
                   <div className="flex items-center gap-3">
-                    <span className="tabular w-6 text-lg font-bold text-primary-text">{i + 1}</span>
+                    <span className="tabular w-6 text-[17px] font-bold text-primary-text">
+                      {i + 1}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1184,7 +1186,7 @@ function WorkoutHome() {
             </button>
             <button
               onClick={start}
-              className="glow flex min-h-[56px] flex-[2] items-center justify-center gap-2 rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground active:scale-[0.985]"
+              className="glow flex min-h-[52px] flex-[2] items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
             >
               <Play className="size-5" /> {t.generate.startWorkout}
             </button>

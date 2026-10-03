@@ -11,6 +11,7 @@ import {
 import { splitDayLabel } from "../../lib/gym/splits";
 import { haptic, useGym, type RotationKind } from "../../lib/gym/store";
 import { BottomSheet } from "./BottomSheet";
+import { chip } from "./ui";
 
 /** This-cycle-only rescheduling for the active weekly plan or program:
  *  move any remaining session to another day (never past its neighbours),
@@ -91,9 +92,7 @@ export function AdjustWeekSheet({
                               gym.moveScheduledSession(kind, i, dayKeyFromDate(d));
                             }}
                             className={`flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-xl px-2 text-[11px] font-bold ${
-                              selected
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary text-secondary-foreground"
+                              selected ? chip.on : "bg-secondary text-secondary-foreground"
                             }`}
                           >
                             <span className="uppercase">{t.common.dow[d.getDay()]}</span>

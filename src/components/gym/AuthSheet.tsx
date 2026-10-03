@@ -3,6 +3,7 @@ import { Cloud, Lock, Mail } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 type Mode = "signin" | "signup";
 
@@ -103,8 +104,8 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
                     setMode(id);
                     setError(null);
                   }}
-                  className={`min-h-[40px] flex-1 rounded-xl text-[14px] font-semibold ${
-                    mode === id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  className={`tap-target min-h-[40px] flex-1 rounded-xl text-[14px] font-semibold ${
+                    mode === id ? chip.on : "text-muted-foreground"
                   }`}
                 >
                   {label}
@@ -138,7 +139,9 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
               />
             </label>
 
-            {error ? <p className="text-[13px] font-medium text-destructive">{error}</p> : null}
+            {error ? (
+              <p className="text-[13px] font-medium text-destructive-text">{error}</p>
+            ) : null}
 
             <button
               onClick={() => void submit()}

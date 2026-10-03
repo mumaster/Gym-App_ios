@@ -146,7 +146,7 @@ function CardioDetailScreen() {
             deleteCardioSession(session.id);
             void navigate({ to: "/history" });
           }}
-          className="min-h-[44px] flex-1 rounded-2xl bg-destructive/10 text-[14px] font-semibold text-destructive"
+          className="min-h-[44px] flex-1 rounded-2xl bg-destructive/10 text-[14px] font-semibold text-destructive-text"
         >
           {confirming ? t.watch.confirmDelete : t.watch.deleteSession}
         </button>

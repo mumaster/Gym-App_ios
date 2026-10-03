@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
+
 /** One row of a grouped settings card: a label and short description with an
  *  iOS switch. The knob is always white, like the platform's. `disabled`
  *  dims the row and ignores taps (a switch that only matters while another
- *  one is on). */
+ *  one is on). `desc` is optional; `className` replaces the row's padding
+ *  when it sits in a card that has its own (the session's settings card). */
 export function SwitchRow({
   label,
   desc,
@@ -9,21 +12,23 @@ export function SwitchRow({
   on,
   onToggle,
   disabled = false,
+  className = "px-4 py-3",
 }: {
-  label: string;
-  desc: string;
+  label: ReactNode;
+  desc?: string;
   ariaLabel: string;
   on: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  className?: string;
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-3 px-4 py-3 ${disabled ? "opacity-50" : ""}`}
+      className={`flex items-center justify-between gap-3 ${className} ${disabled ? "opacity-50" : ""}`}
     >
       <div className="min-w-0">
         <p className="text-[15px] font-semibold">{label}</p>
-        <p className="text-[12px] leading-snug text-muted-foreground">{desc}</p>
+        {desc ? <p className="text-[12px] leading-snug text-muted-foreground">{desc}</p> : null}
       </div>
       <button
         role="switch"

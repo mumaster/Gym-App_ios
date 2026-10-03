@@ -293,7 +293,7 @@ function ExercisesScreen() {
                 <p className="text-[17px] font-semibold leading-snug">
                   {e.name}
                   {avoided ? (
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-destructive">
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-destructive-text">
                       <ShieldOff className="size-3" />
                       {t.exercises.avoided}
                     </span>
@@ -589,7 +589,7 @@ function ExerciseEditor({
                 disabled={busy}
                 aria-label={t.exercises.deleteExercise}
                 onClick={() => void remove()}
-                className="glass flex size-[50px] shrink-0 items-center justify-center rounded-2xl text-destructive disabled:opacity-50"
+                className="glass flex size-[50px] shrink-0 items-center justify-center rounded-2xl text-destructive-text disabled:opacity-50"
               >
                 <Trash2 className="size-5" />
               </button>

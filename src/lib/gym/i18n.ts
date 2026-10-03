@@ -419,6 +419,8 @@ const en = {
     closeSession: "Close session",
     workoutOverview: "Workout overview",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
+    overviewProgress: (done: number, total: number, reps: string) =>
+      `${done}/${total} sets · ${reps} reps`,
     skipRest: "Skip Rest",
     restLabel: "Rest",
     restOverLabel: "Rest over",
@@ -554,7 +556,7 @@ const en = {
     keyFormCues: "Key form cues",
     lessLabel: (label: string) => `Less ${label}`,
     moreLabel: (label: string) => `More ${label}`,
-    straightInto: (name: string) => `Great set! Straight into ${name}`,
+    straightInto: (name: string) => `Great set. Straight into ${name}`,
     exerciseBFallback: "Exercise B",
     notificationsUnsupported: "Notifications aren't supported in this browser.",
     notificationsBlocked: "Notifications are blocked — enable them in your browser settings.",
@@ -1260,6 +1262,14 @@ const en = {
     close: "Close",
     done: "Done",
   },
+  errorPage: {
+    notFoundTitle: "Page not found",
+    notFoundBody: "The page you're looking for doesn't exist or has been moved.",
+    goHome: "Go home",
+    errorTitle: "This page didn't load",
+    errorBody: "Something went wrong on our end. You can try again or go back home.",
+    tryAgain: "Try again",
+  },
   updateBanner: {
     text: "A new version is ready",
     reload: "Reload",
@@ -1748,6 +1758,8 @@ const nl: Dict = {
     closeSession: "Sessie sluiten",
     workoutOverview: "Trainingsoverzicht",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
+    overviewProgress: (done: number, total: number, reps: string) =>
+      `${done}/${total} sets · ${reps} herhalingen`,
     skipRest: "Rust overslaan",
     restLabel: "Rust",
     restOverLabel: "Rust voorbij",
@@ -1884,7 +1896,7 @@ const nl: Dict = {
     keyFormCues: "Belangrijkste vormtips",
     lessLabel: (label: string) => `Minder ${label}`,
     moreLabel: (label: string) => `Meer ${label}`,
-    straightInto: (name: string) => `Sterke set! Direct door naar ${name}`,
+    straightInto: (name: string) => `Sterke set. Direct door naar ${name}`,
     exerciseBFallback: "Oefening B",
     notificationsUnsupported: "Meldingen worden niet ondersteund in deze browser.",
     notificationsBlocked: "Meldingen zijn geblokkeerd — schakel ze in bij je browserinstellingen.",
@@ -2593,6 +2605,14 @@ const nl: Dict = {
     close: "Sluiten",
     done: "Klaar",
   },
+  errorPage: {
+    notFoundTitle: "Pagina niet gevonden",
+    notFoundBody: "De pagina die je zoekt bestaat niet of is verplaatst.",
+    goHome: "Naar home",
+    errorTitle: "Deze pagina laadde niet",
+    errorBody: "Er ging iets mis aan onze kant. Probeer het opnieuw of ga terug naar home.",
+    tryAgain: "Opnieuw proberen",
+  },
   updateBanner: {
     text: "Een nieuwe versie is beschikbaar",
     reload: "Herladen",
@@ -2686,6 +2706,11 @@ const nl: Dict = {
 const DICTS: Record<Language, Dict> = { en, nl };
 
 /** Returns the translation dictionary for the app's current display language. */
+/** The dictionary for a language, for pages that can render outside
+ *  GymProvider (the 404 and error pages), which read the language
+ *  themselves. */
+export const dictFor = (language: Language): Dict => DICTS[language];
+
 export function useTranslation(): Dict {
   const { language } = useGym();
   return DICTS[language];

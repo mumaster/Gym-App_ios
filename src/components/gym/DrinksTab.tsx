@@ -375,7 +375,7 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
             aria-expanded={noteOpen}
             aria-label={t.coffee.aboutLimit}
             className={`tap-target tabular flex shrink-0 items-center gap-1 text-right text-[13px] leading-tight ${
-              status === "over" ? "font-semibold text-destructive" : "text-muted-foreground"
+              status === "over" ? "font-semibold text-destructive-text" : "text-muted-foreground"
             }`}
           >
             {status === "over"
@@ -629,7 +629,7 @@ function AlcoholSheet({
               const food = byCode?.get(drink.nevo);
               return (
                 <div key={drink.id} className="rounded-2xl bg-muted px-3 py-2.5">
-                  <p className="mb-1.5 text-[14.5px] font-semibold">{t.alcohol.names[drink.id]}</p>
+                  <p className="mb-1.5 text-[15px] font-semibold">{t.alcohol.names[drink.id]}</p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {drink.sizes.map((ml) => (
                       <button
@@ -640,7 +640,7 @@ function AlcoholSheet({
                       >
                         <HapticSwitch />
                         <span className="tabular text-[13px] font-bold leading-tight">{ml} ml</span>
-                        <span className="tabular text-[10.5px] leading-tight text-muted-foreground">
+                        <span className="tabular text-[11px] leading-tight text-muted-foreground">
                           {food ? t.nutrition.kcal(servingKcal(food, ml)) : "…"}
                         </span>
                       </button>
@@ -652,7 +652,7 @@ function AlcoholSheet({
           </div>
         </section>
       ))}
-      <p className="px-1 text-[11.5px] leading-snug text-muted-foreground">
+      <p className="px-1 text-[12px] leading-snug text-muted-foreground">
         {t.nutrition.nevoReference}
       </p>
     </BottomSheet>
@@ -727,7 +727,7 @@ function WaterSettingsSheet({
                 haptic(10);
                 setGoal(String(suggestedMl));
               }}
-              className="shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[12.5px] font-bold text-foreground active:scale-95"
+              className="tap-target shrink-0 rounded-full bg-primary/15 px-3 py-1.5 text-[12.5px] font-bold text-foreground active:scale-95"
             >
               {t.nutrition.waterUseSuggestion}
             </button>
@@ -746,7 +746,7 @@ function WaterSettingsSheet({
         </button>
       )}
 
-      <div className="mb-1.5 mt-5 flex items-end justify-between gap-2 px-1">
+      <div className="mb-3 mt-5 flex items-end justify-between gap-2 px-1">
         <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
           {t.nutrition.waterEditShortcuts}
         </p>
@@ -755,7 +755,7 @@ function WaterSettingsSheet({
             haptic(10);
             setDrafts(WATER_QUICK_ADD.map(String));
           }}
-          className="flex items-center gap-1 text-[13px] font-semibold text-primary-text"
+          className="tap-target flex items-center gap-1 text-[13px] font-semibold text-primary-text"
         >
           <RotateCcw className="size-3.5" /> {t.nutrition.waterResetShortcuts}
         </button>
@@ -787,7 +787,7 @@ function WaterSettingsSheet({
         ))}
       </div>
       <p
-        className={`mt-1.5 px-1 text-[12px] ${draftsValid ? "text-muted-foreground" : "text-destructive"}`}
+        className={`mt-1.5 px-1 text-[12px] ${draftsValid ? "text-muted-foreground" : "text-destructive-text"}`}
       >
         {draftsValid
           ? t.nutrition.waterShortcutsHint
@@ -799,7 +799,7 @@ function WaterSettingsSheet({
           haptic(15);
           save();
         }}
-        className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.985]"
+        className="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
       >
         {t.common.save}
       </button>

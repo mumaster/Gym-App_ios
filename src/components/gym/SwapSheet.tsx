@@ -16,7 +16,7 @@ function Row({ e, onPick }: { e: Exercise; onPick: (e: Exercise) => void }) {
     >
       <div className="min-w-0">
         <p className="truncate text-[17px] font-semibold">{e.name}</p>
-        <p className="truncate text-[13px] text-muted-foreground">
+        <p data-cut-ok className="truncate text-[13px] text-muted-foreground">
           {e.equipment_required.map((id) => EQUIPMENT.find((q) => q.id === id)?.label).join(" · ")}
         </p>
       </div>
@@ -137,7 +137,7 @@ export function SwapSheet({
               {recommended.length ? (
                 recommended.map((e) => <Row key={e.id} e={e} onPick={choose} />)
               ) : (
-                <p className="text-sm text-muted-foreground">{t.swapSheet.noOpposingOptions}</p>
+                <p className="text-[14px] text-muted-foreground">{t.swapSheet.noOpposingOptions}</p>
               )}
               <p className="pt-3 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
                 {t.swapSheet.otherExercises}
@@ -149,7 +149,7 @@ export function SwapSheet({
             </p>
           )}
           {others.length === 0 && !partner ? (
-            <p className="text-sm text-muted-foreground">{t.swapSheet.noAlternatives}</p>
+            <p className="text-[14px] text-muted-foreground">{t.swapSheet.noAlternatives}</p>
           ) : null}
           {others.map((e) => (
             <Row key={e.id} e={e} onPick={choose} />

@@ -13,6 +13,7 @@ import { useTranslation } from "../../lib/gym/i18n";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 /** A sane default spread of weekdays for a given training frequency — same
  *  table as WeeklyPlanSheet's, kept local rather than shared since it's a
@@ -125,9 +126,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               <div
                 key={i}
                 className={`flex min-h-[40px] flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-bold uppercase tracking-wide ${
-                  i === program.currentWeek
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                  i === program.currentWeek ? chip.on : "bg-muted text-muted-foreground"
                 }`}
               >
                 {w.type === "deload" ? (
@@ -162,13 +161,13 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
                       aria-label={t.programBuilder.changeDay(dayLabel)}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                      className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                     >
                       <Pencil className="size-4" />
                     </button>
                   </div>
                   {editingSlot === i ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
                       {DOW_DISPLAY_ORDER.map((dow) => {
                         const taken = usedDows.has(dow) && dow !== slot.dow;
                         return (
@@ -178,7 +177,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                             onClick={() => setSlotDow(i, dow)}
                             className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
                               dow === slot.dow
-                                ? "bg-primary text-primary-foreground"
+                                ? chip.on
                                 : taken
                                   ? "bg-secondary text-muted-foreground opacity-40"
                                   : "bg-secondary text-secondary-foreground"
@@ -218,7 +217,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             </button>
             <button
               onClick={remove}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive active:scale-95"
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
             >
               <Trash2 className="size-4" /> {t.programBuilder.removeProgram}
             </button>
@@ -266,9 +265,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                   key={dow}
                   onClick={() => toggleDow(dow)}
                   className={`min-h-[44px] min-w-[44px] rounded-2xl px-3 text-[14px] font-semibold ${
-                    dows.includes(dow)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
+                    dows.includes(dow) ? chip.on : "bg-secondary text-secondary-foreground"
                   }`}
                 >
                   {t.common.dow[dow]}

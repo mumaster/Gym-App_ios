@@ -122,7 +122,7 @@ export function WeightChart({
                 y={yy(v)}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-muted-foreground text-[10.5px] tabular-nums"
+                className="fill-muted-foreground text-[11px] tabular-nums"
               >
                 {fmtKg(v, y.step < 1 ? 1 : 0)}
               </text>
@@ -132,7 +132,7 @@ export function WeightChart({
             x={PAD.left}
             y={HEIGHT - 4}
             textAnchor="start"
-            className="fill-muted-foreground text-[10.5px]"
+            className="fill-muted-foreground text-[11px]"
           >
             {fmtDate(t0)}
           </text>
@@ -140,7 +140,7 @@ export function WeightChart({
             x={width - PAD.right}
             y={HEIGHT - 4}
             textAnchor="end"
-            className="fill-muted-foreground text-[10.5px]"
+            className="fill-muted-foreground text-[11px]"
           >
             {fmtDate(t1)}
           </text>
@@ -182,7 +182,7 @@ export function WeightChart({
           ))}
         </svg>
       </div>
-      <div className="mt-1 flex items-center gap-4 text-[11.5px] text-muted-foreground">
+      <div className="mt-1 flex items-center gap-4 text-[12px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-muted-foreground" />
           {t.bodyweight.chartWeighIns}

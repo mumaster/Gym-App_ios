@@ -3,10 +3,11 @@ import { CARDIO_ACTIVITIES, CARDIO_EFFORTS } from "../../lib/gym/cardio";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
 import type { CardioActivity, CardioEffort } from "../../lib/gym/types";
+import { chip as chipStyle } from "./ui";
 
 const chip = (on: boolean) =>
-  `min-h-[40px] rounded-2xl px-3 text-[13.5px] font-semibold active:scale-95 ${
-    on ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+  `tap-target min-h-[40px] rounded-2xl px-3 text-[13.5px] font-semibold active:scale-95 ${
+    on ? chipStyle.on : "bg-secondary text-secondary-foreground"
   }`;
 
 export function ActivityPicker({

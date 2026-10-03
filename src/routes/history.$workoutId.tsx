@@ -165,7 +165,7 @@ function SessionDetailScreen() {
             </button>
             <button
               onClick={() => setWorkoutWatch(workout.id, null)}
-              className="min-h-[44px] flex-1 rounded-2xl bg-destructive/10 text-[14px] font-semibold text-destructive"
+              className="min-h-[44px] flex-1 rounded-2xl bg-destructive/10 text-[14px] font-semibold text-destructive-text"
             >
               {t.watch.remove}
             </button>

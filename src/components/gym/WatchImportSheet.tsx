@@ -197,7 +197,7 @@ export function WatchImportSheet({
           <p className="text-[14px] leading-snug text-muted-foreground">{t.watch.intro}</p>
           <button
             onClick={() => fileRef.current?.click()}
-            className="glow flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
+            className="glow flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
           >
             <ImagePlus className="size-5" /> {t.watch.choose}
           </button>
@@ -214,7 +214,7 @@ export function WatchImportSheet({
 
       {step === "error" ? (
         <div className="space-y-3">
-          <p className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-[14px] text-destructive">
+          <p className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-[14px] text-destructive-text">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {error}
           </p>
           <button

@@ -10,7 +10,8 @@
  */
 
 export const button = {
-  /** The one main action of a screen or sheet: Add to log, Start workout. */
+  /** The one main action of a screen or sheet: Add to log, Start workout.
+   *  52 pt (DESIGN.md §7 has the two exceptions). */
   primary:
     "flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-[16px] font-bold text-primary-foreground active:scale-[0.985] disabled:opacity-40",
   /** A second, quieter action next to or under a primary one. */
@@ -24,7 +25,7 @@ export const button = {
   more: "flex items-center justify-center gap-0.5 rounded-lg border-[1.5px] border-dashed border-foreground/25 text-muted-foreground active:scale-95 active:bg-foreground/5",
   /** Removes or cancels something for good. */
   destructive:
-    "flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 text-[14px] font-semibold text-destructive active:scale-[0.985]",
+    "flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 text-[14px] font-semibold text-destructive-text active:scale-[0.985]",
   /** A round, icon-only button (settings, info, close). Always pass an
    *  aria-label. Drawn at 36 pt, tapped at 44 (tap-target). */
   icon: "tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90",

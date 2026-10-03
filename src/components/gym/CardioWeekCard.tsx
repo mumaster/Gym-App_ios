@@ -63,7 +63,7 @@ export function CardioWeekCard({
             <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
               {t.cardio.thisWeek}
             </p>
-            <p className="tabular mt-1 text-[18px] font-bold">
+            <p className="tabular mt-1 text-[17px] font-bold">
               {t.cardio.progress(minutes, WHO_WEEKLY_MINUTES)}
             </p>
           </div>

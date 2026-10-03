@@ -25,7 +25,7 @@ export function TrainingLoadCard() {
           {t.trainingLoad.thisWeek}
         </p>
         <p className="mt-0.5">
-          <span className="tabular text-[24px] font-bold">
+          <span className="tabular text-[26px] font-bold">
             {current.load.toLocaleString(locale)}
           </span>{" "}
           <span className="text-[13px] text-muted-foreground">{t.trainingLoad.units}</span>
@@ -57,7 +57,7 @@ export function TrainingLoadCard() {
                     title={`${w.load}`}
                   />
                 </div>
-                <span className="text-center text-[10.5px] text-muted-foreground">
+                <span className="text-center text-[11px] text-muted-foreground">
                   {w.weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" })}
                 </span>
               </div>
@@ -74,7 +74,7 @@ export function TrainingLoadCard() {
           <p className="text-[12.5px] leading-snug">{t.trainingLoad.spike}</p>
         </div>
       ) : null}
-      <p className="text-[11.5px] text-muted-foreground">{t.trainingLoad.source}</p>
+      <p className="text-[12px] text-muted-foreground">{t.trainingLoad.source}</p>
     </Card>
   );
 }

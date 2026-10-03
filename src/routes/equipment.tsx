@@ -117,7 +117,7 @@ function EquipmentScreen() {
               ),
             })
           }
-          className="h-14 w-full rounded-xl bg-transparent px-3 text-[18px] font-semibold outline-none"
+          className="h-14 w-full rounded-xl bg-transparent px-3 text-[17px] font-semibold outline-none"
         />
       </Card>
 
@@ -164,7 +164,7 @@ function EquipmentScreen() {
                     haptic(12);
                     toggleAvoidedExercise(id);
                   }}
-                  className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-destructive/15 px-3 text-[14px] font-semibold text-destructive"
+                  className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-destructive/15 px-3 text-[14px] font-semibold text-destructive-text"
                 >
                   <ShieldOff className="size-3.5" />
                   {ex?.name ?? id}
@@ -256,7 +256,7 @@ function EquipmentScreen() {
               });
               setEditingId(rest[0]!.id);
             }}
-            className="glass flex size-[52px] items-center justify-center rounded-2xl text-destructive"
+            className="glass flex size-[52px] items-center justify-center rounded-2xl text-destructive-text"
             aria-label={t.equipment.deleteProfile}
           >
             <Trash2 className="size-5" />

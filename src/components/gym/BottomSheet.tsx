@@ -296,12 +296,12 @@ export function BottomSheet({
         <div data-sheet-grip className="shrink-0 cursor-grab px-5 pt-3 active:cursor-grabbing">
           <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-border" />
           <div className="mb-3 flex items-center justify-between">
-            <h2 id={titleId} className="text-xl font-bold tracking-tight">
+            <h2 id={titleId} className="text-[20px] font-bold tracking-tight">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
+              className="tap-target rounded-full bg-secondary px-4 py-2 text-[14px] font-semibold text-secondary-foreground"
             >
               {t.bottomSheet.done}
             </button>

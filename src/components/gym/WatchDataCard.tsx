@@ -145,19 +145,17 @@ export function WatchDataCard({ data: raw }: { data: WatchData }) {
         <div className="grid grid-cols-2 gap-2">
           {shown.map(({ icon: Icon, label, value, unit, note }) => (
             <div key={label} className="min-w-0 rounded-xl bg-muted/60 px-3 py-2.5">
-              <p className="flex items-center gap-1 truncate text-[11.5px] font-semibold text-muted-foreground">
+              <p className="flex items-center gap-1 truncate text-[12px] font-semibold text-muted-foreground">
                 <Icon className="size-3.5 shrink-0" /> {label}
               </p>
               <p className="tabular mt-0.5 whitespace-nowrap text-[20px] font-bold leading-tight">
                 {value}
                 {unit ? (
-                  <span className="ml-1 text-[11.5px] font-medium text-muted-foreground">
-                    {unit}
-                  </span>
+                  <span className="ml-1 text-[12px] font-medium text-muted-foreground">{unit}</span>
                 ) : null}
               </p>
               {note ? (
-                <p className="tabular truncate text-[11.5px] text-muted-foreground">{note}</p>
+                <p className="tabular truncate text-[12px] text-muted-foreground">{note}</p>
               ) : null}
             </div>
           ))}
@@ -190,12 +188,12 @@ export function WatchDataCard({ data: raw }: { data: WatchData }) {
               })),
             ].map((m, i) => (
               <div key={`${m.label}-${i}`} className="min-w-0">
-                <p className="text-[11.5px] leading-snug text-muted-foreground">{m.label}</p>
+                <p className="text-[12px] leading-snug text-muted-foreground">{m.label}</p>
                 <p className="tabular break-words text-[14px] font-semibold leading-snug">
                   {m.value}
                 </p>
                 {m.rating ? (
-                  <p className="text-[11.5px] leading-snug text-muted-foreground">{m.rating}</p>
+                  <p className="text-[12px] leading-snug text-muted-foreground">{m.rating}</p>
                 ) : null}
               </div>
             ))}
@@ -224,7 +222,7 @@ export function WatchDataCard({ data: raw }: { data: WatchData }) {
       ))}
 
       {data.activeKcal != null || data.totalKcal != null ? (
-        <p className="text-[11.5px] leading-snug text-muted-foreground">{t.watch.caloriesNote}</p>
+        <p className="text-[12px] leading-snug text-muted-foreground">{t.watch.caloriesNote}</p>
       ) : null}
     </div>
   );

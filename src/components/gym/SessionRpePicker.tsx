@@ -36,7 +36,7 @@ export function SessionRpePicker({
           </button>
         ))}
       </div>
-      <div className="mt-1.5 flex justify-between text-[11.5px] text-muted-foreground">
+      <div className="mt-1.5 flex justify-between text-[12px] text-muted-foreground">
         <span>{t.trainingLoad.anchors.rest}</span>
         <span className="font-semibold text-foreground">
           {anchor ? t.trainingLoad.anchors[anchor as keyof typeof t.trainingLoad.anchors] : ""}

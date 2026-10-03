@@ -62,7 +62,7 @@ export function MealOverviewSheet({
         <div className="space-y-4">
           <div>
             <p className="tabular leading-none">
-              <span className="text-[32px] font-bold">{kcal.toLocaleString(locale)}</span>
+              <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
               <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
             </p>
             <p className="mt-1.5 text-[13px] text-muted-foreground">
@@ -110,7 +110,7 @@ export function MealOverviewSheet({
                           style={{ width: `${Math.min(100, pct)}%` }}
                         />
                       </div>
-                      <p className="tabular mt-1 text-[11.5px] text-muted-foreground">
+                      <p className="tabular mt-1 text-[12px] text-muted-foreground">
                         {t.mealOverview.ofLimit(pct)}
                       </p>
                     </>
@@ -154,9 +154,7 @@ export function MealOverviewSheet({
                     }`}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-[14.5px] font-semibold">
-                        {entry.name}
-                      </span>
+                      <span className="block truncate text-[15px] font-semibold">{entry.name}</span>
                       <PortionLine
                         grams={entry.grams}
                         unit={drinkOf(entry) ? "ml" : "g"}
@@ -179,7 +177,7 @@ export function MealOverviewSheet({
             {canAdd ? (
               <button
                 onClick={onAdd}
-                className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.985]"
+                className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
               >
                 <Plus className="size-4" /> {t.mealOverview.add}
               </button>

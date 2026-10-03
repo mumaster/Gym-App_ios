@@ -474,7 +474,7 @@ function HistoryScreen() {
                 <div className="mt-3">
                   <StreakCalendar columns={calendarColumns} />
                 </div>
-                <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+                <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
                   {t.history.streakSource}
                 </p>
               </Card>

@@ -7,7 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { dictFor } from "../lib/gym/i18n";
+import type { Language } from "../lib/gym/types";
 import { createIsomorphicFn } from "@tanstack/react-start";
 
 import appCss from "../styles.css?url";
@@ -36,21 +38,36 @@ const getColorSchemeCookie = createIsomorphicFn()
   .server(readColorSchemeCookie)
   .client(() => document.cookie.match(/(?:^|;\s*)forge-color-scheme=([^;]*)/)?.[1]);
 
+/** The app's language for the 404 and error pages, which can render outside
+ *  GymProvider (an error in the app itself): read from the saved state after
+ *  mounting, English until then and when nothing is saved. */
+function useStandaloneDict() {
+  const [language, setLanguage] = useState<Language>("en");
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("forge.gym.state.v2") ?? "{}");
+      if (saved?.language === "nl") setLanguage("nl");
+    } catch {
+      // unreadable storage: stay in English
+    }
+  }, []);
+  return dictFor(language).errorPage;
+}
+
 function NotFoundComponent() {
+  const t = useStandaloneDict();
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <h2 className="mt-4 text-[20px] font-semibold text-foreground">{t.notFoundTitle}</h2>
+        <p className="mt-2 text-[14px] text-muted-foreground">{t.notFoundBody}</p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-[14px] font-semibold text-primary-foreground"
           >
-            Go home
+            {t.goHome}
           </Link>
         </div>
       </div>
@@ -61,31 +78,28 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const t = useStandaloneDict();
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        <h1 className="text-[20px] font-semibold tracking-tight text-foreground">{t.errorTitle}</h1>
+        <p className="mt-2 text-[14px] text-muted-foreground">{t.errorBody}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-[14px] font-semibold text-primary-foreground"
           >
-            Try again
+            {t.tryAgain}
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-semibold text-foreground"
+            className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-[14px] font-semibold text-foreground"
           >
-            Go home
+            {t.goHome}
           </a>
         </div>
       </div>

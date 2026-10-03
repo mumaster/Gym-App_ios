@@ -28,6 +28,7 @@ import { CARDIO_ICONS } from "./cardioDisplay";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { CAFFEINE_DAILY_LIMIT_MG, COFFEE_CAFFEINE_MG } from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 /**
  * First-launch tour: one swipeable step per part of the app, in the order a
@@ -175,7 +176,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
               {s.mock ? (
                 <div className="flex flex-1 flex-col justify-center py-2">
                   {i > 0 ? (
-                    <p className="mb-1.5 text-center text-[10.5px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    <p className="mb-1.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                       {w.example}
                     </p>
                   ) : null}
@@ -193,7 +194,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
                 <div className="flex-1" />
               )}
               <div className="shrink-0 pb-3 pt-1.5">
-                <h2 className="text-[24px] font-bold leading-tight tracking-tight">{s.title}</h2>
+                <h2 className="text-[26px] font-bold leading-tight tracking-tight">{s.title}</h2>
                 <p className="mt-1.5 text-[15px] leading-snug text-muted-foreground">{s.body}</p>
                 {s.key === "ready" ? (
                   <div className="mt-5 space-y-2">
@@ -309,7 +310,7 @@ function Panel({ children, className = "" }: { children: ReactNode; className?: 
 function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <p
-      className={`text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted-foreground ${className}`}
+      className={`text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground ${className}`}
     >
       {children}
     </p>
@@ -399,7 +400,7 @@ function IntroMock() {
               <Badge size="size-9">
                 <Icon className="size-[18px]" />
               </Badge>
-              <span className="text-[14.5px] font-semibold leading-snug">{p}</span>
+              <span className="text-[15px] font-semibold leading-snug">{p}</span>
             </div>
           );
         })}
@@ -452,7 +453,7 @@ function HomeMock() {
                 {m.v}
                 <span className="font-medium text-muted-foreground"> / {m.g} g</span>
               </p>
-              <p className="truncate text-[10.5px] text-muted-foreground">{m.k}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{m.k}</p>
             </div>
           ))}
         </div>
@@ -544,7 +545,7 @@ function WorkoutMock() {
               <span
                 key={m}
                 className={`tabular flex min-h-[34px] items-center justify-center rounded-xl text-[13px] font-bold ${
-                  m === 45 ? "bg-primary text-primary-foreground" : "bg-secondary"
+                  m === 45 ? chip.on : "bg-secondary"
                 }`}
               >
                 {m}
@@ -555,7 +556,7 @@ function WorkoutMock() {
             {["Chest", "Triceps"].map((m) => (
               <span
                 key={m}
-                className="rounded-full bg-primary/15 px-2.5 py-1 text-[11.5px] font-semibold"
+                className="rounded-full bg-primary/15 px-2.5 py-1 text-[12px] font-semibold"
               >
                 {m}
               </span>
@@ -577,7 +578,7 @@ function WorkoutMock() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13.5px] font-semibold">{e.name}</span>
-              <span className="tabular block text-[11.5px] text-muted-foreground">
+              <span className="tabular block text-[12px] text-muted-foreground">
                 {e.scheme} · {e.load}
               </span>
             </span>
@@ -593,7 +594,7 @@ function SessionMock() {
   return (
     <div className="space-y-2">
       <Panel className="p-3.5">
-        <p className="text-[18px] font-bold leading-tight">Barbell Bench Press</p>
+        <p className="text-[17px] font-bold leading-tight">Barbell Bench Press</p>
         <p className="tabular text-[12px] text-muted-foreground">3 × 6–10 · 2:00</p>
         <div className="mt-2.5 space-y-1">
           {[1, 2].map((n) => (
@@ -617,7 +618,7 @@ function SessionMock() {
               <span
                 key={r}
                 className={`tabular flex h-8 items-center justify-center rounded-lg text-[13px] font-bold ${
-                  r === 8 ? "bg-primary text-primary-foreground" : "bg-secondary"
+                  r === 8 ? chip.on : "bg-secondary"
                 }`}
               >
                 {r}
@@ -626,17 +627,17 @@ function SessionMock() {
           </div>
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">{t.session.rpeTarget(7, 9)}</p>
-        <div className="mt-2.5 flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-2 text-[14.5px] font-bold text-primary-foreground">
+        <div className="mt-2.5 flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-2 text-[15px] font-bold text-primary-foreground">
           <span className="truncate">{t.session.logSetWith("80 kg", 10, 8)}</span>
         </div>
       </Panel>
       <div className="glass-strong rounded-2xl p-3">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1 leading-none">
-            <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               {t.session.restLabel}
             </p>
-            <p className="tabular mt-1 text-[24px] font-bold">1:42</p>
+            <p className="tabular mt-1 text-[26px] font-bold">1:42</p>
           </div>
           <span className="rounded-full bg-secondary px-3 py-2 text-[12.5px] font-bold">+30 s</span>
           <span className="rounded-full bg-primary px-3 py-2 text-[12.5px] font-bold text-primary-foreground">
@@ -676,9 +677,7 @@ function ProgressMock() {
           <TrendingUp className="size-[18px]" />
         </Badge>
         <div className="min-w-0">
-          <p className="tabular text-[14.5px] font-bold">
-            {t.welcome.progressNextTime}: 82.5 kg × 6
-          </p>
+          <p className="tabular text-[15px] font-bold">{t.welcome.progressNextTime}: 82.5 kg × 6</p>
           <p className="text-[12.5px] text-muted-foreground">{t.welcome.progressWhy}</p>
         </div>
       </Panel>
@@ -688,10 +687,10 @@ function ProgressMock() {
             <Badge>
               <Flame className="size-4" />
             </Badge>
-            <span className="tabular text-[24px] font-bold leading-none">6</span>
+            <span className="tabular text-[26px] font-bold leading-none">6</span>
           </div>
           <p className="mt-1.5 text-[12.5px] font-semibold">{t.home.weekStreak(6)}</p>
-          <p className="text-[11.5px] text-muted-foreground">{t.welcome.progressStreakSub}</p>
+          <p className="text-[12px] text-muted-foreground">{t.welcome.progressStreakSub}</p>
         </Panel>
         <Panel>
           <div className="flex items-center gap-2">
@@ -804,7 +803,7 @@ function PlanMock() {
                   w === 5 ? "h-4 bg-primary/35" : w <= 3 ? "h-7 bg-primary" : "h-7 bg-primary/35"
                 }`}
               />
-              <span className="text-[10.5px] font-semibold text-muted-foreground">
+              <span className="text-[11px] font-semibold text-muted-foreground">
                 {w === 5 ? t.welcome.planDeload : `W${w}`}
               </span>
             </div>
@@ -858,9 +857,9 @@ function CardioMock() {
         <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
           {c.thisWeek}
         </p>
-        <p className="tabular mt-0.5 text-[18px] font-bold">{c.progress(105, 150)}</p>
+        <p className="tabular mt-0.5 text-[17px] font-bold">{c.progress(105, 150)}</p>
         <Bar pct={70} className="mt-2" />
-        <p className="mt-1.5 text-[11.5px] leading-snug text-muted-foreground">{c.explain}</p>
+        <p className="mt-1.5 text-[12px] leading-snug text-muted-foreground">{c.explain}</p>
         <div className="mt-3 grid grid-cols-7">
           {days.map((d, i) => (
             <span
@@ -982,7 +981,7 @@ function FoodMock() {
           <div key={r.name} className="flex items-center gap-3 border-t border-border px-3.5 py-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold">{r.name}</p>
-              <p className="tabular mt-0.5 flex items-center gap-1.5 text-[11.5px]">
+              <p className="tabular mt-0.5 flex items-center gap-1.5 text-[12px]">
                 <span className="rounded-md bg-foreground/10 px-1.5 font-semibold">
                   {r.grams} g
                 </span>
@@ -1208,7 +1207,7 @@ function WatchMock() {
             <div className="h-1.5 w-full rounded bg-foreground/20" />
           </div>
         </div>
-        <span className="flex items-center gap-1 text-[10.5px] font-semibold text-muted-foreground">
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
           <ImageIcon className="size-3" />
           {t.welcome.watchScreenshot}
         </span>
@@ -1249,7 +1248,7 @@ function WatchMock() {
                   className="w-full rounded-sm bg-primary"
                   style={{ height: `${(z.min / 11) * 28}px`, opacity: 0.45 + z.min / 20 }}
                 />
-                <span className="text-[9.5px] text-muted-foreground">{z.z}</span>
+                <span className="text-[10px] text-muted-foreground">{z.z}</span>
               </div>
             ))}
           </div>

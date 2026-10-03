@@ -17,6 +17,7 @@ import {
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Workout } from "../../lib/gym/types";
+import { chip } from "./ui";
 
 /** Average finished sessions a week over the last four weeks, or null
  *  without any — a prefill from what the user actually did. */
@@ -288,7 +289,7 @@ export function NutritionQuestionnaireSheet({
                     setSex(s);
                   }}
                   className={`flex-1 rounded-2xl px-4 py-3 text-[15px] font-semibold capitalize active:scale-95 ${
-                    sex === s ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                    sex === s ? chip.on : "bg-muted text-foreground"
                   }`}
                 >
                   {t.nutritionQuestionnaire[s]}

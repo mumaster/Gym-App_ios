@@ -28,6 +28,7 @@ import {
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
+import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
@@ -66,6 +67,7 @@ import { haptic, useGym } from "../lib/gym/store";
 import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
 import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
+import { chip } from "../components/gym/ui";
 
 export const Route = createFileRoute("/session")({
   head: () => ({
@@ -462,7 +464,7 @@ function SessionScreen() {
         <div className="mx-auto w-full max-w-xl">
           <div className="flex flex-col items-center gap-2 pb-6 pt-10 text-center">
             <Trophy className="size-10 text-primary-text" />
-            <h1 className="text-2xl font-bold">{t.session.workoutComplete}</h1>
+            <h1 className="text-[26px] font-bold">{t.session.workoutComplete}</h1>
             <p className="text-[14px] text-muted-foreground">{t.session.workoutCompleteSub}</p>
           </div>
           {finishedWorkout ? (
@@ -529,7 +531,7 @@ function SessionScreen() {
   if (!activeWorkout || !planned || !block) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-        <p className="text-lg font-semibold">{t.session.noActiveSession}</p>
+        <p className="text-[17px] font-semibold">{t.session.noActiveSession}</p>
         <button
           onClick={() => navigate({ to: "/generate" })}
           className="min-h-[52px] active:scale-95 rounded-2xl bg-primary px-6 font-bold text-primary-foreground"
@@ -812,7 +814,7 @@ function SessionScreen() {
         <div className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pb-1.5">
           <button
             onClick={() => navigate({ to: "/" })}
-            className="glass flex size-9 shrink-0 items-center justify-center rounded-full"
+            className="glass tap-target flex size-9 shrink-0 items-center justify-center rounded-full"
             aria-label={t.session.closeSession}
           >
             <X className="size-4" />
@@ -829,7 +831,7 @@ function SessionScreen() {
           <button
             onClick={() => setListOpen(true)}
             aria-label={`${t.session.workoutOverview} · ${t.common.ofTotal(blockIndex + 1, blocks.length)}`}
-            className="glass flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3"
+            className="glass tap-target flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3"
           >
             <List className="size-4 text-primary-text" />
             <span className="tabular text-[13px] font-semibold">
@@ -937,14 +939,14 @@ function SessionScreen() {
                   removeActivePlanEntries(overtime.indices);
                   setToast(t.session.dropped(overtime.name));
                 }}
-                className="relative min-h-[40px] flex-1 rounded-xl bg-primary text-[13px] font-bold text-primary-foreground active:scale-95"
+                className="relative min-h-[44px] flex-1 rounded-xl bg-primary/10 text-[13px] font-bold text-primary-text ring-1 ring-inset ring-primary/50 active:scale-95"
               >
                 <HapticSwitch />
                 {t.session.dropIt(overtime.name)}
               </button>
               <button
                 onClick={() => setOvertimeDismissed(true)}
-                className="min-h-[40px] rounded-xl bg-secondary px-4 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+                className="min-h-[44px] rounded-xl bg-secondary px-4 text-[13px] font-semibold text-secondary-foreground active:scale-95"
               >
                 {t.session.keepGoing}
               </button>
@@ -972,7 +974,7 @@ function SessionScreen() {
                 [t.session.statTime, `${Math.max(1, Math.round(elapsed / 60))} min`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-muted px-2 py-3">
-                  <p className="tabular text-[18px] font-bold">{value}</p>
+                  <p className="tabular text-[17px] font-bold">{value}</p>
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
                     {label}
                   </p>
@@ -999,8 +1001,8 @@ function SessionScreen() {
                     <button
                       key={s}
                       onClick={() => update({ restOverride: s === "auto" ? null : s })}
-                      className={`min-h-[40px] rounded-full px-3.5 text-[14px] font-semibold ${
-                        on ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      className={`tap-target min-h-[40px] rounded-full px-3.5 text-[14px] font-semibold ${
+                        on ? chip.on : "text-muted-foreground"
                       }`}
                     >
                       {s === "auto" ? t.session.auto : `${s}s`}
@@ -1015,61 +1017,36 @@ function SessionScreen() {
                 : t.session.restEverySet(restOverride)}
             </p>
           </div>
-          <button
-            onClick={() => update({ warmupsEnabled: !warmupsEnabled })}
-            className="flex w-full items-center justify-between gap-2"
-            aria-pressed={warmupsEnabled}
-          >
-            <span className="text-[15px] font-semibold">{t.generate.warmups}</span>
-            <span
-              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
-                warmupsEnabled
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {warmupsEnabled ? t.session.on : t.session.off}
-            </span>
-          </button>
-          <button
-            onClick={() => update({ soundEnabled: !soundEnabled })}
-            className="flex w-full items-center justify-between gap-2"
-            aria-pressed={soundEnabled}
-          >
-            <span className="text-[15px] font-semibold">{t.session.restEndBeep}</span>
-            <span
-              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
-                soundEnabled
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {soundEnabled ? t.session.on : t.session.off}
-            </span>
-          </button>
-          <button
-            onClick={toggleNotify}
-            className="flex w-full items-center justify-between gap-2"
-            aria-pressed={notifyEnabled}
-          >
-            <span className="flex items-center gap-1.5 text-[15px] font-semibold">
-              {notifyEnabled ? (
-                <Bell className="size-4 text-primary-text" />
-              ) : (
-                <BellOff className="size-4 text-muted-foreground" />
-              )}
-              {t.session.restEndNotification}
-            </span>
-            <span
-              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
-                notifyEnabled
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground"
-              }`}
-            >
-              {notifyEnabled ? t.session.on : t.session.off}
-            </span>
-          </button>
+          <SwitchRow
+            className="py-0.5"
+            label={t.generate.warmups}
+            ariaLabel={t.generate.warmups}
+            on={warmupsEnabled}
+            onToggle={() => update({ warmupsEnabled: !warmupsEnabled })}
+          />
+          <SwitchRow
+            className="py-0.5"
+            label={t.session.restEndBeep}
+            ariaLabel={t.session.restEndBeep}
+            on={soundEnabled}
+            onToggle={() => update({ soundEnabled: !soundEnabled })}
+          />
+          <SwitchRow
+            className="py-0.5"
+            label={
+              <span className="flex items-center gap-1.5">
+                {notifyEnabled ? (
+                  <Bell className="size-4 text-primary-text" />
+                ) : (
+                  <BellOff className="size-4 text-muted-foreground" />
+                )}
+                {t.session.restEndNotification}
+              </span>
+            }
+            ariaLabel={t.session.restEndNotification}
+            on={notifyEnabled}
+            onToggle={toggleNotify}
+          />
           <p className="text-[13px] text-muted-foreground">{t.session.beepHint}</p>
         </div>
       </main>
@@ -1186,7 +1163,7 @@ function SessionScreen() {
                 setPos({ block: i, slot: 0, round: 1 });
                 setListOpen(false);
               }}
-              className={`w-full rounded-2xl p-4 text-left ${i === blockIndex ? "bg-primary/15" : "glass"}`}
+              className={`w-full rounded-2xl p-4 text-left ${i === blockIndex ? "bg-primary/10 ring-1 ring-inset ring-primary/50" : "glass"}`}
             >
               {b.group !== undefined ? (
                 <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-primary-text">
@@ -1201,13 +1178,13 @@ function SessionScreen() {
                 ).length;
                 return (
                   <div key={idx} className="flex items-center gap-3 py-0.5">
-                    <span className="tabular w-5 text-lg font-bold text-primary-text">
+                    <span className="tabular w-5 text-[17px] font-bold text-primary-text">
                       {idx + 1}
                     </span>
                     <div className="flex-1">
                       <p className="text-[16px] font-semibold">{ex?.name}</p>
                       <p className="text-[13px] text-muted-foreground">
-                        {logged}/{p.target_sets} sets · {p.target_reps} reps
+                        {t.session.overviewProgress(logged, p.target_sets, p.target_reps)}
                       </p>
                     </div>
                     {logged >= p.target_sets ? (
@@ -1224,13 +1201,13 @@ function SessionScreen() {
             setListOpen(false);
             endWorkout();
           }}
-          className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+          className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
         >
           <CheckCircle2 className="size-4" /> {t.session.finishWorkout}
         </button>
         <button
           onClick={requestCancelWorkout}
-          className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-bold text-destructive active:scale-95"
+          className="mt-2 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-bold text-destructive-text active:scale-95"
         >
           <Ban className="size-4" /> {t.session.cancelWorkout}
         </button>
@@ -1244,7 +1221,7 @@ function SessionScreen() {
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
           />
           <div className="glass-strong relative w-full max-w-sm rounded-3xl p-6 text-center shadow-[var(--shadow-float)]">
-            <h2 className="text-xl font-bold tracking-tight">{t.session.cancelWorkoutTitle}</h2>
+            <h2 className="text-[20px] font-bold tracking-tight">{t.session.cancelWorkoutTitle}</h2>
             <p className="mt-2 text-[14px] text-muted-foreground">
               {t.session.cancelWorkoutBody(done, done === 1 ? t.session.set : t.session.sets)}
             </p>
@@ -1570,16 +1547,16 @@ function ExerciseBlock({
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-text">
             {letter ? t.session.exerciseLetter(letter) : t.session.exerciseOf(index + 1, total)}
           </p>
-          <h2 className="mt-1 text-[24px] font-bold leading-[1.1] tracking-tight">
+          <h2 className="mt-1 text-[26px] font-bold leading-[1.1] tracking-tight">
             <button
               onClick={() => onOpenInfo(exercise)}
               aria-label={t.exercises.openExercise(exercise.name)}
-              className="text-left active:opacity-70"
+              className="tap-target text-left active:opacity-70"
             >
               {exercise.name}
             </button>
           </h2>
-          <p className="mt-1.5 truncate text-[12px] text-muted-foreground">
+          <p className="mt-1.5 line-clamp-2 text-[12px] text-muted-foreground">
             {plannedWarmups ? t.session.warmupPrefix(plannedWarmups) : ""}
             {t.session.targetLine(planned.target_sets, planned.target_reps, restForThisExercise)}
             <span className="capitalize">{exercise.primary_muscle}</span>
@@ -1589,7 +1566,7 @@ function ExerciseBlock({
           <button
             onClick={onSwap}
             aria-label={t.generate.swapExercise}
-            className="flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+            className="tap-target flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
           >
             <Repeat className="size-4" />
           </button>
@@ -1598,7 +1575,7 @@ function ExerciseBlock({
             target="_blank"
             rel="noreferrer noopener"
             aria-label={t.session.watchDemo}
-            className="flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+            className="tap-target flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
           >
             <Youtube className="size-4 text-primary-text" />
           </a>
@@ -1620,7 +1597,7 @@ function ExerciseBlock({
           <button
             onMouseDown={(e) => e.preventDefault()}
             onClick={saveNote}
-            className="min-h-[44px] shrink-0 rounded-xl bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-95"
+            className={`min-h-[44px] shrink-0 rounded-xl px-4 text-[14px] font-bold active:scale-95 ${chip.on}`}
           >
             {t.common.save}
           </button>
@@ -1638,11 +1615,11 @@ function ExerciseBlock({
         </button>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
         {!note && noteDraft === null ? (
           <button
             onClick={() => setNoteDraft("")}
-            className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+            className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
           >
             <StickyNote className="size-3.5" />
             {t.session.addNote}
@@ -1650,7 +1627,7 @@ function ExerciseBlock({
         ) : null}
         <button
           onClick={onHurts}
-          className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+          className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
         >
           <Bandage className="size-3.5" />
           {t.session.hurts}
@@ -1658,7 +1635,7 @@ function ExerciseBlock({
         {onDoLater ? (
           <button
             onClick={onDoLater}
-            className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+            className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
           >
             <CornerDownRight className="size-3.5" />
             {t.session.doLater}
@@ -1744,7 +1721,7 @@ function ExerciseBlock({
                       removeSetAt(abs);
                       setEditIdx(null);
                     }}
-                    className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-destructive active:scale-95"
+                    className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-destructive-text active:scale-95"
                   >
                     {t.session.deleteEdit}
                   </button>
@@ -1763,7 +1740,7 @@ function ExerciseBlock({
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
               aria-label={t.session.editSet(s.set_number)}
-              className={`${GRID} w-full rounded-xl bg-primary/15 py-2 text-left active:scale-[0.99]`}
+              className={`${GRID} tap-target w-full rounded-xl bg-primary/10 py-2 text-left active:scale-[0.99]`}
             >
               <span className="tabular text-center text-[15px] font-bold text-primary-text">
                 {s.set_type === "warmup" ? "W" : s.set_number}
@@ -1931,7 +1908,7 @@ function ExerciseBlock({
                     if (!re.test(e.target.value)) return;
                     setWeight(e.target.value);
                   }}
-                  className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+                  className="tabular h-12 w-full rounded-xl bg-muted px-8 text-center text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
                   kg
@@ -1974,7 +1951,7 @@ function ExerciseBlock({
                     if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                     setReps(e.target.value);
                   }}
-                  className="tabular h-12 w-full rounded-xl bg-muted px-10 text-center text-base font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+                  className="tabular h-12 w-full rounded-xl bg-muted px-10 text-center text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
                   reps
@@ -2242,7 +2219,7 @@ function RestPanel({
             {done ? t.session.restOverLabel : t.session.restLabel}
           </p>
           <p
-            className={`tabular mt-0.5 truncate text-[28px] font-bold leading-none ${
+            className={`tabular mt-0.5 truncate text-[30px] font-bold leading-none ${
               done ? "text-primary-text" : ""
             }`}
             aria-label={done ? t.session.restGo : undefined}
@@ -2290,7 +2267,7 @@ function RestPanel({
           {!done ? (
             <button
               onClick={onUndo}
-              className="relative flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
+              className="tap-target flex min-h-9 shrink-0 items-center gap-1 rounded-full bg-secondary px-3 text-[13px] font-semibold text-secondary-foreground active:scale-95"
             >
               <HapticSwitch />
               <Undo2 className="size-3.5" />
@@ -2345,7 +2322,7 @@ function FinishPanel({
           <PartyPopper className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="text-[18px] font-bold leading-tight">
+          <p className="text-[17px] font-bold leading-tight">
             {all ? t.session.finishTitle : t.session.finishTitlePartial}
           </p>
           <p className="tabular text-[14px] text-muted-foreground">
@@ -2355,7 +2332,7 @@ function FinishPanel({
       </div>
       <button
         onClick={onFinish}
-        className="glow relative mt-2 min-h-12 w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.99]"
+        className="glow relative mt-2 min-h-[52px] w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.99]"
       >
         <HapticSwitch />
         {t.session.finishWorkout}
@@ -2416,10 +2393,8 @@ function RpePicker({
           }}
           aria-pressed={value === n}
           aria-label={t.session.rpeAriaLabel(n)}
-          className={`h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
-            value === n
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-secondary-foreground"
+          className={`tap-target h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
+            value === n ? chip.on : "bg-secondary text-secondary-foreground"
           }`}
         >
           {n}
@@ -2467,7 +2442,7 @@ function Stepper({
           if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
           onChange(e.target.value === "" ? min : parseDecimal(e.target.value));
         }}
-        className="tabular h-12 w-full min-w-0 flex-1 rounded-xl bg-muted px-1 text-center text-base font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
+        className="tabular h-12 w-full min-w-0 flex-1 rounded-xl bg-muted px-1 text-center text-[16px] font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
       />
       <button
         onClick={() => {

@@ -282,7 +282,7 @@ function HomeScreen() {
                   </button>
                 ) : null}
               </div>
-              <h1 className="truncate text-[27px] font-bold leading-tight tracking-tight">
+              <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight">
                 {greeting()}
               </h1>
             </div>
@@ -308,12 +308,14 @@ function HomeScreen() {
                 <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary-text">
                   <HeroIcon className="size-3.5" /> {heroEyebrow}
                 </p>
-                <p className="mt-1.5 truncate text-[20px] font-bold leading-tight">{heroTitle}</p>
+                <p className="mt-1.5 truncate text-[20px] font-bold leading-tight tracking-tight">
+                  {heroTitle}
+                </p>
                 {heroSub ? (
                   <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{heroSub}</p>
                 ) : null}
               </div>
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary py-2.5 pl-4 pr-3 text-[14px] font-bold text-primary-foreground">
+              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary py-2.5 pl-3.5 pr-2.5 text-[14px] font-bold text-primary-foreground">
                 {heroCta} <ChevronRight className="size-4" />
               </span>
             </div>
@@ -469,7 +471,7 @@ function NutritionTile({
             >
               <Apple className="size-3.5" />
             </span>
-            <span className="tabular truncate text-[19px] font-bold leading-none">
+            <span className="tabular truncate text-[20px] font-bold leading-none">
               {Math.round(totals.calories)}
               <span className="text-[12px] font-medium text-muted-foreground">
                 {goals.calories ? ` / ${goals.calories}` : ""} kcal
@@ -531,7 +533,7 @@ function NutritionTile({
                   {goal != null ? ` / ${Math.round(goal)} g` : " g"}
                 </span>
               </p>
-              <p className="mt-0.5 truncate text-[9.5px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+              <p className="mt-0.5 truncate text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
                 {key === "protein" ? t.home.protein : key === "carbs" ? t.home.carbs : t.home.fat}
               </p>
               {goal != null ? (
@@ -606,7 +608,7 @@ function ActivityTile({
               {t.home.weekStreak(streak)}
             </span>
           </p>
-          <p className="mt-1 truncate text-[10.5px] leading-tight text-muted-foreground">
+          <p className="mt-1 truncate text-[11px] leading-tight text-muted-foreground">
             {longestStreak > streak ? t.home.best(longestStreak) : t.home.streakRule}
           </p>
         </div>
@@ -632,7 +634,7 @@ function ActivityTile({
               {t.home.trainingDays(daysThisWeek)}
             </span>
           </p>
-          <p className="mt-1 truncate text-[10.5px] leading-tight text-muted-foreground">
+          <p className="mt-1 truncate text-[11px] leading-tight text-muted-foreground">
             {t.home.thisWeek} · {t.home.total(totalWorkouts)}
           </p>
         </div>
@@ -675,7 +677,7 @@ function LatestPrTile({
         <Trophy className="size-3.5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {t.home.latestPr}
           {pr ? ` · ${t.home.prWhen(days)}` : ""}
         </p>
@@ -691,7 +693,7 @@ function LatestPrTile({
             {formatLoad(pr.weight, pr.bodyweight, t.session.bw)} × {pr.reps}
           </span>
           {pr.e1rm != null ? (
-            <span className="tabular text-[9.5px] text-muted-foreground">
+            <span className="tabular text-[10px] text-muted-foreground">
               {t.home.e1rm(Math.round(pr.e1rm))}
             </span>
           ) : null}
@@ -739,6 +741,9 @@ function WaterTile({
             onOpen();
           }}
           aria-label={t.home.waterAriaLabel}
+          // The tile's padding leaves no room for 44 pt above this row in the
+          // fixed Home layout; it spans the tile's full width instead.
+          data-target-ok
           className="tap-target flex items-center justify-between gap-3 text-left"
         >
           <div className="flex min-w-0 items-center gap-2.5">
@@ -749,7 +754,7 @@ function WaterTile({
             >
               <Droplet className="size-3.5" />
             </span>
-            <span className="tabular truncate text-[19px] font-bold leading-none">
+            <span className="tabular truncate text-[20px] font-bold leading-none">
               {formatLiters(totalMl)}
               {goalMl ? (
                 <span className="text-[12px] font-medium text-muted-foreground">

@@ -49,6 +49,7 @@ import {
 } from "../../lib/gym/myFoods";
 import { useTapFocus } from "../../lib/gym/tapFocus";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 type Step = "start" | "scanning" | "review";
 type MacroKey = NutrientKey;
@@ -590,7 +591,7 @@ export function AddFoodSheet({
         {step === "start" ? (
           <div className="space-y-4">
             {scanError ? (
-              <p className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-[14px] text-destructive">
+              <p className="flex items-start gap-2 rounded-2xl bg-destructive/10 px-4 py-3 text-[14px] text-destructive-text">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {scanError}
               </p>
             ) : null}
@@ -676,7 +677,7 @@ export function AddFoodSheet({
                     className="glow flex min-h-[60px] items-center gap-2.5 rounded-2xl bg-primary px-4 text-left text-primary-foreground active:scale-[0.985]"
                   >
                     <ScanBarcode className="size-6 shrink-0" />
-                    <span className="text-[14.5px] font-bold leading-tight">
+                    <span className="text-[15px] font-bold leading-tight">
                       {t.addFood.scanFood}
                     </span>
                   </button>
@@ -947,7 +948,7 @@ export function AddFoodSheet({
             {editEntry && !onIngredientCaptured ? (
               <button
                 onClick={deleteEntry}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-semibold text-destructive active:scale-[0.985]"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[15px] font-semibold text-destructive-text active:scale-[0.985]"
               >
                 <Trash2 className="size-4" /> {t.addFood.deleteFromLog}
               </button>
@@ -1011,7 +1012,7 @@ function FoodList({
         {canEdit ? (
           <button
             onClick={onToggleEdit}
-            className="rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
+            className="tap-target rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
           >
             {editing ? t.common.done : t.common.edit}
           </button>
@@ -1053,7 +1054,7 @@ function FoodList({
                 <button
                   onClick={() => onRemove!(food)}
                   aria-label={t.addFood.forgetFood(food.name)}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive active:scale-90"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -1061,7 +1062,7 @@ function FoodList({
                 <button
                   onClick={() => onQuickAdd(food)}
                   aria-label={t.addFood.quickAdd(food.name, food.grams)}
-                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
                 >
                   <HapticSwitch />
                   <Plus className="size-5" />
@@ -1105,10 +1106,8 @@ function MealPicker({
               onPick(m);
             }}
             aria-pressed={meal === m}
-            className={`${compact ? "min-h-[36px]" : "min-h-[40px]"} flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
-              meal === m
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-secondary-foreground"
+            className={`${compact ? "min-h-[36px]" : "min-h-[40px]"} tap-target flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
+              meal === m ? chip.on : "bg-muted text-secondary-foreground"
             }`}
           >
             {t.mealTypes[m]}
@@ -1152,14 +1151,14 @@ function SavedList({
           {items.length ? (
             <button
               onClick={onToggleEdit}
-              className="rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
+              className="tap-target rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
             >
               {editing ? t.common.done : t.common.edit}
             </button>
           ) : null}
           <button
             onClick={onNew}
-            className="flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
+            className="tap-target flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
           >
             <Plus className="size-3.5" /> {newLabel}
           </button>
@@ -1181,7 +1180,7 @@ function SavedList({
                 <button
                   onClick={() => onDelete(item.id)}
                   aria-label={t.addFood.deleteMeal(item.name)}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive active:scale-90"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
                 >
                   <Trash2 className="size-4" />
                 </button>
@@ -1189,7 +1188,7 @@ function SavedList({
                 <button
                   onClick={() => onLog(item.id)}
                   aria-label={item.logLabel}
-                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground active:scale-90"
+                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
                 >
                   <HapticSwitch />
                   <Plus className="size-5" />

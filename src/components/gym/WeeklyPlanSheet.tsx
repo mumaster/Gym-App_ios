@@ -13,6 +13,7 @@ import {
 } from "../../lib/gym/splits";
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
+import { chip } from "./ui";
 
 /** A sane default spread of weekdays for a given training frequency. */
 const EVEN_SPREAD: Record<number, number[]> = {
@@ -121,7 +122,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                     </button>
                   </div>
                   {editingSlot === i ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
+                    <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
                       {DOW_DISPLAY_ORDER.map((dow) => {
                         const taken = usedDows.has(dow) && dow !== slot.dow;
                         return (
@@ -131,7 +132,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                             onClick={() => setSlotDow(i, dow)}
                             className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
                               dow === slot.dow
-                                ? "bg-primary text-primary-foreground"
+                                ? chip.on
                                 : taken
                                   ? "bg-secondary text-muted-foreground opacity-40"
                                   : "bg-secondary text-secondary-foreground"
@@ -157,7 +158,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             </button>
             <button
               onClick={remove}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive active:scale-95"
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
             >
               <Trash2 className="size-4" /> {t.weeklyPlan.removeWeeklyPlan}
             </button>
@@ -205,9 +206,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                   key={dow}
                   onClick={() => toggleDow(dow)}
                   className={`min-h-[44px] min-w-[44px] rounded-2xl px-3 text-[14px] font-semibold ${
-                    dows.includes(dow)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
+                    dows.includes(dow) ? chip.on : "bg-secondary text-secondary-foreground"
                   }`}
                 >
                   {t.common.dow[dow]}
