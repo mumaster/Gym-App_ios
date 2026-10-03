@@ -158,6 +158,12 @@ Reuse these before building anything new. A new pattern that will appear twice g
   - an entry chip with ✕ removes that entry;
   - chip rows that can overflow scroll sideways (`no-scrollbar -mx-4 px-4 overflow-x-auto`, plus vertical room for the tap areas) rather than wrap into a wall.
 - **Screen headers:** a tab's header is its title alone (plus its sub-tabs or search in the `toolbar`). No subtitle, and never a count or stat: a number belongs in the content it describes (Exercises' "253 of 256 exercises" sits at the top of its list). A subtitle is only for pages you drill into (a session's date) and setup pages that say what they're for (Settings, Equipment).
+- **Tab bar:** five cells in a glass capsule. Four tabs show an icon over a 10 px label: accent when selected (with the glass lozenge behind it), `text-muted-foreground` otherwise. Home is the circle in the middle and has exactly two looks:
+  - on `/`: a solid accent circle with its glow, the bar's one solid accent;
+  - anywhere else: an empty circle with a hairline ring (`ring-foreground/15`) and a muted icon, the same grey as the other inactive tabs.
+
+  The accent means "you are here", so it never appears on the circle off Home: not dimmed, not mixed into the background, not as a tinted fill (both were tried and read as half-active). The inactive circle has no fill either, since a grey fill looks like the selection lozenge.
+
 - **Sub-tabs:** `SegmentedTabs`, in `Screen`'s `toolbar`, with the tab in the URL (`validateSearch`, `?tab=`, `replace`, scrolled to the top on switch). Use 2–3 tabs. The first is the default and has no query.
 - **Switches:** `SwitchRow` (white knob, label and optional one-line description; `className` replaces its padding inside a padded card). Every on/off setting uses it, never an "On/Off" pill. Settings apply straight away, with no save button.
 - **Bottom sheets:** `BottomSheet`.

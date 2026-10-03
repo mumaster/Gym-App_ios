@@ -161,42 +161,27 @@ export function TabBar() {
             aria-current={homeActive ? "page" : undefined}
             className="relative flex min-h-[54px] w-14 shrink-0 items-center justify-center active:scale-95"
           >
-            {/* Solid bg-primary/text-primary-foreground, always — the one
-                permanently-emphasized action on this bar, so (unlike the
-                other four tabs' icon-color-only active state) its fill
-                never mutes just because you're not currently on `/`.
-                Follows whichever accent is chosen in Settings like every
-                other themed surface; nothing here is hardcoded. `h-full`
-                (rather than a fixed `size-*`) makes it exactly as tall as
-                the row itself, edge-to-edge with the other tabs' own
-                min-h-[54px] cell; `aspect-square` keeps the width locked
-                to that same height so rounded-full still yields a true
-                circle (same radius top/bottom/left/right) instead of
-                stretching into a pill/oval shape. */}
+            {/* `h-full` (rather than a fixed `size-*`) makes the circle
+                exactly as tall as the row, edge-to-edge with the other
+                tabs' min-h-[54px] cells; `aspect-square` keeps it a true
+                circle rather than an oval. */}
             {/* shrink-0 rather than flex-1: the cell is only as wide as its
                 circle, which leaves the four labelled tabs room for their
                 labels (Dutch "Oefeningen" was truncating at 390pt). */}
-            {/* The glow only while Home is the current screen: always-on,
-                it read as the selected tab from every other screen too.
-                Elsewhere it's a dim version of itself (asked for, twice:
-                55% opacity still read as active): the fill is the accent
-                mixed 30% into the page background (in oklab: oklch
-                interpolates the hue towards black's 0° and came out orange), so a dark tint in dark
-                mode and a pale one in light, with a muted icon and no
-                shadow. */}
+            {/* Two states, and only one of them uses the accent: on `/` the
+                circle is solid accent with its glow; on every other screen
+                it's an empty circle with a hairline ring and a muted icon,
+                the same grey as the other four tabs' inactive icons. Asked
+                for after two dimmed versions (55% opacity, then the accent
+                mixed 30% into the background) still read as an opaque,
+                half-active button. No fill when inactive, on purpose: a
+                grey fill would look like the selected tab's glass lozenge. */}
             <span
-              className={`flex aspect-square h-full items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-300 ${
+              className={`flex aspect-square h-full items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-300 motion-reduce:transition-none ${
                 homeActive
                   ? "glow bg-primary text-primary-foreground shadow-[var(--shadow-float)]"
-                  : "text-foreground/55"
+                  : "text-muted-foreground ring-[1.5px] ring-inset ring-foreground/15"
               }`}
-              style={
-                homeActive
-                  ? undefined
-                  : {
-                      backgroundColor: "color-mix(in oklab, var(--primary) 30%, var(--background))",
-                    }
-              }
             >
               <Home className="size-6" strokeWidth={2.2} />
             </span>
