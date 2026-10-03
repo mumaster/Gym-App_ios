@@ -43,6 +43,7 @@ import type {
   Muscle,
   TargetMuscle,
 } from "../lib/gym/types";
+import { chip } from "../components/gym/ui";
 
 const PATTERNS: MovementPattern[] = ["push", "pull", "hinge", "squat", "carry", "core"];
 
@@ -170,7 +171,7 @@ function ExercisesScreen() {
         <button
           onClick={() => setMoreOpen(true)}
           aria-label={t.exercises.more}
-          className="glass flex size-10 items-center justify-center rounded-full"
+          className="glass tap-target flex size-10 items-center justify-center rounded-full"
         >
           <MoreHorizontal className="size-5" />
         </button>
@@ -200,7 +201,7 @@ function ExercisesScreen() {
               type="button"
               onClick={() => setQuery("")}
               aria-label={t.addFood.clearSearch}
-              className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
+              className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
             >
               <X className="size-4" />
             </button>
@@ -208,7 +209,7 @@ function ExercisesScreen() {
         </div>
       }
     >
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+      <div className="no-scrollbar -my-1 flex gap-2 overflow-x-auto py-1">
         {(["All", ...MUSCLES] as const).map((m) => (
           <button
             key={m}
@@ -218,10 +219,8 @@ function ExercisesScreen() {
                 t === "All" || (m !== "All" && TARGET_MUSCLE_GROUP[t] !== m) ? "All" : t,
               );
             }}
-            className={`min-h-[40px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${
-              muscle === m
-                ? "bg-primary text-primary-foreground"
-                : "glass text-secondary-foreground"
+            className={`tap-target min-h-[40px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${
+              muscle === m ? chip.on : "glass text-secondary-foreground"
             }`}
           >
             {m}
@@ -229,15 +228,13 @@ function ExercisesScreen() {
         ))}
       </div>
 
-      <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+      <div className="no-scrollbar mt-1 flex gap-2 overflow-x-auto py-1">
         {(["All", ...targetChoices] as const).map((choice) => (
           <button
             key={choice}
             onClick={() => setTarget(choice)}
-            className={`min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-              target === choice
-                ? "bg-primary text-primary-foreground"
-                : "glass text-secondary-foreground"
+            className={`tap-target min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
+              target === choice ? chip.on : "glass text-secondary-foreground"
             }`}
           >
             {choice === "All" ? t.exercises.anyMuscle : choice}
@@ -249,7 +246,7 @@ function ExercisesScreen() {
         <button
           onClick={() => setOnlyAvailable((v) => !v)}
           className={`min-h-[44px] flex-1 rounded-2xl text-[15px] font-semibold ${
-            onlyAvailable ? "bg-primary text-primary-foreground" : "glass text-secondary-foreground"
+            onlyAvailable ? chip.on : "glass text-secondary-foreground"
           }`}
         >
           {onlyAvailable ? t.exercises.filteredTo(profile.name) : t.exercises.showOnlyAvailable}
@@ -259,7 +256,7 @@ function ExercisesScreen() {
           aria-pressed={onlyLoved}
           aria-label={t.exercises.showOnlyLoved}
           className={`flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[15px] font-semibold ${
-            onlyLoved ? "bg-primary text-primary-foreground" : "glass text-secondary-foreground"
+            onlyLoved ? chip.on : "glass text-secondary-foreground"
           }`}
         >
           <Heart className={`size-4 ${onlyLoved ? "fill-current" : ""}`} />
@@ -305,7 +302,7 @@ function ExercisesScreen() {
                 <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
                   {(e.muscle_targets.length ? e.muscle_targets : [e.primary_muscle]).join(" · ")}
                 </p>
-                <p data-cut-ok className="mt-0.5 truncate text-[12px] text-muted-foreground/70">
+                <p data-cut-ok className="mt-0.5 truncate text-[12px] text-muted-foreground">
                   {e.movement_pattern} ·{" "}
                   {e.equipment_required
                     .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)
@@ -319,8 +316,8 @@ function ExercisesScreen() {
                   haptic(12);
                   toggleLovedExercise(e.id);
                 }}
-                className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
-                  loved ? "bg-primary/15 text-primary-text" : "glass text-secondary-foreground"
+                className={`tap-target flex size-10 shrink-0 items-center justify-center rounded-full ${
+                  loved ? "bg-primary/10 text-primary-text" : "glass text-secondary-foreground"
                 }`}
               >
                 <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
@@ -380,8 +377,8 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-[36px] rounded-full px-3 text-[13px] font-semibold ${
-        active ? "bg-primary text-primary-foreground" : "glass text-secondary-foreground"
+      className={`tap-target min-h-[36px] rounded-full px-3 text-[13px] font-semibold ${
+        active ? chip.on : "glass text-secondary-foreground"
       }`}
     >
       {label}
@@ -550,9 +547,7 @@ function ExerciseEditor({
             <span className="text-[15px] font-semibold">{t.exercises.compoundMovement}</span>
             <span
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
-                value.compound
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
+                value.compound ? chip.on : "bg-secondary text-secondary-foreground"
               }`}
             >
               {value.compound ? t.exercises.yes : t.exercises.no}

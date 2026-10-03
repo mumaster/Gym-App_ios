@@ -26,8 +26,19 @@ export const button = {
   destructive:
     "flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-destructive/10 px-4 text-[14px] font-semibold text-destructive active:scale-[0.985]",
   /** A round, icon-only button (settings, info, close). Always pass an
-   *  aria-label. */
-  icon: "flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90",
+   *  aria-label. Drawn at 36 pt, tapped at 44 (tap-target). */
+  icon: "tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90",
+} as const;
+
+/** A choice chip: a time, a profile, a filter, a muscle. The picked one is
+ *  tonal (a light accent wash, accent text and a thin accent ring), never
+ *  solid: solid accent is for the screen's one main action. 36 pt tall,
+ *  tapped at 44 (tap-target). Width and padding at the call site when the
+ *  chips share a row equally. */
+export const chip = {
+  base: "tap-target flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold active:scale-95",
+  on: "bg-primary/10 text-primary-text ring-1 ring-inset ring-primary/50",
+  off: "bg-muted text-muted-foreground",
 } as const;
 
 /** The round icon badge in front of a card or row: solid accent once there's

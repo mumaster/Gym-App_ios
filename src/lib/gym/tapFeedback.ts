@@ -168,8 +168,10 @@ function makeOverlay(): HTMLLabelElement {
   label.setAttribute("aria-hidden", "true");
   label.setAttribute("data-haptic-switch", "");
   label.setAttribute("data-auto-haptic", "");
+  // inset comes from styles.css ([data-auto-haptic]), so a tap-target can
+  // grow it to 44 pt.
   label.style.cssText =
-    "position:absolute;inset:0;z-index:10;border-radius:inherit;cursor:pointer;" +
+    "position:absolute;z-index:10;border-radius:inherit;cursor:pointer;" +
     "-webkit-tap-highlight-color:transparent;touch-action:manipulation";
   const input = document.createElement("input");
   input.type = "checkbox";

@@ -9,6 +9,7 @@ import { useTranslation } from "../lib/gym/i18n";
 import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
 import type { EquipmentId } from "../lib/gym/types";
+import { button, chip } from "../components/gym/ui";
 
 export const Route = createFileRoute("/equipment")({
   head: () => ({
@@ -90,9 +91,7 @@ function EquipmentScreen() {
             key={p.id}
             onClick={() => setEditingId(p.id)}
             className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold ${
-              p.id === editing.id
-                ? "bg-primary text-primary-foreground"
-                : "glass text-secondary-foreground"
+              p.id === editing.id ? chip.on : "glass text-secondary-foreground"
             }`}
           >
             {p.name}
@@ -165,7 +164,7 @@ function EquipmentScreen() {
                     haptic(12);
                     toggleAvoidedExercise(id);
                   }}
-                  className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-destructive/15 px-3 text-[14px] font-semibold text-destructive"
+                  className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-destructive/15 px-3 text-[14px] font-semibold text-destructive"
                 >
                   <ShieldOff className="size-3.5" />
                   {ex?.name ?? id}
@@ -175,7 +174,7 @@ function EquipmentScreen() {
             })}
           </div>
         ) : (
-          <p className="mt-2 text-[13px] text-muted-foreground/70">{t.equipment.noneYet}</p>
+          <p className="mt-2 text-[13px] text-muted-foreground">{t.equipment.noneYet}</p>
         )}
       </Card>
 
@@ -215,7 +214,7 @@ function EquipmentScreen() {
                     setPlate(size, -1);
                   }}
                   aria-label={t.equipment.fewerPlates(size)}
-                  className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                  className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                 >
                   <Minus className="size-4" />
                 </button>
@@ -226,7 +225,7 @@ function EquipmentScreen() {
                     setPlate(size, 1);
                   }}
                   aria-label={t.equipment.morePlates(size)}
-                  className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                  className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                 >
                   <Plus className="size-4" />
                 </button>
@@ -243,7 +242,7 @@ function EquipmentScreen() {
             haptic(20);
             update({ activeProfileId: editing.id });
           }}
-          className="flex min-h-[56px] flex-1 items-center justify-center rounded-2xl bg-primary text-[17px] font-bold text-primary-foreground"
+          className={`${button.primary} flex-1`}
         >
           {activeProfileId === editing.id ? t.equipment.activeProfile : t.equipment.setAsActive}
         </button>
@@ -257,7 +256,7 @@ function EquipmentScreen() {
               });
               setEditingId(rest[0]!.id);
             }}
-            className="glass flex size-14 items-center justify-center rounded-2xl text-destructive"
+            className="glass flex size-[52px] items-center justify-center rounded-2xl text-destructive"
             aria-label={t.equipment.deleteProfile}
           >
             <Trash2 className="size-5" />

@@ -1,6 +1,7 @@
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
 import { SESSION_RPE_ANCHORS } from "../../lib/gym/trainingLoad";
+import { chip } from "./ui";
 
 /** 0–10 on Foster's modified CR-10 scale; the selected value's verbal anchor
  *  is shown underneath (6, 8 and 9 have none on the scale). */
@@ -15,7 +16,9 @@ export function SessionRpePicker({
   const anchor = value == null ? undefined : SESSION_RPE_ANCHORS[value];
   return (
     <div>
-      <div className="grid grid-cols-11 gap-1">
+      {/* Eleven points across the screen can't each be 44 pt wide; each is
+          44 pt tall and as wide as the row allows (DESIGN.md §4). */}
+      <div className="grid grid-cols-11 gap-1" data-target-ok>
         {Array.from({ length: 11 }, (_, n) => (
           <button
             key={n}
@@ -26,9 +29,7 @@ export function SessionRpePicker({
             aria-pressed={value === n}
             aria-label={t.trainingLoad.rateAria(n)}
             className={`tabular flex h-11 items-center justify-center rounded-lg text-[15px] font-bold active:scale-95 ${
-              value === n
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
+              value === n ? chip.on : "bg-secondary text-secondary-foreground"
             }`}
           >
             {n}

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   DARK_INK,
   LIGHT_INK,
@@ -122,6 +124,56 @@ describe("visibleAccentFill", () => {
           `${hex} ${theme}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
+    }
+  });
+});
+
+describe("light presets", () => {
+  // The six presets' dark-theme colours as sRGB (styles.css's oklch values,
+  // converted by Chromium), and the light-theme colour styles.css uses for each.
+  const PRESETS: Record<string, [string, string]> = {
+    green: ["#52fe67", "#24702d"],
+    blue: ["#26acff", "#176799"],
+    orange: ["#ff932a", "#995819"],
+    purple: ["#ad74ff", "#764fad"],
+    pink: ["#ff5cb8", "#a33b76"],
+    yellow: ["#fdd506", "#796603"],
+  };
+  const css = readFileSync(resolve(__dirname, "../../../styles.css"), "utf8");
+  const lumHex = (hex: string) => {
+    const lin = [1, 3, 5].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * lin[0]! + 0.7152 * lin[1]! + 0.0722 * lin[2]!;
+  };
+  const ratio = (a: string, b: string) => {
+    const x = lumHex(a);
+    const y = lumHex(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+
+  it("are the preset adjusted to text contrast, as written in styles.css", () => {
+    for (const [id, [raw, light]] of Object.entries(PRESETS)) {
+      expect(readableAccentText(raw, "light"), id).toBe(light);
+      const block = css.match(new RegExp(`\\.light\\.accent-${id} \\{([^}]*)\\}`))?.[1] ?? "";
+      expect(block, id).toContain(`--primary: ${light};`);
+      expect(block, id).toContain(`--primary-text: ${light};`);
+    }
+  });
+
+  it("read as text on the page and carry white at 4.5:1 or more", () => {
+    for (const [id, [, light]] of Object.entries(PRESETS)) {
+      expect(ratio(light, "#e6e7ea"), id).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(light, "#f8f8f8"), id).toBeGreaterThanOrEqual(4.5);
+      expect(readableInk(light), id).toBe(LIGHT_INK);
+    }
+  });
+
+  it("dark-theme fills carry near-black ink at 4.5:1 or more", () => {
+    for (const [id, [raw]] of Object.entries(PRESETS)) {
+      expect(readableInk(raw), id).toBe(DARK_INK);
+      expect(ratio(raw, "#0b0f0a"), id).toBeGreaterThanOrEqual(4.5);
     }
   });
 });

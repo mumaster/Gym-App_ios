@@ -122,7 +122,7 @@ export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
           {adjustment !== 0 ? (
             <button
               onClick={apply}
-              className="mt-2 min-h-[40px] w-full rounded-xl bg-primary text-[13px] font-bold text-primary-foreground active:scale-95"
+              className="mt-2 min-h-[44px] w-full rounded-xl bg-primary/10 text-[13px] font-bold text-primary-text ring-1 ring-inset ring-primary/50 active:scale-95"
             >
               {t.bodyweight.apply}
             </button>
@@ -133,7 +133,7 @@ export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
       ) : null}
 
       {weightLog.length ? (
-        <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+        <div className="no-scrollbar -my-2 flex gap-1.5 overflow-x-auto py-2">
           {[...weightLog]
             .reverse()
             .slice(0, 8)
@@ -150,7 +150,7 @@ export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
                     removeWeightEntry(e.id);
                   }}
                   aria-label={t.bodyweight.remove}
-                  className="flex size-6 items-center justify-center rounded-full active:scale-90"
+                  className="tap-target flex size-6 items-center justify-center rounded-full active:scale-90"
                 >
                   <X className="size-3" />
                 </button>

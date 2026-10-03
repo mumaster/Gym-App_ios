@@ -31,7 +31,7 @@ export function SwitchRow({
         aria-label={ariaLabel}
         disabled={disabled}
         onClick={onToggle}
-        className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
+        className={`tap-target h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${
           on ? "bg-primary" : "bg-secondary"
         }`}
       >

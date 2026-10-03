@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { REGIONS, regionById, type RegionId } from "../../lib/gym/anatomy";
+import { chip as chipStyle } from "./ui";
 
 /** Distinct hue used for pairing suggestions (map highlight + popup border). */
 export const SUGGESTED_COLOR = "oklch(0.85 0.18 90)";
@@ -126,7 +127,7 @@ function Body({
   return (
     <div className="min-w-0 flex-1 rounded-3xl bg-gradient-to-b from-muted/45 to-muted/15 px-1.5 pb-2.5 pt-2 ring-1 ring-inset ring-border/60">
       {showLabel ? (
-        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground/80">
+        <p className="text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
           {label}
         </p>
       ) : null}
@@ -318,10 +319,8 @@ export function AnatomyMap({
         key={r.id}
         onClick={() => onToggle(r.id)}
         aria-pressed={active}
-        className={`min-h-[34px] rounded-full px-3.5 text-[12.5px] font-semibold transition-colors active:scale-95 ${
-          active
-            ? "bg-primary text-primary-foreground shadow-[0_0_14px_-3px_var(--primary)]"
-            : "glass text-secondary-foreground"
+        className={`tap-target min-h-[34px] rounded-full px-3.5 text-[12.5px] font-semibold transition-colors active:scale-95 ${
+          active ? chipStyle.on : "glass text-secondary-foreground"
         }`}
       >
         {r.label}
@@ -349,14 +348,14 @@ export function AnatomyMap({
       ) : null}
 
       {/* What's selected, as removable chips; the full list is one tap away. */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
         {chosen.length ? (
           chosen.map((r) => (
             <button
               key={r.id}
               onClick={() => onToggle(r.id)}
               aria-label={t.muscleMap.removeMuscle(r.label)}
-              className="flex min-h-[34px] items-center gap-1 rounded-full bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground shadow-[0_0_14px_-3px_var(--primary)] active:scale-95"
+              className={`tap-target flex min-h-[34px] items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold active:scale-95 ${chipStyle.on}`}
             >
               {r.label}
               <X className="size-3.5 opacity-70" strokeWidth={3} />
@@ -368,14 +367,14 @@ export function AnatomyMap({
         <button
           onClick={() => setListOpen((v) => !v)}
           aria-expanded={listOpen}
-          className="min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
+          className="tap-target min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
         >
           {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
         </button>
       </div>
 
       {listOpen ? (
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
           {REGIONS.map(chip)}
         </div>
       ) : null}

@@ -84,7 +84,7 @@ export const Route = createFileRoute("/nutrition")({
 
 /** Colour for a limit's bar — over is red, within 15% of it amber. */
 const barClass = (status: NutrientStatus) =>
-  status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
+  status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
 /**
  * Three sub-tabs, each with the week strip on top: Food (the day's numbers,
@@ -299,7 +299,7 @@ function NutritionScreen() {
                 setGoalsSheetOpen(true);
               }}
               aria-label={t.nutrition.setDailyLimits}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+              className="tap-target flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
             >
               <Settings2 className="size-4" />
             </button>
@@ -511,7 +511,7 @@ function WeekStrip({
         <button
           onClick={() => move(-1)}
           aria-label={t.nutrition.previousWeek}
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+          className="tap-target flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -520,7 +520,7 @@ function WeekStrip({
           onClick={() => move(1)}
           disabled={weeksBack === 0}
           aria-label={t.nutrition.nextWeek}
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+          className="tap-target flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
         >
           <ChevronRight className="size-4" />
         </button>
@@ -785,12 +785,12 @@ function MealGroup({
             </span>
           </span>
         </button>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-3">
           {hasFood ? (
             <button
               onClick={onSaveAsMeal}
               aria-label={t.nutrition.saveAsMeal(t.mealTypes[meal])}
-              className="relative flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+              className="tap-target flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
             >
               <HapticSwitch />
               <BookmarkPlus className="size-4" />
@@ -800,7 +800,7 @@ function MealGroup({
             <button
               onClick={onAdd}
               aria-label={t.nutrition.addToMeal(t.mealTypes[meal])}
-              className="relative flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
+              className="tap-target flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
             >
               <HapticSwitch />
               <Plus className="size-4" />

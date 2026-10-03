@@ -11,6 +11,7 @@ import {
   type FocusGroup,
 } from "../../lib/gym/volume";
 import { Card } from "./Screen";
+import { chip } from "./ui";
 
 /** The "muscles to grow" picker: raises a group's weekly target (see
  *  volume.ts) and steers the generator. Lives on the Workout tab, since it
@@ -42,8 +43,8 @@ export function GrowthFocusCard() {
               key={g.id}
               onClick={() => toggle(g.id)}
               aria-pressed={on}
-              className={`flex min-h-[36px] items-center gap-1 rounded-full px-3 text-[13px] font-semibold active:scale-95 ${
-                on ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+              className={`tap-target flex min-h-[36px] items-center gap-1 rounded-full px-3 text-[13px] font-semibold active:scale-95 ${
+                on ? chip.on : "bg-secondary text-secondary-foreground"
               }`}
             >
               {on ? <Star className="size-3.5" fill="currentColor" /> : null}

@@ -107,7 +107,7 @@ function useSuggestedWaterMl() {
 }
 
 function barClass(status: NutrientStatus) {
-  return status === "over" ? "bg-destructive" : status === "near" ? "bg-amber-500" : "bg-primary";
+  return status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 }
 
 /** The card header every drink card shares: a badge, the drink as a small
@@ -168,11 +168,15 @@ function DrinkHeader({
 
 /** A day's logged entries as removable chips, scrolling sideways. */
 function EntryChips({ children }: { children: ReactNode }) {
-  return <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4">{children}</div>;
+  return (
+    <div className="no-scrollbar -mx-4 -mb-1.5 mt-1.5 flex gap-2 overflow-x-auto px-4 py-1.5">
+      {children}
+    </div>
+  );
 }
 
 const chipClass =
-  "flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-[13px] font-semibold text-muted-foreground active:scale-95";
+  "tap-target flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 text-[13px] font-semibold text-muted-foreground active:scale-95";
 
 function WaterCard({
   dayKey,
@@ -225,7 +229,7 @@ function WaterCard({
           <button
             onClick={onOpenSettings}
             aria-label={t.nutrition.waterSettings}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
           >
             <Settings2 className="size-4" />
           </button>
@@ -370,7 +374,7 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
             onClick={() => setNoteOpen((v) => !v)}
             aria-expanded={noteOpen}
             aria-label={t.coffee.aboutLimit}
-            className={`tabular flex shrink-0 items-center gap-1 text-right text-[13px] leading-tight ${
+            className={`tap-target tabular flex shrink-0 items-center gap-1 text-right text-[13px] leading-tight ${
               status === "over" ? "font-semibold text-destructive" : "text-muted-foreground"
             }`}
           >
@@ -516,7 +520,7 @@ function AlcoholCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
               onClick={() => setNoteOpen((v) => !v)}
               aria-expanded={noteOpen}
               aria-label={t.alcohol.aboutLabel}
-              className="ml-1.5 inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground"
+              className="tap-target ml-1.5 inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground"
             >
               <Info className="size-4" />
             </button>

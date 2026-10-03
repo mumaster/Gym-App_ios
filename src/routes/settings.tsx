@@ -23,6 +23,7 @@ import { ThemePicker } from "../components/gym/ThemePicker";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { forceUpdate } from "../pwa";
+import { badge, chip } from "../components/gym/ui";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -95,7 +96,7 @@ function SettingsScreen() {
                 haptic(15);
                 setAuthOpen(true);
               }}
-              className="flex min-h-[44px] shrink-0 items-center rounded-full bg-primary px-4 text-[14px] font-semibold text-primary-foreground"
+              className={`flex min-h-[44px] shrink-0 items-center rounded-full px-4 text-[14px] font-semibold ${chip.on}`}
             >
               {t.settings.signIn}
             </button>
@@ -109,7 +110,7 @@ function SettingsScreen() {
         className="glass flex items-center justify-between gap-3 rounded-2xl p-4 transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+          <div className={`${badge.on} size-10`}>
             <LayoutGrid className="size-5" />
           </div>
           <div className="min-w-0">
@@ -129,7 +130,7 @@ function SettingsScreen() {
         className="glass mt-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+          <div className={`${badge.on} size-10`}>
             <Dumbbell className="size-5" />
           </div>
           <div className="min-w-0">
@@ -201,7 +202,7 @@ function SettingsScreen() {
         className="glass mb-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+          <div className={`${badge.on} size-10`}>
             <Sparkles className="size-5" />
           </div>
           <div className="min-w-0">
@@ -221,7 +222,7 @@ function SettingsScreen() {
         className="glass mb-3 flex w-full items-center justify-between gap-3 rounded-2xl p-4 text-left transition-transform active:scale-[0.985]"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+          <div className={`${badge.on} size-10`}>
             <BookMarked className="size-5" />
           </div>
           <div className="min-w-0">

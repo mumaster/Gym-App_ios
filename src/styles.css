@@ -44,6 +44,8 @@
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
+  --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --font-sans: var(--font-ios);
@@ -148,6 +150,11 @@
   --chart-4: oklch(0.7 0.19 320);
   --chart-5: oklch(0.75 0.14 30);
 
+  /* "Near a limit" and warnings (DESIGN.md §2): amber, as a fill (bars,
+     tints, borders) and as text. On black the one amber works for both. */
+  --warning: oklch(0.8 0.16 85);
+  --warning-text: oklch(0.8 0.16 85);
+
   --glow-primary: 0 0 32px oklch(0.88 0.24 145 / 28%);
   --shadow-float: 0 18px 50px oklch(0 0 0 / 65%);
 }
@@ -162,7 +169,7 @@
 }
 .accent-blue {
   --primary: oklch(0.72 0.17 245);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.17 0.04 245);
   --ring: oklch(0.72 0.17 245 / 55%);
   --chart-1: oklch(0.72 0.17 245);
   --glow-primary: 0 0 32px oklch(0.72 0.17 245 / 30%);
@@ -176,14 +183,14 @@
 }
 .accent-purple {
   --primary: oklch(0.68 0.2 300);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.17 0.04 300);
   --ring: oklch(0.68 0.2 300 / 55%);
   --chart-1: oklch(0.68 0.2 300);
   --glow-primary: 0 0 32px oklch(0.68 0.2 300 / 30%);
 }
 .accent-pink {
   --primary: oklch(0.72 0.22 350);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.17 0.04 350);
   --ring: oklch(0.72 0.22 350 / 55%);
   --chart-1: oklch(0.72 0.22 350);
   --glow-primary: 0 0 32px oklch(0.72 0.22 350 / 30%);
@@ -195,6 +202,66 @@
   --chart-1: oklch(0.88 0.18 95);
   --glow-primary: 0 0 32px oklch(0.88 0.18 95 / 30%);
 }
+/* Blue, purple and pink carry near-black ink (above), not white: white on
+   those mid-light fills is only 2.3–2.9:1, near-black 6.2–7.8:1 (WCAG 2.x
+   SC 1.4.3 asks 4.5:1 for text — DESIGN.md §2). */
+
+/* The presets in the light theme. Their dark-theme colours are made to glow
+   on black and nearly vanish on the off-white page (green text 1.2:1). Here
+   each is one colour, used for text, fills, bars and rings alike: the preset
+   blended towards black until it reaches 4.5:1 against the palest surface
+   things sit on (#e6e7ea), with white on top (5.3–5.8:1). The values are
+   accentInk.ts's readableAccentText for each preset, worked out once; a test
+   pins them (accentInk.test.ts "light presets"). */
+.light.accent-green {
+  --primary: #24702d;
+  --primary-text: #24702d;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #24702d 55%, transparent);
+  --chart-1: #24702d;
+  --glow-primary: 0 0 28px color-mix(in oklch, #24702d 22%, transparent);
+}
+.light.accent-blue {
+  --primary: #176799;
+  --primary-text: #176799;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #176799 55%, transparent);
+  --chart-1: #176799;
+  --glow-primary: 0 0 28px color-mix(in oklch, #176799 22%, transparent);
+}
+.light.accent-orange {
+  --primary: #995819;
+  --primary-text: #995819;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #995819 55%, transparent);
+  --chart-1: #995819;
+  --glow-primary: 0 0 28px color-mix(in oklch, #995819 22%, transparent);
+}
+.light.accent-purple {
+  --primary: #764fad;
+  --primary-text: #764fad;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #764fad 55%, transparent);
+  --chart-1: #764fad;
+  --glow-primary: 0 0 28px color-mix(in oklch, #764fad 22%, transparent);
+}
+.light.accent-pink {
+  --primary: #a33b76;
+  --primary-text: #a33b76;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #a33b76 55%, transparent);
+  --chart-1: #a33b76;
+  --glow-primary: 0 0 28px color-mix(in oklch, #a33b76 22%, transparent);
+}
+.light.accent-yellow {
+  --primary: #796603;
+  --primary-text: #796603;
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: color-mix(in oklch, #796603 55%, transparent);
+  --chart-1: #796603;
+  --glow-primary: 0 0 28px color-mix(in oklch, #796603 22%, transparent);
+}
+
 /* A custom accent comes from the colour wheel, so it can be any colour:
    GymProvider sets per-theme variants inline (accentInk.ts) — the fill/shape
    colour lightened or darkened until it's visible against the page, the ink
@@ -254,6 +321,10 @@
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
+  /* The dark theme's amber blended towards black (accentInk.ts's method):
+     3:1 as a fill and 4.5:1 as text against #e6e7ea. */
+  --warning: #a17a10;
+  --warning-text: #7b5e0c;
 
   --border: oklch(0 0 0 / 9%);
   --input: oklch(0 0 0 / 8%);
@@ -467,6 +538,29 @@
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* A control drawn smaller than 44 × 44 pt (a chip, a small icon button)
+   keeps its look but takes taps from a 44 × 44 pt area centred on it: Apple's
+   Human Interface Guidelines' minimum hit target (DESIGN.md §4). The haptic
+   overlay (HapticSwitch, installAppWideHaptics) grows with it, so a tap in
+   the extra area still ticks. Leave 44 pt between neighbours' centres, or
+   their areas overlap. Sets position: relative, so don't use it on an
+   absolutely positioned control; wrap that in a relative element. */
+@utility tap-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  & > [data-haptic-switch] {
+    inset: min(0px, calc((100% - 44px) / 2));
+  }
 }
 
 @utility no-scrollbar {
@@ -789,6 +883,14 @@
 
 /* A disabled control doesn't tick: its haptic-switch overlay (HapticSwitch
    or the app-wide one from tapFeedback.ts) is hidden while it's disabled. */
+/* The app-wide haptic overlay covers its control; a tap-target grows it
+   (that utility's rule outranks this one). */
+@layer base {
+  [data-auto-haptic] {
+    inset: 0;
+  }
+}
+
 :disabled > [data-haptic-switch],
 [aria-disabled="true"] > [data-haptic-switch] {
   display: none;

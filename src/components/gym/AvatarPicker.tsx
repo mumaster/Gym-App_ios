@@ -18,6 +18,7 @@ export function AvatarPicker() {
               update({ avatarId: a.id });
             }}
             aria-label={a.label}
+            data-solid-ok
             className={`relative flex size-14 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
               selected ? "border-foreground" : "border-transparent"
             }`}

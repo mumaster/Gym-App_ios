@@ -175,7 +175,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
               {s.mock ? (
                 <div className="flex flex-1 flex-col justify-center py-2">
                   {i > 0 ? (
-                    <p className="mb-1.5 text-center text-[10.5px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+                    <p className="mb-1.5 text-center text-[10.5px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                       {w.example}
                     </p>
                   ) : null}
@@ -785,7 +785,7 @@ function PlanMock() {
                   <Check className="size-3.5" strokeWidth={3} />
                 </span>
               ) : marks[i] === "missed" ? (
-                <span className="size-7 rounded-full border-2 border-dashed border-amber-500" />
+                <span className="size-7 rounded-full border-2 border-dashed border-warning" />
               ) : marks[i] === "planned" ? (
                 <span className="size-7 rounded-full border-2 border-primary" />
               ) : (
@@ -814,7 +814,7 @@ function PlanMock() {
           {t.generate.startDayType("Pull")}
         </div>
       </Panel>
-      <Panel className="border-amber-500/40 p-3.5">
+      <Panel className="border-warning/40 p-3.5">
         <p className="text-[14px] font-bold">{t.schedule.missedTitle("Pull", wednesday)}</p>
         <p className="mt-0.5 text-[12.5px] text-muted-foreground">{t.schedule.missedDesc}</p>
         <div className="mt-2.5 flex gap-2">

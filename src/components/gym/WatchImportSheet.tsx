@@ -277,7 +277,7 @@ export function WatchImportSheet({
                 ))}
               </div>
               {presetOtherDay && target?.type === "workout" ? (
-                <p className="mt-2 flex items-start gap-2 text-[13px] text-amber-500">
+                <p className="mt-2 flex items-start gap-2 text-[13px] text-warning-text">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   {t.watch.otherDay(presetOtherDay)}
                 </p>

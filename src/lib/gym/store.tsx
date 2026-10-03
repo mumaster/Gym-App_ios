@@ -792,7 +792,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // picks the set matching .dark/.light.
       root.style.setProperty("--custom-primary", state.customAccent);
       for (const theme of ["dark", "light"] as const) {
-        const fill = visibleAccentFill(state.customAccent, theme);
+        // In the light theme the accent is one colour at text contrast, like
+        // the presets (styles.css), so white sits on it at 5:1 or more.
+        const fill =
+          theme === "light"
+            ? readableAccentText(state.customAccent, theme)
+            : visibleAccentFill(state.customAccent, theme);
         root.style.setProperty(`--custom-fill-${theme}`, fill);
         root.style.setProperty(`--custom-ink-${theme}`, readableInk(fill));
         root.style.setProperty(

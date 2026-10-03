@@ -34,8 +34,8 @@ export function RotationWeekStrip({
           <div
             key={i}
             className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
-              isNext ? "bg-primary/20" : "bg-muted"
-            } ${done ? "opacity-50" : ""}`}
+              isNext ? "bg-primary/10" : done ? "border border-border" : "bg-muted"
+            }`}
           >
             <p
               className={`flex items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wide ${

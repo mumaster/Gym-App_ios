@@ -37,6 +37,7 @@ import {
 import { useGym } from "../lib/gym/store";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import type { CardioSession, Muscle, Workout } from "../lib/gym/types";
+import { chip } from "../components/gym/ui";
 
 /** A row in the sessions list: a Forge strength session or watch-only cardio. */
 type SessionItem =
@@ -340,16 +341,14 @@ function HistoryScreen() {
                 <Card className="p-4">
                   {shownId ? (
                     <>
-                      <div className="no-scrollbar -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">
+                      <div className="no-scrollbar -mx-1 -my-1.5 mb-1.5 flex gap-1.5 overflow-x-auto px-1 py-1.5">
                         {trackable.map((x) => (
                           <button
                             key={x.id}
                             onClick={() => setChartId(x.id)}
                             aria-pressed={x.id === shownId}
-                            className={`min-h-[34px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-                              x.id === shownId
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary text-secondary-foreground"
+                            className={`tap-target min-h-[34px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
+                              x.id === shownId ? chip.on : "bg-secondary text-secondary-foreground"
                             }`}
                           >
                             {x.name}

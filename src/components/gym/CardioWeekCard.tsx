@@ -14,6 +14,7 @@ import { CardioPlanSheet } from "./CardioPlanSheet";
 import { CARDIO_ICONS } from "./cardioDisplay";
 import { LogCardioSheet } from "./LogCardioSheet";
 import { Card } from "./Screen";
+import { chip } from "./ui";
 
 /**
  * This week's cardio: moderate-equivalent minutes against the WHO minimum,
@@ -70,7 +71,7 @@ export function CardioWeekCard({
             type="button"
             onClick={() => setPlanOpen(true)}
             aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
           >
             <Settings2 className="size-4" />
           </button>
@@ -141,7 +142,7 @@ export function CardioWeekCard({
             type="button"
             onClick={() => setLogOpen(true)}
             className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold active:scale-95 ${
-              next ? "bg-primary text-primary-foreground" : "bg-muted text-secondary-foreground"
+              next ? chip.on : "bg-muted text-secondary-foreground"
             }`}
           >
             <Plus className="size-4" /> {t.cardio.log}

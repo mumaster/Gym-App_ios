@@ -65,6 +65,7 @@ import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load"
 import { focusMuscles } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
+import { chip } from "../components/gym/ui";
 
 /** With a program or weekly plan the tab has two sub-tabs: the plan (the
  *  default) and building your own. Without one there are no tabs and the
@@ -483,18 +484,16 @@ function WorkoutHome() {
             setDuration(d);
             setCustomInput(String(d));
           }}
-          className={`min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
-            duration === d
-              ? "bg-primary text-primary-foreground"
-              : "bg-secondary text-secondary-foreground"
+          className={`tap-target min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+            duration === d ? chip.on : "bg-secondary text-secondary-foreground"
           }`}
         >
           {d}m
         </button>
       ))}
       <label
-        className={`flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
-          SHORTCUTS.includes(duration) ? "bg-muted" : "bg-primary/15 ring-1 ring-primary"
+        className={`tap-target flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+          SHORTCUTS.includes(duration) ? "bg-muted" : chip.on
         }`}
       >
         <input
@@ -560,7 +559,7 @@ function WorkoutHome() {
               <button
                 onClick={() => setProgramSheetOpen(true)}
                 aria-label={t.generate.editProgram}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
               >
                 <Settings2 className="size-4" />
               </button>
@@ -601,7 +600,7 @@ function WorkoutHome() {
             </button>
             <button
               onClick={() => setAdjustWeekOpen(true)}
-              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+              className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
             >
               <CalendarClock className="size-3.5" /> {t.schedule.adjustWeek}
             </button>
@@ -627,7 +626,7 @@ function WorkoutHome() {
               <button
                 onClick={() => setPlanSheetOpen(true)}
                 aria-label={t.generate.editWeeklyPlan}
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
               >
                 <Settings2 className="size-4" />
               </button>
@@ -653,13 +652,13 @@ function WorkoutHome() {
             </button>
             <button
               onClick={() => setAdjustWeekOpen(true)}
-              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+              className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
             >
               <CalendarClock className="size-3.5" /> {t.schedule.adjustWeek}
             </button>
             <button
               onClick={() => setProgramSheetOpen(true)}
-              className="mt-2 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
+              className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
             >
               <Flame className="size-3.5" /> {t.generate.buildProgramInstead}
             </button>
@@ -798,10 +797,8 @@ function WorkoutHome() {
                         haptic(12);
                         update({ activeProfileId: p.id });
                       }}
-                      className={`min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
-                        p.id === profile.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground"
+                      className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                        p.id === profile.id ? chip.on : "bg-secondary text-secondary-foreground"
                       }`}
                     >
                       {p.name}
@@ -815,7 +812,7 @@ function WorkoutHome() {
               <Link
                 to="/equipment"
                 aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
               >
                 <Settings2 className="size-4" />
               </Link>
@@ -857,7 +854,7 @@ function WorkoutHome() {
                 </div>
                 <button
                   onClick={applyRecommendation}
-                  className="min-h-[36px] shrink-0 rounded-full bg-primary px-3.5 text-[13px] font-bold text-primary-foreground active:scale-95"
+                  className="tap-target min-h-[36px] shrink-0 rounded-full bg-primary/10 px-3.5 text-[13px] font-bold text-primary-text ring-1 ring-inset ring-primary/50 active:scale-95"
                 >
                   {t.generate.use}
                 </button>
@@ -901,14 +898,14 @@ function WorkoutHome() {
                   <button
                     onClick={() => setProposal(null)}
                     aria-label={t.generate.dismissSuggestion}
-                    className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+                    className="tap-target grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
                   >
                     <X className="size-4" />
                   </button>
                 </div>
                 <button
                   onClick={acceptProposal}
-                  className="flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
+                  className="tap-target flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
                   style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
                 >
                   <Plus className="size-3.5" strokeWidth={3} />
@@ -943,10 +940,8 @@ function WorkoutHome() {
                         <button
                           key={t}
                           onClick={() => toggleFocus(t)}
-                          className={`min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-                            on
-                              ? "bg-primary text-primary-foreground"
-                              : "glass text-secondary-foreground"
+                          className={`tap-target min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+                            on ? chip.on : "glass text-secondary-foreground"
                           }`}
                         >
                           {t}
@@ -984,7 +979,7 @@ function WorkoutHome() {
                         haptic(12);
                         toggleLovedExercise(id);
                       }}
-                      className="flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/15 px-3 text-[14px] font-semibold text-primary-text"
+                      className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/10 px-3 text-[14px] font-semibold text-primary-text"
                     >
                       {ex?.name ?? id}
                       <X className="size-3.5" />
@@ -1150,7 +1145,7 @@ function WorkoutHome() {
                         onClick={() => move(i, -1)}
                         disabled={i === 0}
                         aria-label={t.generate.moveUp}
-                        className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
                         <ArrowUp className="size-4" />
                       </button>
@@ -1158,14 +1153,14 @@ function WorkoutHome() {
                         onClick={() => move(i, 1)}
                         disabled={i === planHere.length - 1}
                         aria-label={t.generate.moveDown}
-                        className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
                       >
                         <ArrowDown className="size-4" />
                       </button>
                       <button
                         onClick={() => setSwapIndex(i)}
                         aria-label={t.generate.swapExercise}
-                        className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                       >
                         <Repeat className="size-4" />
                       </button>

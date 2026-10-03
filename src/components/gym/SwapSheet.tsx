@@ -70,8 +70,8 @@ export function SwapSheet({
     <BottomSheet open={!!exerciseId} onClose={onClose} title={t.swapSheet.title}>
       {pending && partner ? (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-amber-400/50 bg-amber-400/10 p-4">
-            <p className="flex items-center gap-2 text-[15px] font-bold text-amber-300">
+          <div className="rounded-2xl border border-warning/50 bg-warning/10 p-4">
+            <p className="flex items-center gap-2 text-[15px] font-bold text-warning-text">
               <AlertTriangle className="size-5" /> {t.swapSheet.antagonistMismatch}
             </p>
             <p className="mt-2 text-[14px] text-muted-foreground">

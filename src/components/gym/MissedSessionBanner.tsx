@@ -42,7 +42,7 @@ export function MissedSessionBanner({
             shiftScheduledSessions(kind, overdue);
             onDoToday?.();
           }}
-          className="min-h-[40px] flex-1 rounded-xl bg-primary text-[13px] font-bold text-primary-foreground active:scale-95"
+          className="min-h-[44px] flex-1 rounded-xl bg-background text-[13px] font-bold text-primary-text ring-1 ring-inset ring-primary/50 active:scale-95"
         >
           {t.schedule.doItToday}
         </button>
@@ -51,7 +51,7 @@ export function MissedSessionBanner({
             haptic(15);
             skipScheduledSession(kind);
           }}
-          className="min-h-[40px] flex-1 rounded-xl bg-secondary text-[13px] font-bold text-secondary-foreground active:scale-95"
+          className="min-h-[44px] flex-1 rounded-xl bg-secondary text-[13px] font-bold text-secondary-foreground active:scale-95"
         >
           {t.schedule.skip}
         </button>

@@ -448,7 +448,7 @@ function NutritionTile({
 }) {
   const t = useTranslation();
   const barClass = (status: NutrientStatus) =>
-    status === "over" ? "bg-destructive" : status === "near" ? "bg-chart-3" : "bg-primary";
+    status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
   return (
     <button
@@ -739,7 +739,7 @@ function WaterTile({
             onOpen();
           }}
           aria-label={t.home.waterAriaLabel}
-          className="relative flex items-center justify-between gap-3 text-left"
+          className="tap-target flex items-center justify-between gap-3 text-left"
         >
           <div className="flex min-w-0 items-center gap-2.5">
             <span
@@ -777,7 +777,7 @@ function WaterTile({
             key={i}
             onClick={() => onAdd(ml)}
             aria-label={t.home.addWater(ml)}
-            className="fill-cell relative flex min-h-[36px] flex-col items-center justify-center gap-1 rounded-2xl bg-primary/15 text-[length:clamp(12px,16cqh,15px)] font-bold text-foreground active:scale-95"
+            className="fill-cell tap-target flex min-h-[36px] flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] border-primary/60 text-[length:clamp(12px,16cqh,15px)] font-bold text-foreground active:scale-95 active:bg-primary/10"
           >
             <HapticSwitch />
             <Droplet className="fill-extra size-4 text-primary-text" aria-hidden />
@@ -833,7 +833,7 @@ function ReadinessTile({
             onClick={() => onPick(score)}
             aria-label={t.readiness[score]}
             aria-pressed={current === score}
-            className={`fill-cell flex min-h-[38px] items-center justify-center rounded-2xl text-[length:clamp(17px,40cqh,24px)] leading-none active:scale-95 ${
+            className={`fill-cell tap-target flex min-h-[38px] items-center justify-center rounded-2xl text-[length:clamp(17px,40cqh,24px)] leading-none active:scale-95 ${
               current === score ? "bg-primary/25 ring-2 ring-primary" : "bg-muted"
             }`}
           >
