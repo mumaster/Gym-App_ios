@@ -258,7 +258,7 @@ function HomeScreen() {
   return (
     <>
       <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
-        <header className="safe-top shrink-0">
+        <header className="safe-top view-transition-header shrink-0">
           <div className={`relative flex min-h-[42px] items-center px-4 ${SETTINGS_BUTTON_GUTTER}`}>
             <div className="min-w-0">
               <div className="flex items-center gap-2">

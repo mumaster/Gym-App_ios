@@ -210,6 +210,7 @@ A decorative icon gets `aria-hidden`.
   Nothing in the UI should take longer than about 400 ms.
 
 - **Reduce Motion** is always respected: no slides or scale, a fade at most. `styles.css` has a fallback for the common cases (every `animate-in`/`animate-out` keeps its fade and loses its slide, zoom and spin; the card flash and confetti go), but check `prefers-reduced-motion` for every new animation of your own.
+- **Page transitions** move only the content: a crossfade with no slide (120 ms out, 200 ms in, starting together). The chrome, meaning the header (title, profile button, sub-tabs) and the tab bar, never moves or fades between screens; each has its own `view-transition-name` and swaps in place. A new piece of chrome that sits in the same spot on every screen gets the same treatment. A sliding, fading header shows two titles at once.
 - Don't animate on first paint from SSR without `fill-mode-both` (see CLAUDE.md, Splash screen).
 
 ## 10. Haptics

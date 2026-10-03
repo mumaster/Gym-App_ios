@@ -39,7 +39,7 @@ export function Screen({
         fits ? "fixed inset-0 overflow-hidden bg-background" : "min-h-[100dvh] bg-background"
       }
     >
-      <header className="safe-top sticky top-0 z-30 pb-2">
+      <header className="safe-top view-transition-header sticky top-0 z-30 pb-2">
         {/* Separate layer for the blur: WebKit can bleed backdrop-filter
             onto an element's own text when applied directly to the element
             that contains it, instead of confining it to what's behind.
