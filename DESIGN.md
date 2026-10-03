@@ -157,6 +157,7 @@ Reuse these before building anything new. A new pattern that will appear twice g
   - a filter or choice chip is 32–40 pt tall with `tap-target`; the picked one is `chip.on` (tonal: a light accent wash, accent text, a thin accent ring), the others `bg-muted`/`bg-secondary`/`glass`. Never solid: solid accent is for the main action;
   - an entry chip with ✕ removes that entry;
   - chip rows that can overflow scroll sideways (`no-scrollbar -mx-4 px-4 overflow-x-auto`, plus vertical room for the tap areas) rather than wrap into a wall.
+- **Screen headers:** a tab's header is its title alone (plus its sub-tabs or search in the `toolbar`). No subtitle, and never a count or stat: a number belongs in the content it describes (Exercises' "253 of 256 exercises" sits at the top of its list). A subtitle is only for pages you drill into (a session's date) and setup pages that say what they're for (Settings, Equipment).
 - **Sub-tabs:** `SegmentedTabs`, in `Screen`'s `toolbar`, with the tab in the URL (`validateSearch`, `?tab=`, `replace`, scrolled to the top on switch). Use 2–3 tabs. The first is the default and has no query.
 - **Switches:** `SwitchRow` (white knob, label and optional one-line description; `className` replaces its padding inside a padded card). Every on/off setting uses it, never an "On/Off" pill. Settings apply straight away, with no save button.
 - **Bottom sheets:** `BottomSheet`.

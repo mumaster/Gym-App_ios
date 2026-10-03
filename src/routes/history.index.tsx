@@ -173,7 +173,6 @@ function HistoryScreen() {
   return (
     <Screen
       title={t.history.title}
-      subtitle={t.history.completedSessions(workouts.length + cardioSessions.length)}
       toolbar={
         <SegmentedTabs tabs={HISTORY_TABS} value={tab} onChange={setTab} labels={t.history.tabs} />
       }

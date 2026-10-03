@@ -681,7 +681,7 @@ function WorkoutHome() {
               </button>
               <button
                 onClick={() => setProgramSheetOpen(true)}
-                className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-primary text-[14px] font-bold text-primary-foreground active:scale-95"
+                className={`flex min-h-[44px] flex-1 items-center justify-center rounded-2xl text-[14px] font-bold active:scale-95 ${chip.on}`}
               >
                 {t.generate.program}
               </button>
@@ -695,7 +695,6 @@ function WorkoutHome() {
   return (
     <Screen
       title={t.generate.title}
-      subtitle={tabbed ? undefined : t.generate.subtitle}
       fitWhenShort={tabbed && tab === "plan" && !planHere}
       toolbar={
         tabbed ? (

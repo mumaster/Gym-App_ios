@@ -43,7 +43,7 @@ import type {
   Muscle,
   TargetMuscle,
 } from "../lib/gym/types";
-import { chip } from "../components/gym/ui";
+import { chip, text } from "../components/gym/ui";
 
 const PATTERNS: MovementPattern[] = ["push", "pull", "hinge", "squat", "carry", "core"];
 
@@ -166,7 +166,6 @@ function ExercisesScreen() {
   return (
     <Screen
       title={t.exercises.title}
-      subtitle={t.exercises.subtitle(results.length, exercises.length)}
       action={
         <button
           onClick={() => setMoreOpen(true)}
@@ -277,6 +276,7 @@ function ExercisesScreen() {
       />
 
       <div ref={listRef} className={`mt-4 space-y-2 ${searching ? "min-h-[100dvh]" : ""}`}>
+        <p className={`px-1 ${text.meta}`}>{t.exercises.count(results.length, exercises.length)}</p>
         {results.map((e) => {
           const loved = lovedExerciseIds.includes(e.id);
           const avoided = avoidedExerciseIds.includes(e.id);

@@ -333,7 +333,6 @@ const en = {
   },
   generate: {
     title: "Workout",
-    subtitle: "Build a session for today",
     tabs: { plan: "My plan", build: "Build your own" },
     sessionInProgress: "Session in progress",
     sessionTitle: (exercises: number, sets: number) =>
@@ -568,7 +567,6 @@ const en = {
   },
   history: {
     title: "History",
-    completedSessions: (n: number): string => `${n} completed ${n === 1 ? "session" : "sessions"}`,
     noSessionsYet: "No sessions yet",
     noSessionsYetDesc:
       "Finish your first workout and it will show up here with PRs and volume charts.",
@@ -707,7 +705,7 @@ const en = {
   },
   exercises: {
     title: "Exercises",
-    subtitle: (shown: number, total: number) => `${shown} of ${total} exercises`,
+    count: (shown: number, total: number) => `${shown} of ${total} exercises`,
     search: "Search exercises",
     anyMuscle: "Any muscle",
     filteredTo: (name: string) => `Filtered to ${name}`,
@@ -1672,7 +1670,6 @@ const nl: Dict = {
   },
   generate: {
     title: "Training",
-    subtitle: "Stel een sessie samen voor vandaag",
     tabs: { plan: "Mijn schema", build: "Zelf samenstellen" },
     sessionInProgress: "Sessie bezig",
     sessionTitle: (exercises: number, sets: number) =>
@@ -1909,7 +1906,6 @@ const nl: Dict = {
   },
   history: {
     title: "Historie",
-    completedSessions: (n: number): string => `${n} voltooide ${n === 1 ? "sessie" : "sessies"}`,
     noSessionsYet: "Nog geen sessies",
     noSessionsYetDesc:
       "Rond je eerste training af en die verschijnt hier met PR's en volumegrafieken.",
@@ -2048,7 +2044,7 @@ const nl: Dict = {
   },
   exercises: {
     title: "Oefeningen",
-    subtitle: (shown: number, total: number) => `${shown} van ${total} oefeningen`,
+    count: (shown: number, total: number) => `${shown} van ${total} oefeningen`,
     search: "Zoek oefeningen",
     anyMuscle: "Elke spier",
     filteredTo: (name: string) => `Gefilterd op ${name}`,
