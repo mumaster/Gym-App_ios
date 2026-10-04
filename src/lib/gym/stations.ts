@@ -10,14 +10,14 @@ import type { EquipmentId, Exercise } from "./types";
  * source.
  *
  * Equipment whose load is a setting you change: plates on a bar, which
- * dumbbell or kettlebell you hold, which band, the pin in a stack, the
- * plates on a leg press or leg developer. Bodyweight, a pull-up bar, dip
- * bars and a bench carry no load of their own.
+ * kettlebell you hold, which band, the pin in a cable stack, the plates on a
+ * leg press or leg developer. Bodyweight, a pull-up bar, dip bars and a
+ * bench carry no load of their own. Dumbbells don't count either (asked
+ * for): you pick up another pair rather than re-load one.
  */
 const LOADED: EquipmentId[] = [
   "barbell",
   "smith",
-  "dumbbell",
   "kettlebell",
   "bands",
   "cable",
@@ -25,6 +25,10 @@ const LOADED: EquipmentId[] = [
   "leg_press",
   "leg_developer",
 ];
+
+/** The low/mid and the high pulley count as one station: a home cable tower
+ *  (the user's) has both on a single weight stack. */
+const SAME_STATION: Partial<Record<EquipmentId, string>> = { cable_high: "cable" };
 
 /** "Pin-loaded machines" are separate machines in a gym, so each machine
  *  exercise is its own station — except these, which are usually one
@@ -39,7 +43,11 @@ const SHARED_MACHINES: Record<string, string> = {
 
 /** The load stations an exercise uses. Empty for bodyweight exercises. */
 export function loadStations(ex: Exercise): string[] {
-  const stations: string[] = ex.equipment_required.filter((e) => LOADED.includes(e));
+  const stations = [
+    ...new Set(
+      ex.equipment_required.filter((e) => LOADED.includes(e)).map((e) => SAME_STATION[e] ?? e),
+    ),
+  ];
   if (ex.equipment_required.includes("machine"))
     stations.push(`machine:${SHARED_MACHINES[ex.id] ?? ex.id}`);
   return stations;

@@ -11,11 +11,20 @@ const ex = (id: string) => {
 };
 
 describe("load stations", () => {
-  it("counts the bar, the dumbbells, a cable stack and a leg developer as one station each", () => {
+  it("counts the bar, a cable stack and a leg developer as one station each", () => {
     expect(sharesLoadStation(ex("bb-bench"), ex("bb-row"))).toBe(true);
-    expect(sharesLoadStation(ex("db-bench"), ex("db-row"))).toBe(true);
     expect(sharesLoadStation(ex("lat-pulldown"), ex("cable-pushdown"))).toBe(true);
     expect(sharesLoadStation(ex("leg-extension"), ex("leg-curl"))).toBe(true);
+  });
+
+  it("counts the high and the low/mid pulley as one stack", () => {
+    expect(sharesLoadStation(ex("lat-pulldown"), ex("seated-cable-row"))).toBe(true);
+    expect(sharesLoadStation(ex("cable-crossover"), ex("face-pull"))).toBe(true);
+  });
+
+  it("lets two dumbbell exercises pair: you pick up another pair", () => {
+    expect(sharesLoadStation(ex("db-bench"), ex("db-row"))).toBe(false);
+    expect(sharesLoadStation(ex("db-curl"), ex("db-overhead-triceps-ext"))).toBe(false);
   });
 
   it("keeps different equipment and bodyweight apart", () => {
@@ -35,8 +44,8 @@ describe("load stations", () => {
 describe("superset pairing", () => {
   it("finds the most pairs where a greedy first pick would strand two", () => {
     // Greedy pairs the bench with the pull-up (first of two 300s) and
-    // leaves the dumbbell row and fly, which share the dumbbells.
-    const list = ["bb-bench", "pullup", "db-row", "db-fly"].map(ex);
+    // leaves the barbell row and close-grip bench, which share the bar.
+    const list = ["db-bench", "pullup", "bb-row", "close-grip-bench"].map(ex);
     expect(bestPairing(list).every((j) => j !== -1)).toBe(true);
   });
 
