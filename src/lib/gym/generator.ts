@@ -5,6 +5,7 @@ import { isNiche, popularityOf } from "./exercisePopularity";
 import { crossEstimate, withKnownLifts, type KnownLift } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
+import { sharesLoadStation } from "./stations";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
 import type {
   EquipmentId,
@@ -255,31 +256,23 @@ interface GenerateArgs {
 
 /* ---------------- superset pairing ---------------- */
 
-/** Equipment where re-loading plates or re-setting the pin costs real time. */
-const LOADED: EquipmentId[] = ["barbell", "dumbbell", "cable", "cable_high", "smith", "machine"];
-
-function pairScore(a: Exercise, b: Exercise): number {
-  let score = 0;
+/** How well two exercises go together as a superset, or null when they
+ *  can't: two exercises on the same load station (stations.ts) would mean
+ *  changing the weight every round, so they're never paired. */
+function pairScore(a: Exercise, b: Exercise): number | null {
+  if (sharesLoadStation(a, b)) return null;
   // 1. strict antagonist (push vs pull / opposing groups) always wins
-  if (isAntagonistPair(a, b)) score += 300;
+  if (isAntagonistPair(a, b)) return 300;
   // 2. fallback: non-competing muscle groups (different muscles, no overlap)
-  else if (
+  if (
     a.primary_muscle !== b.primary_muscle &&
     !a.secondary_muscles.includes(b.primary_muscle) &&
     !b.secondary_muscles.includes(a.primary_muscle)
   )
-    score += 120;
+    return 120;
   // 3. last resort: same muscle, compound + isolation
-  else if (a.primary_muscle === b.primary_muscle && a.compound !== b.compound) score += 60;
-  else score += 10;
-
-  // prefer pairs on different stations so no weight has to be changed between them
-  const sharedLoaded = a.equipment_required.filter(
-    (e) => LOADED.includes(e) && b.equipment_required.includes(e),
-  );
-  if (sharedLoaded.length) score -= 45 * sharedLoaded.length;
-  else score += 25;
-  return score;
+  if (a.primary_muscle === b.primary_muscle && a.compound !== b.compound) return 60;
+  return 10;
 }
 
 /** Heavy systemic lifts: loaded compounds on a bar / sled. */
@@ -330,38 +323,66 @@ function makePair(
   ];
 }
 
-/** Groups the plan into antagonist / compound-isolation pairs, rounds-based. */
-function applySupersets(plan: PlannedExercise[], startGroup = 0): PlannedExercise[] {
-  const items = plan.map((p) => ({ p, ex: EXERCISES.find((e) => e.id === p.exercise_id)! }));
-  const open = items.filter((i) => i.ex);
-  const result: PlannedExercise[] = [];
-  const taken = new Set<number>();
-  let group = startGroup;
+/** Most items the pairing search runs on; a plan never has more than 8
+ *  exercises (shapeFor), so this is only a guard. */
+const MAX_PAIRING_ITEMS = 16;
 
-  open.forEach((item, i) => {
-    if (taken.has(i)) return;
-    let bestIdx = -1;
-    let best = -Infinity;
-    open.forEach((other, j) => {
-      if (j <= i || taken.has(j)) return;
-      const score = pairScore(item.ex, other.ex);
-      if (score > best) {
-        best = score;
-        bestIdx = j;
-      }
-    });
-    if (bestIdx === -1) {
-      taken.add(i);
-      result.push(item.p);
-      return;
+/**
+ * Which exercises to pair: as many pairs as possible, then the best total
+ * pairScore. An exhaustive search over the plan (at most 8 exercises, so a
+ * few hundred matchings) rather than greedy, because with the station rule a
+ * greedy first pick can strand two exercises that could each have paired
+ * with something else. Returns, per index, its partner's index or -1.
+ */
+export function bestPairing(exercises: Exercise[]): number[] {
+  const n = Math.min(exercises.length, MAX_PAIRING_ITEMS);
+  const score = exercises.map((a, i) => exercises.map((b, j) => (i < j ? pairScore(a, b) : null)));
+  const memo = new Map<number, { value: number; pairs: [number, number][] }>();
+  // value = pairs × 10,000 + total score, so one more pair always wins
+  const solve = (mask: number): { value: number; pairs: [number, number][] } => {
+    let i = 0;
+    while (i < n && mask & (1 << i)) i++;
+    if (i >= n) return { value: 0, pairs: [] };
+    const hit = memo.get(mask);
+    if (hit) return hit;
+    let best = solve(mask | (1 << i)); // i stays a straight set
+    for (let j = i + 1; j < n; j++) {
+      if (mask & (1 << j)) continue;
+      const s = score[i]![j];
+      if (s === null || s === undefined) continue;
+      const rest = solve(mask | (1 << i) | (1 << j));
+      const value = rest.value + 10_000 + s;
+      if (value > best.value) best = { value, pairs: [[i, j], ...rest.pairs] };
     }
-    const partner = open[bestIdx]!;
-    taken.add(i);
-    taken.add(bestIdx);
-    group += 1;
-    result.push(...makePair(item.p, partner.p, item.ex, partner.ex, group));
-  });
+    memo.set(mask, best);
+    return best;
+  };
+  const partner = exercises.map(() => -1);
+  for (const [i, j] of solve(0).pairs) {
+    partner[i] = j;
+    partner[j] = i;
+  }
+  return partner;
+}
 
+/** Groups the plan into antagonist / compound-isolation pairs, rounds-based.
+ *  A pair takes the place of its first exercise; an exercise nothing can
+ *  pair with stays a straight set. */
+function applySupersets(plan: PlannedExercise[], startGroup = 0): PlannedExercise[] {
+  const open = plan
+    .map((p) => ({ p, ex: EXERCISES.find((e) => e.id === p.exercise_id)! }))
+    .filter((i) => i.ex);
+  const partner = bestPairing(open.map((i) => i.ex));
+  const result: PlannedExercise[] = [];
+  let group = startGroup;
+  open.forEach((item, i) => {
+    const j = partner[i]!;
+    if (j === -1) result.push(item.p);
+    else if (j > i) {
+      group += 1;
+      result.push(...makePair(item.p, open[j]!.p, item.ex, open[j]!.ex, group));
+    }
+  });
   return result;
 }
 
@@ -468,8 +489,12 @@ export function generateWorkout({
   // Prefer exercises that make this muscle head their MAIN focus, then ones that
   // hit it as a secondary emphasis, then — only if nothing specific is left —
   // any exercise from the owning muscle group.
-  const nextChoice = (target: TargetMuscle, compound: boolean): Exercise | undefined => {
-    const free = pool.filter((e) => !used.has(e.id));
+  const nextChoice = (
+    target: TargetMuscle,
+    compound: boolean,
+    accept: (e: Exercise) => boolean = () => true,
+  ): Exercise | undefined => {
+    const free = pool.filter((e) => !used.has(e.id) && accept(e));
     const hitsTarget = free.filter((e) => e.muscle_targets.includes(target));
     const forMuscle = hitsTarget.length
       ? hitsTarget
@@ -594,8 +619,60 @@ export function generateWorkout({
 
   if (!supersets) return withVolume(plan);
 
+  /**
+   * Exercises left unpaired by applySupersets all clash with each other —
+   * usually because they share a station (two dumbbell exercises in a
+   * dumbbells-only gym). Swap one of two leftovers for the most similar
+   * alternative (alternativesFor: same muscle, same main target first) that
+   * can pair with the other, so the pair doesn't cost a weight change.
+   * Loved exercises are never swapped out.
+   */
+  const pairLeftovers = (list: PlannedExercise[]): PlannedExercise[] => {
+    let out = list;
+    let group = out.reduce((m, p) => Math.max(m, p.superset_group ?? 0), 0);
+    const leftovers = () =>
+      out.flatMap((p, i) => (p.superset_group === undefined && exOf(p) ? [i] : []));
+    for (let guard = 0; guard < 8; guard++) {
+      const idx = leftovers();
+      let done = false;
+      for (let a = 0; a < idx.length && !done; a++) {
+        for (let b = a + 1; b < idx.length && !done; b++) {
+          // replace the later one first, so the session keeps its opening lift
+          for (const [keep, swap] of [
+            [idx[a]!, idx[b]!],
+            [idx[b]!, idx[a]!],
+          ] as const) {
+            const kept = out[keep]!;
+            const old = out[swap]!;
+            if (old.loved) continue;
+            const keptEx = exOf(kept)!;
+            const oldEx = exOf(old)!;
+            const alt = alternativesFor(oldEx, equipment, avoided).find(
+              (e) => !used.has(e.id) && pairScore(keptEx, e) !== null,
+            );
+            if (!alt) continue;
+            const entry = makeEntry(alt, alt.compound);
+            const without = out.filter((_, i) => i !== swap);
+            if (overSessionCap([...without, entry])) continue;
+            used.add(alt.id);
+            group += 1;
+            const first = Math.min(keep, swap);
+            const [pa, pb, ea, eb] =
+              keep < swap ? [kept, entry, keptEx, alt] : [entry, kept, alt, keptEx];
+            const pair = makePair(pa, pb, ea, eb, group);
+            out = out.flatMap((p, i) => (i === first ? pair : i === keep || i === swap ? [] : [p]));
+            done = true;
+            break;
+          }
+        }
+      }
+      if (!done) break;
+    }
+    return out;
+  };
+
   const exOf = (p: PlannedExercise) => EXERCISES.find((e) => e.id === p.exercise_id);
-  let paired = applySupersets(plan);
+  let paired = pairLeftovers(applySupersets(plan));
 
   // pairs run intensity-based rounds, so rebalance the block count to the budget —
   // drop the last block that contains no loved exercise
@@ -626,21 +703,35 @@ export function generateWorkout({
     fillGuard++;
 
     const picks: { entry: PlannedExercise; ex: Exercise }[] = [];
-    for (let k = 0; k < 2; k++) {
-      let choice: Exercise | undefined;
-      for (let t = 0; t < targets.length; t++) {
-        const m = pickTarget();
-        if (!m) break;
-        choice = nextChoice(m, false) ?? nextChoice(m, true);
-        if (choice) {
-          hits.set(m, hits.get(m)! + 1);
-          break;
-        }
-        dry.add(m);
+    for (let t = 0; t < targets.length; t++) {
+      const m = pickTarget();
+      if (!m) break;
+      const choice = nextChoice(m, false) ?? nextChoice(m, true);
+      if (choice) {
+        hits.set(m, hits.get(m)! + 1);
+        used.add(choice.id);
+        picks.push({ entry: makeEntry(choice, choice.compound), ex: choice });
+        break;
       }
-      if (!choice) break;
-      used.add(choice.id);
-      picks.push({ entry: makeEntry(choice, choice.compound), ex: choice });
+      dry.add(m);
+    }
+    // The partner has to pair with the first pick (no shared station). Try
+    // the targets from least served; one with nothing compatible isn't dry,
+    // it just can't partner this pick.
+    if (picks.length === 1) {
+      const first = picks[0]!.ex;
+      const ok = (e: Exercise) => pairScore(first, e) !== null;
+      const byLoad = targets
+        .filter((m) => !dry.has(m))
+        .sort((a, b) => load(a) - load(b) || Number(isFocusTarget(b)) - Number(isFocusTarget(a)));
+      for (const m of byLoad) {
+        const choice = nextChoice(m, false, ok) ?? nextChoice(m, true, ok);
+        if (!choice) continue;
+        hits.set(m, hits.get(m)! + 1);
+        used.add(choice.id);
+        picks.push({ entry: makeEntry(choice, choice.compound), ex: choice });
+        break;
+      }
     }
 
     if (picks.length === 2) {
@@ -678,6 +769,17 @@ export function generateWorkout({
   const grouped = paired.filter((p) => p.superset_group !== undefined);
   const straight = paired.filter((p) => p.superset_group === undefined);
   paired = [...grouped, ...straight];
+
+  // Number the supersets in the order they're done: a pair formed by
+  // pairLeftovers takes the place of its first exercise but got the next
+  // free number, so a session could open with "Superset 2".
+  const renumber = new Map<number, number>();
+  for (const p of paired)
+    if (p.superset_group !== undefined && !renumber.has(p.superset_group))
+      renumber.set(p.superset_group, renumber.size + 1);
+  paired = paired.map((p) =>
+    p.superset_group === undefined ? p : { ...p, superset_group: renumber.get(p.superset_group)! },
+  );
 
   return withVolume(paired);
 }

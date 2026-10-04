@@ -1207,6 +1207,13 @@ function WorkoutHome() {
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
+        pairedExerciseId={(() => {
+          const group = swapIndex !== null ? plan?.[swapIndex]?.superset_group : undefined;
+          if (group === undefined) return null;
+          return (
+            plan?.find((p, i) => i !== swapIndex && p.superset_group === group)?.exercise_id ?? null
+          );
+        })()}
         onClose={() => setSwapIndex(null)}
         onPick={(ex) => {
           setPlan((cur) =>
