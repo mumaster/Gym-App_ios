@@ -5,6 +5,7 @@ import {
   allowedDatesFor,
   anchorFor,
   backfillDoneOn,
+  cycleEnding,
   dayTypeFor,
   doneDate,
   overdueDays,
@@ -12,6 +13,7 @@ import {
   plannedDate,
   resortRotation,
   shiftRemaining,
+  skipRestOfCycle,
   type Rotation,
 } from "../schedule";
 import type { Workout } from "../types";
@@ -58,9 +60,54 @@ describe("missed sessions", () => {
     let r = shiftRemaining(base, 4); // Fri / Sun / Tue
     expect(keys(r)).toEqual(["2026-09-25", "2026-09-27", "2026-09-29"]);
     for (const day of ["2026-09-25", "2026-09-27", "2026-09-29"]) {
-      r = advanceRotation(r, d(day)).rotation;
+      r = advanceRotation(r, d(day), d(day)).rotation;
     }
-    expect(r.anchor).toBe("2026-10-05");
+    // The next cycle stays in the week of 28 September (it used to skip to
+    // 5 October): Monday's push moves to the day after Tuesday's legs.
+    expect(r.anchor).toBe("2026-09-28");
+    expect(keys(r)).toEqual(["2026-09-30", "2026-10-01", "2026-10-02"]);
+  });
+});
+
+// Upper / lower on Mon / Tue / Thu / Fri; Friday's lower body was missed.
+const upperLower: Rotation = {
+  schedule: [
+    { dow: 1, dayId: "upper" },
+    { dow: 2, dayId: "lower" },
+    { dow: 4, dayId: "upper" },
+    { dow: 5, dayId: "lower" },
+  ],
+  cyclePosition: 3,
+  anchor: "2026-09-21",
+};
+
+describe("the end of the week", () => {
+  it("shows next week once this week's last session is today or missed", () => {
+    expect(cycleEnding(upperLower, d("2026-09-27"))).toBe(true);
+    expect(cycleEnding(upperLower, d("2026-09-25"))).toBe(true);
+    expect(cycleEnding(upperLower, d("2026-09-24"))).toBe(false);
+  });
+
+  it("lets next week's upper body go on Monday, skipping the missed lower body", () => {
+    const next = skipRestOfCycle(upperLower, d("2026-09-27"));
+    expect(next.cyclePosition).toBe(0);
+    expect(keys(next)).toEqual(["2026-09-28", "2026-09-29", "2026-10-01", "2026-10-02"]);
+    expect(allowedDatesFor(next, 0, d("2026-09-27")).map(dayKeyFromDate)).toEqual([
+      "2026-09-27",
+      "2026-09-28",
+    ]);
+  });
+
+  it("keeps next week when the missed session is done on Monday", () => {
+    const r = advanceRotation(upperLower, d("2026-09-28"), d("2026-09-28")).rotation;
+    expect(r.anchor).toBe("2026-09-28");
+    expect(keys(r)).toEqual(["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"]);
+  });
+
+  it("starts next week on its usual Monday when the missed session is skipped then", () => {
+    const r = advanceRotation(upperLower, d("2026-09-28")).rotation;
+    expect(r.anchor).toBe("2026-09-28");
+    expect(keys(r)).toEqual(["2026-09-28", "2026-09-29", "2026-10-01", "2026-10-02"]);
   });
 });
 

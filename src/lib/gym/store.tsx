@@ -40,11 +40,14 @@ import { canVibrate, markHaptic, pulseTappedControl, switchTick } from "./tapFee
 import {
   advanceRotation,
   anchorFor,
+  daysBetween,
+  plannedDate,
   moveSession,
   parseDayKey,
   resortRotation,
   backfillDoneOn,
   shiftRemaining,
+  skipRestOfCycle,
   weekIndex,
   type Rotation,
 } from "./schedule";
@@ -281,6 +284,11 @@ function renumber(sets: LoggedSet[]): LoggedSet[] {
 
 export type RotationKind = "program" | "weeklyScheme";
 
+/** Moves a session only when the day changes, so picking the day it's
+ *  already planned on leaves no override behind. */
+const moveIfChanged = <R extends Rotation>(r: R, index: number, date: Date): R =>
+  daysBetween(plannedDate(r, index), date) === 0 ? r : moveSession(r, index, date);
+
 function updateRotation(
   s: GymState,
   kind: RotationKind,
@@ -508,6 +516,9 @@ interface Ctx extends GymState {
   skipScheduledSession: (kind: RotationKind) => void;
   shiftScheduledSessions: (kind: RotationKind, delta: number) => void;
   moveScheduledSession: (kind: RotationKind, index: number, dateKey: string) => void;
+  /** Skips what's left of this week and moves next week's session `index`
+   *  to `dateKey` (Adjust this week's "Next week" list). */
+  moveNextWeekSession: (kind: RotationKind, index: number, dateKey: string) => void;
   resetScheduledWeek: (kind: RotationKind) => void;
   saveWorkoutTemplate: (
     name: string,
@@ -1367,6 +1378,23 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) =>
           updateRotation(s, kind, (r) => moveSession(r, index, parseDayKey(dateKey))),
         ),
+      moveNextWeekSession: (kind, index, dateKey) =>
+        setState((s) => {
+          const today = new Date();
+          const date = parseDayKey(dateKey);
+          if (kind === "program") {
+            if (!s.program) return s;
+            let program = s.program;
+            const left = program.schedule.length - program.cyclePosition;
+            for (let i = 0; i < left; i++) program = advanceProgram(program, today);
+            return { ...s, program: moveIfChanged(program, index, date) };
+          }
+          if (!s.weeklyScheme) return s;
+          return {
+            ...s,
+            weeklyScheme: moveIfChanged(skipRestOfCycle(s.weeklyScheme, today), index, date),
+          };
+        }),
       resetScheduledWeek: (kind) =>
         setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 
