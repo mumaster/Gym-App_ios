@@ -14,6 +14,7 @@ import {
   resortRotation,
   shiftRemaining,
   skipRestOfCycle,
+  upcomingSessionDates,
   type Rotation,
 } from "../schedule";
 import type { Workout } from "../types";
@@ -126,6 +127,59 @@ describe("resortRotation", () => {
     );
     expect(moved.schedule.map((s) => s.dayId)).toEqual(["pull", "legs", "push"]);
     expect(moved.cyclePosition).toBe(0);
+  });
+});
+
+describe("upcoming sessions (the week strip)", () => {
+  const ks = (ds: Date[]) => ds.map(dayKeyFromDate);
+
+  it("continues into the next cycle", () => {
+    // Pull is next on Wednesday; next week's push/pull/legs follow.
+    const r = { ...base, cyclePosition: 1 };
+    expect(ks(upcomingSessionDates(r, d("2026-10-04"), d("2026-09-22")))).toEqual([
+      "2026-09-23",
+      "2026-09-25",
+      "2026-09-28",
+      "2026-09-30",
+      "2026-10-02",
+    ]);
+  });
+
+  it("fills the rest of a week that a spilled cycle ends in", () => {
+    // Upper/lower Mon/Tue/Thu/Fri; last week's Thursday and Friday moved to
+    // this Tuesday and Wednesday. Reported: only those two showed.
+    const ul: Rotation = {
+      schedule: [
+        { dow: 1, dayId: "upper" },
+        { dow: 2, dayId: "lower" },
+        { dow: 4, dayId: "upper" },
+        { dow: 5, dayId: "lower" },
+      ],
+      cyclePosition: 2,
+      anchor: "2026-09-28",
+      dayOverrides: { 2: 8, 3: 9 },
+    };
+    const today = d("2026-10-05");
+    expect(ks(upcomingSessionDates(ul, d("2026-10-11"), today))).toEqual([
+      "2026-10-06",
+      "2026-10-07",
+      // The next cycle stays in this week (see "the end of the week").
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-10",
+      "2026-10-11",
+    ]);
+    expect(
+      dayTypeFor(d("2026-10-09"), { rotation: ul, workouts: [], activeWorkout: null }, today),
+    ).toBe("training");
+  });
+
+  it("moves missed sessions up to today, like 'Do it today'", () => {
+    expect(ks(upcomingSessionDates(base, d("2026-09-27"), d("2026-09-23")))).toEqual([
+      "2026-09-23",
+      "2026-09-25",
+      "2026-09-27",
+    ]);
   });
 });
 

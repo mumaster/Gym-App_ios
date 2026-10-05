@@ -235,12 +235,38 @@ export function resortRotation<R extends Rotation>(r: R, today = new Date()): R 
     : next;
 }
 
-/** True when a remaining session of `r` is planned on `date`. */
-export function hasPlannedSession(r: Rotation, date: Date): boolean {
-  for (let i = r.cyclePosition; i < r.schedule.length; i++) {
-    if (daysBetween(plannedDate(r, i), date) === 0) return true;
+/**
+ * The days sessions are planned on from today through `until`: the rest of
+ * this cycle, then the cycles after it, as `advanceRotation` would plan them
+ * if every session is done on its planned day. Missed sessions are first
+ * moved up to today, as "Do it today" does. Without this, the week strip
+ * showed only the current cycle, so at the end of a cycle that spilled into
+ * a new week (two leftovers on Tuesday and Wednesday, say) the rest of that
+ * week looked empty until the cycle wrapped (reported).
+ */
+export function upcomingSessionDates(r: Rotation, until: Date, today = new Date()): Date[] {
+  const out: Date[] = [];
+  if (!r.schedule.length) return out;
+  const overdue = overdueDays(r, today);
+  let cur: Rotation = overdue > 0 ? shiftRemaining(r, overdue) : r;
+  let prev = addDays(startOfDay(today), -1);
+  // A cycle has at most 7 sessions; ~5 weeks of them is plenty for any range asked.
+  for (let n = 0; n < 40; n++) {
+    let date = plannedDate(cur, cur.cyclePosition);
+    if (daysBetween(prev, date) <= 0) date = addDays(prev, 1);
+    if (daysBetween(date, until) < 0) break;
+    out.push(date);
+    cur = advanceRotation(cur, date, date).rotation;
+    prev = date;
   }
-  return false;
+  return out;
+}
+
+/** True when a session of `r` is planned on `date` (today or later), in
+ *  this cycle or a later one (`upcomingSessionDates`). */
+export function hasPlannedSession(r: Rotation, date: Date, today = new Date()): boolean {
+  if (daysBetween(today, date) < 0) return false;
+  return upcomingSessionDates(r, date, today).some((d) => daysBetween(d, date) === 0);
 }
 
 export type DayType = "training" | "rest";
@@ -260,7 +286,7 @@ export function dayTypeFor(
   const key = dayKeyFromDate(date);
   if (activeWorkout && dayKey(activeWorkout.date) === key) return "training";
   if (workouts.some((w) => dayKey(w.date) === key)) return "training";
-  if (rotation && daysBetween(today, date) >= 0 && hasPlannedSession(rotation, date)) {
+  if (rotation && hasPlannedSession(rotation, date, today)) {
     return "training";
   }
   return "rest";

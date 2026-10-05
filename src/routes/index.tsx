@@ -981,7 +981,8 @@ function WeekStrip({
     const key = keyOf(date);
     const trained = trainedKeys.has(key);
     const future = daysBetween(today, date) >= 0;
-    const planned = !trained && future && rotation != null && hasPlannedSession(rotation, date);
+    const planned =
+      !trained && future && rotation != null && hasPlannedSession(rotation, date, today);
     const cardioDone = cardioSessionsOn(cardioSessions, key);
     const cardioLeft = remainingCardioOn(cardioPlan, cardioSessions, date, today);
     return {
