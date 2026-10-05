@@ -582,6 +582,17 @@ export function AddFoodSheet({
     </label>
   );
 
+  /** Scan from the search results: a product the search doesn't know. */
+  const scanButton = (
+    <button
+      onClick={startScan}
+      className="glass flex min-h-[52px] w-full items-center gap-2 rounded-2xl px-4 text-left active:scale-[0.985]"
+    >
+      <ScanBarcode className="size-5 shrink-0 text-primary-text" />
+      <span className="min-w-0 truncate text-[14px] font-bold">{t.addFood.scanFood}</span>
+    </button>
+  );
+
   return (
     <>
       <BottomSheet
@@ -627,6 +638,10 @@ export function AddFoodSheet({
             )}
             {searching ? (
               <div className="space-y-4">
+                {/* Swapping starts with the written name searched, which
+                    used to hide the scan button: a packaged replacement is
+                    often quickest from its label (asked for). */}
+                {swap ? scanButton : null}
                 {savedMatches.length ? (
                   <FoodList
                     title={t.addFood.yourFoods}
@@ -682,6 +697,7 @@ export function AddFoodSheet({
                     {t.addFood.enterAsNew(q)}
                   </span>
                 </button>
+                {swap ? null : scanButton}
                 {onIngredientCaptured ? null : (
                   <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
                 )}
