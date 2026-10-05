@@ -37,7 +37,8 @@
  *   --strict  cut-off text fails the check too
  *   --verbose list every finding (otherwise the first six)
  *   --open    a control's name (its aria-label or text, from the start): tap
- *             it on each route and check the sheet it opens, scrolled to the
+ *             it on each route and check the sheet it opens ("A>B" taps A,
+ *             then B in the sheet A opened), scrolled to the
  *             top and to the end, instead of the page
  *   --system-font  keep Chromium's fallback font; by default Liberation Sans
  *             is used, whose widths are close to SF's (the fallback is wider
@@ -597,7 +598,9 @@ for (const [lang, scheme] of combos) {
       // --open: tap the control with that name (aria-label or text, from the
       // start, any case) and check the sheet it opens instead of the page.
       let openFailed = false;
-      if (sheet) {
+      // "Add food>Type or speak" taps each in turn, for a sheet opened from
+      // another sheet.
+      for (const label of sheet ? sheet.split(">").map((l) => l.trim()) : []) {
         openFailed = !(await page.evaluate((label) => {
           const want = label.toLowerCase();
           const hit = [...document.querySelectorAll("button, a[href], [role=button]")].find((el) =>
@@ -608,8 +611,9 @@ for (const [lang, scheme] of combos) {
           );
           hit?.click();
           return !!hit;
-        }, sheet));
+        }, label));
         await page.waitForTimeout(700);
+        if (openFailed) break;
       }
       const scope = sheet ? "[role=dialog]" : undefined;
       const top = await page.evaluate(inspect, w);

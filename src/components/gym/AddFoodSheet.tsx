@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Camera,
   Check,
   Keyboard,
+  Mic,
   Plus,
   ScanBarcode,
   Search,
@@ -80,6 +82,8 @@ export function AddFoodSheet({
   initialMeal,
   onCreateMeal,
   onCreateRecipe,
+  swap,
+  onReadList,
 }: {
   open: boolean;
   onClose: () => void;
@@ -99,6 +103,15 @@ export function AddFoodSheet({
    *  (the meal builder's own ingredient picker). */
   onCreateMeal?: () => void;
   onCreateRecipe?: () => void;
+  /** Swapping a food on a list (FoodListSheet, a recipe's ingredients): the
+   *  search starts from what was written, and the grams already there stay
+   *  as they are, whichever food is picked (asked for: a wrong match is
+   *  changed without losing the weighed amount). With `grams` null the
+   *  picked food brings its own. Needs `onIngredientCaptured`. */
+  swap?: { query: string; grams: number | null } | undefined;
+  /** Open the list reader (FoodListSheet) on a photo or on typed text. The
+   *  parent closes this sheet first, like the builders. */
+  onReadList?: (start: "photo" | "text") => void;
 }) {
   const {
     addFoodEntry,
@@ -123,6 +136,8 @@ export function AddFoodSheet({
     (key) => ({ key, label: t.nutrients[key], unit: NUTRIENT_UNITS[key] }),
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  /** Grams that a swap keeps, whatever food is picked. */
+  const swapGrams = swap?.grams ?? null;
 
   const [step, setStep] = useState<Step>("start");
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -169,6 +184,12 @@ export function AddFoodSheet({
       alive = false;
     };
   }, [open, nevoFoods]);
+
+  // A swap starts searching from what was written.
+  useEffect(() => {
+    if (open && swap) setQuery(swap.query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, swap?.query]);
 
   // A new entry goes to the meal it was opened for (a meal's "+"), else the
   // one the time of day suggests.
@@ -280,7 +301,7 @@ export function AddFoodSheet({
     haptic([20, 30]);
     const food: MealIngredient = {
       name: row.name,
-      grams: row.grams,
+      grams: swapGrams ?? row.grams,
       per100: row.per100,
       ...(row.nevo ? { nevo: row.nevo } : {}),
     };
@@ -305,6 +326,7 @@ export function AddFoodSheet({
     haptic(15);
     // From a search with no match, the typed words become the name.
     setName(query.trim());
+    if (swapGrams != null) setGrams(String(swapGrams));
     setNevoSource(null);
     setPer100(emptyPer100);
     setUnmatched(new Set());
@@ -316,7 +338,7 @@ export function AddFoodSheet({
   const startFromRecent = (entry: ListFood) => {
     haptic(15);
     setName(entry.name);
-    setGrams(String(entry.grams));
+    setGrams(String(swapGrams ?? entry.grams));
     setGramsTouched(true);
     setPer100(per100ToDraft(entry.per100));
     setUnmatched(new Set());
@@ -332,8 +354,8 @@ export function AddFoodSheet({
   const startFromNevo = (food: NevoFood) => {
     haptic(15);
     setName(nevoName(food, language));
-    setGrams("");
-    setGramsTouched(false);
+    setGrams(swapGrams != null ? String(swapGrams) : "");
+    setGramsTouched(swapGrams != null);
     setPer100(per100ToDraft(food.per100));
     setUnmatched(food.saltKnown ? new Set() : new Set<MacroKey>(["salt"]));
     setSuggestedGrams(null);
@@ -372,7 +394,8 @@ export function AddFoodSheet({
     setNevoSource(null);
     setBarcode(scannedBarcode);
     setName(result.name?.trim() || t.addFood.scannedFoodFallback);
-    setSuggestedGrams(!gramsTouched ? result.servingSizeGrams : null);
+    if (swapGrams != null) setGrams(String(swapGrams));
+    setSuggestedGrams(!gramsTouched && swapGrams == null ? result.servingSizeGrams : null);
     setStep("review");
   };
 
@@ -565,11 +588,13 @@ export function AddFoodSheet({
         open={open}
         onClose={close}
         title={
-          onIngredientCaptured
-            ? t.addFood.addIngredient
-            : editEntry
-              ? t.addFood.editFood
-              : t.addFood.addFood
+          swap
+            ? t.addFood.swapFood
+            : onIngredientCaptured
+              ? t.addFood.addIngredient
+              : editEntry
+                ? t.addFood.editFood
+                : t.addFood.addFood
         }
         toolbar={step === "start" ? searchField : undefined}
         fullHeight={step === "start" && searchMode}
@@ -691,6 +716,25 @@ export function AddFoodSheet({
                     </span>
                   </button>
                 </div>
+                {onReadList && showSaved ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ["photo", Camera, t.addFood.readList],
+                        ["text", Mic, t.addFood.typeOrSpeak],
+                      ] as const
+                    ).map(([start, Icon, label]) => (
+                      <button
+                        key={start}
+                        onClick={() => openBuilder(() => onReadList(start))}
+                        className="glass flex min-h-[52px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
+                      >
+                        <Icon className="size-5 shrink-0 text-primary-text" />
+                        <span className="text-[13px] font-bold leading-tight">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {favoriteFoods.length ? (
                   <FoodList
                     title={t.addFood.favorites}
@@ -864,8 +908,9 @@ export function AddFoodSheet({
                 inputMode="decimal"
                 type="text"
                 value={grams}
+                readOnly={swapGrams != null}
                 autoFocus={nevoSource !== null && grams === ""}
-                onFocus={selectOnFocus}
+                onFocus={swapGrams != null ? undefined : selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                   setGrams(e.target.value);
@@ -874,6 +919,11 @@ export function AddFoodSheet({
                 className="tabular h-9 w-full min-w-0 flex-1 bg-transparent text-right text-[17px] font-bold text-foreground outline-none"
               />
             </label>
+            {swapGrams != null ? (
+              <p className="px-1 text-[12px] leading-snug text-muted-foreground">
+                {t.addFood.swapKeepsGrams}
+              </p>
+            ) : null}
 
             {/* What this portion adds up to, right under the grams that set
                 it and above the per-100 g values it's worked out from. */}
@@ -959,7 +1009,11 @@ export function AddFoodSheet({
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
               >
                 <Check className="size-5" />{" "}
-                {onIngredientCaptured ? t.addFood.addIngredient : t.addFood.addToLog}
+                {swap
+                  ? t.addFood.useThisFood
+                  : onIngredientCaptured
+                    ? t.addFood.addIngredient
+                    : t.addFood.addToLog}
               </button>
             )}
           </div>
@@ -1076,7 +1130,7 @@ function FoodList({
   );
 }
 
-function MealPicker({
+export function MealPicker({
   label,
   meal,
   onPick,

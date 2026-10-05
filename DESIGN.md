@@ -182,23 +182,26 @@ Reuse these before building anything new. A new pattern that will appear twice g
 - **Empty states:** one muted line saying what goes here ("Nothing yet"), plus the action that fills it if there is one. No illustrations, no exclamation marks.
 - **Loading:** `DumbbellLoader` (never a spinner of your own). A wait under about 300 ms gets no loader.
 - **Lists of things you delete:** `SwipeToDelete`, plus a delete button in the item's own editor for keyboard and screen-reader users.
+- **Swapping a food, keeping its grams:** a food on a list (the list reader's check screen, a recipe's ingredients) is a row-wide button with `ArrowLeftRight` in the accent after its name; the grams sit in their own field beside it. Swapping opens Add food in swap mode, with the search filled in and the grams read-only, so a wrong match never changes a weighed amount. A line that still needs a food reads "Pick a food" in `text-warning-text`.
 - **Info:** a small ⓘ button opens the longer explanation. Keep the card itself to one line of explanation at most.
 
 ## 8. Icons
 
 Use lucide-react, at 16–20 px in rows and badges and 22–24 px in the tab bar, with a stroke width of 2 (2.2–2.5 on a small solid badge). Each concept has one icon; reuse it everywhere that concept appears:
 
-| Concept       | Icon                                |
-| ------------- | ----------------------------------- |
-| Water         | `Droplet`                           |
-| Coffee        | `Coffee`                            |
-| Alcohol       | `Beer` / `Wine`                     |
-| Strength      | `Dumbbell`                          |
-| Cardio        | `CARDIO_ICONS` (per activity)       |
-| Streak        | `Flame`                             |
-| Records       | `Trophy`                            |
-| Meals         | `Sunrise`, `Sun`, `Moon`, `Cookie`  |
-| Exercises tab | `BookOpen` (not a magnifying glass) |
+| Concept       | Icon                                                            |
+| ------------- | --------------------------------------------------------------- |
+| Water         | `Droplet`                                                       |
+| Coffee        | `Coffee`                                                        |
+| Alcohol       | `Beer` / `Wine`                                                 |
+| Strength      | `Dumbbell`                                                      |
+| Cardio        | `CARDIO_ICONS` (per activity)                                   |
+| Streak        | `Flame`                                                         |
+| Records       | `Trophy`                                                        |
+| Meals         | `Sunrise`, `Sun`, `Moon`, `Cookie`                              |
+| Exercises tab | `BookOpen` (not a magnifying glass)                             |
+| Swap a food   | `ArrowLeftRight`                                                |
+| Read a note   | `NotebookPen`; a plate photo `Camera`; typing or speaking `Mic` |
 
 A decorative icon gets `aria-hidden`.
 

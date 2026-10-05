@@ -18,7 +18,8 @@ import {
 import { AddFoodSheet } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
-import { CreateRecipeSheet } from "../components/gym/CreateRecipeSheet";
+import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
+import { FoodListSheet } from "../components/gym/FoodListSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
@@ -124,6 +125,13 @@ function NutritionScreen() {
     meal: MealType;
   } | null>(null);
   const [createRecipeOpen, setCreateRecipeOpen] = useState(false);
+  /** A recipe pre-filled from the list reader ("Save as a recipe"). */
+  const [recipeSeed, setRecipeSeed] = useState<RecipeSeed | null>(null);
+  /** The list reader (a note, a plate or typed words), opened from Add food. */
+  const [listSheet, setListSheet] = useState<{
+    start: "photo" | "text";
+    meal?: MealType | undefined;
+  } | null>(null);
   const todayKey = dayKeyFromDate(new Date());
   /** The day shown. Only today allows adding. */
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -413,6 +421,24 @@ function NutritionScreen() {
         }}
         onCreateRecipe={() => {
           setFoodSheet(null);
+          setRecipeSeed(null);
+          setCreateRecipeOpen(true);
+        }}
+        onReadList={(start) => {
+          const meal = foodSheet && !("id" in foodSheet) ? foodSheet.meal : undefined;
+          setFoodSheet(null);
+          setListSheet({ start, meal });
+        }}
+      />
+      <FoodListSheet
+        open={listSheet !== null}
+        start={listSheet?.start ?? "photo"}
+        target="log"
+        initialMeal={listSheet?.meal}
+        onClose={() => setListSheet(null)}
+        onSaveAsRecipe={(ingredients, meta) => {
+          setListSheet(null);
+          setRecipeSeed({ name: meta.title ?? "", servings: meta.servings, ingredients });
           setCreateRecipeOpen(true);
         }}
       />
@@ -452,7 +478,14 @@ function NutritionScreen() {
           setMealSeed(null);
         }}
       />
-      <CreateRecipeSheet open={createRecipeOpen} onClose={() => setCreateRecipeOpen(false)} />
+      <CreateRecipeSheet
+        open={createRecipeOpen}
+        seed={recipeSeed}
+        onClose={() => {
+          setCreateRecipeOpen(false);
+          setRecipeSeed(null);
+        }}
+      />
     </Screen>
   );
 }

@@ -308,6 +308,48 @@ Food without a barcode or label (a banana, broccoli, rice, eggs, chicken) comes 
 
 `Recipe` (`lib/gym/nutrition.ts`) is deliberately a different concept from the `MealTemplate` above it, not a rename of it: a `MealTemplate` logs every ingredient as its own `FoodEntry`, unscaled, every time — it's "this exact combo, again." A `Recipe` adds `servings` (how many the whole batch yields) and is meant for a home-cooked batch eaten across several sittings: `recipePerServing()` divides the ingredients' combined `dailyTotals()` by `servings` to get one serving's macros, and `store.tsx`'s `logRecipe(id, servings, meal)` writes a _single_ `FoodEntry` for however many servings were actually eaten — named after the recipe, not one row per ingredient — rather than the whole-batch entries `logMealTemplate` writes. That entry reuses the existing `grams`/`per100` scaling machinery (`scaledMacros`) purely as an encoding trick: `grams` is set to `servings * 100` and `per100` to the recipe's per-serving macros, so `N` servings scale out to exactly `N ×` per-serving macros through the same math every other food entry already goes through — there's no parallel "servings-based" entry shape to keep in sync elsewhere in the app (history, daily totals, the Home dashboard's nutrition tile all keep working unmodified). `CreateRecipeSheet.tsx` mirrors `CreateMealSheet.tsx` almost exactly (same ingredient-building-via-`AddFoodSheet` pattern) plus a servings stepper; the Recipes list in the Add food sheet shows each recipe's per-serving calories and a one-tap "log 1 serving" button — logging more than one serving at once isn't a separate flow, it's just editing that logged entry's `grams` afterward (200 = 2 servings, since `per100` already means "per serving").
 
+### Reading foods with AI: notes, plates and typed text
+
+`FoodListSheet.tsx` (asked for: weigh your ingredients, write them on paper, and scan that; log by typing or speaking; a photo of a plate). Add food has two buttons under scan/manual, "Scan a note, recipe or plate" and "Type or speak" (`onReadList`; the parent closes Add food first, like the builders), and the recipe builder has "Scan ingredients from paper". The sheet offers three sources:
+
+- **Note or recipe:** a handwritten note, a recipe or a screenshot with grams;
+- **Photo of a plate:** names the foods, and the grams are always left empty, since a photo's portion estimate isn't reliable;
+- **Type or speak:** a text field; speaking is the iPhone keyboard's own microphone, so no audio handling.
+
+**What Gemini does, and what it doesn't.** `readFoodList` (`foodListScan.ts`, a server function on the same `GEMINI_API_KEY` and `gemini-3.5-flash-lite` as the label reader; the prompt and call are in `foodListGemini.ts`, imported inside the handler so neither reaches the client) only copies and matches:
+
+- each line as written;
+- its amount and unit exactly as written (never converted, calculated or estimated);
+- which food it is, as an id from the NEVO table (`n:<code>`, all 1,486 Dutch names sent in the prompt, about 12k tokens) or from your own foods (`o:<index>`, favourites and "your foods", up to 200 names).
+
+The prompt prefers the raw, uncooked or unprepared NEVO variant ("rauw", "ongekookt", "onbereid"), because you weigh raw (asked for: "currently only raw"); a line that says it was cooked gets the cooked one. A combination ("boterham met pindakaas") is one line per food. Titles, totals and instructions are skipped; a recipe's title and servings come back for saving it as a recipe. A plate's words follow the app's language. `temperature: 0`.
+
+**What the app does** (`foodList.ts`, tests `foodList.test.ts`):
+
+- `toGrams`: g/gr/gram, kg, mg, the Dutch "ons" (100 g) and "pond" (500 g), and ml/cl/dl/l at 1 ml ≈ 1 g (the app's own approximation, as on the alcohol card; the line still shows the written "200 ml"). A bare number on a weighed note is grams. Counts and spoons ("2 eieren", "1 el") are never turned into grams: the line shows "2 eieren, fill in grams".
+- `resolveMatch`: an unknown code or index becomes a line without a food ("Pick a food"), never a wrong one.
+- Values come from the matched NEVO food (its NEVO mark kept, so the reference shows) or your own food.
+
+**The check screen keeps a line's food and grams apart** (asked for: a wrong match must not lose the weighed amount). Each line (`FoodListLine`: what was read, the grams as typed, the amount when not in grams, the food) shows:
+
+- the food (two lines at most) and "Read: “kipfilet 152 gram”";
+- `ArrowLeftRight` to swap;
+- a grams field;
+- ✕ to remove the line;
+- its kcal and macros underneath.
+
+**Swapping** opens `AddFoodSheet` in swap mode (`swap: { query, grams }`): the search starts from what was read, and every way of picking a food (NEVO, your foods, the one-tap "+", a barcode, a label, manual entry) keeps the line's grams. The grams field there is read-only, with a line saying so. Only the food changes; a line with no grams yet takes the picked food's own. The recipe builder's ingredients have the same swap button (tap the ingredient), keeping their grams.
+
+**Finishing.** "+ Add a food" adds a line through Add food. Lines missing a food or grams block the main button, with a note saying how many. Log mode has a meal picker, "Log 5 foods" (one `addFoodEntry` each, same `logged_at`) and "Save as a recipe" (opens `CreateRecipeSheet` with `seed`: title, servings, ingredients). From the recipe builder the button adds the ingredients. Done saves like the main button only when every line is complete; a half-checked list is let go rather than logged in part. A 429 from Gemini shows "daily limit reached".
+
+**Verified** with real Gemini calls:
+
+- typed Dutch ("2 eieren, 150 g kwark van arla, kipfilet 152 gram en 75g rijst, glas melk 200 ml") in 1.7 s: eggs raw (no grams), your own "Arla Protein kwark" at 150, Kipfilet rauw 152, Rijst witte rauw 75, Melk volle 200;
+- a generated handwritten note ("Pasta pesto - 3 porties", eight lines) in 2.9 s: title and 3 servings, every gram copied, raw variants, pesto as "Pick a food" (spreads and sauces aren't in the NEVO groups the app includes);
+- a photo of many foods: 21 named and matched, no amounts.
+
+In Chromium at 390×844 (nl/dark) and 375×812 (nl/light, en/light): swapping the rice to Rijst zilvervlies- rauw kept 75 g; after filling the eggs' grams, five foods logged with their NEVO marks; a note saved as a recipe with its title and servings, and swapping an ingredient there kept its grams. `npm run ui-check --open "Add food>Type or speak"` (a chain; `--open` now takes "A>B") passes in both languages at all four sizes, as do the photo choices and Add food. No page errors beyond the known first-visit light-mode cookie mismatch.
+
 ### Water tracking
 
 `WaterEntry` (`lib/gym/nutrition.ts`, `{id, ml, logged_at}`) is deliberately its own minimal shape rather than bolted onto `FoodEntry` or `NutritionGoals` — water isn't a macro, so forcing it through either would mean fields that don't apply everywhere else those types are used. `store.tsx` holds `waterEntries` and an optional `waterGoalMl`, with `logWater(ml)`/`removeWaterEntry(id)` actions; the goal itself has no dedicated setter and is just written through the store's existing generic `update({ waterGoalMl })`, the same way `supersetsEnabled` and `nutritionProfile` are — a single optional scalar doesn't need its own action. `entriesForDay` (previously typed to `FoodEntry[]` only) is now generic over any `{ logged_at: string }[]`, so the Nutrition screen's existing `dayOffset` day-picker applies to water the same way it already does to food, with no parallel filtering logic. The Water card sits under the food log: a running total, a goal-relative progress bar, four quick-add buttons (250ml/500ml/750ml/1L), and — only on today, mirroring "Add food"/"Meals" — a horizontally-scrolling strip of removable chips, one per logged entry. Water's progress bar and quick-add icons originally used a fixed `sky-400` blue everywhere, on the same "content-intrinsic color" reasoning `SplashScreen`'s sparks and `Confetti`'s palette already establish — but that read as clashing chrome once `WaterTile` made water a prominent, always-visible Home tile rather than an occasional pill, especially against a non-blue accent. Reverted to following the accent almost everywhere: the progress bar (both `/nutrition`'s Water card and `WaterTile`) follows the accent, and every quick-add button/icon (both places) is accent-colored rather than fixed blue — though the two no longer share one literal class string, see "Icon badges are solid-fill, not tinted" above: `WaterTile`'s quick-add pills went solid `bg-primary`, then tonal `bg-primary/15` in the Home redesign, then outlined in the design pass. The one deliberate holdout is `WaterTile`'s own header badge icon (the small circled `Droplet` next to the total, on Home only) — still fixed `sky-400`, so water keeps exactly one reliable "this is water" visual anchor at a glance across any accent, the same job the old blanket rule used to do for the whole feature. Nowhere else — not the ghost watermark, not `/nutrition`'s Water card (which has no equivalent badge icon to begin with) — keeps the fixed blue.

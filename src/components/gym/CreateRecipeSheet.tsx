@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Check, Minus, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeftRight, Check, Minus, NotebookPen, Plus, Trash2 } from "lucide-react";
 import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
+import { FoodListSheet } from "./FoodListSheet";
 import { Card } from "./Screen";
 import { useTranslation } from "../../lib/gym/i18n";
 import {
@@ -20,19 +21,47 @@ import { haptic, useGym } from "../../lib/gym/store";
  * MealTemplate, since it's what lets a later log ask "how many servings"
  * instead of always logging the fixed, full ingredient list.
  */
-export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** A recipe to start from: read from a note or recipe (FoodListSheet). */
+export interface RecipeSeed {
+  name: string;
+  servings: number | null;
+  ingredients: MealIngredient[];
+}
+
+export function CreateRecipeSheet({
+  open,
+  onClose,
+  seed = null,
+}: {
+  open: boolean;
+  onClose: () => void;
+  seed?: RecipeSeed | null;
+}) {
   const { saveRecipe } = useGym();
   const t = useTranslation();
   const [name, setName] = useState("");
   const [servings, setServings] = useState(4);
   const [ingredients, setIngredients] = useState<MealIngredient[]>([]);
   const [addingIngredient, setAddingIngredient] = useState(false);
+  /** An ingredient whose food is being swapped; its grams stay. */
+  const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  /** Reading ingredients from a note (FoodListSheet). */
+  const [reading, setReading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !seed) return;
+    setName(seed.name);
+    if (seed.servings) setServings(Math.min(50, seed.servings));
+    setIngredients(seed.ingredients);
+  }, [open, seed]);
 
   const reset = () => {
     setName("");
     setServings(4);
     setIngredients([]);
     setAddingIngredient(false);
+    setSwapIndex(null);
+    setReading(false);
   };
 
   const totals = useMemo(() => dailyTotals(ingredients), [ingredients]);
@@ -69,7 +98,11 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
       {/* Same "hide while adding an ingredient" pattern as CreateMealSheet —
           this sheet's own state (name/servings/ingredients) survives that
           toggle regardless, since it lives here, not inside AddFoodSheet. */}
-      <BottomSheet open={open && !addingIngredient} onClose={close} title={t.createRecipe.title}>
+      <BottomSheet
+        open={open && !addingIngredient && swapIndex === null && !reading}
+        onClose={close}
+        title={t.createRecipe.title}
+      >
         <div className="space-y-4">
           <label className="flex items-center gap-3 rounded-2xl bg-muted px-4 py-3">
             <span className="shrink-0 text-[14px] font-semibold text-muted-foreground">
@@ -130,12 +163,25 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
                   const m = scaledMacros(ing);
                   return (
                     <Card key={i} className="flex items-center justify-between gap-3 p-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold">{ing.name}</p>
-                        <p className="tabular text-[12px] text-muted-foreground">
-                          {ing.grams}g · {m.calories} kcal
-                        </p>
-                      </div>
+                      {/* Tapping the food swaps it for another; the grams stay. */}
+                      <button
+                        onClick={() => {
+                          haptic(12);
+                          setSwapIndex(i);
+                        }}
+                        aria-label={t.foodList.swap(ing.name)}
+                        className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 text-left active:opacity-70"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold">
+                            {ing.name}
+                          </span>
+                          <span className="tabular block text-[12px] text-muted-foreground">
+                            {ing.grams}g · {m.calories} kcal
+                          </span>
+                        </span>
+                        <ArrowLeftRight className="size-4 shrink-0 text-primary-text" />
+                      </button>
                       <button
                         onClick={() => {
                           haptic(12);
@@ -161,6 +207,15 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
             className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary-text active:scale-[0.985]"
           >
             <Plus className="size-4" /> {t.createRecipe.addIngredient}
+          </button>
+          <button
+            onClick={() => {
+              haptic(15);
+              setReading(true);
+            }}
+            className="glass flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold text-primary-text active:scale-[0.985]"
+          >
+            <NotebookPen className="size-4" /> {t.foodList.scanIngredients}
           </button>
 
           {ingredients.length > 0 ? (
@@ -211,6 +266,38 @@ export function CreateRecipeSheet({ open, onClose }: { open: boolean; onClose: (
           setIngredients((cur) => [...cur, ingredient]);
           setAddingIngredient(false);
         }}
+      />
+      <AddFoodSheet
+        open={open && swapIndex !== null}
+        onClose={() => setSwapIndex(null)}
+        swap={
+          swapIndex !== null && ingredients[swapIndex]
+            ? { query: ingredients[swapIndex].name, grams: ingredients[swapIndex].grams }
+            : undefined
+        }
+        onIngredientCaptured={(ing) => {
+          // Only the food changes; the ingredient keeps its grams.
+          setIngredients((cur) =>
+            cur.map((old, j) =>
+              j === swapIndex
+                ? {
+                    name: ing.name,
+                    grams: old.grams,
+                    per100: ing.per100,
+                    ...(ing.nevo ? { nevo: ing.nevo } : {}),
+                  }
+                : old,
+            ),
+          );
+          setSwapIndex(null);
+        }}
+      />
+      <FoodListSheet
+        open={open && reading}
+        start="photo"
+        target="ingredients"
+        onClose={() => setReading(false)}
+        onIngredients={(list) => setIngredients((cur) => [...cur, ...list])}
       />
     </>
   );
