@@ -5,6 +5,7 @@ import {
   Apple,
   Check,
   ChevronRight,
+  Coffee,
   Droplet,
   Dumbbell,
   HeartPulse,
@@ -21,13 +22,18 @@ import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "../components/gym/Settin
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
+  CAFFEINE_DAILY_LIMIT_MG,
+  COFFEE_CAFFEINE_MG,
+  COFFEE_KINDS,
   NUTRIENT_ORDER,
+  caffeineMg,
   formatWaterAmount,
   dailyTotals,
   dayKeyFromDate,
   entriesForDay,
   formatLiters,
   nutrientStatus,
+  type CoffeeKind,
   type Macros,
   type NutrientStatus,
   type NutritionGoals,
@@ -91,6 +97,8 @@ function HomeScreen() {
     waterGoalMl,
     avatarId,
     logWater,
+    coffeeEntries,
+    logCoffee,
     readinessLog,
     setTodayReadiness,
     weightLog,
@@ -120,6 +128,10 @@ function HomeScreen() {
   const todayWaterMl = useMemo(
     () => entriesForDay(waterEntries, todayKey).reduce((sum, e) => sum + e.ml, 0),
     [waterEntries, todayKey],
+  );
+  const todayCoffee = useMemo(
+    () => entriesForDay(coffeeEntries, todayKey),
+    [coffeeEntries, todayKey],
   );
   const today = useMemo(() => new Date(), []);
   const trainedKeys = useMemo(() => {
@@ -348,7 +360,10 @@ function HomeScreen() {
               // flex factors left can add up to less than 1, and CSS grid
               // then hands out only that share of the spare room, leaving a
               // bigger gap under the tiles. Same proportions, scaled up.
-              gridTemplateRows: (readinessOpen ? [0.84, 0.76, 0.64, 0.33, 0.38] : [1, 1, 0.38, 0.4])
+              gridTemplateRows: (readinessOpen
+                ? [0.84, 0.76, 0.64, 0.33, 0.38]
+                : [1, 1, 0.6, 0.38, 0.4]
+              )
                 .map((fr) => `minmax(min-content, ${fr * 100}fr)`)
                 .join(" "),
             }}
@@ -383,7 +398,20 @@ function HomeScreen() {
                   setReadinessEditing(false);
                 }}
               />
-            ) : null}
+            ) : (
+              // Coffee takes the picker's row once the check-in is answered:
+              // with the picker open there's no room for both (measured: the
+              // grid ran 14–83 px into the week strip at 375–430 pt wide).
+              <CoffeeTile
+                cups={todayCoffee.length}
+                mg={caffeineMg(todayCoffee)}
+                onAdd={(kind) => {
+                  haptic(12);
+                  logCoffee(kind);
+                }}
+                onOpen={() => navigate({ to: "/nutrition", search: { tab: "drinks" } })}
+              />
+            )}
 
             <ActivityTile
               streak={streak}
@@ -787,6 +815,81 @@ function WaterTile({
             <HapticSwitch />
             <Droplet className="fill-extra size-4 text-primary-text" aria-hidden />
             <span>+{formatWaterAmount(ml)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Coffee by the cup, like WaterTile and for the same reason a `<div>`
+ *  holding sibling buttons: the header row opens Nutrition → Drinks, the
+ *  three quick-adds log straight from Home (asked for). The caffeine against
+ *  EFSA's 400 mg (see nutrition.ts) is in the header, amber when near and
+ *  red when over, the same colours as the Drinks tab's bar. */
+function CoffeeTile({
+  cups,
+  mg,
+  onAdd,
+  onOpen,
+}: {
+  cups: number;
+  mg: number;
+  onAdd: (kind: CoffeeKind) => void;
+  onOpen: () => void;
+}) {
+  const t = useTranslation();
+  const status = nutrientStatus(mg, CAFFEINE_DAILY_LIMIT_MG);
+  const active = cups > 0;
+  return (
+    <div className="glass relative col-span-2 flex min-h-0 flex-col gap-1.5 overflow-hidden rounded-3xl p-[var(--home-tile-pad)]">
+      <button
+        onClick={() => {
+          haptic(10);
+          onOpen();
+        }}
+        aria-label={t.home.coffeeAriaLabel}
+        data-target-ok
+        className="tap-target flex items-center justify-between gap-3 text-left"
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className={`flex size-6 shrink-0 items-center justify-center rounded-full ${
+              active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            <Coffee className="size-3.5" />
+          </span>
+          <span className="truncate text-[15px] font-bold leading-none">{t.coffee.cups(cups)}</span>
+        </div>
+        <span
+          className={`tabular flex shrink-0 items-center gap-1 text-[12px] font-medium ${
+            status === "over"
+              ? "text-destructive-text"
+              : status === "near"
+                ? "text-warning-text"
+                : "text-muted-foreground"
+          }`}
+        >
+          {t.coffee.caffeineShort(mg, CAFFEINE_DAILY_LIMIT_MG)}
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </span>
+      </button>
+      <div className="relative grid flex-1 grid-cols-3 gap-1.5">
+        {COFFEE_KINDS.map((kind) => (
+          <button
+            key={kind}
+            onClick={() => onAdd(kind)}
+            aria-label={t.coffee.add(t.coffee.kinds[kind])}
+            className="fill-cell tap-target flex min-h-[36px] flex-col items-center justify-center rounded-2xl border-[1.5px] border-primary/60 font-bold text-foreground active:scale-95 active:bg-primary/10"
+          >
+            <HapticSwitch />
+            <span className="w-full truncate px-1 text-center text-[13px] tracking-tight">
+              +{t.coffee.kinds[kind]}
+            </span>
+            <span className="fill-extra tabular text-[12px] font-medium text-muted-foreground">
+              {COFFEE_CAFFEINE_MG[kind]} mg
+            </span>
           </button>
         ))}
       </div>

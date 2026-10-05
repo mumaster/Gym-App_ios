@@ -100,9 +100,9 @@ Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg",
   - give a sideways-scrolling row vertical room (`-my-1 py-1` for 36 pt chips), since it clips what sticks out;
   - put it on a static or relative control (it sets `position: relative`), and not on one with `overflow-hidden` or `truncate` (put `truncate` on an inner span).
 
-  Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows) and the water row at the top of Home's fixed tile.
+  Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows) and the header rows at the top of Home's fixed Water and Coffee tiles.
 
-- **Fixed screens** (Home) split their height with `minmax(min-content, N fr)` rows. Their spacing scales with `100dvh` (see CLAUDE.md, "Equal spacing").
+- **Fixed screens** (Home) split their height with `minmax(min-content, N fr)` rows. Their spacing scales with `100dvh` (see CLAUDE.md, "Equal spacing"). A tile that doesn't fit in every state shows only in the states where it does, rather than squeezing the others: Coffee appears once the check-in is answered, in the picker's row. Check the tightest state (375×812, a program, the picker open) with the per-tile clipping check before adding one.
 
 ## 5. Shape
 
