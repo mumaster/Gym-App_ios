@@ -63,10 +63,10 @@ describe("missed sessions", () => {
     for (const day of ["2026-09-25", "2026-09-27", "2026-09-29"]) {
       r = advanceRotation(r, d(day), d(day)).rotation;
     }
-    // The next cycle stays in the week of 28 September (it used to skip to
-    // 5 October): Monday's push moves to the day after Tuesday's legs.
+    // The next cycle carries on in the week of 28 September (it used to
+    // skip to 5 October), on the plan's own days after Tuesday's legs.
     expect(r.anchor).toBe("2026-09-28");
-    expect(keys(r)).toEqual(["2026-09-30", "2026-10-01", "2026-10-02"]);
+    expect(keys(r)).toEqual(["2026-09-30", "2026-10-02", "2026-10-05"]);
   });
 });
 
@@ -102,7 +102,8 @@ describe("the end of the week", () => {
   it("keeps next week when the missed session is done on Monday", () => {
     const r = advanceRotation(upperLower, d("2026-09-28"), d("2026-09-28")).rotation;
     expect(r.anchor).toBe("2026-09-28");
-    expect(keys(r)).toEqual(["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"]);
+    // On the plan's days after Monday, in order, running into next week.
+    expect(keys(r)).toEqual(["2026-09-29", "2026-10-01", "2026-10-02", "2026-10-05"]);
   });
 
   it("starts next week on its usual Monday when the missed session is skipped then", () => {
@@ -163,15 +164,42 @@ describe("upcoming sessions (the week strip)", () => {
     expect(ks(upcomingSessionDates(ul, d("2026-10-11"), today))).toEqual([
       "2026-10-06",
       "2026-10-07",
-      // The next cycle stays in this week (see "the end of the week").
+      // Then the next in line on the plan's own days, Thursday and Friday
+      // (not packed onto Thursday to Sunday).
       "2026-10-08",
       "2026-10-09",
-      "2026-10-10",
-      "2026-10-11",
+    ]);
+    expect(ks(upcomingSessionDates(ul, d("2026-10-18"), today)).slice(2)).toEqual([
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-12",
+      "2026-10-13",
+      "2026-10-15",
+      "2026-10-16",
     ]);
     expect(
       dayTypeFor(d("2026-10-09"), { rotation: ul, workouts: [], activeWorkout: null }, today),
     ).toBe("training");
+  });
+
+  it("carries on with Thursday and Friday after this week's last two moved to Tuesday and Wednesday", () => {
+    const ul: Rotation = {
+      schedule: [
+        { dow: 1, dayId: "upper" },
+        { dow: 2, dayId: "lower" },
+        { dow: 4, dayId: "upper" },
+        { dow: 5, dayId: "lower" },
+      ],
+      cyclePosition: 2,
+      anchor: "2026-10-05",
+      dayOverrides: { 2: 1, 3: 2 },
+    };
+    expect(ks(upcomingSessionDates(ul, d("2026-10-11"), d("2026-10-05")))).toEqual([
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+    ]);
   });
 
   it("moves missed sessions up to today, like 'Do it today'", () => {

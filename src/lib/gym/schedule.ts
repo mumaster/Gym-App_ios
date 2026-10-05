@@ -56,42 +56,39 @@ export function anchorFor(schedule: ScheduleSlot[], cursor: number, today = new 
   return dayKeyFromDate(ahead ? monday : addDays(monday, 7));
 }
 
-/** Anchor for the cycle after one whose last session fell on `lastDate`: the
- *  week of the first normal slot-0 weekday strictly after it. */
-export function nextCycleAnchor(schedule: ScheduleSlot[], lastDate: Date): string {
-  const first = schedule[0]?.dow ?? 1;
-  let d = addDays(startOfDay(lastDate), 1);
-  while (d.getDay() !== first) d = addDays(d, 1);
-  return dayKeyFromDate(mondayOf(d));
-}
-
 /**
- * The next cycle after one whose last session fell on `lastDate`. Normally
- * that's the week of the first slot-0 weekday after it, with no overrides.
- * When the last session spilled into a later week than the cycle was
- * planned for (a missed Friday done on Monday), the next cycle stays in
- * that week rather than skipping it: sessions whose usual day isn't after
- * the last one move to the days right after it, in order (`prev` is the
- * last day that's taken: the day the session was done, or the day before
- * today when it was skipped). It used to start the following week, so a
- * leftover done on Monday cost the whole week.
+ * The next cycle, planned after `after` (the last day this cycle used): its
+ * sessions, in order, go on the plan's own training weekdays from the day
+ * after, running into the following week where needed, so the next session
+ * is always on the next planned training day. Anchored to the Monday of the
+ * week its first session falls in; a session off its usual weekday gets an
+ * override. After a normal week this is simply next week as planned.
+ *
+ * Reported twice before it settled here: a leftover from Friday done on
+ * Monday used to push the next cycle to the week after (losing a week), and
+ * a cycle whose last two sessions moved to Tuesday and Wednesday then
+ * waited for next Monday, or (briefly) packed the next cycle onto Thursday
+ * to Sunday, rather than carrying on "next in line on Thursday and Friday,
+ * following my week planning" (asked for).
  */
 export function nextCycle(
   r: Rotation,
-  lastDate: Date,
-  prev: Date,
+  after: Date,
 ): { anchor: string; dayOverrides?: Record<number, number> } {
-  const week = mondayOf(lastDate);
-  if (daysBetween(parseDayKey(r.anchor), week) <= 0) {
-    return { anchor: nextCycleAnchor(r.schedule, lastDate) };
+  const start = addDays(startOfDay(after), 1);
+  // The plan's training days in order; a weekday holding two sessions is
+  // used twice. Capped in case a slot carries an impossible weekday.
+  const days: Date[] = [];
+  for (let d = start; days.length < r.schedule.length && daysBetween(start, d) < 21;) {
+    for (const slot of r.schedule) if (slot.dow === d.getDay()) days.push(d);
+    d = addDays(d, 1);
   }
+  if (days.length < r.schedule.length) return { anchor: dayKeyFromDate(mondayOf(start)) };
+  const week = mondayOf(days[0]!);
   const dayOverrides: Record<number, number> = {};
-  let taken = startOfDay(prev);
   r.schedule.forEach((slot, i) => {
-    const usual = addDays(week, weekIndex(slot.dow));
-    const date = daysBetween(taken, usual) > 0 ? usual : addDays(taken, 1);
-    if (daysBetween(usual, date) !== 0) dayOverrides[i] = daysBetween(week, date);
-    taken = date;
+    const offset = daysBetween(week, days[i]!);
+    if (offset !== weekIndex(slot.dow)) dayOverrides[i] = offset;
   });
   return {
     anchor: dayKeyFromDate(week),
@@ -101,7 +98,9 @@ export function nextCycle(
 
 /** Moves the cursor past the current session (finished or skipped). A
  *  finished session passes `doneOn`, the day it was done, which is kept for
- *  this cycle. On wrapping, starts the next cycle (`nextCycle`) and drops
+ *  this cycle. On wrapping, starts the next cycle (`nextCycle`) after the
+ *  later of the last session's planned day and the day it was done (or,
+ *  when skipped, yesterday, so a skipped leftover frees today), and drops
  *  this cycle's overrides and done days. */
 export function advanceRotation<R extends Rotation>(
   r: R,
@@ -113,9 +112,9 @@ export function advanceRotation<R extends Rotation>(
     const done = doneOn ? { ...r.doneOn, [r.cyclePosition]: dayKeyFromDate(doneOn) } : r.doneOn;
     return { rotation: { ...r, cyclePosition: next, doneOn: done }, wrapped: false };
   }
-  const last = plannedDate(r, r.schedule.length - 1);
-  const lastDate = last > startOfDay(today) ? last : today;
-  const { anchor, dayOverrides } = nextCycle(r, lastDate, doneOn ?? addDays(startOfDay(today), -1));
+  const planned = plannedDate(r, r.schedule.length - 1);
+  const taken = startOfDay(doneOn ?? addDays(startOfDay(today), -1));
+  const { anchor, dayOverrides } = nextCycle(r, taken > planned ? taken : planned);
   return {
     rotation: { ...r, cyclePosition: 0, anchor, dayOverrides, doneOn: undefined },
     wrapped: true,
