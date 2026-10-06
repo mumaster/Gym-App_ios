@@ -421,101 +421,125 @@ function HomeMock() {
   // Monday-first: trained Monday and Wednesday, today is Thursday, Legs on Friday.
   const dow = [1, 2, 3, 4, 5, 6, 0].map((d) => t.common.dow[d]!.charAt(0).toUpperCase());
   const marks: ("done" | "planned" | null)[] = ["done", null, "done", null, "planned", null, null];
+  // Drawn like Home: a Today card (what's next, the week, the streak) and a
+  // Nutrition card (calories, macros, water quick-adds), each with its band.
   return (
     <div className="space-y-2">
       <p className="px-1 text-[22px] font-bold leading-tight">{t.welcome.homeGreeting}</p>
-      <div className="glass glow flex items-center justify-between gap-3 rounded-[22px] p-3.5">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-text">
-            {t.welcome.planWeek(3, 5)}
-          </p>
-          <p className="truncate text-[17px] font-bold leading-tight">{t.welcome.homeNext}</p>
-          <p className="truncate text-[12px] text-muted-foreground">{t.welcome.homeWhen}</p>
-        </div>
-        <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-3.5 py-2 text-[13px] font-bold text-primary-foreground">
-          {t.home.continueCta}
-          <ChevronRight className="size-4" />
-        </span>
-      </div>
-      <Panel>
-        <div className="flex items-center gap-2">
-          <Badge size="size-7">
-            <Flame className="size-3.5" />
-          </Badge>
-          <span className="tabular text-[15px] font-bold">{n(1650)}</span>
-          <span className="tabular text-[12.5px] text-muted-foreground">/ {n(2400)} kcal</span>
-        </div>
-        <Bar pct={(1650 / 2400) * 100} className="mt-2" />
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
-          {macros.map((m) => (
-            <div key={m.k} className="rounded-xl bg-muted/60 px-2 py-1.5">
-              <p className="tabular text-[13px] font-bold leading-tight">
-                {m.v}
-                <span className="font-medium text-muted-foreground"> / {m.g} g</span>
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">{m.k}</p>
-            </div>
-          ))}
-        </div>
-      </Panel>
-      <Panel>
-        <div className="flex items-center gap-2">
-          <span className="flex size-7 items-center justify-center rounded-full bg-sky-400/20 text-sky-400">
-            <Droplet className="size-3.5" />
-          </span>
-          <span className="tabular text-[15px] font-bold">1.5L</span>
-          <span className="tabular text-[12.5px] text-muted-foreground">/ 2.6L</span>
-        </div>
-        <Bar pct={58} className="mt-2" />
-        <div className="mt-2 grid grid-cols-4 gap-1.5">
-          {["+250ml", "+500ml", "+750ml", "+1L"].map((q) => (
-            <span
-              key={q}
-              className="rounded-xl bg-primary/15 py-1.5 text-center text-[12px] font-bold"
-            >
-              {q}
+      <div className="glass overflow-hidden rounded-2xl">
+        <MockBand
+          icon={<Flame className="size-4" />}
+          title={t.welcome.homeNext}
+          sub={`${t.welcome.homeWhen} · ${t.welcome.planWeek(3, 5)}`}
+          trailing={
+            <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary py-1.5 pl-3 pr-2 text-[13px] font-bold text-primary-foreground">
+              {t.home.continueCta}
+              <ChevronRight className="size-4" />
             </span>
-          ))}
-        </div>
-      </Panel>
-      <Panel className="flex items-center gap-2.5 py-2.5">
-        <Badge size="size-7">
-          <Flame className="size-3.5" />
-        </Badge>
-        <span className="tabular text-[15px] font-bold">6</span>
-        <span className="min-w-0 truncate text-[12px] text-muted-foreground">
-          {t.home.weekStreak(6)}
-        </span>
-        <span className="h-6 w-px shrink-0 bg-border" />
-        <Badge size="size-7">
-          <Dumbbell className="size-3.5" />
-        </Badge>
-        <span className="tabular text-[15px] font-bold">2</span>
-        <span className="min-w-0 truncate text-[12px] text-muted-foreground">
-          {t.home.trainingDays(2)}
-        </span>
-      </Panel>
-      <div className="grid grid-cols-7 gap-1 px-1">
-        {dow.map((d, i) => (
-          <div
-            key={i}
-            className={`flex flex-col items-center gap-1 rounded-xl py-1 ${i === 3 ? "bg-foreground/[0.06]" : ""}`}
-          >
-            <span className="text-[10px] font-bold text-muted-foreground">{d}</span>
-            {marks[i] === "done" ? (
-              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check className="size-3" strokeWidth={3} />
-              </span>
-            ) : marks[i] === "planned" ? (
-              <span className="size-5 rounded-full border-2 border-primary" />
-            ) : (
-              <span className="flex size-5 items-center justify-center">
-                <span className="size-1.5 rounded-full bg-foreground/25" />
-              </span>
-            )}
+          }
+        />
+        <div className="flex items-stretch px-2.5 py-2">
+          <div className="grid flex-1 grid-cols-7">
+            {dow.map((d, i) => (
+              <div
+                key={i}
+                className={`flex flex-col items-center gap-1 rounded-xl py-1 ${i === 3 ? "bg-foreground/[0.06]" : ""}`}
+              >
+                <span className="text-[10px] font-bold text-muted-foreground">{d}</span>
+                {marks[i] === "done" ? (
+                  <span className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                ) : marks[i] === "planned" ? (
+                  <span className="size-5 rounded-full border-2 border-primary" />
+                ) : (
+                  <span className="flex size-5 items-center justify-center">
+                    <span className="size-1.5 rounded-full bg-foreground/25" />
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+          <div className="ml-1 flex w-9 flex-col items-center gap-1 border-l border-border py-1 pl-1">
+            <Flame className="size-[11px] text-primary-text" strokeWidth={2.6} />
+            <span className="tabular text-[15px] font-bold leading-5">6</span>
+          </div>
+        </div>
       </div>
+      <div className="glass overflow-hidden rounded-2xl">
+        <MockBand
+          icon={<Apple className="size-4" />}
+          title={
+            <span className="tabular">
+              {n(1650)}
+              <span className="text-[13px] font-medium text-muted-foreground">
+                {" "}
+                / {n(2400)} kcal
+              </span>
+            </span>
+          }
+          sub={t.nutrition.kcalLeft(n(750))}
+        />
+        <div className="px-3.5 pb-3 pt-2.5">
+          <Bar pct={(1650 / 2400) * 100} />
+          <div className="mt-2 grid grid-cols-3 gap-3">
+            {macros.map((m) => (
+              <div key={m.k} className="min-w-0">
+                <p className="truncate text-[11px] font-semibold text-muted-foreground">{m.k}</p>
+                <p className="tabular text-[14px] font-bold leading-tight">
+                  {m.v}
+                  <span className="text-[11px] font-medium text-muted-foreground"> / {m.g} g</span>
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2.5 border-t border-border pt-2">
+            <div className="flex items-center gap-2 text-[12.5px]">
+              <Droplet className="size-3.5 text-primary-text" />
+              <span className="font-semibold">{t.nutrition.water}</span>
+              <span className="tabular ml-auto text-muted-foreground">
+                <span className="font-semibold text-foreground">1.5L</span> / 2.6L
+              </span>
+            </div>
+            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+              {["+250ml", "+500ml", "+750ml", "+1L"].map((q) => (
+                <span
+                  key={q}
+                  className="rounded-lg border-[1.5px] border-primary/60 py-1 text-center text-[12px] font-bold"
+                >
+                  {q}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A Home card's band in the mock-up: tonal badge, title, subtitle. */
+function MockBand({
+  icon,
+  title,
+  sub,
+  trailing,
+}: {
+  icon: ReactNode;
+  title: ReactNode;
+  sub: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <div className="card-head flex items-center gap-3 px-3.5 py-2">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[16px] font-bold leading-tight">{title}</p>
+        <p className="mt-0.5 truncate text-[12px] text-foreground/75">{sub}</p>
+      </div>
+      {trailing}
     </div>
   );
 }
@@ -954,7 +978,7 @@ function FoodMock() {
         ))}
       </Panel>
       <div className="glass overflow-hidden rounded-2xl">
-        <div className="card-head flex items-center gap-3 px-3.5 py-2.5">
+        <div className="card-head flex items-center gap-3 px-3.5 py-2">
           <Badge size="size-9">
             <Sun className="size-[18px]" />
           </Badge>

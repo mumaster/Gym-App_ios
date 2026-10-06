@@ -19,7 +19,7 @@ The shared class strings are in `src/components/gym/ui.ts` (`button`, `chip`, `b
 
 4. **Evidence, with few citations on screen.** A sourced number gets a short plain-language explanation ("A week counts with 2+ training days"), never a study name. Sources live on Settings → Sources (see CLAUDE.md). The one exception is NEVO's reference line, which RIVM's conditions require.
 5. **Thumb first.** Things you tap often sit low (the docked rest panel, pinned Start, the quick-adds). Things you read sit high. Nothing you need is hidden behind the tab bar once you've scrolled to the end.
-6. **No dead scrolling.** A screen that fits stays still (Home always; Workout's My plan via `fitWhenShort`). A screen that doesn't fit scrolls cleanly and ends clear of the tab bar.
+6. **No dead scrolling.** A screen that fits stays still (`Screen`'s `fitWhenShort`: Home, Workout's My plan). A screen that doesn't fit scrolls cleanly and ends clear of the tab bar.
 7. **Both themes, both languages and every accent are first-class.** Every change is looked at in dark and light, in English and Dutch, and never assumes green. Dutch strings run about 30% longer.
 8. **Never a hardcoded colour,** except the content-intrinsic ones in §2.
 
@@ -46,7 +46,6 @@ All colours are tokens in `src/styles.css` (oklch). Dark is `:root` and light is
 
 - the splash's sparks;
 - confetti;
-- Home's water badge (`sky-400`);
 - the camera's always-dark chrome;
 - the white switch knob;
 - the per-avatar `bg`/`ink`;
@@ -69,7 +68,7 @@ The system font (SF on iOS). Sizes are pixel values on purpose, because iOS's ow
 | ------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 30      | bold                                   | A hero number (the summary's big stat, a meal's calories).                                                                                                            |
 | 26      | bold, `leading-tight tracking-tight`   | A screen title (`Screen` draws it), a session's exercise name, or a card's headline total (`text.total`, with `tabular`).                                             |
-| 20      | bold                                   | A sheet title (`BottomSheet` draws it), Home's hero title, a tile's total.                                                                                            |
+| 20      | bold                                   | A sheet title (`BottomSheet` draws it), a tile's total.                                                                                                               |
 | 17      | bold                                   | A card's or meal's own name (`text.cardTitle`).                                                                                                                       |
 | 16      | bold                                   | A primary button. **Every text input is 16 px**, or iOS zooms in on focus.                                                                                            |
 | 15      | semibold                               | A list row's main line (`text.rowTitle`).                                                                                                                             |
@@ -100,9 +99,9 @@ Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg",
   - give a sideways-scrolling row vertical room (`-my-1 py-1` for 36 pt chips), since it clips what sticks out;
   - put it on a static or relative control (it sets `position: relative`), and not on one with `overflow-hidden` or `truncate` (put `truncate` on an inner span).
 
-  Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows) and the header rows at the top of Home's fixed Water and Coffee tiles.
+  Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows).
 
-- **Fixed screens** (Home) split their height with `minmax(min-content, N fr)` rows. Their spacing scales with `100dvh` (see CLAUDE.md, "Equal spacing"). A tile that doesn't fit in every state shows only in the states where it does, rather than squeezing the others: Coffee appears once the check-in is answered, in the picker's row. Check the tightest state (375×812, a program, the picker open) with the per-tile clipping check before adding one.
+- **Screens that should fit** (Home, Workout's My plan) are ordinary `Screen`s with `fitWhenShort`: pinned while the content ends above the tab bar, scrolling when it doesn't. Make room by combining or cutting, never by shrinking cards' padding or type below the house sizes. Home's own fixed grid with height-scaled spacing is gone; it fits from 390×844 up with the check-in open (CLAUDE.md, "Home dashboard").
 
 ## 5. Shape
 
@@ -111,7 +110,7 @@ The radius tokens are rounder than stock Tailwind: `rounded-lg` is 16 px, `xl` 2
 | Thing                                                                | Radius         |
 | -------------------------------------------------------------------- | -------------- |
 | Card, primary/secondary button, input group                          | `rounded-2xl`  |
-| Home tiles, the hero, sheets (top corners)                           | `rounded-3xl`  |
+| Sheets (top corners)                                                 | `rounded-3xl`  |
 | Outlined keys in a grid (`button.add`/`more`), small tiles and cells | `rounded-lg`   |
 | Inline notes, info boxes inside a card                               | `rounded-xl`   |
 | Chips, pills, badges, icon buttons, the tab bar                      | `rounded-full` |
@@ -125,7 +124,7 @@ A tall pill reads as a blob. Anything taller than about 40 px that isn't a circl
 - `glass-header`: Screen's header without a toolbar. With a toolbar it is solid `bg-background`.
 - `glass-bar`: only the tab bar.
 - `dock-backdrop`: the band behind a control pinned above the tab bar.
-- `glow`: the accent shadow, for the one thing that should glow (Home's circle on `/`, the hero's CTA). Don't add more.
+- `glow`: the accent shadow, for the one thing that should glow (Home's circle on `/`). Don't add more.
 
 z-order:
 
@@ -158,7 +157,7 @@ Reuse these before building anything new. A new pattern that will appear twice g
   - a filter or choice chip is 32–40 pt tall with `tap-target`; the picked one is `chip.on` (tonal: a light accent wash, accent text, a thin accent ring), every other one `chip.off`: glass (`glass-chip`, the card surface with a hairline drawn as an inset ring, so a chip keeps its size when picked; no backdrop blur, since a screen can hold dozens). Asked for: unpicked chips had nine looks (`bg-muted`, `bg-secondary`, `glass`…), and glass was the one liked. Never solid: solid accent is for the main action. A segmented control's unpicked segments (a track with plain text) aren't chips and stay plain;
   - an entry chip with ✕ removes that entry;
   - chip rows that can overflow scroll sideways (`no-scrollbar -mx-4 px-4 overflow-x-auto`, plus vertical room for the tap areas) rather than wrap into a wall.
-- **Screen headers:** a tab's header is its title alone (plus its sub-tabs or search in the `toolbar`). No subtitle, and never a count or stat: a number belongs in the content it describes (Exercises' "253 of 256 exercises" sits at the top of its list). A subtitle is only for pages you drill into (a session's date) and setup pages that say what they're for (Settings, Equipment).
+- **Screen headers:** a tab's header is its title alone (plus its sub-tabs or search in the `toolbar`). No subtitle, and never a count or stat: a number belongs in the content it describes (Exercises' "253 of 256 exercises" sits at the top of its list). A subtitle is only for pages you drill into (a session's date), setup pages that say what they're for (Settings, Equipment), and Home, whose greeting title takes today's date under it.
 - **Tab bar:** five cells in a glass capsule. Four tabs show an icon over a 10 px label: accent when selected (with the glass lozenge behind it), `text-muted-foreground` otherwise. Home is the circle in the middle and has exactly two looks:
   - on `/`: a solid accent circle with its glow, the bar's one solid accent;
   - anywhere else: an empty circle with a hairline ring (`ring-foreground/15`) and a muted icon, the same grey as the other inactive tabs.
@@ -300,9 +299,9 @@ Found in an app-wide audit on 6 October 2026, ordered by how visible they are. F
 
 1. **Back buttons.** Four looks: a 44 pt glass circle without `tap-target` (a session's page), a 40 pt glass circle (Equipment), a rounded grey square (the workout screen), 28 pt arrows (Nutrition's week strip). Fix: one 36 pt round button with `tap-target`, like the Edit button.
 2. **Icon badges.** Solid on the drink and meal cards and Settings rows, tonal on `ListCard`s. Decide one rule (for example: solid = something logged or active, tonal = a plain list) and write it in §7.
-3. **Card corners.** Mostly `rounded-2xl`; 8 cards are `rounded-3xl` and 2 `rounded-xl`. Fix: `rounded-2xl`, except Home's tiles (`rounded-3xl` on purpose).
+3. **Card corners.** Mostly `rounded-2xl`; 8 cards are `rounded-3xl` and 2 `rounded-xl`. Fix: `rounded-2xl` (Home's cards already are).
 4. **Units.** "150g" and "250ml" without a space in some strings (Add food's portion line, quick-add amounts, "use serving size", water texts, the meal and recipe builders), against about 100 places with the space. Fix: always a space, except the water quick-adds' "+250ml", which needs to fit its button.
 5. **Session-length chips.** The Workout tab's "30m" next to "45 min" elsewhere. Fix: "min" everywhere, or record "30m" as a chip-only short form in §12.
-6. **Home in Dutch/light.** `npm run ui-check` flagged "Volgende: Upper Body" in the hero as cut off, and a page error (React's warning about the inline script) with the known first-visit hydration mismatch at 390, 402 and 430.
+6. **First visit in light mode.** A page error (React's warning about the inline script) with the known first-visit hydration mismatch. (Home's cut-off Dutch hero title went with the Home redesign.)
 7. **Type scale.** 22 px text 3 times in the welcome tour (not on the scale); about 100 small grey lines at 12 px where §3 says 12.5; the `text.*` house styles are hardly used.
 8. **English in the Dutch app.** Exercise form tips and muscle names stay English by design (§12), but they stand out on otherwise Dutch screens. Translating them is a separate, larger job.

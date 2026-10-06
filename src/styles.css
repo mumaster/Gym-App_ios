@@ -59,12 +59,9 @@
      clearance a bottom sheet gets, so it can sit closer to the edge. */
   --tab-bar-clearance: max(calc(env(safe-area-inset-bottom) * 0.5), 0.5rem);
   /* How much bottom padding every scrollable route reserves so its last
-     bit of content clears the floating tab bar. A single source of truth
-     for Screen.tsx and index.tsx (the two places that both need it)
-     specifically because it has to track TabBar.tsx's actual geometry by
-     hand; letting it drift out of sync in only one of the two would
-     silently clip the last card/button on whichever routes use the stale
-     value. Was 7rem while Home was a raised circle poking up above the
+     bit of content clears the floating tab bar. One value for every
+     scrollable screen (Screen.tsx, which Home uses too since its redesign),
+     because it has to track TabBar.tsx's actual geometry by hand. Was 7rem while Home was a raised circle poking up above the
      pill's own top edge — now that Home sits inline in the same row as
      every other tab (same height, no longer the bar's tallest point),
      the pill's own top edge is all this needs to clear: pill height
@@ -72,41 +69,6 @@
      via Playwright (getBoundingClientRect()s, not eyeballed) the same way
      the original 7rem value was. */
   --tab-bar-content-clearance: 5.75rem;
-  /* The tab bar pill's own height (TabBar.tsx: a 54px row plus py-1, no
-     border), measured. Home uses it to leave exactly --home-gap above the
-     bar, the same as between its own blocks. */
-  --tab-bar-height: 3.875rem;
-  /* Home is one fixed screen, so its spacing follows the screen's height
-     rather than fixed pixels. --home-gap is the one gap: under the header,
-     between the hero, every tile and the week strip, and above the tab bar.
-     The tiles' and hero's padding scale the same way. Each is its value at
-     844 pt tall (an iPhone 14/15/16) plus a slope per pt of height: steeper
-     below 844, so a shorter phone tightens the spacing instead of cutting
-     content off, and half as steep above, so a taller phone gets more air
-     but most of its extra height still goes to the tiles (min() picks the
-     steeper slope below 844 and the gentler one above).
-       gap:          8 px  (6.4 at 812, 10.2 at 932)
-       tile padding: 8.8 px (6.9 at 812, 11.4 at 932)
-       hero padding: 13.5 px (11.6 at 812, 16.1 at 932)
-     Sized so the tightest case, a program (the hero's week bar), the
-     check-in still open and the catalog's longest exercise name as the
-     latest PR, fits from 812 pt (iPhone mini, X, 11 Pro) up. Layout
-     choices, not measured values. */
-  --home-gap: clamp(
-    0.375rem,
-    calc(8px + min((100dvh - 844px) * 0.05, (100dvh - 844px) * 0.025)),
-    1rem
-  );
-  --home-tile-pad: clamp(
-    0.375rem,
-    calc(8.8px + min((100dvh - 844px) * 0.06, (100dvh - 844px) * 0.03)),
-    0.875rem
-  );
-  --home-hero-pad: clamp(
-    0.625rem,
-    calc(13.5px + min((100dvh - 844px) * 0.06, (100dvh - 844px) * 0.03)),
-    1.125rem
-  );
   --font-ios:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui,
     sans-serif;
@@ -501,36 +463,6 @@
 
 @utility glow {
   box-shadow: var(--glow-primary);
-}
-
-/* Home's macro chips, water quick-adds and check-in buttons stretch to fill
-   their tile, so their contents scale with the cell's own height (cqh).
-   Size containment means a cell's content never sets its height: the cell
-   is its min-height at the least (which must fit the content at that size)
-   and whatever the tile gives it beyond that. */
-@utility fill-cell {
-  container-type: size;
-}
-
-/* An extra line (the water drop) that only shows once a cell is tall
-   enough to hold it without crowding the number. */
-.fill-extra {
-  display: none;
-}
-@container (min-height: 60px) {
-  .fill-extra {
-    display: block;
-  }
-}
-
-/* A macro chip's "/ 160 g" sits next to the number while the chip is
-   short, and on its own line once the chip is tall and the number big, so
-   the limit is never truncated. */
-@container (min-height: 70px) {
-  .fill-stack {
-    display: block;
-    margin-top: 0.2em;
-  }
 }
 
 @utility safe-top {
