@@ -3,6 +3,9 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode
 import {
   Apple,
   Check,
+  Dumbbell,
+  HeartPulse,
+  Moon,
   ChevronRight,
   Coffee,
   Droplet,
@@ -520,22 +523,23 @@ function NutritionCard({
   const diff = goal != null ? goal - kcal : null;
   const calStatus = nutrientStatus(totals.calories, goal);
   const caffeineStatus = nutrientStatus(caffeine, CAFFEINE_DAILY_LIMIT_MG);
-  const sub = [
-    diff == null
-      ? null
-      : diff < 0
-        ? t.nutrition.kcalOver(Math.abs(diff).toLocaleString(locale))
-        : t.nutrition.kcalLeft(diff.toLocaleString(locale)),
+  const dayLabel =
     dayType === "training"
       ? t.nutrition.trainingDay
       : dayType === "cardio"
         ? t.nutrition.cardioDay
         : dayType === "rest"
           ? t.nutrition.restDay
-          : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+          : null;
+  // The day's kind shows as the badge's icon too, like the Food tab's card.
+  const DayIcon =
+    dayType === "training"
+      ? Dumbbell
+      : dayType === "cardio"
+        ? HeartPulse
+        : dayType === "rest"
+          ? Moon
+          : Apple;
   const openDrinks = () => {
     haptic(10);
     onOpenDrinks();
@@ -551,17 +555,39 @@ function NutritionCard({
         className="block w-full text-left active:opacity-70"
       >
         <CardHead
-          icon={Apple}
+          icon={DayIcon}
           filled={active}
+          // The card's name on top, like every other card (asked for: the
+          // band used to lead with the calories), the day's kind after it;
+          // today's calories and what's left underneath.
           title={
-            <span className="tabular">
-              {kcal.toLocaleString(locale)}
-              <span className="text-[14px] font-medium text-muted-foreground">
-                {goal != null ? ` / ${goal.toLocaleString(locale)}` : ""} kcal
-              </span>
+            <span className="block truncate">
+              {t.tabbar.nutrition}
+              {dayLabel ? (
+                <span className="text-[14px] font-medium text-foreground/75">
+                  {" · "}
+                  {dayLabel}
+                </span>
+              ) : null}
             </span>
           }
-          subtitle={sub || t.home.nutritionAriaLabel}
+          subtitle={
+            <>
+              <span className="font-semibold text-foreground">{kcal.toLocaleString(locale)}</span>
+              {goal != null ? ` / ${goal.toLocaleString(locale)}` : ""} kcal
+              {diff == null ? null : diff < 0 ? (
+                <span className="font-semibold text-destructive-text">
+                  {" · "}
+                  {t.nutrition.kcalOver(Math.abs(diff).toLocaleString(locale))}
+                </span>
+              ) : (
+                <>
+                  {" · "}
+                  {t.nutrition.kcalLeft(diff.toLocaleString(locale))}
+                </>
+              )}
+            </>
+          }
           actions={<ChevronRight aria-hidden className="size-5 text-muted-foreground" />}
         />
         {goal != null ? (
