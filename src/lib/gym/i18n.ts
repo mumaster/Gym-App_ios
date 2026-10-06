@@ -1262,7 +1262,7 @@ const en = {
   volume: {
     growTitle: "Muscles to grow",
     growDesc:
-      "Picked groups aim for 20 sets a week instead of 10, and the generator gives them more exercises and extra sets.",
+      "Picked groups aim for 20 sets a week instead of 10. Generated workouts give each muscle a share of the session by what's still missing from its target this week.",
     groups: {
       chest: "Chest",
       back: "Back",
@@ -2690,7 +2690,7 @@ const nl: Dict = {
   volume: {
     growTitle: "Spieren om te laten groeien",
     growDesc:
-      "Gekozen groepen mikken op 20 sets per week in plaats van 10, en de generator geeft ze meer oefeningen en extra sets.",
+      "Gekozen groepen mikken op 20 sets per week in plaats van 10. Gegenereerde trainingen verdelen elke sessie naar wat elke spier deze week nog mist.",
     groups: {
       chest: "Borst",
       back: "Rug",

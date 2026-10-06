@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EQUIPMENT, TARGET_MUSCLE_GROUP, exerciseById } from "../data";
-import { generateWorkout } from "../generator";
+import { estimateMinutes, generateWorkout } from "../generator";
+import { regionsForMuscles, targetsFromRegions } from "../anatomy";
 import { recommendedMuscles } from "../recommendations";
 import type { TargetMuscle, Workout } from "../types";
 import {
@@ -68,25 +69,77 @@ describe("targets (Schoenfeld 2017, Baz-Valle 2022)", () => {
 
 describe("generator focus", () => {
   const equipment = EQUIPMENT.map((e) => e.id);
-  const targets = (Object.keys(TARGET_MUSCLE_GROUP) as TargetMuscle[]).filter((k) =>
-    ["Chest", "Arms"].includes(TARGET_MUSCLE_GROUP[k]),
+  const upper = targetsFromRegions(
+    regionsForMuscles(["Chest", "Back", "Shoulders", "Arms"], "upper"),
   );
-  // 45 min: short enough that neither plan reaches the per-session cap.
-  const armSets = (focus: boolean) =>
-    planSets(
-      generateWorkout({ duration: 45, equipment, targets, focusMuscles: focus ? ["Arms"] : [] }),
-    ).Arms ?? 0;
+  const sets = (args: Partial<Parameters<typeof generateWorkout>[0]>, duration = 45) =>
+    planSets(generateWorkout({ duration, equipment, targets: upper, ...args }));
 
   it("plans more sets for a muscle to grow", () => {
-    expect(armSets(true)).toBeGreaterThan(armSets(false));
+    for (const supersets of [false, true]) {
+      const focus = sets({ supersets, focusMuscles: ["Arms"] }).Arms ?? 0;
+      const plain = sets({ supersets }).Arms ?? 0;
+      expect(focus).toBeGreaterThan(plain);
+    }
+  });
+
+  it("gives a muscle that's behind on this week's target more than one that's done", () => {
+    const fresh = sets({ focusMuscles: ["Arms"] }).Arms ?? 0;
+    const done = sets({ focusMuscles: ["Arms"], weekDone: { Arms: 20 } }).Arms ?? 0;
+    expect(done).toBeLessThan(fresh);
+    const behind = sets({ weekDone: { Chest: 10, Back: 10, Shoulders: 10 } }).Arms ?? 0;
+    expect(behind).toBeGreaterThan(sets({}).Arms ?? 0);
+  });
+
+  it("trains a prioritised group with its own exercises, not only other groups' lifts", () => {
+    const plan = generateWorkout({
+      duration: 60,
+      equipment,
+      targets: upper,
+      focusMuscles: ["Arms"],
+    });
+    expect(plan.some((p) => exerciseById(p.exercise_id)?.primary_muscle === "Arms")).toBe(true);
+  });
+
+  it("opens with compound lifts even when a small muscle comes first", () => {
+    const plan = generateWorkout({
+      duration: 60,
+      equipment,
+      targets: upper,
+      focusMuscles: ["Arms"],
+    });
+    const firstIsolation = plan.findIndex((p) => !exerciseById(p.exercise_id)?.compound);
+    const lastCompound = plan.map((p) => exerciseById(p.exercise_id)?.compound).lastIndexOf(true);
+    expect(firstIsolation === -1 || lastCompound < firstIsolation).toBe(true);
+  });
+
+  it("fills a pull day instead of stopping once the back reaches its cap", () => {
+    const pull = targetsFromRegions(regionsForMuscles(["Back", "Arms"], "pull"));
+    for (const supersets of [false, true]) {
+      const plan = generateWorkout({ duration: 60, equipment, targets: pull, supersets });
+      expect(plan.length).toBeGreaterThanOrEqual(4);
+      expect(estimateMinutes(plan)).toBeGreaterThanOrEqual(30);
+      expect(plan.some((p) => exerciseById(p.exercise_id)?.primary_muscle === "Arms")).toBe(true);
+    }
   });
 
   it("keeps each muscle under the per-session limit", () => {
-    for (const duration of [45, 60, 90]) {
-      const plan = generateWorkout({ duration, equipment, targets, focusMuscles: ["Arms"] });
-      for (const n of Object.values(planSets(plan))) {
-        expect(n).toBeLessThanOrEqual(MAX_SESSION_SETS_PER_MUSCLE);
-      }
-    }
+    const chestArms = (Object.keys(TARGET_MUSCLE_GROUP) as TargetMuscle[]).filter((k) =>
+      ["Chest", "Arms"].includes(TARGET_MUSCLE_GROUP[k]),
+    );
+    for (const duration of [45, 60, 90])
+      for (const supersets of [false, true])
+        for (const targets of [chestArms, upper]) {
+          const plan = generateWorkout({
+            duration,
+            equipment,
+            targets,
+            supersets,
+            focusMuscles: ["Arms"],
+          });
+          for (const n of Object.values(planSets(plan))) {
+            expect(n).toBeLessThanOrEqual(MAX_SESSION_SETS_PER_MUSCLE);
+          }
+        }
   });
 });

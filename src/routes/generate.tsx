@@ -63,7 +63,7 @@ import {
 } from "../lib/gym/splits";
 import { haptic, useGym } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
-import { focusMuscles } from "../lib/gym/volume";
+import { focusMuscles, weeklySets } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { button, chip } from "../components/gym/ui";
@@ -270,6 +270,8 @@ function WorkoutHome() {
         supersets: supersetsEnabled,
         warmups: warmupsEnabled,
         focusMuscles: [...focusMuscles(growthFocus)],
+        // What this week already did, so a session tops up what's behind.
+        weekDone: weeklySets(workouts, null),
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
         history: workouts,

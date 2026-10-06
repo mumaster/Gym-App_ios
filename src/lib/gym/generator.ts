@@ -6,7 +6,7 @@ import { crossEstimate, withKnownLifts, type KnownLift } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import { sharesLoadStation } from "./stations";
-import { MAX_SESSION_SETS_PER_MUSCLE, planSets } from "./volume";
+import { MAX_SESSION_SETS_PER_MUSCLE, planSets, setContribution, weeklyTarget } from "./volume";
 import type {
   EquipmentId,
   EquipmentProfile,
@@ -248,10 +248,14 @@ interface GenerateArgs {
    *  budget (so fitting can't add the sets back) — a Program's deload week,
    *  which is meant to be a shorter, lighter session. Defaults to 1. */
   volumeMultiplier?: number;
-  /** Muscles the user wants to grow (see volume.ts): their targets are
-   *  picked twice as often — matching the 20-vs-10 weekly set targets — and
-   *  get spare time for extra sets first. */
+  /** Muscles the user wants to grow (see volume.ts): their weekly target is
+   *  20 sets instead of 10, so they get a bigger share of the session. */
   focusMuscles?: Muscle[];
+  /** Fractional working sets already done this Monday–Sunday week
+   *  (volume.ts's `weeklySets`). A session is split by what's still missing
+   *  from each muscle's weekly target, so a muscle that's behind gets more
+   *  and one that's done gets least. Empty = a fresh week. */
+  weekDone?: Partial<Record<Muscle, number>>;
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -407,13 +411,16 @@ export function generateWorkout({
   intensityMultiplier = 1,
   volumeMultiplier = 1,
   focusMuscles = [],
+  weekDone = {},
 }: GenerateArgs): PlannedExercise[] {
   const focus = new Set(focusMuscles);
-  const isFocusTarget = (t: TargetMuscle) => focus.has(TARGET_MUSCLE_GROUP[t]);
-  const isFocusEntry = (p: PlannedExercise) => {
-    const m = EXERCISES.find((e) => e.id === p.exercise_id)?.primary_muscle;
-    return m ? focus.has(m) : false;
-  };
+  /** Sets still missing from a muscle's weekly target (10, or 20 for a
+   *  muscle you want to grow: volume.ts), at least 1 so a muscle you picked
+   *  that already reached it still gets a little. The floor is the app's
+   *  own choice, not a published number. */
+  const need = (m: Muscle) => Math.max(1, weeklyTarget(m, focus) - (weekDone[m] ?? 0));
+  const exOf = (p: PlannedExercise) => EXERCISES.find((e) => e.id === p.exercise_id);
+  const primaryOf = (p: PlannedExercise) => exOf(p)?.primary_muscle;
   const withVolume = (list: PlannedExercise[]) =>
     volumeMultiplier === 1
       ? list
@@ -495,10 +502,18 @@ export function generateWorkout({
     accept: (e: Exercise) => boolean = () => true,
   ): Exercise | undefined => {
     const free = pool.filter((e) => !used.has(e.id) && accept(e));
+    const group = TARGET_MUSCLE_GROUP[target];
+    // An exercise that trains this head as part of another muscle group
+    // (a row for the biceps, a bench press for the front delts) only counts
+    // half a set towards it (volume.ts), so the group's own exercises come
+    // first; the others only when it has none.
     const hitsTarget = free.filter((e) => e.muscle_targets.includes(target));
-    const forMuscle = hitsTarget.length
-      ? hitsTarget
-      : free.filter((e) => e.primary_muscle === TARGET_MUSCLE_GROUP[target]);
+    const ownGroup = hitsTarget.filter((e) => e.primary_muscle === group);
+    const forMuscle = ownGroup.length
+      ? ownGroup
+      : hitsTarget.length
+        ? hitsTarget
+        : free.filter((e) => e.primary_muscle === group);
     if (!forMuscle.length) return undefined;
     // Main focus first, then the most popular (exercisePopularity.ts): it
     // used to be alphabetical, so the first plan opened with names like
@@ -526,49 +541,65 @@ export function generateWorkout({
     return candidates[variation % candidates.length];
   };
 
-  // balanced volume: always serve the target muscle with the fewest planned exercises
+  // Each muscle group gets a share of the session in proportion to what's
+  // still missing from its weekly target (`need`): planned fractional sets
+  // over that need, lowest first. Within a group, its least-served head.
   const hits = new Map<TargetMuscle, number>(targets.map((m) => [m, 0]));
   for (const ex of lovedExercises) {
     const t = ex.muscle_targets.find((m) => hits.has(m));
     if (t) hits.set(t, hits.get(t)! + 1);
   }
   const dry = new Set<TargetMuscle>(); // targets with no remaining candidates
-  // A focus target's exercises count half, so it's served twice as often.
-  const load = (m: TargetMuscle) => hits.get(m)! * (isFocusTarget(m) ? 0.5 : 1);
-  const pickTarget = (): TargetMuscle | undefined => {
-    let best: TargetMuscle | undefined;
-    for (const m of targets) {
-      if (dry.has(m)) continue;
-      if (
-        best === undefined ||
-        load(m) < load(best) ||
-        (load(m) === load(best) && isFocusTarget(m) && !isFocusTarget(best))
-      ) {
-        best = m;
-      }
-    }
-    return best;
-  };
+  const groupLoad = (g: Muscle, list: PlannedExercise[]) => (planSets(list)[g] ?? 0) / need(g);
+  const load = (m: TargetMuscle, list: PlannedExercise[]) =>
+    groupLoad(TARGET_MUSCLE_GROUP[m], list);
+  /** Targets from the one to serve next: the group furthest behind its
+   *  share first (ties to the bigger need, then the order picked), then
+   *  that group's least-served head. */
+  const byPriority = (list: PlannedExercise[]) =>
+    targets
+      .filter((m) => !dry.has(m))
+      .map((m, order) => ({ m, order, g: TARGET_MUSCLE_GROUP[m] }))
+      .sort(
+        (a, b) =>
+          load(a.m, list) - load(b.m, list) ||
+          need(b.g) - need(a.g) ||
+          hits.get(a.m)! - hits.get(b.m)! ||
+          a.order - b.order,
+      )
+      .map((x) => x.m);
+  const pickTarget = (list: PlannedExercise[]) => byPriority(list)[0];
+  /** Whether adding `e` keeps every muscle under the per-session cap. */
+  const fitsCap = (list: PlannedExercise[]) => (e: Exercise) =>
+    !overSessionCap([
+      ...list,
+      {
+        exercise_id: e.id,
+        target_sets: e.compound ? shape.compoundSets : shape.accessorySets,
+        warmup_sets: 0,
+        target_reps: "",
+        rest_seconds: 0,
+      },
+    ]);
 
   const seeded = plan.length; // loved exercises already in the plan
   for (let i = 0; i < shape.maxExercises - seeded; i++) {
-    const target = pickTarget();
+    const target = pickTarget(plan);
     if (!target) break;
     const wantCompound = plan.length < compoundQuota;
-    const choice = nextChoice(target, wantCompound) ?? nextChoice(target, !wantCompound);
+    // Past ~11 fractional sets for one muscle in a session Pelland et al.
+    // found no detectable extra benefit (volume.ts): only exercises that stay
+    // under it. (A pick that went over used to end the target, so a pull day
+    // whose rows had used up the back ended after two exercises.)
+    const fits = fitsCap(plan);
+    const choice =
+      nextChoice(target, wantCompound, fits) ?? nextChoice(target, !wantCompound, fits);
     if (!choice) {
       dry.add(target);
       i--; // retry with the next-least-served target
       continue;
     }
     const entry = makeEntry(choice, choice.compound);
-    // Past ~11 fractional sets for one muscle in a session Pelland et al.
-    // found no detectable extra benefit (volume.ts) — stop serving it.
-    if (overSessionCap([...plan, entry])) {
-      dry.add(target);
-      i--;
-      continue;
-    }
     hits.set(target, hits.get(target)! + 1);
 
     const candidatePlan = [...plan, entry];
@@ -584,12 +615,20 @@ export function generateWorkout({
   let guard = 0;
   // short sessions stay lean: at most 3 exercises, capped at 3 working sets
   const setCap = duration <= 15 ? 3 : 6;
-  // Focus exercises get spare time first; no muscle goes past the per-session
-  // point Pelland et al. found no detectable extra benefit (volume.ts).
-  const order = [
-    ...plan.map((p, i) => ({ p, i })).filter(({ p }) => isFocusEntry(p)),
-    ...plan.map((p, i) => ({ p, i })).filter(({ p }) => !isFocusEntry(p)),
-  ].map(({ i }) => i);
+  // Big lifts open the session: picking by need can serve a small muscle
+  // first, so compounds move to the front (in the order they were picked).
+  plan.sort((a, b) => Number(!!exOf(b)?.compound) - Number(!!exOf(a)?.compound));
+  // Spare time goes first to the muscles with the most still missing this
+  // week; no muscle goes past the per-session point Pelland et al. found no
+  // detectable extra benefit (volume.ts).
+  const needOf = (p: PlannedExercise) => {
+    const m = primaryOf(p);
+    return m ? need(m) : 0;
+  };
+  const order = plan
+    .map((p, i) => ({ i, n: needOf(p) }))
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map(({ i }) => i);
   while (estimateSeconds(plan) < budget * 0.9 && plan.length && guard < 24) {
     guard++;
     const idx = order[guard % order.length]!;
@@ -617,7 +656,7 @@ export function generateWorkout({
     else plan.splice(idx, 1);
   }
 
-  if (!supersets) return withVolume(plan);
+  if (!supersets) return withVolume(trimToCap(plan));
 
   /**
    * Exercises left unpaired by applySupersets all clash with each other —
@@ -671,7 +710,6 @@ export function generateWorkout({
     return out;
   };
 
-  const exOf = (p: PlannedExercise) => EXERCISES.find((e) => e.id === p.exercise_id);
   let paired = pairLeftovers(applySupersets(plan));
 
   // pairs run intensity-based rounds, so rebalance the block count to the budget —
@@ -704,9 +742,10 @@ export function generateWorkout({
 
     const picks: { entry: PlannedExercise; ex: Exercise }[] = [];
     for (let t = 0; t < targets.length; t++) {
-      const m = pickTarget();
+      const m = pickTarget(paired);
       if (!m) break;
-      const choice = nextChoice(m, false) ?? nextChoice(m, true);
+      const fits = fitsCap(paired);
+      const choice = nextChoice(m, false, fits) ?? nextChoice(m, true, fits);
       if (choice) {
         hits.set(m, hits.get(m)! + 1);
         used.add(choice.id);
@@ -720,11 +759,10 @@ export function generateWorkout({
     // it just can't partner this pick.
     if (picks.length === 1) {
       const first = picks[0]!.ex;
-      const ok = (e: Exercise) => pairScore(first, e) !== null;
-      const byLoad = targets
-        .filter((m) => !dry.has(m))
-        .sort((a, b) => load(a) - load(b) || Number(isFocusTarget(b)) - Number(isFocusTarget(a)));
-      for (const m of byLoad) {
+      const withFirst = [...paired, picks[0]!.entry];
+      const fits = fitsCap(withFirst);
+      const ok = (e: Exercise) => pairScore(first, e) !== null && fits(e);
+      for (const m of byPriority(withFirst)) {
         const choice = nextChoice(m, false, ok) ?? nextChoice(m, true, ok);
         if (!choice) continue;
         hits.set(m, hits.get(m)! + 1);
@@ -759,7 +797,7 @@ export function generateWorkout({
     const bumped = paired.map((p, i) =>
       i === idx || i === idx + 1 ? { ...p, target_sets: p.target_sets + 1 } : p,
     );
-    if (estimateSeconds(bumped) > budget * 1.06) break;
+    if (estimateSeconds(bumped) > budget * 1.06 || overSessionCap(bumped)) break;
     paired = bumped;
   }
 
@@ -781,5 +819,36 @@ export function generateWorkout({
     p.superset_group === undefined ? p : { ...p, superset_group: renumber.get(p.superset_group)! },
   );
 
-  return withVolume(paired);
+  return withVolume(trimToCap(paired));
+}
+
+/** Takes sets off, from the end of the plan, until no muscle is over the
+ *  per-session cap (volume.ts). Pairing sets a superset's rounds for both
+ *  halves (`roundsFor`), which could push a muscle past it (one push day
+ *  planned 22.5 shoulder sets). A superset loses a round from both halves,
+ *  so they stay equal; nothing goes under 2 sets. */
+function trimToCap(plan: PlannedExercise[]): PlannedExercise[] {
+  const out = plan.map((p) => ({ ...p }));
+  for (let guard = 0; guard < 40 && overSessionCap(out); guard++) {
+    const sets = planSets(out);
+    const over = new Set(
+      (Object.keys(sets) as Muscle[]).filter((m) => sets[m]! > MAX_SESSION_SETS_PER_MUSCLE),
+    );
+    let i = out.length - 1;
+    for (; i >= 0; i--) {
+      const p = out[i]!;
+      const hitsOver = Object.keys(setContribution(p.exercise_id)).some((m) =>
+        over.has(m as Muscle),
+      );
+      if (hitsOver && p.target_sets > 2) break;
+    }
+    if (i < 0) break;
+    const p = out[i]!;
+    const partner =
+      p.superset_group === undefined
+        ? -1
+        : out.findIndex((q, j) => j !== i && q.superset_group === p.superset_group);
+    for (const j of partner >= 0 ? [i, partner] : [i]) out[j]!.target_sets -= 1;
+  }
+  return out;
 }
