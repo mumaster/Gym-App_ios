@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Repeat } from "lucide-react";
+import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { EQUIPMENT, exerciseById } from "../../lib/gym/data";
 import { alternativesFor, availableExercises } from "../../lib/gym/generator";
@@ -145,7 +146,7 @@ export function SwapSheet({
             {pending.reason === "antagonist" && recommended[0] ? (
               <button
                 onClick={() => onPick(recommended[0]!)}
-                className="min-h-[52px] w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
+                className={`${button.primary} w-full`}
               >
                 {t.swapSheet.applyRecommended}
               </button>

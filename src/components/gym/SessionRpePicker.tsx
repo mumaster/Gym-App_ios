@@ -29,7 +29,7 @@ export function SessionRpePicker({
             aria-pressed={value === n}
             aria-label={t.trainingLoad.rateAria(n)}
             className={`tabular flex h-11 items-center justify-center rounded-lg text-[15px] font-bold active:scale-95 ${
-              value === n ? chip.on : "bg-secondary text-secondary-foreground"
+              value === n ? chip.on : chip.off
             }`}
           >
             {n}

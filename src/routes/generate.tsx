@@ -6,6 +6,7 @@ import {
   ArrowUp,
   Bookmark,
   CalendarClock,
+  CalendarDays,
   ChevronRight,
   Flame,
   Heart,
@@ -21,6 +22,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
+import { CardHead } from "../components/gym/CardHead";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
@@ -561,7 +563,7 @@ function WorkoutHome() {
             setCustomInput(String(d));
           }}
           className={`tap-target min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
-            duration === d ? chip.on : "bg-secondary text-secondary-foreground"
+            duration === d ? chip.on : chip.off
           }`}
         >
           {d}m
@@ -569,7 +571,7 @@ function WorkoutHome() {
       ))}
       <label
         className={`tap-target flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
-          SHORTCUTS.includes(duration) ? "bg-muted" : chip.on
+          SHORTCUTS.includes(duration) ? chip.off : chip.on
         }`}
       >
         <input
@@ -601,45 +603,37 @@ function WorkoutHome() {
 
   const planCard = (
     <>
-      <Card className="mb-4 p-4">
+      <Card className="mb-4 overflow-hidden p-4">
         {program && programWeek ? (
           <>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-                  {programWeek.type === "deload" ? (
-                    <Snowflake className="size-3.5" />
-                  ) : (
-                    <Flame className="size-3.5" />
-                  )}
-                  {t.generate.weekOf(
-                    program.currentWeek + 1,
-                    program.weeks.length,
-                    programWeek.type === "deload",
-                  )}
-                </p>
-                <p className="mt-1 truncate text-[17px] font-bold">
-                  {t.generate.nextDay(programDayLabel)}
-                </p>
-                <p className="text-[13px] text-muted-foreground">
-                  {program.name === splitTemplateById(program.templateId).label
-                    ? program.name
-                    : `${program.name} · ${splitTemplateById(program.templateId).label}`}
-                </p>
-                {programWeek.type === "deload" ? (
-                  <p className="mt-1 text-[12.5px] text-muted-foreground">
-                    {t.generate.deloadExplain}
-                  </p>
-                ) : null}
-              </div>
-              <button
-                onClick={() => setProgramSheetOpen(true)}
-                aria-label={t.generate.editProgram}
-                className={button.icon}
-              >
-                <Pencil className="size-4" />
-              </button>
-            </div>
+            {/* The band names the program and the week it's in (they were an
+                eyebrow over the next day); the next session leads the body. */}
+            <CardHead
+              icon={programWeek.type === "deload" ? Snowflake : Flame}
+              title={
+                program.name === splitTemplateById(program.templateId).label
+                  ? program.name
+                  : `${program.name} · ${splitTemplateById(program.templateId).label}`
+              }
+              subtitle={t.generate.weekOf(
+                program.currentWeek + 1,
+                program.weeks.length,
+                programWeek.type === "deload",
+              )}
+              actions={
+                <button
+                  onClick={() => setProgramSheetOpen(true)}
+                  aria-label={t.generate.editProgram}
+                  className={button.icon}
+                >
+                  <Pencil className="size-4" />
+                </button>
+              }
+            />
+            <p className="truncate text-[17px] font-bold">{t.generate.nextDay(programDayLabel)}</p>
+            {programWeek.type === "deload" ? (
+              <p className="mt-1 text-[12.5px] text-muted-foreground">{t.generate.deloadExplain}</p>
+            ) : null}
 
             <div className="mt-3 flex gap-1">
               {program.weeks.map((w, i) => (
@@ -668,10 +662,7 @@ function WorkoutHome() {
               {t.generate.sessionLength}
             </p>
             {durationPicker}
-            <button
-              onClick={startProgramDay}
-              className="glow mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
-            >
+            <button onClick={startProgramDay} className={`${button.primary} mt-3 w-full`}>
               <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
             </button>
             <button
@@ -683,30 +674,30 @@ function WorkoutHome() {
           </>
         ) : weeklyScheme ? (
           <>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-                  {splitTemplateById(weeklyScheme.templateId).label}
-                </p>
-                <p className="mt-1 truncate text-[17px] font-bold">
-                  {t.generate.nextDay(scheduledDayLabel)}
-                </p>
-                {scheduledSlot ? (
-                  <p className="text-[13px] text-muted-foreground">
-                    {t.generate.suggestedDay(
-                      t.common.dow[plannedDate(weeklyScheme, weeklyScheme.cyclePosition).getDay()]!,
-                    )}
-                  </p>
-                ) : null}
-              </div>
-              <button
-                onClick={() => setPlanSheetOpen(true)}
-                aria-label={t.generate.editWeeklyPlan}
-                className={button.icon}
-              >
-                <Pencil className="size-4" />
-              </button>
-            </div>
+            <CardHead
+              icon={CalendarDays}
+              title={splitTemplateById(weeklyScheme.templateId).label}
+              subtitle={t.generate.weeklyPlan}
+              actions={
+                <button
+                  onClick={() => setPlanSheetOpen(true)}
+                  aria-label={t.generate.editWeeklyPlan}
+                  className={button.icon}
+                >
+                  <Pencil className="size-4" />
+                </button>
+              }
+            />
+            <p className="truncate text-[17px] font-bold">
+              {t.generate.nextDay(scheduledDayLabel)}
+            </p>
+            {scheduledSlot ? (
+              <p className="text-[13px] text-muted-foreground">
+                {t.generate.suggestedDay(
+                  t.common.dow[plannedDate(weeklyScheme, weeklyScheme.cyclePosition).getDay()]!,
+                )}
+              </p>
+            ) : null}
 
             <RotationWeekStrip rotation={weeklyScheme} templateId={weeklyScheme.templateId} />
             <MissedSessionBanner
@@ -720,10 +711,7 @@ function WorkoutHome() {
               {t.generate.sessionLength}
             </p>
             {durationPicker}
-            <button
-              onClick={startScheduledDay}
-              className="glow mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
-            >
+            <button onClick={startScheduledDay} className={`${button.primary} mt-3 w-full`}>
               <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
             </button>
             <button
@@ -744,10 +732,8 @@ function WorkoutHome() {
             {/* Text full width, the two choices side by side under it, like
                 the cardio card's buttons below it: stacked beside the text
                 they squeezed it to four lines. */}
-            <p className="text-[16px] font-semibold">{t.generate.planYourTraining}</p>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
-              {t.generate.planYourTrainingDesc}
-            </p>
+            <CardHead icon={CalendarDays} title={t.generate.planYourTraining} filled={false} />
+            <p className="text-[13px] text-muted-foreground">{t.generate.planYourTrainingDesc}</p>
             <div className="mt-3 flex gap-2">
               <button
                 onClick={() => setPlanSheetOpen(true)}
@@ -873,7 +859,7 @@ function WorkoutHome() {
                         update({ activeProfileId: p.id });
                       }}
                       className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
-                        p.id === profile.id ? chip.on : "bg-secondary text-secondary-foreground"
+                        p.id === profile.id ? chip.on : chip.off
                       }`}
                     >
                       {p.name}
@@ -1016,7 +1002,7 @@ function WorkoutHome() {
                           key={t}
                           onClick={() => toggleFocus(t)}
                           className={`tap-target min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-                            on ? chip.on : "glass text-secondary-foreground"
+                            on ? chip.on : chip.off
                           }`}
                         >
                           {t}
@@ -1080,7 +1066,7 @@ function WorkoutHome() {
               <button
                 onClick={generateOwn}
                 disabled={generating}
-                className="glow flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985] disabled:active:scale-100"
+                className={`${button.primary} w-full`}
               >
                 {generating ? (
                   <>
@@ -1228,10 +1214,7 @@ function WorkoutHome() {
             >
               <RefreshCw className="size-5" /> {t.generate.shuffle}
             </button>
-            <button
-              onClick={start}
-              className="glow flex min-h-[52px] flex-[2] items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-            >
+            <button onClick={start} className={`${button.primary} flex-[2]`}>
               <Play className="size-5" /> {t.generate.startWorkout}
             </button>
           </div>

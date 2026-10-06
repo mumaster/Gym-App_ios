@@ -405,6 +405,16 @@
   background-color: color-mix(in oklab, var(--primary) 11%, transparent);
 }
 
+/* An unpicked choice chip (ui.ts's chip.off): the glass look, with its
+   hairline as an inset ring instead of a border, so a chip keeps its size
+   when it's picked (chip.on draws an inset ring too). No backdrop blur: a
+   screen can hold dozens of chips, each blur is a compositing layer, and
+   they nearly always sit on a card, where the blur shows nothing. */
+@utility glass-chip {
+  background-color: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
 @utility glass-strong {
   background-color: var(--surface-strong);
   backdrop-filter: blur(32px) saturate(180%);

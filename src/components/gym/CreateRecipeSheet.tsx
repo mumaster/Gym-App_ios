@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftRight, Check, Minus, NotebookPen, Plus, Trash2 } from "lucide-react";
+import { button } from "./ui";
 import { AddFoodSheet } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { FoodListSheet } from "./FoodListSheet";
@@ -249,11 +250,7 @@ export function CreateRecipeSheet({
             </div>
           ) : null}
 
-          <button
-            onClick={save}
-            disabled={!canSave}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
-          >
+          <button onClick={save} disabled={!canSave} className={`${button.primary} w-full`}>
             <Check className="size-5" /> {t.createRecipe.saveRecipe}
           </button>
         </div>

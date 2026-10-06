@@ -1,4 +1,5 @@
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
+import { SearchField } from "./SearchField";
 import { useEffect, useMemo, useState } from "react";
 import { useExerciseCatalog } from "../../lib/gym/catalog";
 import { exerciseById } from "../../lib/gym/data";
@@ -11,7 +12,7 @@ import type { KnownLift } from "../../lib/gym/startWeight";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Exercise } from "../../lib/gym/types";
 import { BottomSheet } from "./BottomSheet";
-import { chip } from "./ui";
+import { chip, button } from "./ui";
 
 /** Typo guards, not training numbers. */
 const MAX_KG = 500;
@@ -185,7 +186,7 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
                 onClick={() => setRpe((r) => (r === v ? null : v))}
                 aria-pressed={rpe === v}
                 className={`tabular h-10 rounded-xl text-[15px] font-bold active:scale-95 ${
-                  rpe === v ? chip.on : "bg-background text-foreground"
+                  rpe === v ? chip.on : chip.off
                 }`}
               >
                 {v}
@@ -198,23 +199,19 @@ export function KnownLiftsSheet({ open, onClose }: { open: boolean; onClose: () 
               add();
             }}
             disabled={!valid}
-            className="mt-4 h-12 w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.99] disabled:opacity-40"
+            className={`${button.primary} mt-4 w-full`}
           >
             {t.knownLifts.add}
           </button>
         </div>
       ) : (
         <>
-          <div className="relative mb-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t.knownLifts.search}
-              className="h-11 w-full rounded-xl bg-muted pl-9 pr-3 text-[16px] outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder={t.knownLifts.search}
+            className="mb-2"
+          />
           {!query.trim() ? (
             <p className="mb-1.5 text-[12px] text-muted-foreground">{t.knownLifts.popular}</p>
           ) : null}

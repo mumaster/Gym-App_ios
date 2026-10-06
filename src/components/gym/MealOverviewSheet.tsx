@@ -1,4 +1,5 @@
 import { BookmarkPlus, Check, Plus } from "lucide-react";
+import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { drinkOf } from "../../lib/gym/alcohol";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -175,10 +176,7 @@ export function MealOverviewSheet({
 
           <div className="flex gap-2">
             {canAdd ? (
-              <button
-                onClick={onAdd}
-                className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-              >
+              <button onClick={onAdd} className={`${button.primary} flex-1`}>
                 <Plus className="size-4" /> {t.mealOverview.add}
               </button>
             ) : null}

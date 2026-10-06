@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
+import { button } from "./ui";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { buildRecap } from "../../lib/gym/recap";
 import { drawRecap, recapBlob, type RecapCopy } from "../../lib/gym/recapImage";
@@ -99,7 +100,7 @@ export function RecapShare({ workout }: { workout: Workout }) {
       <button
         onClick={() => void share()}
         disabled={busy}
-        className="relative mx-auto flex min-h-[52px] w-full max-w-[320px] items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.99] disabled:opacity-60"
+        className={`${button.primary} relative mx-auto w-full max-w-[320px]`}
       >
         <Share2 className="size-5" />
         {t.recap.share}

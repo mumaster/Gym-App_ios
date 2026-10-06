@@ -111,7 +111,7 @@ function EquipmentScreen() {
             key={p.id}
             onClick={() => setEditingId(p.id)}
             className={`min-h-[44px] shrink-0 rounded-full px-5 text-[15px] font-semibold ${
-              p.id === editing.id ? chip.on : "glass text-secondary-foreground"
+              p.id === editing.id ? chip.on : chip.off
             }`}
           >
             {p.name}

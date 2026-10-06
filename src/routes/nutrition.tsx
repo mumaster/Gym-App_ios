@@ -293,10 +293,7 @@ function NutritionScreen() {
           />
 
           {isToday ? (
-            <button
-              onClick={() => openAdd()}
-              className="glow mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-            >
+            <button onClick={() => openAdd()} className={`${button.primary} mt-4 w-full`}>
               <Plus className="size-5" /> {t.nutrition.addFood}
             </button>
           ) : null}

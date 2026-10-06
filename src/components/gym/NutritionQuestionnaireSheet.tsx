@@ -17,7 +17,7 @@ import {
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Workout } from "../../lib/gym/types";
-import { chip } from "./ui";
+import { chip, button } from "./ui";
 
 /** Average finished sessions a week over the last four weeks, or null
  *  without any — a prefill from what the user actually did. */
@@ -294,7 +294,7 @@ export function NutritionQuestionnaireSheet({
                     setSex(s);
                   }}
                   className={`flex-1 rounded-2xl px-4 py-3 text-[15px] font-semibold capitalize active:scale-95 ${
-                    sex === s ? chip.on : "bg-muted text-foreground"
+                    sex === s ? chip.on : chip.off
                   }`}
                 >
                   {t.nutritionQuestionnaire[s]}
@@ -439,11 +439,7 @@ export function NutritionQuestionnaireSheet({
             </button>
           ) : null}
           {step < STEP_LABELS.length - 1 ? (
-            <button
-              onClick={next}
-              disabled={!canAdvance}
-              className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground disabled:opacity-40 active:scale-95"
-            >
+            <button onClick={next} disabled={!canAdvance} className={`${button.primary} flex-1`}>
               {t.common.next}
             </button>
           ) : (
@@ -455,7 +451,7 @@ export function NutritionQuestionnaireSheet({
                 onApply(suggested, profile);
                 close();
               }}
-              className="flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-95"
+              className={`${button.primary} flex-1`}
             >
               {t.nutritionQuestionnaire.useTheseLimits}
             </button>

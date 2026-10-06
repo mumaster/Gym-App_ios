@@ -46,7 +46,7 @@ export function ExerciseDetailSheet({
                 toggleLovedExercise(exercise.id);
               }}
               className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold ${
-                lovedExerciseIds.includes(exercise.id) ? chip.on : "glass text-secondary-foreground"
+                lovedExerciseIds.includes(exercise.id) ? chip.on : chip.off
               }`}
             >
               <Heart

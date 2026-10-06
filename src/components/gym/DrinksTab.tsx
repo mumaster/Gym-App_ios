@@ -799,7 +799,7 @@ function WaterSettingsSheet({
           haptic(15);
           save();
         }}
-        className="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
+        className={`${button.primary} mt-5 w-full`}
       >
         {t.common.save}
       </button>

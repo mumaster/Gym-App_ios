@@ -7,7 +7,7 @@ import type { CardioActivity, CardioEffort } from "../../lib/gym/types";
 import { BottomSheet } from "./BottomSheet";
 import { ActivityPicker, EffortPicker } from "./CardioControls";
 import { SessionRpePicker } from "./SessionRpePicker";
-import { chip } from "./ui";
+import { chip, button } from "./ui";
 
 /** A typo guard for the minutes field (so "600" for 60 can't log ten hours),
  *  not a training number. */
@@ -167,7 +167,7 @@ export function LogCardioSheet({
                   touch();
                 }}
                 className={`tap-target min-h-[40px] rounded-2xl text-[13.5px] font-semibold active:scale-95 ${
-                  yesterday === y ? chip.on : "bg-secondary text-secondary-foreground"
+                  yesterday === y ? chip.on : chip.off
                 }`}
               >
                 {y ? t.cardio.yesterday : t.cardio.today}
@@ -189,7 +189,7 @@ export function LogCardioSheet({
           type="button"
           disabled={!valid}
           onClick={save}
-          className="glow flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40 disabled:shadow-none"
+          className={`${button.primary} w-full`}
         >
           {t.cardio.save}
         </button>

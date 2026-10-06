@@ -152,7 +152,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                                 ? chip.on
                                 : taken
                                   ? "bg-secondary text-muted-foreground opacity-40"
-                                  : "bg-secondary text-secondary-foreground"
+                                  : chip.off
                             }`}
                           >
                             {t.common.dow[dow]}
@@ -230,7 +230,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                   key={dow}
                   onClick={() => toggleDow(dow)}
                   className={`min-h-[44px] min-w-[44px] rounded-2xl px-3 text-[14px] font-semibold ${
-                    dows.includes(dow) ? chip.on : "bg-secondary text-secondary-foreground"
+                    dows.includes(dow) ? chip.on : chip.off
                   }`}
                 >
                   {t.common.dow[dow]}
@@ -267,11 +267,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
 
           <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 
-          <button
-            onClick={save}
-            disabled={!preview.length}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
-          >
+          <button onClick={save} disabled={!preview.length} className={`${button.primary} w-full`}>
             <Check className="size-5" />{" "}
             {weeklyScheme ? t.weeklyPlan.saveChanges : t.weeklyPlan.startThisPlan}
           </button>

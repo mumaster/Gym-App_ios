@@ -33,13 +33,16 @@ export const button = {
 
 /** A choice chip: a time, a profile, a filter, a muscle. The picked one is
  *  tonal (a light accent wash, accent text and a thin accent ring), never
- *  solid: solid accent is for the screen's one main action. 36 pt tall,
+ *  solid: solid accent is for the screen's one main action. An unpicked one
+ *  is glass (`glass-chip`: the card surface with a hairline ring; asked for,
+ *  it was the look the user liked out of nine). Both draw their edge as an
+ *  inset ring, so picking a chip doesn't change its size. 36 pt tall,
  *  tapped at 44 (tap-target). Width and padding at the call site when the
  *  chips share a row equally. */
 export const chip = {
   base: "tap-target flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold active:scale-95",
   on: "bg-primary/10 text-primary-text ring-1 ring-inset ring-primary/50",
-  off: "bg-muted text-muted-foreground",
+  off: "glass-chip text-secondary-foreground",
 } as const;
 
 /** The round icon badge in front of a card or row: solid accent once there's

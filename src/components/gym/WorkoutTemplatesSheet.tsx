@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, Play, Trash2 } from "lucide-react";
+import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { estimateMinutes } from "../../lib/gym/generator";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -60,11 +61,7 @@ export function WorkoutTemplatesSheet({
             placeholder={t.workoutTemplates.namePlaceholder}
             className="h-12 w-full rounded-2xl bg-muted px-4 text-[16px] font-semibold outline-none focus:ring-2 focus:ring-ring"
           />
-          <button
-            onClick={save}
-            disabled={!name.trim()}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
-          >
+          <button onClick={save} disabled={!name.trim()} className={`${button.primary} w-full`}>
             <Check className="size-5" /> {t.workoutTemplates.saveTemplate}
           </button>
         </div>

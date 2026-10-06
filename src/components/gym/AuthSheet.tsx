@@ -3,7 +3,7 @@ import { Cloud, Lock, Mail } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
-import { chip } from "./ui";
+import { chip, button } from "./ui";
 
 type Mode = "signin" | "signup";
 
@@ -146,7 +146,7 @@ export function AuthSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <button
               onClick={() => void submit()}
               disabled={busy}
-              className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-60"
+              className={`${button.primary} w-full`}
             >
               {busy ? t.auth.pleaseWait : mode === "signin" ? t.auth.signIn : t.auth.createAccount}
             </button>

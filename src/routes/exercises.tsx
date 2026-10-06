@@ -7,12 +7,11 @@ import {
   MoreHorizontal,
   Plus,
   Pencil,
-  Search,
   ShieldOff,
   Trash2,
   Upload,
-  X,
 } from "lucide-react";
+import { SearchField } from "../components/gym/SearchField";
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
@@ -261,36 +260,17 @@ function ExercisesScreen() {
             onChange={setTab}
             labels={t.exercises.tabs}
           />
-          <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
-            <Search className="size-5 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              {...searchTap}
-              onFocus={() => {
-                setSearchFocused(true);
-                scrollListUnderSearch(true);
-              }}
-              onBlur={() => setSearchFocused(false)}
-              placeholder={t.exercises.search}
-              enterKeyHint="search"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label={t.addFood.clearSearch}
-                className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
-              >
-                <X className="size-4" />
-              </button>
-            ) : null}
-          </div>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            {...searchTap}
+            onFocus={() => {
+              setSearchFocused(true);
+              scrollListUnderSearch(true);
+            }}
+            onBlur={() => setSearchFocused(false)}
+            placeholder={t.exercises.search}
+          />
         </div>
       }
     >
@@ -305,7 +285,7 @@ function ExercisesScreen() {
               );
             }}
             className={`tap-target min-h-[40px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${
-              muscle === m ? chip.on : "glass text-secondary-foreground"
+              muscle === m ? chip.on : chip.off
             }`}
           >
             {m}
@@ -322,7 +302,7 @@ function ExercisesScreen() {
               key={choice}
               onClick={() => setTarget(choice)}
               className={`tap-target min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-                target === choice ? chip.on : "glass text-secondary-foreground"
+                target === choice ? chip.on : chip.off
               }`}
             >
               {choice === "All" ? t.exercises.anyMuscle : choice}
@@ -377,7 +357,7 @@ function ExercisesScreen() {
                     }}
                     aria-pressed={p.id === profile.id}
                     className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
-                      p.id === profile.id ? chip.on : "bg-secondary text-secondary-foreground"
+                      p.id === profile.id ? chip.on : chip.off
                     }`}
                   >
                     {p.name}
@@ -531,7 +511,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       type="button"
       onClick={onClick}
       className={`tap-target min-h-[36px] rounded-full px-3 text-[13px] font-semibold ${
-        active ? chip.on : "glass text-secondary-foreground"
+        active ? chip.on : chip.off
       }`}
     >
       {label}
@@ -700,7 +680,7 @@ function ExerciseEditor({
             <span className="text-[15px] font-semibold">{t.exercises.compoundMovement}</span>
             <span
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${
-                value.compound ? chip.on : "bg-secondary text-secondary-foreground"
+                value.compound ? chip.on : chip.off
               }`}
             >
               {value.compound ? t.exercises.yes : t.exercises.no}
@@ -731,7 +711,7 @@ function ExerciseEditor({
             <button
               disabled={busy}
               onClick={() => void save()}
-              className="min-h-[50px] flex-1 rounded-2xl bg-primary text-[17px] font-semibold text-primary-foreground disabled:opacity-50"
+              className={`${button.primary} flex-1`}
             >
               {busy ? t.exercises.savingExercise : t.exercises.saveExercise}
             </button>

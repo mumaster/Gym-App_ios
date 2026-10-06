@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
+  BarChart3,
   ChevronRight,
   Dumbbell,
   Flame,
   Footprints,
   HeartPulse,
+  LineChart,
   Trophy,
   Watch,
   type LucideIcon,
@@ -13,6 +15,8 @@ import {
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { CardHead } from "../components/gym/CardHead";
+import { ListCard } from "../components/gym/ListCard";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
@@ -335,9 +339,14 @@ function HistoryScreen() {
           )}
           {workouts.length ? (
             <>
-              <SectionLabel>{t.history.perExercise}</SectionLabel>
-              <div ref={chartRef} className="scroll-mt-28">
-                <Card className="p-4">
+              <div ref={chartRef} className="mt-4 scroll-mt-28">
+                <Card className="overflow-hidden p-4">
+                  <CardHead
+                    icon={LineChart}
+                    title={t.history.perExercise}
+                    subtitle={trackable.find((x) => x.id === shownId)?.name}
+                    filled={!!shownId}
+                  />
                   {shownId ? (
                     <>
                       <div className="no-scrollbar -mx-1 -my-1.5 mb-1.5 flex gap-1.5 overflow-x-auto px-1 py-1.5">
@@ -347,7 +356,7 @@ function HistoryScreen() {
                             onClick={() => setChartId(x.id)}
                             aria-pressed={x.id === shownId}
                             className={`tap-target min-h-[34px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-                              x.id === shownId ? chip.on : "bg-secondary text-secondary-foreground"
+                              x.id === shownId ? chip.on : chip.off
                             }`}
                           >
                             {x.name}
@@ -366,52 +375,63 @@ function HistoryScreen() {
 
           {prs.length ? (
             <>
-              <SectionLabel>{t.history.personalRecords}</SectionLabel>
-              <div className="space-y-2">
-                {prs.map((p) => {
-                  const bw = isBodyweightExercise(exerciseById(p.exercise_id));
-                  const canChart = trackable.some((x) => x.id === p.exercise_id);
-                  return (
-                    <Card
-                      key={p.exercise_id}
-                      className="flex items-center justify-between gap-3 p-4"
-                      {...(canChart
-                        ? {
-                            onClick: () => {
-                              setChartId(p.exercise_id);
-                              chartRef.current?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                            },
-                          }
-                        : {})}
-                    >
-                      <div className="min-w-0">
-                        <span className="text-[16px] font-semibold">{p.name}</span>
-                        <p className="tabular text-[12px] text-muted-foreground">
-                          {formatLoad(p.weight, bw, t.session.bw)} × {p.reps}
-                        </p>
+              <div className="mt-4">
+                <ListCard
+                  icon={Trophy}
+                  title={t.history.recordsTitle}
+                  subtitle={t.history.recordsSub(prs.length)}
+                  filled
+                >
+                  {prs.map((p, i) => {
+                    const bw = isBodyweightExercise(exerciseById(p.exercise_id));
+                    const canChart = trackable.some((x) => x.id === p.exercise_id);
+                    const row = (
+                      <>
+                        <div className="min-w-0">
+                          <span className="block truncate text-[15px] font-semibold">{p.name}</span>
+                          <p className="tabular text-[12.5px] text-muted-foreground">
+                            {formatLoad(p.weight, bw, t.session.bw)} × {p.reps}
+                          </p>
+                        </div>
+                        {/* An estimate from the external load alone means
+                            nothing for a bodyweight exercise, so it gets no pill. */}
+                        {bw ? null : (
+                          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary-text">
+                            <Trophy className="size-4" />
+                            {p.e1rm} kg
+                          </span>
+                        )}
+                      </>
+                    );
+                    const rowClass = `flex w-full items-center justify-between gap-3 px-4 py-3 text-left ${
+                      i ? "border-t border-border" : ""
+                    }`;
+                    return canChart ? (
+                      <button
+                        key={p.exercise_id}
+                        onClick={() => {
+                          setChartId(p.exercise_id);
+                          chartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className={`${rowClass} active:bg-foreground/5`}
+                      >
+                        {row}
+                      </button>
+                    ) : (
+                      <div key={p.exercise_id} className={rowClass}>
+                        {row}
                       </div>
-                      {/* An estimate from the external load alone means nothing
-                      for a bodyweight exercise, so it gets no pill. */}
-                      {bw ? null : (
-                        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[14px] font-bold text-primary-text">
-                          <Trophy className="size-4" />
-                          {p.e1rm} kg
-                        </span>
-                      )}
-                    </Card>
-                  );
-                })}
+                    );
+                  })}
+                </ListCard>
               </div>
             </>
           ) : null}
 
           {volumeByMuscle.length ? (
             <>
-              <SectionLabel>{t.history.volumePerMuscle}</SectionLabel>
-              <Card className="p-4">
+              <Card className="mt-4 overflow-hidden p-4">
+                <CardHead icon={BarChart3} title={t.history.volumePerMuscle} />
                 <div className="h-52 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={volumeByMuscle}>
@@ -448,19 +468,14 @@ function HistoryScreen() {
         <>
           {workouts.length > 0 ? (
             <>
-              <SectionLabel>{t.history.streak}</SectionLabel>
-              <Card className="p-4">
+              <Card className="mt-4 overflow-hidden p-4">
+                <CardHead icon={Flame} title={t.history.streak} filled={streak > 0} />
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Flame
-                      className={`size-6 ${streak > 0 ? "text-primary-text" : "text-muted-foreground"}`}
-                    />
-                    <div>
-                      <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
-                      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                        {t.history.weekStreak}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="tabular text-[20px] font-bold leading-none">{streak}</p>
+                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {t.history.weekStreak}
+                    </p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div>
@@ -482,8 +497,9 @@ function HistoryScreen() {
 
           {workouts.length ? (
             <>
-              <SectionLabel>{t.trainingLoad.title}</SectionLabel>
-              <TrainingLoadCard />
+              <div className="mt-4">
+                <TrainingLoadCard />
+              </div>
             </>
           ) : null}
 
@@ -495,8 +511,9 @@ function HistoryScreen() {
 
           {workouts.length ? (
             <>
-              <SectionLabel>{t.volume.thisWeek}</SectionLabel>
-              <WeeklySetsCard />
+              <div className="mt-4">
+                <WeeklySetsCard />
+              </div>
               {/* Picking which muscles to grow lives next to the weekly sets it
               sets the targets for; on the Workout tab it sat in the middle
               of building today's session. */}

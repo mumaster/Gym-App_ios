@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Footprints, ImagePlus } from "lucide-react";
+import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { RouteMapView } from "./RouteMapView";
@@ -195,10 +196,7 @@ export function WatchImportSheet({
       {step === "pick" ? (
         <div className="space-y-4">
           <p className="text-[14px] leading-snug text-muted-foreground">{t.watch.intro}</p>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="glow flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.985]"
-          >
+          <button onClick={() => fileRef.current?.click()} className={`${button.primary} w-full`}>
             <ImagePlus className="size-5" /> {t.watch.choose}
           </button>
         </div>
@@ -295,11 +293,7 @@ export function WatchImportSheet({
             </div>
           ) : null}
 
-          <button
-            onClick={save}
-            disabled={!target}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95 disabled:opacity-40"
-          >
+          <button onClick={save} disabled={!target} className={`${button.primary} w-full`}>
             <Check className="size-5" />{" "}
             {target?.type === "cardio" ? t.watch.saveCardio : t.watch.save}
           </button>

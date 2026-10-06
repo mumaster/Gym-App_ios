@@ -216,7 +216,7 @@ function SessionCard({
                   onPick(d);
                 }}
                 className={`flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-xl px-2 text-[11px] font-bold ${
-                  selected ? chip.on : "bg-secondary text-secondary-foreground"
+                  selected ? chip.on : chip.off
                 }`}
               >
                 <span className="uppercase">{t.common.dow[d.getDay()]}</span>

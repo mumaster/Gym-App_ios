@@ -7,7 +7,7 @@ import { chip as chipStyle } from "./ui";
 
 const chip = (on: boolean) =>
   `tap-target min-h-[40px] rounded-2xl px-3 text-[13.5px] font-semibold active:scale-95 ${
-    on ? chipStyle.on : "bg-secondary text-secondary-foreground"
+    on ? chipStyle.on : chipStyle.off
   }`;
 
 export function ActivityPicker({

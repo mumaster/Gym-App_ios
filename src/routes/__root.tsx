@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { button } from "../components/gym/ui";
 import {
   Outlet,
   Link,
@@ -63,10 +64,7 @@ function NotFoundComponent() {
         <h2 className="mt-4 text-[20px] font-semibold text-foreground">{t.notFoundTitle}</h2>
         <p className="mt-2 text-[14px] text-muted-foreground">{t.notFoundBody}</p>
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-[14px] font-semibold text-primary-foreground"
-          >
+          <Link to="/" className={button.primary}>
             {t.goHome}
           </Link>
         </div>
@@ -91,14 +89,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-[14px] font-semibold text-primary-foreground"
+            className={button.primary}
           >
             {t.tryAgain}
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-full border border-border px-5 py-3 text-[14px] font-semibold text-foreground"
-          >
+          <a href="/" className={`${button.secondary} min-h-[52px]`}>
             {t.goHome}
           </a>
         </div>

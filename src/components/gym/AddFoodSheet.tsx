@@ -12,15 +12,14 @@ import {
   Plus,
   ScanBarcode,
   ScanLine,
-  Search,
   Star,
   StarOff,
   Trash2,
   UserRound,
   UtensilsCrossed,
-  X,
   type LucideIcon,
 } from "lucide-react";
+import { SearchField } from "./SearchField";
 import { FoodScanner, type FoodScannerStatus, type ScanMode } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
@@ -604,35 +603,16 @@ export function AddFoodSheet({
   // Pinned under the title, outside the scrolling list, so the field stays
   // at the top of the screen while results change under it.
   const searchField = (
-    <label className="flex items-center gap-2 rounded-2xl bg-muted pl-4 pr-1.5">
-      <Search className="size-4 shrink-0 text-muted-foreground" />
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        // A tap focuses the field itself (no iOS scroll-and-bounce) and
-        // starts going full height in the same tap; onFocus covers a
-        // keyboard or other focus.
-        {...searchTap}
-        onFocus={() => setSearchMode(true)}
-        placeholder={t.addFood.searchFoods}
-        enterKeyHint="search"
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-        className="h-12 w-full min-w-0 flex-1 bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
-      />
-      {query ? (
-        <button
-          type="button"
-          onClick={() => setQuery("")}
-          aria-label={t.addFood.clearSearch}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
-        >
-          <X className="size-4" />
-        </button>
-      ) : null}
-    </label>
+    <SearchField
+      value={query}
+      onChange={setQuery}
+      // A tap focuses the field itself (no iOS scroll-and-bounce) and
+      // starts going full height in the same tap; onFocus covers a
+      // keyboard or other focus.
+      {...searchTap}
+      onFocus={() => setSearchMode(true)}
+      placeholder={t.addFood.searchFoods}
+    />
   );
 
   /** Scan from the search results: a product the search doesn't know. */
@@ -1309,7 +1289,7 @@ export function MealPicker({
             }}
             aria-pressed={meal === m}
             className={`${compact ? "min-h-[36px]" : "min-h-[40px]"} tap-target flex-auto whitespace-nowrap rounded-2xl px-2.5 text-[13.5px] font-semibold ${
-              meal === m ? chip.on : "bg-muted text-secondary-foreground"
+              meal === m ? chip.on : chip.off
             }`}
           >
             {t.mealTypes[m]}

@@ -602,6 +602,8 @@ const en = {
     est1rm: "Est. 1RM",
     sessionN: (n: string | number) => `Session ${n}`,
     personalRecords: "Personal records · est. 1RM",
+    recordsTitle: "Personal records",
+    recordsSub: (n: number) => `${n} ${n === 1 ? "exercise" : "exercises"} · est. 1RM`,
     sessions: "Sessions",
     minutesShort: (n: number) => `${n} min`,
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
@@ -1266,6 +1268,8 @@ const en = {
   },
   volume: {
     growTitle: "Muscles to grow",
+    growCount: (n: number) => (n ? `${n} picked` : "None picked"),
+    onTarget: (n: number, of: number) => `${n} of ${of} on target`,
     growPlanDesc:
       "Optional. These aim for 20 sets a week instead of 10, so your sessions give them a bigger share. You can change it later.",
     growDesc:
@@ -2038,6 +2042,8 @@ const nl: Dict = {
     est1rm: "Gesch. 1RM",
     sessionN: (n: string | number) => `Sessie ${n}`,
     personalRecords: "Persoonlijke records · gesch. 1RM",
+    recordsTitle: "Persoonlijke records",
+    recordsSub: (n: number) => `${n} ${n === 1 ? "oefening" : "oefeningen"} · gesch. 1RM`,
     sessions: "Sessies",
     minutesShort: (n: number) => `${n} min`,
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
@@ -2701,6 +2707,8 @@ const nl: Dict = {
   },
   volume: {
     growTitle: "Spieren om te laten groeien",
+    growCount: (n: number) => (n ? `${n} gekozen` : "Niets gekozen"),
+    onTarget: (n: number, of: number) => `${n} van ${of} op doel`,
     growPlanDesc:
       "Optioneel. Deze mikken op 20 sets per week in plaats van 10, dus je trainingen geven ze een groter deel. Later aan te passen.",
     growDesc:

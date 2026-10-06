@@ -545,7 +545,7 @@ function WorkoutMock() {
               <span
                 key={m}
                 className={`tabular flex min-h-[34px] items-center justify-center rounded-xl text-[13px] font-bold ${
-                  m === 45 ? chip.on : "bg-secondary"
+                  m === 45 ? chip.on : chip.off
                 }`}
               >
                 {m}
@@ -618,7 +618,7 @@ function SessionMock() {
               <span
                 key={r}
                 className={`tabular flex h-8 items-center justify-center rounded-lg text-[13px] font-bold ${
-                  r === 8 ? chip.on : "bg-secondary"
+                  r === 8 ? chip.on : chip.off
                 }`}
               >
                 {r}

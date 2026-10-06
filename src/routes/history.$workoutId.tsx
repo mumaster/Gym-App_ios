@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, Trophy, Watch } from "lucide-react";
+import { Activity, ChevronLeft, Dumbbell, Trophy, Watch } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { CardHead } from "../components/gym/CardHead";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { RecapShare } from "../components/gym/RecapShare";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
@@ -134,22 +135,28 @@ function SessionDetailScreen() {
         {workout.target_muscles.join(" · ") || t.generate.fullBody}
       </p>
 
-      <SectionLabel>{t.trainingLoad.sessionEffort}</SectionLabel>
-      <Card className="space-y-2 p-4">
-        <p className="text-[14px] font-semibold">{t.trainingLoad.question}</p>
-        <SessionRpePicker
-          value={workout.session_rpe}
-          onChange={(n) => rateWorkout(workout.id, n)}
+      <Card className="mt-4 overflow-hidden p-4">
+        <CardHead
+          icon={Activity}
+          title={t.trainingLoad.sessionEffort}
+          subtitle={t.trainingLoad.question}
+          filled={workout.session_rpe != null}
         />
-        {workout.session_rpe != null ? (
-          <p className="text-[12px] text-muted-foreground">
-            {t.trainingLoad.sessionLoadLine(
-              workout.session_rpe,
-              sessionMinutes(workout),
-              workout.session_rpe * sessionMinutes(workout),
-            )}
-          </p>
-        ) : null}
+        <div className="space-y-2">
+          <SessionRpePicker
+            value={workout.session_rpe}
+            onChange={(n) => rateWorkout(workout.id, n)}
+          />
+          {workout.session_rpe != null ? (
+            <p className="text-[12px] text-muted-foreground">
+              {t.trainingLoad.sessionLoadLine(
+                workout.session_rpe,
+                sessionMinutes(workout),
+                workout.session_rpe * sessionMinutes(workout),
+              )}
+            </p>
+          ) : null}
+        </div>
       </Card>
 
       <SectionLabel>{t.watch.title}</SectionLabel>
@@ -194,20 +201,24 @@ function SessionDetailScreen() {
 
       <div className="space-y-3">
         {byExercise.map((ex) => (
-          <Card key={ex.id} className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[17px] font-semibold">{ex.name}</p>
-                <p className="text-[13px] text-muted-foreground">{ex.muscle}</p>
-              </div>
-              {ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
-                <span className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-[13px] font-bold text-primary-text">
-                  <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
-                </span>
-              ) : null}
-            </div>
+          <Card key={ex.id} className="overflow-hidden p-4">
+            <CardHead
+              icon={Dumbbell}
+              title={ex.name}
+              subtitle={ex.muscle}
+              actions={
+                ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
+                  // On the band's accent tint a 15% accent pill left the text
+                  // at 4.17:1 in the light theme; the page colour behind it
+                  // gives the accent text its full contrast.
+                  <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-bold text-primary-text">
+                    <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
+                  </span>
+                ) : null
+              }
+            />
 
-            <div className="mt-3 space-y-1.5">
+            <div className="space-y-1.5">
               {ex.rows.map((s, i) => (
                 <div
                   key={`${s.set_number}-${i}`}

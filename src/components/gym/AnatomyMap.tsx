@@ -320,7 +320,7 @@ export function AnatomyMap({
         onClick={() => onToggle(r.id)}
         aria-pressed={active}
         className={`tap-target min-h-[34px] rounded-full px-3.5 text-[12.5px] font-semibold transition-colors active:scale-95 ${
-          active ? chipStyle.on : "glass text-secondary-foreground"
+          active ? chipStyle.on : chipStyle.off
         }`}
       >
         {r.label}

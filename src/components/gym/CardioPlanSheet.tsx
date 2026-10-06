@@ -171,7 +171,7 @@ function PlanDayEditor({
                 onChange({ dow });
               }}
               className={`min-h-[40px] rounded-xl text-[13px] font-bold active:scale-95 ${
-                day.dow === dow ? chip.on : "bg-secondary text-secondary-foreground"
+                day.dow === dow ? chip.on : chip.off
               }`}
             >
               {t.common.dow[dow]}

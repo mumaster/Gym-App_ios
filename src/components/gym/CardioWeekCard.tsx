@@ -1,4 +1,5 @@
-import { Check, Plus, Pencil } from "lucide-react";
+import { Check, HeartPulse, Plus, Pencil } from "lucide-react";
+import { CardHead } from "./CardHead";
 import { useState } from "react";
 import {
   WHO_WEEKLY_MINUTES,
@@ -57,26 +58,24 @@ export function CardioWeekCard({
 
   return (
     <>
-      <Card className={`p-4 ${className}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-              {t.cardio.thisWeek}
-            </p>
-            <p className="tabular mt-1 text-[17px] font-bold">
-              {t.cardio.progress(minutes, WHO_WEEKLY_MINUTES)}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPlanOpen(true)}
-            aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
-            className={button.icon}
-          >
-            <Pencil className="size-4" />
-          </button>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+      <Card className={`overflow-hidden p-4 ${className}`}>
+        <CardHead
+          icon={HeartPulse}
+          title={t.cardio.thisWeek}
+          subtitle={t.cardio.progress(minutes, WHO_WEEKLY_MINUTES)}
+          filled={minutes > 0}
+          actions={
+            <button
+              type="button"
+              onClick={() => setPlanOpen(true)}
+              aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
+              className={button.icon}
+            >
+              <Pencil className="size-4" />
+            </button>
+          }
+        />
+        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
         </div>
         {compact ? null : (

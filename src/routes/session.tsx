@@ -67,7 +67,7 @@ import { haptic, useGym } from "../lib/gym/store";
 import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
 import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
-import { chip } from "../components/gym/ui";
+import { chip, button } from "../components/gym/ui";
 
 export const Route = createFileRoute("/session")({
   head: () => ({
@@ -519,7 +519,7 @@ function SessionScreen() {
           </div>
           <button
             onClick={() => navigate({ to: "/history" })}
-            className="mt-6 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
+            className={`${button.primary} mt-6 w-full`}
           >
             {t.session.viewHistory}
           </button>
@@ -532,10 +532,7 @@ function SessionScreen() {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <p className="text-[17px] font-semibold">{t.session.noActiveSession}</p>
-        <button
-          onClick={() => navigate({ to: "/generate" })}
-          className="min-h-[52px] active:scale-95 rounded-2xl bg-primary px-6 font-bold text-primary-foreground"
-        >
+        <button onClick={() => navigate({ to: "/generate" })} className={`${button.primary}`}>
           {t.session.buildAWorkout}
         </button>
       </div>
@@ -981,10 +978,7 @@ function SessionScreen() {
                 </div>
               ))}
             </div>
-            <button
-              onClick={endWorkout}
-              className="glow mt-4 min-h-[52px] active:scale-95 w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground"
-            >
+            <button onClick={endWorkout} className={`${button.primary} mt-4 w-full`}>
               {t.session.finishWorkout}
             </button>
           </div>
@@ -1120,10 +1114,7 @@ function SessionScreen() {
           <p className="text-[14px] leading-snug">
             {t.session.painBody(exerciseById(plan[painIndex ?? 0]?.exercise_id ?? "")?.name ?? "")}
           </p>
-          <button
-            onClick={() => painSwap(false)}
-            className="relative min-h-[52px] w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground active:scale-[0.99]"
-          >
+          <button onClick={() => painSwap(false)} className={`${button.primary} relative w-full`}>
             <HapticSwitch />
             {t.session.painSwap}
           </button>
@@ -1201,7 +1192,7 @@ function SessionScreen() {
             setListOpen(false);
             endWorkout();
           }}
-          className="mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-95"
+          className={`${button.primary} mt-4 w-full`}
         >
           <CheckCircle2 className="size-4" /> {t.session.finishWorkout}
         </button>
@@ -1711,7 +1702,7 @@ function ExerciseBlock({
                       });
                       setEditIdx(null);
                     }}
-                    className="min-h-11 flex-1 rounded-xl bg-primary text-[14px] font-bold text-primary-foreground active:scale-95"
+                    className={`${button.primary} flex-1`}
                   >
                     {t.session.saveEdit}
                   </button>
@@ -2330,10 +2321,7 @@ function FinishPanel({
           </p>
         </div>
       </div>
-      <button
-        onClick={onFinish}
-        className="glow relative mt-2 min-h-[52px] w-full rounded-2xl bg-primary text-[16px] font-bold text-primary-foreground active:scale-[0.99]"
-      >
+      <button onClick={onFinish} className={`${button.primary} relative mt-2 w-full`}>
         <HapticSwitch />
         {t.session.finishWorkout}
       </button>
@@ -2394,7 +2382,7 @@ function RpePicker({
           aria-pressed={value === n}
           aria-label={t.session.rpeAriaLabel(n)}
           className={`tap-target h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
-            value === n ? chip.on : "bg-secondary text-secondary-foreground"
+            value === n ? chip.on : chip.off
           }`}
         >
           {n}
