@@ -695,7 +695,6 @@ const en = {
     weightWeekAvgNone: "No weigh-ins this week.",
     weightDayAria: (day: string, kg: string | null) =>
       kg == null ? `${day}: no weigh-in` : `${day}: ${kg} kg`,
-    noWeighIn: "No weigh-in that day.",
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: nothing logged` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} left`,
@@ -1238,6 +1237,7 @@ const en = {
     saveChanges: "Save changes",
   },
   bodyweight: {
+    noWeighIn: "no weigh-in",
     title: "Bodyweight",
     inputLabel: "Today's weight",
     log: "Log",
@@ -2122,7 +2122,6 @@ const nl: Dict = {
     weightWeekAvgNone: "Deze week nog niet gewogen.",
     weightDayAria: (day: string, kg: string | null) =>
       kg == null ? `${day}: niet gewogen` : `${day}: ${kg} kg`,
-    noWeighIn: "Die dag niet gewogen.",
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: niets gelogd` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} over`,
@@ -2664,6 +2663,7 @@ const nl: Dict = {
     saveChanges: "Wijzigingen opslaan",
   },
   bodyweight: {
+    noWeighIn: "niet gewogen",
     title: "Lichaamsgewicht",
     inputLabel: "Gewicht van vandaag",
     log: "Opslaan",

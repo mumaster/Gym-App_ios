@@ -11,6 +11,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import { Card } from "./Screen";
+import { badge } from "./ui";
 import { HapticSwitch } from "./HapticSwitch";
 import { WeightChart } from "./WeightChart";
 
@@ -21,8 +22,20 @@ const fmt = (n: number, digits: number, locale: string) =>
  *  a calorie change that would bring the real rate onto the target. The
  *  change is only a suggestion: nothing is applied without a tap. */
 /** `canLog` false (a past day picked on Nutrition → Weight) hides the
- *  input: like food and water, only today can be logged. */
-export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
+ *  input: like food and water, only today can be logged. The header band
+ *  says which day is picked and its weigh-in ("Today · 96.4 kg"), like the
+ *  Food tab's day card (asked for: it was a grey label above the card, plus
+ *  a separate small card for a past day's weigh-in). */
+export function BodyweightCard({
+  canLog = true,
+  dayLabel,
+  weighIn,
+}: {
+  canLog?: boolean;
+  dayLabel: string;
+  /** The picked day's weigh-in, formatted ("96.4 kg"), or null. */
+  weighIn: string | null;
+}) {
   const t = useTranslation();
   const locale = useLocale();
   const {
@@ -63,7 +76,20 @@ export function BodyweightCard({ canLog = true }: { canLog?: boolean }) {
   };
 
   return (
-    <Card className="space-y-3 p-4">
+    <Card className="mt-4 space-y-3 overflow-hidden p-4">
+      <div className="card-head -mx-4 -mt-4 flex items-center gap-3 px-4 py-2.5">
+        <span aria-hidden className={`${weighIn ? badge.tonal : badge.off} size-9`}>
+          <Scale className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[17px] font-bold leading-tight">
+            {t.bodyweight.title}
+          </span>
+          <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
+            {dayLabel} · {weighIn ?? t.bodyweight.noWeighIn}
+          </span>
+        </span>
+      </div>
       {canLog ? (
         <div className="flex items-center gap-2">
           <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-muted px-3">

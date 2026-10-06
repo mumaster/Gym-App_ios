@@ -363,19 +363,11 @@ function NutritionScreen() {
           today can be logged, like food and water. */}
       {tab === "weight" ? (
         <>
-          <SectionLabel>
-            {t.bodyweight.title} · {dayLabel}
-          </SectionLabel>
-          {!isToday ? (
-            <Card className="mb-3 px-4 py-3 text-[15px] font-semibold">
-              {selectedWeighIn ? (
-                `${kg(selectedWeighIn.kg)} kg`
-              ) : (
-                <span className="font-normal text-muted-foreground">{t.nutrition.noWeighIn}</span>
-              )}
-            </Card>
-          ) : null}
-          <BodyweightCard canLog={isToday} />
+          <BodyweightCard
+            canLog={isToday}
+            dayLabel={dayLabel}
+            weighIn={selectedWeighIn ? `${kg(selectedWeighIn.kg)} kg` : null}
+          />
         </>
       ) : null}
 
