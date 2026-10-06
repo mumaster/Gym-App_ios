@@ -13,12 +13,12 @@ import {
   Plus,
   RefreshCw,
   Repeat,
-  Settings2,
   Snowflake,
   Sparkles,
   TrendingUp,
   X,
   Zap,
+  Pencil,
 } from "lucide-react";
 import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
@@ -65,7 +65,7 @@ import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load"
 import { focusMuscles } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
-import { chip } from "../components/gym/ui";
+import { button, chip } from "../components/gym/ui";
 
 /** With a program or weekly plan the tab has two sub-tabs: the plan (the
  *  default) and building your own. Without one there are no tabs and the
@@ -559,9 +559,9 @@ function WorkoutHome() {
               <button
                 onClick={() => setProgramSheetOpen(true)}
                 aria-label={t.generate.editProgram}
-                className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className={button.icon}
               >
-                <Settings2 className="size-4" />
+                <Pencil className="size-4" />
               </button>
             </div>
 
@@ -626,9 +626,9 @@ function WorkoutHome() {
               <button
                 onClick={() => setPlanSheetOpen(true)}
                 aria-label={t.generate.editWeeklyPlan}
-                className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className={button.icon}
               >
-                <Settings2 className="size-4" />
+                <Pencil className="size-4" />
               </button>
             </div>
 
@@ -811,9 +811,9 @@ function WorkoutHome() {
               <Link
                 to="/equipment"
                 aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-                className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                className={button.icon}
               >
-                <Settings2 className="size-4" />
+                <Pencil className="size-4" />
               </Link>
             </div>
             <SwitchRow

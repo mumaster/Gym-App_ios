@@ -13,7 +13,7 @@ import {
 } from "../../lib/gym/splits";
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
-import { chip } from "./ui";
+import { button, chip } from "./ui";
 
 /** A sane default spread of weekdays for a given training frequency. */
 const EVEN_SPREAD: Record<number, number[]> = {
@@ -116,7 +116,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
                       aria-label={t.weeklyPlan.changeDay(dayLabel)}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                      className={button.icon}
                     >
                       <Pencil className="size-4" />
                     </button>

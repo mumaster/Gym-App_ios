@@ -6,7 +6,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { formatLoad, isBodyweightExercise } from "../../lib/gym/load";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Exercise, LoggedSet, Workout } from "../../lib/gym/types";
-import { chip } from "./ui";
+import { button, chip } from "./ui";
 
 /**
  * An exercise's page: love/avoid, your history with it, the technique video,
@@ -76,7 +76,7 @@ export function ExerciseDetailSheet({
               <button
                 onClick={() => onEdit(exercise)}
                 aria-label={t.exercises.edit(exercise.name)}
-                className="glass flex min-h-[44px] w-12 shrink-0 items-center justify-center rounded-2xl text-secondary-foreground"
+                className={button.icon}
               >
                 <Pencil className="size-4" />
               </button>

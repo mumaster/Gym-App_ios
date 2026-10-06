@@ -13,7 +13,7 @@ import { useTranslation } from "../../lib/gym/i18n";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
-import { chip } from "./ui";
+import { button, chip } from "./ui";
 
 /** A sane default spread of weekdays for a given training frequency — same
  *  table as WeeklyPlanSheet's, kept local rather than shared since it's a
@@ -161,7 +161,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
                       aria-label={t.programBuilder.changeDay(dayLabel)}
-                      className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                      className={button.icon}
                     >
                       <Pencil className="size-4" />
                     </button>

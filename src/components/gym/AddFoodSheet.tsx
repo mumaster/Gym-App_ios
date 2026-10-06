@@ -64,7 +64,7 @@ import {
 } from "../../lib/gym/myFoods";
 import { useTapFocus } from "../../lib/gym/tapFocus";
 import { haptic, useGym } from "../../lib/gym/store";
-import { badge, chip } from "./ui";
+import { badge, button, chip } from "./ui";
 
 type Step = "start" | "scanning" | "review";
 
@@ -1154,9 +1154,9 @@ function EditToggle({
       onClick={onToggle}
       aria-pressed={editing}
       aria-label={editing ? t.common.done : t.common.edit}
-      className="tap-target flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+      className={button.icon}
     >
-      {editing ? <Check className="size-4" /> : <Pencil className="size-3.5" />}
+      {editing ? <Check className="size-4" /> : <Pencil className="size-4" />}
     </button>
   );
 }

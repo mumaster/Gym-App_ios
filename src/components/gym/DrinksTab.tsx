@@ -7,9 +7,9 @@ import {
   Info,
   Plus,
   RotateCcw,
-  Settings2,
   Wine,
   X,
+  Pencil,
 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { Card } from "./Screen";
@@ -229,9 +229,9 @@ function WaterCard({
           <button
             onClick={onOpenSettings}
             aria-label={t.nutrition.waterSettings}
-            className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className={button.icon}
           >
-            <Settings2 className="size-4" />
+            <Pencil className="size-4" />
           </button>
         }
       />

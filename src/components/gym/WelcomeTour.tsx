@@ -16,12 +16,12 @@ import {
   Plus,
   ScanBarcode,
   Search,
-  Settings2,
   SlidersHorizontal,
   Sun,
   TrendingUp,
   Trophy,
   Wine,
+  Pencil,
 } from "lucide-react";
 import { AnatomyPreview } from "./AnatomyMap";
 import { CARDIO_ICONS } from "./cardioDisplay";
@@ -1021,8 +1021,8 @@ function DrinksMock() {
             </>
           }
           trailing={
-            <span className="flex size-8 items-center justify-center rounded-full bg-secondary">
-              <Settings2 className="size-4" />
+            <span className="flex size-9 items-center justify-center rounded-full bg-secondary">
+              <Pencil className="size-4" />
             </span>
           }
         />

@@ -7,13 +7,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Settings2,
+  CalendarDays,
   Dumbbell,
   HeartPulse,
   Moon,
   Sunrise,
   Sun,
   Cookie,
+  Pencil,
 } from "lucide-react";
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
@@ -47,6 +48,7 @@ import {
 } from "../lib/gym/nutrition";
 import { BodyweightCard } from "../components/gym/BodyweightCard";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
+import { badge, button } from "../components/gym/ui";
 import { useDayGoalsResolver, useDayNutrition } from "../lib/gym/dayNutrition";
 import { drinkOf } from "../lib/gym/alcohol";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
@@ -278,38 +280,9 @@ function NutritionScreen() {
 
       {tab === "food" ? (
         <>
-          <div className="mb-1.5 mt-4 flex items-center justify-between gap-2 px-1">
-            <p className="flex min-w-0 items-center gap-2 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span className="truncate">{dayLabel}</span>
-              {dayNutrition.byDayType ? (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] normal-case tracking-normal text-foreground">
-                  {dayNutrition.dayKind === "training" ? (
-                    <Dumbbell className="size-3" />
-                  ) : dayNutrition.dayKind === "cardio" ? (
-                    <HeartPulse className="size-3" />
-                  ) : (
-                    <Moon className="size-3" />
-                  )}
-                  {dayNutrition.dayKind === "training"
-                    ? t.nutrition.trainingDay
-                    : dayNutrition.dayKind === "cardio"
-                      ? t.nutrition.cardioDay
-                      : t.nutrition.restDay}
-                </span>
-              ) : null}
-            </p>
-            <button
-              onClick={() => {
-                haptic(12);
-                setGoalsSheetOpen(true);
-              }}
-              aria-label={t.nutrition.setDailyLimits}
-              className="tap-target flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-            >
-              <Settings2 className="size-4" />
-            </button>
-          </div>
           <DaySummary
+            dayLabel={dayLabel}
+            dayKind={dayNutrition.byDayType ? dayNutrition.dayKind : null}
             totals={totals}
             goals={dayGoals}
             hasGoals={hasGoals}
@@ -614,11 +587,16 @@ function WeekStrip({
  *  salt on one line — whole grams (salt keeps one decimal on its 5 g
  *  scale), matching Home. */
 function DaySummary({
+  dayLabel,
+  dayKind,
   totals,
   goals,
   hasGoals,
   onSetGoals,
 }: {
+  dayLabel: string;
+  /** Training, cardio or rest day, while day-type limits are on. */
+  dayKind: "training" | "cardio" | "rest" | null;
   totals: Macros;
   goals: NutritionGoals;
   hasGoals: boolean;
@@ -641,8 +619,43 @@ function DaySummary({
     };
   });
 
+  const DayIcon =
+    dayKind === "training"
+      ? Dumbbell
+      : dayKind === "cardio"
+        ? HeartPulse
+        : dayKind === "rest"
+          ? Moon
+          : CalendarDays;
   return (
-    <Card className="space-y-4 p-4">
+    <Card className="mt-4 space-y-4 overflow-hidden p-4">
+      {/* The day and its kind ("Today · Training day") in the card's own
+          header band, like a meal's and a drink's card (asked for: it sat
+          above the card as a small grey label). */}
+      <div className="card-head -mx-4 -mt-4 flex items-center gap-3 px-4 py-2.5">
+        <span aria-hidden className={`${badge.tonal} size-9`}>
+          <DayIcon className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[17px] font-bold leading-tight">{dayLabel}</span>
+          {dayKind ? (
+            <span className="mt-0.5 block truncate text-[12.5px] text-foreground/75">
+              {dayKind === "training"
+                ? t.nutrition.trainingDay
+                : dayKind === "cardio"
+                  ? t.nutrition.cardioDay
+                  : t.nutrition.restDay}
+            </span>
+          ) : null}
+        </span>
+        <button
+          onClick={onSetGoals}
+          aria-label={t.nutrition.setDailyLimits}
+          className={button.icon}
+        >
+          <Pencil className="size-4" />
+        </button>
+      </div>
       <div>
         <div className="flex items-end justify-between gap-3">
           <p className="tabular leading-none">

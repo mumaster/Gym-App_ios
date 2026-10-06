@@ -1,4 +1,4 @@
-import { Check, Plus, Settings2 } from "lucide-react";
+import { Check, Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import {
   WHO_WEEKLY_MINUTES,
@@ -14,7 +14,7 @@ import { CardioPlanSheet } from "./CardioPlanSheet";
 import { CARDIO_ICONS } from "./cardioDisplay";
 import { LogCardioSheet } from "./LogCardioSheet";
 import { Card } from "./Screen";
-import { chip } from "./ui";
+import { button, chip } from "./ui";
 
 /**
  * This week's cardio: moderate-equivalent minutes against the WHO minimum,
@@ -71,9 +71,9 @@ export function CardioWeekCard({
             type="button"
             onClick={() => setPlanOpen(true)}
             aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
-            className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+            className={button.icon}
           >
-            <Settings2 className="size-4" />
+            <Pencil className="size-4" />
           </button>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
