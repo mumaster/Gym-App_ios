@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Apple,
   Check,
@@ -20,7 +20,6 @@ import { button, chip } from "../components/gym/ui";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
   CAFFEINE_DAILY_LIMIT_MG,
-  COFFEE_CAFFEINE_MG,
   COFFEE_KINDS,
   caffeineMg,
   formatWaterAmount,
@@ -244,18 +243,28 @@ function HomeScreen() {
   const readinessOpen = !todayCheckIn || readinessEditing;
   // Spare height below the cards, measured by Screen, as it would be with
   // no check-in picker and nothing optional shown (null until measured).
-  // Answering the check-in then keeps the picker without a jump when it fits. Taller phones use it for
-  // more content rather than leaving it empty (asked for: an iPhone 17 Pro
-  // had 149 pt free once the check-in was answered).
+  // Answering the check-in then keeps the picker without a jump when it fits.
+  // Taller phones use it for more content rather than leaving it empty
+  // (asked for: an iPhone 17 Pro had 149 pt free once the check-in was
+  // answered).
   const [room, setRoom] = useState<number | null>(null);
-  const extras = useMemo(() => homeExtras(room, readinessOpen), [room, readinessOpen]);
+  const hasWaterGoal = waterGoalMl != null && waterGoalMl > 0;
+  const extras = useMemo(
+    () => homeExtras(room, readinessOpen, hasWaterGoal),
+    [room, readinessOpen, hasWaterGoal],
+  );
   const moodShown = readinessOpen || extras.mood;
+  // The height the picker and extras add to what's on screen now, set after
+  // each render: a measurement can arrive before a new set of extras is
+  // drawn, so it must be read against what was drawn, not what's planned
+  // (counting planned extras made the room grow on every measurement).
+  const drawnCost = useRef(0);
+  useLayoutEffect(() => {
+    drawnCost.current = extrasCost(extras, readinessOpen, hasWaterGoal);
+  });
   const onSpace = useCallback(
-    (space: number) =>
-      setRoom((prev) =>
-        Math.round(space + extrasCost(homeExtras(prev, readinessOpen), readinessOpen)),
-      ),
-    [readinessOpen],
+    (space: number) => setRoom(Math.round(space + drawnCost.current)),
+    [],
   );
 
   if (!hydrated) return <div className="fixed inset-0 bg-background" />;
@@ -365,7 +374,7 @@ function HomeScreen() {
               haptic(12);
               logCoffee(kind);
             }}
-            tall={extras.tall}
+            bars={extras.bars}
             onOpenFood={() => navigate({ to: "/nutrition" })}
             onOpenDrinks={() => navigate({ to: "/nutrition", search: { tab: "drinks" } })}
           />
@@ -383,18 +392,20 @@ function HomeScreen() {
 /** What Home adds when the screen has room (see `room` in HomeScreen), in
  *  this order, each only while the content still ends FIT_GAP above the tab
  *  bar: the check-in picker kept after it's answered (instead of the header
- *  chip), two-line quick-adds (a drop over the amount, a coffee's mg under
- *  its name, like the Drinks tab), and dates in the week strip. Each costs a
+ *  chip), the day's intake as a bar under the water and coffee lines (asked
+ *  for instead of taller quick-adds), and dates in the week strip. Each costs a
  *  fixed height, so the choice can't flip back and forth. Layout choices. */
 const FIT_GAP = 12; // Screen's FIT_GAP_PX
 const MOOD_COST = 80; // label 20 + 8 + buttons 40 + the 12 gap above the week
-const TALL_COST = 32; // two rows of quick-adds, 40 → 56 pt
+const BAR_COST = 10; // a 6 pt bar and its 4 pt gap; water's only with a goal
 const DATES_COST = 18; // a 14 pt date line plus its 4 pt gap
 
-type HomeExtras = { mood: boolean; tall: boolean; dates: boolean };
+type HomeExtras = { mood: boolean; bars: boolean; dates: boolean };
 
-function homeExtras(room: number | null, moodOpen: boolean): HomeExtras {
-  const out = { mood: false, tall: false, dates: false };
+const barsCost = (waterGoal: boolean) => BAR_COST * (waterGoal ? 2 : 1);
+
+function homeExtras(room: number | null, moodOpen: boolean, waterGoal: boolean): HomeExtras {
+  const out = { mood: false, bars: false, dates: false };
   if (room == null) return out;
   let left = room - (moodOpen ? MOOD_COST : 0);
   const take = (cost: number) => {
@@ -403,15 +414,17 @@ function homeExtras(room: number | null, moodOpen: boolean): HomeExtras {
     return true;
   };
   out.mood = !moodOpen && take(MOOD_COST);
-  out.tall = take(TALL_COST);
+  out.bars = take(barsCost(waterGoal));
   out.dates = take(DATES_COST);
   return out;
 }
 
 /** The height the picker and the extras add to what's on screen. */
-function extrasCost(e: HomeExtras, moodOpen: boolean) {
+function extrasCost(e: HomeExtras, moodOpen: boolean, waterGoal: boolean) {
   return (
-    (moodOpen || e.mood ? MOOD_COST : 0) + (e.tall ? TALL_COST : 0) + (e.dates ? DATES_COST : 0)
+    (moodOpen || e.mood ? MOOD_COST : 0) +
+    (e.bars ? barsCost(waterGoal) : 0) +
+    (e.dates ? DATES_COST : 0)
   );
 }
 
@@ -478,7 +491,7 @@ function NutritionCard({
   caffeine,
   onWater,
   onCoffee,
-  tall,
+  bars,
   onOpenFood,
   onOpenDrinks,
 }: {
@@ -493,8 +506,9 @@ function NutritionCard({
   caffeine: number;
   onWater: (ml: number) => void;
   onCoffee: (kind: CoffeeKind) => void;
-  /** Two-line quick-adds (56 pt) when Home has room for them. */
-  tall: boolean;
+  /** The day's water and caffeine as bars under their lines, when Home has
+   *  room for them. */
+  bars: boolean;
   onOpenFood: () => void;
   onOpenDrinks: () => void;
 }) {
@@ -604,17 +618,16 @@ function NutritionCard({
             </>
           }
         />
+        {bars && waterGoalMl ? <IntakeBar pct={(waterMl / waterGoalMl) * 100} /> : null}
         <div className="mt-2 grid grid-cols-4 gap-2">
           {waterQuickAdd.map((ml, i) => (
             <button
               key={i}
               onClick={() => onWater(ml)}
               aria-label={t.home.addWater(ml)}
-              className={`${button.add} tap-target flex-col gap-0.5 text-[13px] font-bold tracking-tight ${tall ? "h-14" : "h-10"}`}
+              className={`${button.add} tap-target h-10 text-[13px] font-bold tracking-tight`}
             >
-              <HapticSwitch />
-              {tall ? <Droplet aria-hidden className="size-4 text-primary-text" /> : null}
-              <span>+{formatWaterAmount(ml)}</span>
+              <HapticSwitch />+{formatWaterAmount(ml)}
             </button>
           ))}
         </div>
@@ -640,26 +653,40 @@ function NutritionCard({
             </>
           }
         />
+        {bars ? (
+          <IntakeBar
+            pct={(caffeine / CAFFEINE_DAILY_LIMIT_MG) * 100}
+            className={barClass(caffeineStatus)}
+          />
+        ) : null}
         <div className="mt-2 grid grid-cols-3 gap-2">
           {COFFEE_KINDS.map((kind) => (
             <button
               key={kind}
               onClick={() => onCoffee(kind)}
               aria-label={t.coffee.add(t.coffee.kinds[kind])}
-              className={`${button.add} tap-target flex-col gap-0.5 px-1 text-[13px] font-bold tracking-tight ${tall ? "h-14" : "h-10"}`}
+              className={`${button.add} tap-target h-10 px-1 text-[13px] font-bold tracking-tight`}
             >
               <HapticSwitch />
-              <span className="max-w-full truncate">+{t.coffee.kinds[kind]}</span>
-              {tall ? (
-                <span className="tabular text-[12px] font-medium text-muted-foreground">
-                  {COFFEE_CAFFEINE_MG[kind]} mg
-                </span>
-              ) : null}
+              <span className="truncate">+{t.coffee.kinds[kind]}</span>
             </button>
           ))}
         </div>
       </div>
     </Card>
+  );
+}
+
+/** The day's intake against its goal or limit under a drink's line, like the
+ *  Drinks tab's bars (accent, or amber/red for caffeine near or over). */
+function IntakeBar({ pct, className = "bg-primary" }: { pct: number; className?: string }) {
+  return (
+    <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div
+        className={`h-full rounded-full ${className}`}
+        style={{ width: `${Math.min(100, pct)}%` }}
+      />
+    </div>
   );
 }
 
