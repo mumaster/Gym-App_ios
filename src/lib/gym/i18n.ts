@@ -711,6 +711,11 @@ const en = {
   exercises: {
     title: "Exercises",
     count: (shown: number, total: number) => `${shown} of ${total} exercises`,
+    tabs: { all: "All", gym: "My gym", loved: "Loved" },
+    inGroup: (n: number) => (n === 1 ? "1 exercise" : `${n} exercises`),
+    gymNote: (profile: string) => `What you can do with ${profile}`,
+    lovedEmpty: "Tap the heart on an exercise to keep it here.",
+    otherGroup: "Other",
     search: "Search exercises",
     anyMuscle: "Any muscle",
     filteredTo: (name: string) => `Filtered to ${name}`,
@@ -2130,6 +2135,11 @@ const nl: Dict = {
   exercises: {
     title: "Oefeningen",
     count: (shown: number, total: number) => `${shown} van ${total} oefeningen`,
+    tabs: { all: "Alle", gym: "Mijn gym", loved: "Favoriet" },
+    inGroup: (n: number) => (n === 1 ? "1 oefening" : `${n} oefeningen`),
+    gymNote: (profile: string) => `Wat je kunt doen met ${profile}`,
+    lovedEmpty: "Tik op het hartje bij een oefening om hem hier te bewaren.",
+    otherGroup: "Overig",
     search: "Zoek oefeningen",
     anyMuscle: "Elke spier",
     filteredTo: (name: string) => `Gefilterd op ${name}`,

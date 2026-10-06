@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
+  Dumbbell,
   Heart,
   MoreHorizontal,
   Plus,
@@ -14,7 +15,9 @@ import {
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
-import { Card, Screen } from "../components/gym/Screen";
+import { ListCard } from "../components/gym/ListCard";
+import { Screen } from "../components/gym/Screen";
+import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import {
   EQUIPMENT,
   MUSCLES,
@@ -60,7 +63,17 @@ const emptyExercise = (): Exercise => ({
   cues: [],
 });
 
+/** Exercises' sub-tabs, like History's and Nutrition's: the whole
+ *  library, what your equipment profile allows, and your loved ones (they
+ *  were two toggle buttons above the list). */
+const EXERCISE_TABS = ["all", "gym", "loved"] as const;
+type ExerciseTab = (typeof EXERCISE_TABS)[number];
+
 export const Route = createFileRoute("/exercises")({
+  validateSearch: (search: Record<string, unknown>): { tab?: ExerciseTab } =>
+    EXERCISE_TABS.includes(search["tab"] as ExerciseTab) && search["tab"] !== "all"
+      ? { tab: search["tab"] as ExerciseTab }
+      : {},
   head: () => ({
     meta: [
       { title: "Exercise Library — Forge" },
@@ -89,8 +102,14 @@ function ExercisesScreen() {
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState<Muscle | "All">("All");
   const [target, setTarget] = useState<TargetMuscle | "All">("All");
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
-  const [onlyLoved, setOnlyLoved] = useState(false);
+  const { tab = "all" } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const setTab = (next: ExerciseTab) => {
+    void navigate({ search: next === "all" ? {} : { tab: next }, replace: true });
+    window.scrollTo({ top: 0 });
+  };
+  const onlyAvailable = tab === "gym";
+  const onlyLoved = tab === "loved";
   const [detail, setDetail] = useState<Exercise | null>(null);
   const [draft, setDraft] = useState<{ value: Exercise; isNew: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -138,6 +157,24 @@ function ExercisesScreen() {
     [exercises, query, muscle, target, onlyAvailable, onlyLoved, lovedExerciseIds, profile],
   );
 
+  /** The results by primary muscle group, in the muscle chips' order. */
+  const groups = useMemo(
+    () =>
+      [
+        ...MUSCLES.map((group): { group: string; list: Exercise[] } => ({
+          group,
+          list: results.filter((e) => e.primary_muscle === group),
+        })),
+        // Your own exercises come from the database or a CSV, so one with an
+        // unexpected muscle still shows rather than dropping out.
+        {
+          group: t.exercises.otherGroup,
+          list: results.filter((e) => !MUSCLES.includes(e.primary_muscle)),
+        },
+      ].filter((g) => g.list.length > 0),
+    [results, t],
+  );
+
   // specific-muscle chips: narrowed to the picked group, else the full list
   const targetChoices = muscle === "All" ? TARGET_MUSCLES : targetsForGroup(muscle);
 
@@ -176,35 +213,43 @@ function ExercisesScreen() {
         </button>
       }
       toolbar={
-        <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
-          <Search className="size-5 text-muted-foreground" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            {...searchTap}
-            onFocus={() => {
-              setSearchFocused(true);
-              scrollListUnderSearch(true);
-            }}
-            onBlur={() => setSearchFocused(false)}
-            placeholder={t.exercises.search}
-            enterKeyHint="search"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+        <div className="space-y-2">
+          <SegmentedTabs
+            tabs={EXERCISE_TABS}
+            value={tab}
+            onChange={setTab}
+            labels={t.exercises.tabs}
           />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label={t.addFood.clearSearch}
-              className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
-            >
-              <X className="size-4" />
-            </button>
-          ) : null}
+          <div className="glass flex h-12 items-center gap-2 rounded-2xl px-3">
+            <Search className="size-5 text-muted-foreground" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              {...searchTap}
+              onFocus={() => {
+                setSearchFocused(true);
+                scrollListUnderSearch(true);
+              }}
+              onBlur={() => setSearchFocused(false)}
+              placeholder={t.exercises.search}
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="h-full w-full bg-transparent text-[17px] outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label={t.addFood.clearSearch}
+                className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-90"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
       }
     >
@@ -227,41 +272,23 @@ function ExercisesScreen() {
         ))}
       </div>
 
-      <div className="no-scrollbar mt-1 flex gap-2 overflow-x-auto py-1">
-        {(["All", ...targetChoices] as const).map((choice) => (
-          <button
-            key={choice}
-            onClick={() => setTarget(choice)}
-            className={`tap-target min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
-              target === choice ? chip.on : "glass text-secondary-foreground"
-            }`}
-          >
-            {choice === "All" ? t.exercises.anyMuscle : choice}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => setOnlyAvailable((v) => !v)}
-          className={`min-h-[44px] flex-1 rounded-2xl text-[15px] font-semibold ${
-            onlyAvailable ? chip.on : "glass text-secondary-foreground"
-          }`}
-        >
-          {onlyAvailable ? t.exercises.filteredTo(profile.name) : t.exercises.showOnlyAvailable}
-        </button>
-        <button
-          onClick={() => setOnlyLoved((v) => !v)}
-          aria-pressed={onlyLoved}
-          aria-label={t.exercises.showOnlyLoved}
-          className={`flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[15px] font-semibold ${
-            onlyLoved ? chip.on : "glass text-secondary-foreground"
-          }`}
-        >
-          <Heart className={`size-4 ${onlyLoved ? "fill-current" : ""}`} />
-          {lovedExerciseIds.length || t.exercises.loved}
-        </button>
-      </div>
+      {/* The specific muscles only once a group is picked: two rows of
+          chips over the list read as clutter next to the other tabs. */}
+      {muscle !== "All" ? (
+        <div className="no-scrollbar mt-1 flex gap-2 overflow-x-auto py-1">
+          {(["All", ...targetChoices] as const).map((choice) => (
+            <button
+              key={choice}
+              onClick={() => setTarget(choice)}
+              className={`tap-target min-h-[36px] shrink-0 rounded-full px-3 text-[13px] font-semibold ${
+                target === choice ? chip.on : "glass text-secondary-foreground"
+              }`}
+            >
+              {choice === "All" ? t.exercises.anyMuscle : choice}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <input
         ref={fileRef}
@@ -275,56 +302,80 @@ function ExercisesScreen() {
         }}
       />
 
-      <div ref={listRef} className={`mt-4 space-y-2 ${searching ? "min-h-[100dvh]" : ""}`}>
-        <p className={`px-1 ${text.meta}`}>{t.exercises.count(results.length, exercises.length)}</p>
-        {results.map((e) => {
-          const loved = lovedExerciseIds.includes(e.id);
-          const avoided = avoidedExerciseIds.includes(e.id);
-          return (
-            // Only the heart stays on the row: with avoid and edit next to
-            // it too, names were cut off ("Barbell Bench Pr…"). Both now live
-            // in the detail sheet the row opens.
-            <Card key={e.id} className="flex items-center gap-3 p-4">
-              <button
-                className="min-w-0 flex-1 text-left"
-                onClick={() => setDetail(e)}
-                aria-label={t.exercises.open(e.name)}
-              >
-                <p className="text-[17px] font-semibold leading-snug">
-                  {e.name}
-                  {avoided ? (
-                    <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-destructive-text">
-                      <ShieldOff className="size-3" />
-                      {t.exercises.avoided}
-                    </span>
-                  ) : null}
-                </p>
-                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                  {(e.muscle_targets.length ? e.muscle_targets : [e.primary_muscle]).join(" · ")}
-                </p>
-                <p data-cut-ok className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  {e.movement_pattern} ·{" "}
-                  {e.equipment_required
-                    .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)
-                    .join(", ") || t.exercises.noEquipment}
-                </p>
-              </button>
-              <button
-                aria-label={loved ? t.exercises.unlove(e.name) : t.exercises.love(e.name)}
-                aria-pressed={loved}
-                onClick={() => {
-                  haptic(12);
-                  toggleLovedExercise(e.id);
-                }}
-                className={`tap-target flex size-10 shrink-0 items-center justify-center rounded-full ${
-                  loved ? "bg-primary/10 text-primary-text" : "glass text-secondary-foreground"
-                }`}
-              >
-                <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
-              </button>
-            </Card>
-          );
-        })}
+      <div ref={listRef} className={`mt-4 space-y-4 ${searching ? "min-h-[100dvh]" : ""}`}>
+        <p className={`px-1 ${text.meta}`}>
+          {t.exercises.count(results.length, exercises.length)}
+          {onlyAvailable ? ` · ${t.exercises.gymNote(profile.name)}` : ""}
+        </p>
+        {onlyLoved && !lovedExerciseIds.length ? (
+          <p className={`px-1 ${text.note}`}>{t.exercises.lovedEmpty}</p>
+        ) : null}
+        {/* One card per muscle group, like a meal's card on the Food tab:
+            the list used to be a separate card per exercise. Most popular
+            first within each group (exercisePopularity.ts). */}
+        {groups.map(({ group, list }) => (
+          <ListCard
+            key={group}
+            icon={Dumbbell}
+            title={group}
+            subtitle={t.exercises.inGroup(list.length)}
+            filled
+          >
+            {list.map((e) => {
+              const loved = lovedExerciseIds.includes(e.id);
+              const avoided = avoidedExerciseIds.includes(e.id);
+              return (
+                // Only the heart stays on the row: with avoid and edit next
+                // to it too, names were cut off ("Barbell Bench Pr…"). Both
+                // live in the detail sheet the row opens.
+                <div
+                  key={e.id}
+                  className="flex items-center gap-2 border-t border-border py-1 pl-4 pr-2"
+                >
+                  <button
+                    className="min-w-0 flex-1 py-2 text-left active:opacity-70"
+                    onClick={() => setDetail(e)}
+                    aria-label={t.exercises.open(e.name)}
+                  >
+                    <p className="text-[15px] font-semibold leading-snug">
+                      {e.name}
+                      {avoided ? (
+                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-destructive-text">
+                          <ShieldOff className="size-3" />
+                          {t.exercises.avoided}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                      {(e.muscle_targets.length ? e.muscle_targets : [e.primary_muscle]).join(
+                        " · ",
+                      )}
+                    </p>
+                    <p data-cut-ok className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                      {e.movement_pattern} ·{" "}
+                      {e.equipment_required
+                        .map((id) => EQUIPMENT.find((q) => q.id === id)?.label ?? id)
+                        .join(", ") || t.exercises.noEquipment}
+                    </p>
+                  </button>
+                  <button
+                    aria-label={loved ? t.exercises.unlove(e.name) : t.exercises.love(e.name)}
+                    aria-pressed={loved}
+                    onClick={() => {
+                      haptic(12);
+                      toggleLovedExercise(e.id);
+                    }}
+                    className={`tap-target flex size-10 shrink-0 items-center justify-center rounded-full ${
+                      loved ? "bg-primary/10 text-primary-text" : "text-secondary-foreground"
+                    }`}
+                  >
+                    <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </ListCard>
+        ))}
       </div>
 
       <ExerciseDetailSheet

@@ -11,15 +11,16 @@ export function ProfileAvatar({
 }) {
   const avatar = avatarById(avatarId);
   const Icon = avatar.icon;
-  // Neutral, not accent-filled: the headers' main action (the hero's
-  // button on Home) is the one solid-accent element up there, and a solid
-  // avatar next to it competed for attention.
+  // Follows the accent (asked for: it stayed the same grey whatever colour
+  // was picked), as a tint rather than a solid fill: the header's main
+  // action (the hero's button on Home) is the one solid-accent element up
+  // there, and a solid avatar next to it competed for attention.
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/35 ${className}`}
       style={{ width: size, height: size }}
     >
-      <Icon className="text-foreground" style={{ width: size * 0.58, height: size * 0.58 }} />
+      <Icon className="text-primary-text" style={{ width: size * 0.58, height: size * 0.58 }} />
     </span>
   );
 }

@@ -25,6 +25,7 @@ import { FoodScanner, type FoodScannerStatus, type ScanMode } from "./FoodScanne
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { HapticSwitch } from "./HapticSwitch";
+import { ListCard } from "./ListCard";
 import { PortionLine } from "./MealOverviewSheet";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
@@ -1134,50 +1135,6 @@ export function AddFoodSheet({
         }}
       />
     </>
-  );
-}
-
-/** One of Add food's lists as a card, built like a meal's card on the Food
- *  tab: a tinted header band (`card-head`) with a badge, the title and a
- *  count, and the rows under it divided by hairlines. The badge is tonal
- *  (`badge.tonal`) once the list has something in it and muted while it's
- *  empty, not solid like a meal's: Scan is this screen's one solid accent,
- *  and up to four solid circles under it competed with it (asked for).
- *  Favourites and Recent only show when they have items, so a solid fill
- *  wouldn't say anything there anyway. */
-function ListCard({
-  icon: Icon,
-  title,
-  subtitle,
-  filled,
-  actions,
-  children,
-}: {
-  icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  filled: boolean;
-  actions?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="glass overflow-hidden rounded-2xl">
-      <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
-        <span aria-hidden className={`${filled ? badge.tonal : badge.off} size-9`}>
-          <Icon className="size-[18px]" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[17px] font-bold leading-tight">{title}</span>
-          {/* Not text-muted-foreground: on a card inside a sheet the band
-              sits on a lighter surface, and muted grey measured 4.43:1. */}
-          <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
-            {subtitle}
-          </span>
-        </span>
-        {actions ? <span className="flex shrink-0 items-center gap-2">{actions}</span> : null}
-      </div>
-      {children}
-    </section>
   );
 }
 
