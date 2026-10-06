@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
 
 export function Screen({
@@ -9,6 +16,7 @@ export function Screen({
   children,
   padBottom = true,
   fitWhenShort = false,
+  onSpace,
 }: {
   title: string;
   subtitle?: string | undefined;
@@ -23,9 +31,13 @@ export function Screen({
    *  can't be scrolled or bounced. Longer content keeps the padding and
    *  scrolls as before. */
   fitWhenShort?: boolean;
+  /** With fitWhenShort: called with the room left between the content's end
+   *  and the tab bar's pill (negative when it runs under it), so a screen can
+   *  use spare height for more content (Home). */
+  onSpace?: (px: number) => void;
 }) {
   const mainRef = useRef<HTMLElement>(null);
-  const fits = useFitsAboveTabBar(mainRef, fitWhenShort);
+  const fits = useFitsAboveTabBar(mainRef, fitWhenShort, onSpace);
   const pb = fits
     ? "pb-0"
     : padBottom
@@ -82,8 +94,18 @@ const FIT_GAP_PX = 12;
 /** Whether `main`'s content ends at least FIT_GAP_PX above the floating tab
  *  bar's pill. Measured without main's own bottom padding, so dropping the
  *  padding doesn't change the answer. */
-function useFitsAboveTabBar(mainRef: RefObject<HTMLElement | null>, enabled: boolean) {
+function useFitsAboveTabBar(
+  mainRef: RefObject<HTMLElement | null>,
+  enabled: boolean,
+  onSpace?: (px: number) => void,
+) {
   const [fits, setFits] = useState(false);
+  const onSpaceRef = useRef(onSpace);
+  // Layout effect: ResizeObserver callbacks can run before a plain effect,
+  // and must see this render's callback.
+  useLayoutEffect(() => {
+    onSpaceRef.current = onSpace;
+  });
   useEffect(() => {
     const main = mainRef.current;
     if (!enabled || !main) {
@@ -95,7 +117,9 @@ function useFitsAboveTabBar(mainRef: RefObject<HTMLElement | null>, enabled: boo
       if (!pill) return setFits(false);
       const pad = parseFloat(getComputedStyle(main).paddingBottom) || 0;
       const contentBottom = main.getBoundingClientRect().bottom - pad + window.scrollY;
-      setFits(contentBottom + FIT_GAP_PX <= pill.getBoundingClientRect().top);
+      const space = pill.getBoundingClientRect().top - contentBottom;
+      setFits(space >= FIT_GAP_PX);
+      onSpaceRef.current?.(space);
     };
     check();
     // The header (status-bar inset) and the tab bar (home-indicator inset)

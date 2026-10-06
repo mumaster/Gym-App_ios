@@ -101,7 +101,7 @@ Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg",
 
   Quick-adds are 48 (`h-12`) or 56 (`h-14`, two lines) and need nothing extra. Where 44 can't fit, the control carries `data-target-ok` and a comment saying why: the 11-point session-effort scale (44 tall, as wide as the row allows).
 
-- **Screens that should fit** (Home, Workout's My plan) are ordinary `Screen`s with `fitWhenShort`: pinned while the content ends above the tab bar, scrolling when it doesn't. Make room by combining or cutting, never by shrinking cards' padding or type below the house sizes. Home's own fixed grid with height-scaled spacing is gone; it fits from 390×844 up with the check-in open (CLAUDE.md, "Home dashboard").
+- **Screens that should fit** (Home, Workout's My plan) are ordinary `Screen`s with `fitWhenShort`: pinned while the content ends above the tab bar, scrolling when it doesn't. Make room by combining or cutting, never by shrinking cards' padding or type below the house sizes. Spare height on a taller phone goes to content, not space: Home adds extras in a fixed order, each at a fixed height, only while they fit (CLAUDE.md, "Home dashboard"). Home's own fixed grid with height-scaled spacing is gone; it fits from 390×844 up with the check-in open (CLAUDE.md, "Home dashboard").
 
 ## 5. Shape
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   Apple,
   Check,
@@ -20,6 +20,7 @@ import { button, chip } from "../components/gym/ui";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import {
   CAFFEINE_DAILY_LIMIT_MG,
+  COFFEE_CAFFEINE_MG,
   COFFEE_KINDS,
   caffeineMg,
   formatWaterAmount,
@@ -241,6 +242,21 @@ function HomeScreen() {
     heroSub = heroSub ? `${heroSub} ${plus}` : plus;
   }
   const readinessOpen = !todayCheckIn || readinessEditing;
+  // Spare height below the cards, measured by Screen, as it would be with
+  // no check-in picker and nothing optional shown (null until measured).
+  // Answering the check-in then keeps the picker without a jump when it fits. Taller phones use it for
+  // more content rather than leaving it empty (asked for: an iPhone 17 Pro
+  // had 149 pt free once the check-in was answered).
+  const [room, setRoom] = useState<number | null>(null);
+  const extras = useMemo(() => homeExtras(room, readinessOpen), [room, readinessOpen]);
+  const moodShown = readinessOpen || extras.mood;
+  const onSpace = useCallback(
+    (space: number) =>
+      setRoom((prev) =>
+        Math.round(space + extrasCost(homeExtras(prev, readinessOpen), readinessOpen)),
+      ),
+    [readinessOpen],
+  );
 
   if (!hydrated) return <div className="fixed inset-0 bg-background" />;
 
@@ -254,10 +270,11 @@ function HomeScreen() {
         title={greeting()}
         subtitle={dateLabel}
         fitWhenShort
+        onSpace={onSpace}
         action={
-          // Once answered, the check-in is this chip; tapping it brings the
-          // picker back into the Today card.
-          todayCheckIn && !readinessEditing ? (
+          // Once answered, the check-in is this chip when there's no room to
+          // keep the picker; tapping it brings the picker back.
+          todayCheckIn && !moodShown ? (
             <button
               onClick={() => {
                 haptic(10);
@@ -304,7 +321,7 @@ function HomeScreen() {
               }
             />
             <div className="space-y-3">
-              {readinessOpen ? (
+              {moodShown ? (
                 <MoodPicker
                   current={todayCheckIn?.score ?? null}
                   onPick={(score) => {
@@ -322,6 +339,7 @@ function HomeScreen() {
                 cardioSessions={cardioSessions}
                 streak={streak}
                 daysThisWeek={daysThisWeek}
+                dates={extras.dates}
                 onClick={() => {
                   haptic(10);
                   navigate({ to: rotation ? "/generate" : "/history" });
@@ -347,6 +365,7 @@ function HomeScreen() {
               haptic(12);
               logCoffee(kind);
             }}
+            tall={extras.tall}
             onOpenFood={() => navigate({ to: "/nutrition" })}
             onOpenDrinks={() => navigate({ to: "/nutrition", search: { tab: "drinks" } })}
           />
@@ -361,13 +380,49 @@ function HomeScreen() {
   );
 }
 
+/** What Home adds when the screen has room (see `room` in HomeScreen), in
+ *  this order, each only while the content still ends FIT_GAP above the tab
+ *  bar: the check-in picker kept after it's answered (instead of the header
+ *  chip), two-line quick-adds (a drop over the amount, a coffee's mg under
+ *  its name, like the Drinks tab), and dates in the week strip. Each costs a
+ *  fixed height, so the choice can't flip back and forth. Layout choices. */
+const FIT_GAP = 12; // Screen's FIT_GAP_PX
+const MOOD_COST = 80; // label 20 + 8 + buttons 40 + the 12 gap above the week
+const TALL_COST = 32; // two rows of quick-adds, 40 → 56 pt
+const DATES_COST = 18; // a 14 pt date line plus its 4 pt gap
+
+type HomeExtras = { mood: boolean; tall: boolean; dates: boolean };
+
+function homeExtras(room: number | null, moodOpen: boolean): HomeExtras {
+  const out = { mood: false, tall: false, dates: false };
+  if (room == null) return out;
+  let left = room - (moodOpen ? MOOD_COST : 0);
+  const take = (cost: number) => {
+    if (left - cost < FIT_GAP) return false;
+    left -= cost;
+    return true;
+  };
+  out.mood = !moodOpen && take(MOOD_COST);
+  out.tall = take(TALL_COST);
+  out.dates = take(DATES_COST);
+  return out;
+}
+
+/** The height the picker and the extras add to what's on screen. */
+function extrasCost(e: HomeExtras, moodOpen: boolean) {
+  return (
+    (moodOpen || e.mood ? MOOD_COST : 0) + (e.tall ? TALL_COST : 0) + (e.dates ? DATES_COST : 0)
+  );
+}
+
 const barClass = (status: NutrientStatus) =>
   status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
 /** Today's check-in ("how are you feeling?"), a whole-day question asked on
  *  the screen the day starts on. A wellness log only: load autoregulates
  *  from logged RPE (see readiness.ts / progression.ts). Shown in the Today
- *  card until answered, then it becomes the header chip. Like the drink
+ *  card until answered, then stays (answer highlighted) if Home has room, or
+ *  becomes the header chip. Like the drink
  *  quick-adds it calls the store straight from the tap, since a trip to
  *  another screen for one tap would be worse. */
 function MoodPicker({
@@ -381,7 +436,9 @@ function MoodPicker({
   const t = useTranslation();
   return (
     <div>
-      <p className="text-[13px] font-semibold text-foreground/75">{t.home.howAreYouFeeling}</p>
+      <p className="text-[13px] font-semibold leading-5 text-foreground/75">
+        {t.home.howAreYouFeeling}
+      </p>
       <div className="mt-2 grid grid-cols-5 gap-2">
         {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
           <button
@@ -421,6 +478,7 @@ function NutritionCard({
   caffeine,
   onWater,
   onCoffee,
+  tall,
   onOpenFood,
   onOpenDrinks,
 }: {
@@ -435,6 +493,8 @@ function NutritionCard({
   caffeine: number;
   onWater: (ml: number) => void;
   onCoffee: (kind: CoffeeKind) => void;
+  /** Two-line quick-adds (56 pt) when Home has room for them. */
+  tall: boolean;
   onOpenFood: () => void;
   onOpenDrinks: () => void;
 }) {
@@ -550,9 +610,11 @@ function NutritionCard({
               key={i}
               onClick={() => onWater(ml)}
               aria-label={t.home.addWater(ml)}
-              className={`${button.add} tap-target h-10 text-[13px] font-bold tracking-tight`}
+              className={`${button.add} tap-target flex-col gap-0.5 text-[13px] font-bold tracking-tight ${tall ? "h-14" : "h-10"}`}
             >
-              <HapticSwitch />+{formatWaterAmount(ml)}
+              <HapticSwitch />
+              {tall ? <Droplet aria-hidden className="size-4 text-primary-text" /> : null}
+              <span>+{formatWaterAmount(ml)}</span>
             </button>
           ))}
         </div>
@@ -584,10 +646,15 @@ function NutritionCard({
               key={kind}
               onClick={() => onCoffee(kind)}
               aria-label={t.coffee.add(t.coffee.kinds[kind])}
-              className={`${button.add} tap-target h-10 px-1 text-[13px] font-bold tracking-tight`}
+              className={`${button.add} tap-target flex-col gap-0.5 px-1 text-[13px] font-bold tracking-tight ${tall ? "h-14" : "h-10"}`}
             >
               <HapticSwitch />
-              <span className="truncate">+{t.coffee.kinds[kind]}</span>
+              <span className="max-w-full truncate">+{t.coffee.kinds[kind]}</span>
+              {tall ? (
+                <span className="tabular text-[12px] font-medium text-muted-foreground">
+                  {COFFEE_CAFFEINE_MG[kind]} mg
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -639,6 +706,7 @@ function WeekStrip({
   cardioSessions,
   streak,
   daysThisWeek,
+  dates,
   onClick,
 }: {
   today: Date;
@@ -648,6 +716,8 @@ function WeekStrip({
   cardioSessions: CardioSession[];
   streak: number;
   daysThisWeek: number;
+  /** Day numbers under the initials, when Home has room. */
+  dates: boolean;
   onClick: () => void;
 }) {
   const t = useTranslation();
@@ -706,6 +776,15 @@ function WeekStrip({
                 >
                   {name.charAt(0).toUpperCase()}
                 </span>
+                {dates ? (
+                  <span
+                    className={`tabular h-3.5 text-[11px] leading-[14px] ${
+                      d.isToday ? "font-semibold text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {d.date.getDate()}
+                  </span>
+                ) : null}
                 <span className="relative flex size-6 items-center justify-center">
                   {d.state === "rest" && d.cardio ? (
                     // A cardio-only day: its own mark, with the activity's icon.
@@ -741,7 +820,7 @@ function WeekStrip({
         <span
           role="img"
           aria-label={t.home.streakAria(streak, daysThisWeek)}
-          className="ml-1 flex w-11 flex-col items-center gap-1 border-l border-border py-1.5 pl-1"
+          className="ml-1 flex w-11 flex-col items-center justify-end gap-1 border-l border-border py-1.5 pl-1"
         >
           <Flame
             aria-hidden
