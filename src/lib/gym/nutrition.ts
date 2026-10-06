@@ -606,6 +606,43 @@ export function ingredientsFromEntries(entries: FoodEntry[]): MealIngredient[] {
   }));
 }
 
+/** Recently logged distinct foods, newest first, for Add food's Recent list
+ *  (asked for: snacks in Snack, dinner foods in Dinner, no potatoes among the
+ *  snacks). With a `meal`, only foods logged in that meal; when that meal has
+ *  nothing logged yet, the newest from all meals, with `forMeal` false so the
+ *  list can say so. Names are compared case-insensitively, the newest entry's
+ *  portion wins, and names in `exclude` (the favourites, listed separately)
+ *  are skipped. */
+export function recentFoods(
+  entries: FoodEntry[],
+  { meal, exclude, limit }: { meal?: MealType | undefined; exclude: Set<string>; limit: number },
+): { foods: MealIngredient[]; forMeal: boolean } {
+  const newest = [...entries].sort((a, b) => b.logged_at.localeCompare(a.logged_at));
+  const pick = (list: FoodEntry[]) => {
+    const seen = new Set<string>();
+    const out: MealIngredient[] = [];
+    for (const entry of list) {
+      const key = entry.name.trim().toLowerCase();
+      if (!key || seen.has(key) || exclude.has(key)) continue;
+      seen.add(key);
+      out.push(...ingredientsFromEntries([entry]));
+      if (out.length >= limit) break;
+    }
+    return out;
+  };
+  if (meal) {
+    const own = pick(newest.filter((e) => e.meal === meal));
+    if (own.length) return { foods: own, forMeal: true };
+  }
+  return { foods: pick(newest), forMeal: false };
+}
+
+/** Lower-cased names of the foods ever logged in a meal: Add food's search
+ *  lists your own matches from that meal first. */
+export function foodKeysInMeal(entries: FoodEntry[], meal: MealType): Set<string> {
+  return new Set(entries.filter((e) => e.meal === meal).map((e) => e.name.trim().toLowerCase()));
+}
+
 export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macros {
   return entries.reduce<Macros>(
     (acc, e) => {

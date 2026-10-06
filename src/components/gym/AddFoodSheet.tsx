@@ -41,6 +41,8 @@ import {
   MEAL_ORDER,
   dailyTotals,
   mealForTime,
+  recentFoods,
+  foodKeysInMeal,
   recipePerServing,
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
@@ -281,24 +283,26 @@ export function AddFoodSheet({
   );
 
   /** Most recently logged distinct foods, newest first, for one-tap re-add
-   *  — favourites are listed separately above, so they're left out here. */
-  const recentFoods = useMemo(() => {
-    const seen = new Set<string>();
-    const list: MealIngredient[] = [];
-    for (const entry of [...foodEntries].sort((a, b) => b.logged_at.localeCompare(a.logged_at))) {
-      const key = foodKey(entry.name);
-      if (!key || seen.has(key) || favoriteKeys.has(key)) continue;
-      seen.add(key);
-      list.push({
-        name: entry.name,
-        grams: entry.grams,
-        per100: entry.per100,
-        ...(entry.nevo ? { nevo: entry.nevo } : {}),
-      });
-      if (list.length >= RECENT_LIMIT) break;
-    }
-    return list;
-  }, [foodEntries, favoriteKeys]);
+   *  — favourites are listed separately above, so they're left out here.
+   *  `recentAll` is every meal (search uses it for your NEVO foods);
+   *  `recentHere` follows the picked meal (asked for: only snacks in Snack),
+   *  falling back to all meals while that meal has nothing logged. The meal
+   *  builder's ingredient picker has no meal, so it gets all meals. */
+  const recentAll = useMemo(
+    () => recentFoods(foodEntries, { exclude: favoriteKeys, limit: RECENT_LIMIT }).foods,
+    [foodEntries, favoriteKeys],
+  );
+  const recentMeal = onIngredientCaptured ? undefined : meal;
+  const recentHere = useMemo(
+    () =>
+      recentFoods(foodEntries, { meal: recentMeal, exclude: favoriteKeys, limit: RECENT_LIMIT }),
+    [foodEntries, favoriteKeys, recentMeal],
+  );
+  /** Foods you've logged in the picked meal: listed first in search. */
+  const inMeal = useMemo(
+    () => (recentMeal ? foodKeysInMeal(foodEntries, recentMeal) : new Set<string>()),
+    [foodEntries, recentMeal],
+  );
 
   const q = query.trim();
   const searching = q.length > 0;
@@ -311,12 +315,15 @@ export function AddFoodSheet({
     // NEVO foods, which carry your usual portion but aren't in the library.
     const mine = searchMyFoods(myFoods, q).filter((food) => !favoriteKeys.has(nameKey(food.name)));
     const mineKeys = new Set(mine.map((food) => nameKey(food.name)));
-    const recent = recentFoods.filter(
+    const recent = recentAll.filter(
       (food) =>
         food.nevo?.length && !mineKeys.has(nameKey(food.name)) && matchScore(food.name, q) !== null,
     );
-    return [...favorites, ...mine, ...recent];
-  }, [q, favoriteFoods, myFoods, favoriteKeys, recentFoods]);
+    // Foods you've had in this meal before come first (a stable sort keeps
+    // the match order within each group).
+    const here = (food: ListFood) => (inMeal.has(nameKey(food.name)) ? 0 : 1);
+    return [...favorites, ...mine, ...recent].sort((a, b) => here(a) - here(b));
+  }, [q, favoriteFoods, myFoods, favoriteKeys, recentAll, inMeal]);
   const libraryKeys = useMemo(() => new Set(myFoods.map(myFoodKey)), [myFoods]);
   const nevoMatches = useMemo(
     () => (q && nevoFoods ? searchNevoFoods(nevoFoods, q, language) : []),
@@ -824,11 +831,18 @@ export function AddFoodSheet({
                     onToggleEdit={() => setEditingFavs((v) => !v)}
                   />
                 ) : null}
-                {recentFoods.length ? (
+                {recentHere.foods.length ? (
                   <FoodList
                     icon={History}
                     title={t.addFood.recent}
-                    foods={recentFoods}
+                    subtitle={
+                      recentHere.forMeal && recentMeal
+                        ? t.addFood.recentIn(recentHere.foods.length, t.mealTypes[recentMeal])
+                        : recentMeal
+                          ? t.addFood.recentAllMeals(recentHere.foods.length)
+                          : undefined
+                    }
+                    foods={recentHere.foods}
                     favoriteKeys={favoriteKeys}
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
@@ -1195,6 +1209,7 @@ function EditToggle({
 function FoodList({
   icon,
   title,
+  subtitle,
   foods,
   favoriteKeys,
   onOpen,
@@ -1208,6 +1223,8 @@ function FoodList({
 }: {
   icon: LucideIcon;
   title: string;
+  /** Replaces the plain count ("3 foods") in the header band. */
+  subtitle?: string | undefined;
   foods: ListFood[];
   favoriteKeys: Set<string>;
   onOpen: (food: ListFood) => void;
@@ -1228,7 +1245,7 @@ function FoodList({
     <ListCard
       icon={icon}
       title={title}
-      subtitle={t.mealOverview.foods(foods.length)}
+      subtitle={subtitle ?? t.mealOverview.foods(foods.length)}
       filled={foods.length > 0}
       actions={canEdit ? <EditToggle editing={editing} onToggle={onToggleEdit} /> : null}
     >

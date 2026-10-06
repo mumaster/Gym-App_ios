@@ -8,6 +8,8 @@ import {
   COFFEE_CAFFEINE_MG,
   energySplit,
   ingredientsFromEntries,
+  recentFoods,
+  foodKeysInMeal,
   PROTEIN_PER_MEAL_G_PER_KG,
   proteinPerMealTarget,
   weeklyAverage,
@@ -280,5 +282,62 @@ describe("suggested water goal (EFSA 2010)", () => {
       activityLevel: "inactive",
     } as const;
     expect(suggestWaterGoalMl(small)).toBe(1600); // 2.0 L × 80%
+  });
+});
+
+describe("recent foods per meal", () => {
+  const per100 = { calories: 100, protein: 10, carbs: 5, fat: 2, fiber: 1, salt: 0.1 };
+  const entry = (
+    id: string,
+    name: string,
+    meal: "breakfast" | "lunch" | "dinner" | "snack",
+    day: number,
+    grams = 100,
+  ) => ({
+    id,
+    name,
+    meal,
+    grams,
+    per100,
+    logged_at: `2026-10-0${day}T12:00:00.000Z`,
+  });
+  const log = [
+    entry("1", "Potatoes", "dinner", 5, 250),
+    entry("2", "Apple", "snack", 4),
+    entry("3", "Kwark", "snack", 3, 300),
+    entry("4", "Apple", "snack", 2, 150),
+    entry("5", "Chicken", "dinner", 1),
+  ];
+
+  it("lists only the foods logged in the picked meal, newest first", () => {
+    const { foods, forMeal } = recentFoods(log, { meal: "snack", exclude: new Set(), limit: 5 });
+    expect(forMeal).toBe(true);
+    expect(foods.map((f) => f.name)).toEqual(["Apple", "Kwark"]);
+    // The newest portion wins.
+    expect(foods[0]!.grams).toBe(100);
+  });
+
+  it("falls back to all meals when the meal has nothing logged yet", () => {
+    const { foods, forMeal } = recentFoods(log, {
+      meal: "breakfast",
+      exclude: new Set(),
+      limit: 3,
+    });
+    expect(forMeal).toBe(false);
+    expect(foods.map((f) => f.name)).toEqual(["Potatoes", "Apple", "Kwark"]);
+  });
+
+  it("skips favourites and keeps to the limit", () => {
+    const { foods } = recentFoods(log, {
+      meal: "dinner",
+      exclude: new Set(["potatoes"]),
+      limit: 5,
+    });
+    expect(foods.map((f) => f.name)).toEqual(["Chicken"]);
+    expect(recentFoods(log, { exclude: new Set(), limit: 2 }).foods).toHaveLength(2);
+  });
+
+  it("knows which foods were ever logged in a meal", () => {
+    expect([...foodKeysInMeal(log, "snack")].sort()).toEqual(["apple", "kwark"]);
   });
 });
