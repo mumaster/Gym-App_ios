@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
   Dumbbell,
@@ -48,6 +48,9 @@ import type {
   TargetMuscle,
 } from "../lib/gym/types";
 import { badge, chip, text } from "../components/gym/ui";
+
+/** localStorage key for the muscle groups left open on Exercises. */
+const OPEN_GROUPS_KEY = "forge.exercises.open.v1";
 
 const PATTERNS: MovementPattern[] = ["push", "pull", "hinge", "squat", "carry", "core"];
 
@@ -181,6 +184,37 @@ function ExercisesScreen() {
       ].filter((g) => g.list.length > 0),
     [results, t],
   );
+
+  /** The muscle groups folded open, remembered on this device (a per-viewer
+   *  convenience, so localStorage rather than GymState). Folded by default:
+   *  the full list of 256 was too much (asked for). While searching, with a
+   *  muscle chip picked or on Loved, every group shows open and there's no
+   *  folding, so results are never hidden behind a closed group. */
+  // Read after mount, not in the initializer: the server renders folded,
+  // and a different first render here would be a hydration mismatch.
+  const [openGroups, setOpenGroupsState] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY) ?? "[]") as unknown;
+      if (Array.isArray(raw)) {
+        setOpenGroupsState(raw.filter((g): g is string => typeof g === "string"));
+      }
+    } catch {
+      // Unreadable or blocked storage: start folded.
+    }
+  }, []);
+  const setOpenGroups = (next: string[] | ((cur: string[]) => string[])) =>
+    setOpenGroupsState((cur) => {
+      const value = typeof next === "function" ? next(cur) : next;
+      try {
+        localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(value));
+      } catch {
+        // Private mode or blocked storage: it just isn't remembered.
+      }
+      return value;
+    });
+  const foldable = !query && muscle === "All" && !onlyLoved;
+  const allOpen = groups.every((g) => openGroups.includes(g.group));
 
   // specific-muscle chips: narrowed to the picked group, else the full list
   const targetChoices = muscle === "All" ? TARGET_MUSCLES : targetsForGroup(muscle);
@@ -360,7 +394,17 @@ function ExercisesScreen() {
             ) : null}
           </section>
         ) : null}
-        <p className={`px-1 ${text.meta}`}>{t.exercises.count(results.length, exercises.length)}</p>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <p className={text.meta}>{t.exercises.count(results.length, exercises.length)}</p>
+          {foldable && groups.length > 1 ? (
+            <button
+              onClick={() => setOpenGroups(allOpen ? [] : groups.map((g) => g.group))}
+              className="tap-target shrink-0 rounded-full px-2 py-1 text-[13px] font-semibold text-primary-text"
+            >
+              {allOpen ? t.exercises.foldAll : t.exercises.unfoldAll}
+            </button>
+          ) : null}
+        </div>
         {onlyLoved && !lovedExerciseIds.length ? (
           <p className={`px-1 ${text.note}`}>{t.exercises.lovedEmpty}</p>
         ) : null}
@@ -374,6 +418,17 @@ function ExercisesScreen() {
             title={group}
             subtitle={t.exercises.inGroup(list.length)}
             filled
+            fold={
+              foldable
+                ? {
+                    open: openGroups.includes(group),
+                    onToggle: () =>
+                      setOpenGroups((cur) =>
+                        cur.includes(group) ? cur.filter((g) => g !== group) : [...cur, group],
+                      ),
+                  }
+                : undefined
+            }
           >
             {list.map((e) => {
               const loved = lovedExerciseIds.includes(e.id);
