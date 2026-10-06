@@ -291,3 +291,27 @@ A decorative icon gets `aria-hidden`.
 
 6. **Look at the screenshots** (`--shots`) in both themes. The script checks layout, not taste.
 7. **Updated this guide** if you decided something new, and CLAUDE.md's feature section as usual.
+
+## 15. Known inconsistencies (backlog)
+
+Found in an app-wide audit on 6 October 2026, ordered by how visible they are. Each is a place where older screens don't follow this guide yet. Fix them when you're changing that screen anyway, and remove the item here when it's done.
+
+1. **Card headers.** Food, Drinks, Weight, Exercises and Add food use the `card-head` band (`ListCard` or the same markup). Still without it:
+   - Workout: the program and weekly-plan card (its "WEEK 1 OF 5" eyebrow) and `CardioWeekCard` ("CARDIO THIS WEEK").
+   - History: Training load (a section label plus an inner "THIS WEEK" eyebrow), Streak, Sets this week, Muscles to grow, the progress chart, Records, Volume per muscle.
+   - Settings, a session's detail page, and the exercise cards in a workout.
+
+   Fix: the band for Workout and History. Settings is a list of setting rows like iOS Settings, so it may stay as it is, but say so here as an exception.
+
+2. **Main buttons.** `button.primary` is used 3 times; about 35 main buttons are hand-built, at 48, 52 and 56 pt with different text sizes. Fix: `button.primary` everywhere, except Log set (56) and Add food's review form (48).
+3. **Unpicked chips.** Picked chips all use `chip.on`, but unpicked ones come in 9 looks: glass (Exercises' muscle chips, Equipment's profile chips), `bg-secondary`, `bg-muted`. Fix: `chip.off` everywhere.
+4. **Back buttons.** Four looks: a 44 pt glass circle without `tap-target` (a session's page), a 40 pt glass circle (Equipment), a rounded grey square (the workout screen), 28 pt arrows (Nutrition's week strip). Fix: one 36 pt round button with `tap-target`, like the Edit button.
+5. **Icon badges.** Solid on the drink and meal cards and Settings rows, tonal on `ListCard`s. Decide one rule (for example: solid = something logged or active, tonal = a plain list) and write it in §7.
+6. **Search fields.** Three looks: Add food (`bg-muted`), Exercises (glass, larger icon), Your current lifts. Fix: one shared search field.
+7. **Card corners.** Mostly `rounded-2xl`; 8 cards are `rounded-3xl` and 2 `rounded-xl`. Fix: `rounded-2xl`, except Home's tiles (`rounded-3xl` on purpose).
+8. **Lists.** History's Sessions is one card per week with hairline rows; Progress → Records is a card per row. Fix: Records as one card with hairline rows.
+9. **Units.** "150g" and "250ml" without a space in some strings (Add food's portion line, quick-add amounts, "use serving size", water texts, the meal and recipe builders), against about 100 places with the space. Fix: always a space, except the water quick-adds' "+250ml", which needs to fit its button.
+10. **Session-length chips.** The Workout tab's "30m" next to "45 min" elsewhere. Fix: "min" everywhere, or record "30m" as a chip-only short form in §12.
+11. **Home in Dutch/light.** `npm run ui-check` flagged "Volgende: Upper Body" in the hero as cut off, and a page error (React's warning about the inline script) with the known first-visit hydration mismatch at 390, 402 and 430.
+12. **Type scale.** 22 px text 3 times in the welcome tour (not on the scale); about 100 small grey lines at 12 px where §3 says 12.5; the `text.*` house styles are hardly used.
+13. **English in the Dutch app.** Exercise form tips and muscle names stay English by design (§12), but they stand out on otherwise Dutch screens. Translating them is a separate, larger job.

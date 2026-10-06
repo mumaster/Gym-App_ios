@@ -484,10 +484,20 @@ export function FoodListSheet({
             ...(ing.nevo ? { nevo: ing.nevo } : {}),
           };
           if (swapIndex != null && swapIndex >= 0) {
-            // Only the food changes; grams already on the line stay.
+            // The line's grams came along into the swap and may have been
+            // changed there; keep the line's own spelling when they weren't.
             setLines((cur) =>
               cur.map((line, j) =>
-                j === swapIndex ? { ...line, food, grams: line.grams || String(ing.grams) } : line,
+                j === swapIndex
+                  ? {
+                      ...line,
+                      food,
+                      grams:
+                        line.grams && parseDecimal(line.grams) === ing.grams
+                          ? line.grams
+                          : String(ing.grams),
+                    }
+                  : line,
               ),
             );
           } else {

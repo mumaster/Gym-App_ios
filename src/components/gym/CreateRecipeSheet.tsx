@@ -163,7 +163,7 @@ export function CreateRecipeSheet({
                   const m = scaledMacros(ing);
                   return (
                     <Card key={i} className="flex items-center justify-between gap-3 p-3">
-                      {/* Tapping the food swaps it for another; the grams stay. */}
+                      {/* Tapping the food swaps it for another; the grams carry over. */}
                       <button
                         onClick={() => {
                           haptic(12);
@@ -276,13 +276,14 @@ export function CreateRecipeSheet({
             : undefined
         }
         onIngredientCaptured={(ing) => {
-          // Only the food changes; the ingredient keeps its grams.
+          // The ingredient's grams came along into the swap (changeable
+          // there), so the captured grams are the ones to keep.
           setIngredients((cur) =>
             cur.map((old, j) =>
               j === swapIndex
                 ? {
                     name: ing.name,
-                    grams: old.grams,
+                    grams: ing.grams,
                     per100: ing.per100,
                     ...(ing.nevo ? { nevo: ing.nevo } : {}),
                   }

@@ -128,10 +128,11 @@ export function AddFoodSheet({
   onCreateMeal?: () => void;
   onCreateRecipe?: () => void;
   /** Swapping a food on a list (FoodListSheet, a recipe's ingredients): the
-   *  search starts from what was written, and the grams already there stay
-   *  as they are, whichever food is picked (asked for: a wrong match is
-   *  changed without losing the weighed amount). With `grams` null the
-   *  picked food brings its own. Needs `onIngredientCaptured`. */
+   *  search starts from what was written, and the grams already there carry
+   *  over to whichever food is picked (asked for: a wrong match is changed
+   *  without losing the weighed amount). They can still be changed on the
+   *  review form (asked for later: they used to be locked). With `grams`
+   *  null the picked food brings its own. Needs `onIngredientCaptured`. */
   swap?: { query: string; grams: number | null } | undefined;
   /** Open the list reader (FoodListSheet) on typed text, or on a note or
    *  plate photographed with the scanner's other modes, for the meal picked
@@ -161,7 +162,7 @@ export function AddFoodSheet({
     (key) => ({ key, label: t.nutrients[key], unit: NUTRIENT_UNITS[key] }),
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  /** Grams that a swap keeps, whatever food is picked. */
+  /** Grams a swap carries over to whatever food is picked (still editable). */
   const swapGrams = swap?.grams ?? null;
 
   const [step, setStep] = useState<Step>("start");
@@ -1007,9 +1008,8 @@ export function AddFoodSheet({
                 inputMode="decimal"
                 type="text"
                 value={grams}
-                readOnly={swapGrams != null}
                 autoFocus={nevoSource !== null && grams === ""}
-                onFocus={swapGrams != null ? undefined : selectOnFocus}
+                onFocus={selectOnFocus}
                 onChange={(e) => {
                   if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                   setGrams(e.target.value);

@@ -803,7 +803,7 @@ const en = {
   addFood: {
     swapFood: "Swap food",
     useThisFood: "Use this food",
-    swapKeepsGrams: "The grams stay as they were; only the food changes.",
+    swapKeepsGrams: "The grams from your list carry over; change them here if needed.",
     typeOrSpeak: "Type or speak",
     addIngredient: "Add ingredient",
     editFood: "Edit food",
@@ -2231,7 +2231,7 @@ const nl: Dict = {
   addFood: {
     swapFood: "Ander product kiezen",
     useThisFood: "Dit product gebruiken",
-    swapKeepsGrams: "De grammen blijven zoals ze waren; alleen het product verandert.",
+    swapKeepsGrams: "De grammen uit je lijst gaan mee; pas ze hier aan als dat nodig is.",
     typeOrSpeak: "Typen of inspreken",
     addIngredient: "Ingrediënt toevoegen",
     editFood: "Voedsel bewerken",
