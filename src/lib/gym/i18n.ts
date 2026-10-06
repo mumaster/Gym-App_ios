@@ -394,8 +394,6 @@ const en = {
       `Your plan · ~${min} min · ${exercises} exercises`,
     save: "Save",
     warmupPrefix: (n: number) => `${n} warm-up · `,
-    supersetLabel: (group: number, slot: string, rounds: number) =>
-      `Superset ${group}${slot} · ${rounds} rounds`,
     setsByReps: (sets: number, reps: string) => `${sets} × ${reps}`,
     restSuffix: (seconds: number) => `${seconds}s rest · `,
     suggestedWeight: (load: string, reps?: number) =>
@@ -405,6 +403,10 @@ const en = {
     couldGoHeavier: (load: string, reps: number) => `You could go heavier: ${load} × ${reps}`,
     moveUp: "Move up",
     moveDown: "Move down",
+    moveSupersetUp: "Move superset up",
+    moveSupersetDown: "Move superset down",
+    supersetTitle: "Superset",
+    supersetRounds: (rounds: number, rest: number) => `${rounds} rounds · ${rest}s rest per round`,
     swapExercise: "Swap exercise",
     shuffle: "Shuffle",
     startWorkout: "Start workout",
@@ -1819,8 +1821,6 @@ const nl: Dict = {
       `Jouw plan · ~${min} min · ${exercises} oefeningen`,
     save: "Opslaan",
     warmupPrefix: (n: number) => `${n} warming-up · `,
-    supersetLabel: (group: number, slot: string, rounds: number) =>
-      `Superset ${group}${slot} · ${rounds} rondes`,
     setsByReps: (sets: number, reps: string) => `${sets} × ${reps}`,
     restSuffix: (seconds: number) => `${seconds}s rust · `,
     suggestedWeight: (load: string, reps?: number) =>
@@ -1830,6 +1830,10 @@ const nl: Dict = {
     couldGoHeavier: (load: string, reps: number) => `Je kunt zwaarder: ${load} × ${reps}`,
     moveUp: "Omhoog verplaatsen",
     moveDown: "Omlaag verplaatsen",
+    moveSupersetUp: "Superset omhoog verplaatsen",
+    moveSupersetDown: "Superset omlaag verplaatsen",
+    supersetTitle: "Superset",
+    supersetRounds: (rounds: number, rest: number) => `${rounds} rondes · ${rest}s rust per ronde`,
     swapExercise: "Oefening wisselen",
     shuffle: "Herschudden",
     startWorkout: "Start training",

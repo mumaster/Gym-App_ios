@@ -46,6 +46,7 @@ import {
   targetsFromRegions,
   type RegionId,
 } from "../lib/gym/anatomy";
+import { moveBlock, planBlocks } from "../lib/gym/planBlocks";
 import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
 import { recommendedMuscles } from "../lib/gym/recommendations";
@@ -314,17 +315,90 @@ function WorkoutHome() {
     generate({ regions, focus, followingProgram: false });
   };
 
-  const move = (index: number, delta: number) => {
-    setPlan((cur) => {
-      if (!cur) return cur;
-      const to = index + delta;
-      if (to < 0 || to >= cur.length) return cur;
-      const next = [...cur];
-      const [moved] = next.splice(index, 1);
-      next.splice(to, 0, moved!);
-      haptic(12);
-      return next;
-    });
+  /** Moves a straight exercise, or a superset as a pair, past its
+   *  neighbour (planBlocks.ts), so a superset can't be split up. */
+  const moveBlockBy = (block: number, delta: -1 | 1) => {
+    haptic(12);
+    setPlan((cur) => (cur ? moveBlock(cur, block, delta) : cur));
+  };
+
+  /** One exercise's name, heart, sets and suggestions in the generated plan,
+   *  on its own card or as a half of a superset's card. */
+  const exerciseBody = (p: PlannedExercise, ex: Exercise, inSuperset: boolean) => {
+    const loved = lovedExerciseIds.includes(p.exercise_id);
+    return (
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setInfoExercise(ex)}
+            aria-label={t.exercises.openExercise(ex.name)}
+            className="min-w-0 flex-1 text-left text-[17px] font-semibold leading-tight active:opacity-70"
+          >
+            {ex.name}
+          </button>
+          <button
+            onClick={() => {
+              haptic(12);
+              toggleLovedExercise(p.exercise_id);
+              setPlan((cur) =>
+                cur
+                  ? cur.map((q) => (q.exercise_id === p.exercise_id ? { ...q, loved: !loved } : q))
+                  : cur,
+              );
+            }}
+            aria-label={loved ? t.generate.unlove(ex.name) : t.generate.love(ex.name)}
+            aria-pressed={loved}
+            className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+              loved ? "text-primary-text" : "text-muted-foreground"
+            }`}
+          >
+            <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
+          </button>
+        </div>
+        <p
+          onClick={() => setInfoExercise(ex)}
+          className="mt-0.5 cursor-pointer text-[13px] text-muted-foreground"
+        >
+          {p.warmup_sets ? t.generate.warmupPrefix(p.warmup_sets) : ""}
+          {t.generate.setsByReps(p.target_sets, p.target_reps)} ·{" "}
+          {/* A superset's rest is per round, in its band. */}
+          {!inSuperset && p.rest_seconds ? t.generate.restSuffix(p.rest_seconds) : ""}
+          {ex.muscle_targets[0] ?? ex.primary_muscle}
+        </p>
+        {p.suggested_weight != null && (p.suggested_weight !== 0 || isBodyweightExercise(ex)) ? (
+          <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary-text">
+            <TrendingUp className="size-3.5" />{" "}
+            {p.suggested_basis
+              ? t.generate.estimatedWeight(
+                  formatLoad(p.suggested_weight, false, t.session.bw),
+                  p.suggested_reps,
+                  p.suggested_basis === "rough",
+                )
+              : t.generate.suggestedWeight(
+                  formatLoad(p.suggested_weight, isBodyweightExercise(ex), t.session.bw),
+                  p.suggested_reps,
+                )}
+          </p>
+        ) : null}
+        {(() => {
+          // Your own numbers say heavier (startWeight.ts):
+          // only for a suggestion from this exercise's history.
+          if (p.suggested_basis || p.suggested_weight == null || !p.suggested_reps) return null;
+          const hint = heavierHint(
+            ex,
+            workouts,
+            { weight: p.suggested_weight, reps: p.suggested_reps },
+            plateStep(ex, profile),
+          );
+          return hint ? (
+            <p className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-foreground">
+              <ArrowUp className="size-3.5 text-primary-text" />{" "}
+              {t.generate.couldGoHeavier(formatLoad(hint.weight, false, t.session.bw), hint.reps)}
+            </p>
+          ) : null;
+        })()}
+      </div>
+    );
   };
 
   const proposalPair = proposal ? PAIRINGS[proposal] : undefined;
@@ -1044,127 +1118,96 @@ function WorkoutHome() {
             </button>
           </div>
           <div className="space-y-2">
-            {planHere.map((p, i) => {
+            {planBlocks(planHere).map((block, b, blocks) => {
+              const moveButtons = (superset: boolean) => (
+                <>
+                  <button
+                    onClick={() => moveBlockBy(b, -1)}
+                    disabled={b === 0}
+                    aria-label={superset ? t.generate.moveSupersetUp : t.generate.moveUp}
+                    className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                  >
+                    <ArrowUp className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => moveBlockBy(b, 1)}
+                    disabled={b === blocks.length - 1}
+                    aria-label={superset ? t.generate.moveSupersetDown : t.generate.moveDown}
+                    className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                  >
+                    <ArrowDown className="size-4" />
+                  </button>
+                </>
+              );
+              const swapButton = (i: number) => (
+                <button
+                  onClick={() => setSwapIndex(i)}
+                  aria-label={t.generate.swapExercise}
+                  className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
+                >
+                  <Repeat className="size-4" />
+                </button>
+              );
+              if (block.length === 2) {
+                // A superset is one card: a band with its rounds and rest
+                // and the arrows that move the pair, the two halves under it.
+                const [ia, ib] = block as [number, number];
+                const a = planHere[ia]!;
+                const restB = planHere[ib]!.rest_seconds;
+                return (
+                  <section
+                    key={`ss-${planHere[ia]!.exercise_id}-${planHere[ib]!.exercise_id}`}
+                    className="glass overflow-hidden rounded-2xl"
+                    data-plan-superset
+                  >
+                    <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
+                      <span className="tabular w-6 shrink-0 text-[17px] font-bold text-primary-text">
+                        {b + 1}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[17px] font-bold leading-tight">
+                          {t.generate.supersetTitle}
+                        </span>
+                        <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
+                          {t.generate.supersetRounds(a.target_sets, restB)}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 gap-1">{moveButtons(true)}</span>
+                    </div>
+                    {block.map((i, k) => {
+                      const p = planHere[i]!;
+                      const ex = exerciseById(p.exercise_id);
+                      if (!ex) return null;
+                      return (
+                        <div
+                          key={`${p.exercise_id}-${i}`}
+                          className={`flex items-center gap-3 px-4 py-3 ${k ? "border-t border-border" : ""}`}
+                        >
+                          <span className="w-6 shrink-0 text-[15px] font-bold text-primary-text">
+                            {p.superset_slot ?? (k ? "B" : "A")}
+                          </span>
+                          {exerciseBody(p, ex, true)}
+                          {swapButton(i)}
+                        </div>
+                      );
+                    })}
+                  </section>
+                );
+              }
+              const i = block[0]!;
+              const p = planHere[i]!;
               const ex = exerciseById(p.exercise_id);
               if (!ex) return null;
-              const loved = lovedExerciseIds.includes(p.exercise_id);
               return (
                 <Card key={`${p.exercise_id}-${i}`} className="p-4">
                   <div className="flex items-center gap-3">
-                    <span className="tabular w-6 text-[17px] font-bold text-primary-text">
-                      {i + 1}
+                    <span className="tabular w-6 shrink-0 text-[17px] font-bold text-primary-text">
+                      {b + 1}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setInfoExercise(ex)}
-                          aria-label={t.exercises.openExercise(ex.name)}
-                          className="min-w-0 flex-1 text-left text-[17px] font-semibold leading-tight active:opacity-70"
-                        >
-                          {ex.name}
-                        </button>
-                        <button
-                          onClick={() => {
-                            haptic(12);
-                            toggleLovedExercise(p.exercise_id);
-                            setPlan((cur) =>
-                              cur
-                                ? cur.map((q) =>
-                                    q.exercise_id === p.exercise_id ? { ...q, loved: !loved } : q,
-                                  )
-                                : cur,
-                            );
-                          }}
-                          aria-label={loved ? t.generate.unlove(ex.name) : t.generate.love(ex.name)}
-                          aria-pressed={loved}
-                          className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
-                            loved ? "text-primary-text" : "text-muted-foreground"
-                          }`}
-                        >
-                          <Heart className={`size-4 ${loved ? "fill-current" : ""}`} />
-                        </button>
-                      </div>
-                      <p
-                        onClick={() => setInfoExercise(ex)}
-                        className="mt-0.5 cursor-pointer text-[13px] text-muted-foreground"
-                      >
-                        {p.warmup_sets ? t.generate.warmupPrefix(p.warmup_sets) : ""}
-                        {p.superset_group !== undefined
-                          ? t.generate.supersetLabel(
-                              p.superset_group,
-                              p.superset_slot ?? "",
-                              p.target_sets,
-                            )
-                          : t.generate.setsByReps(p.target_sets, p.target_reps)}{" "}
-                        · {p.rest_seconds ? t.generate.restSuffix(p.rest_seconds) : ""}
-                        {ex.muscle_targets[0] ?? ex.primary_muscle}
-                      </p>
-                      {p.suggested_weight != null &&
-                      (p.suggested_weight !== 0 || isBodyweightExercise(ex)) ? (
-                        <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-primary-text">
-                          <TrendingUp className="size-3.5" />{" "}
-                          {p.suggested_basis
-                            ? t.generate.estimatedWeight(
-                                formatLoad(p.suggested_weight, false, t.session.bw),
-                                p.suggested_reps,
-                                p.suggested_basis === "rough",
-                              )
-                            : t.generate.suggestedWeight(
-                                formatLoad(
-                                  p.suggested_weight,
-                                  isBodyweightExercise(ex),
-                                  t.session.bw,
-                                ),
-                                p.suggested_reps,
-                              )}
-                        </p>
-                      ) : null}
-                      {(() => {
-                        // Your own numbers say heavier (startWeight.ts):
-                        // only for a suggestion from this exercise's history.
-                        if (p.suggested_basis || p.suggested_weight == null || !p.suggested_reps)
-                          return null;
-                        const hint = heavierHint(
-                          ex,
-                          workouts,
-                          { weight: p.suggested_weight, reps: p.suggested_reps },
-                          plateStep(ex, profile),
-                        );
-                        return hint ? (
-                          <p className="mt-0.5 flex items-center gap-1 text-[12px] font-semibold text-foreground">
-                            <ArrowUp className="size-3.5 text-primary-text" />{" "}
-                            {t.generate.couldGoHeavier(
-                              formatLoad(hint.weight, false, t.session.bw),
-                              hint.reps,
-                            )}
-                          </p>
-                        ) : null;
-                      })()}
-                    </div>
+                    {exerciseBody(p, ex, false)}
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => move(i, -1)}
-                        disabled={i === 0}
-                        aria-label={t.generate.moveUp}
-                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
-                      >
-                        <ArrowUp className="size-4" />
-                      </button>
-                      <button
-                        onClick={() => move(i, 1)}
-                        disabled={i === planHere.length - 1}
-                        aria-label={t.generate.moveDown}
-                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
-                      >
-                        <ArrowDown className="size-4" />
-                      </button>
-                      <button
-                        onClick={() => setSwapIndex(i)}
-                        aria-label={t.generate.swapExercise}
-                        className="tap-target flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-                      >
-                        <Repeat className="size-4" />
-                      </button>
+                      {moveButtons(false)}
+                      {swapButton(i)}
                     </div>
                   </div>
                 </Card>
