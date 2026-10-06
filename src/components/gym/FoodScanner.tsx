@@ -6,27 +6,27 @@ import { haptic } from "../../lib/gym/store";
 
 export type FoodScannerStatus = "scanning" | "lookingUp" | "notFound";
 
-/** What the camera is pointed at. "label" reads barcodes live and a label
- *  on the shutter; "note" and "plate" send the shutter's photo to the list
- *  reader (FoodListSheet). */
-export type ScanMode = "label" | "note" | "plate";
+/** What the camera is pointed at. "barcode" reads barcodes live, with no
+ *  shutter; "label" sends the shutter's photo to the AI label reader; "note"
+ *  and "plate" send it to the list reader (FoodListSheet). */
+export type ScanMode = "barcode" | "label" | "note" | "plate";
 
 /** A sideways swipe this far over the picture switches mode, like the iOS
  *  camera. A gesture threshold, not a measured value. */
 const SWIPE_PX = 50;
 
-/** When to suggest the shutter if no barcode has shown up — a UX nudge,
+/** When to suggest the Label mode if no barcode has shown up — a UX nudge,
  *  not a measured value. Nothing is sent to the AI automatically. */
 const LABEL_HINT_MS = 3000;
 
 /**
- * One camera for every scan. In label mode zxing-js decodes barcodes
- * continuously against the live stream (free, offline, instant — so it
- * always goes first); the shutter grabs the current frame for the AI label
- * reader when there's no barcode, or when the barcode isn't in the product
- * database. In note and plate mode barcodes are ignored and the shutter's
- * photo goes to the list reader; a switch above the shutter (or a sideways
- * swipe) changes mode, so every way of photographing food starts here.
+ * One camera for every scan, in modes switched above the shutter (or by a
+ * sideways swipe). Barcode mode, the first, has zxing-js decode barcodes
+ * continuously against the live stream (free, offline, instant) and shows
+ * no shutter. Label mode's shutter grabs the current frame for the AI label
+ * reader (also where a barcode the product database doesn't know sends you).
+ * Note and plate mode send the shutter's photo to the list reader. Barcodes
+ * are only decoded in barcode mode, so a package in view can't take over.
  * Full-screen `fixed inset-0 z-[60]`, above AddFoodSheet's own z-50 sheet.
  * `@zxing/browser` (~200KB gzipped) is imported inside the effect, so it's
  * only fetched the first time the scanner opens.
@@ -43,8 +43,8 @@ export function FoodScanner({
   onBarcode,
   onPhoto,
   onChoosePhoto,
-  modes = ["label"],
-  mode = modes[0] ?? "label",
+  modes = ["barcode", "label"],
+  mode = modes[0] ?? "barcode",
   onMode,
 }: {
   open: boolean;
@@ -69,6 +69,10 @@ export function FoodScanner({
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  /** Barcodes already reported while the camera is open: one the database
+   *  didn't know is still in view after switching back to Barcode, and
+   *  shouldn't send you straight back to Label. */
+  const reported = useRef(new Set<string>());
 
   // Refs, not deps: the parent's callbacks and status change every render,
   // and the camera must only restart when the scanner opens or closes.
@@ -77,11 +81,18 @@ export function FoodScanner({
   const statusRef = useRef(status);
   statusRef.current = status;
 
+  // The "no barcode?" nudge, counted from opening or switching to Barcode.
+  useEffect(() => {
+    setShowHint(false);
+    if (!open || mode !== "barcode") return;
+    const hint = setTimeout(() => setShowHint(true), LABEL_HINT_MS);
+    return () => clearTimeout(hint);
+  }, [open, mode]);
+
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setShowHint(false);
-    const hint = setTimeout(() => setShowHint(true), LABEL_HINT_MS);
+    reported.current.clear();
 
     let cancelled = false;
     let controls: { stop: () => void } | undefined;
@@ -105,10 +116,14 @@ export function FoodScanner({
             // NotFoundException fires on nearly every frame without a
             // barcode — the normal state, nothing to do.
             if (cancelled || !result || statusRef.current !== "scanning") return;
-            // A barcode on a package next to a note or plate isn't the point.
-            if (modeRef.current !== "label" || !onBarcodeRef.current) return;
+            // Only in Barcode mode: in the others you're photographing
+            // something, and a package in view isn't the point.
+            if (modeRef.current !== "barcode" || !onBarcodeRef.current) return;
+            const code = result.getText();
+            if (reported.current.has(code)) return;
+            reported.current.add(code);
             haptic([20, 30]);
-            onBarcodeRef.current(result.getText());
+            onBarcodeRef.current(code);
           },
         );
       })
@@ -130,7 +145,6 @@ export function FoodScanner({
 
     return () => {
       cancelled = true;
-      clearTimeout(hint);
       controls?.stop();
     };
   }, [open, t]);
@@ -166,17 +180,17 @@ export function FoodScanner({
   if (!open) return null;
 
   const copy = t.barcodeScanner;
-  const busy = status === "lookingUp";
-  const label = mode === "label";
-  const message =
-    label && status === "notFound"
-      ? copy.notFound
-      : label && busy
-        ? copy.lookingUp
-        : label && showHint
-          ? copy.noBarcodeHint
-          : copy.aimFor[mode];
-  const highlight = label && status === "notFound";
+  const barcode = mode === "barcode";
+  const busy = barcode && status === "lookingUp";
+  // A barcode the database didn't know lands here, in Label mode.
+  const highlight = mode === "label" && status === "notFound";
+  const message = highlight
+    ? copy.notFound
+    : busy
+      ? copy.lookingUp
+      : barcode && showHint && modes.includes("label")
+        ? copy.noBarcodeHint
+        : copy.aimFor[mode];
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-black">
@@ -217,11 +231,13 @@ export function FoodScanner({
           <div
             aria-hidden
             className={`border-2 border-white/70 transition-[aspect-ratio,border-radius,width] duration-200 motion-reduce:transition-none ${
-              mode === "note"
-                ? "aspect-[3/4] w-[min(100%,15rem)] rounded-2xl"
-                : mode === "plate"
-                  ? "aspect-square w-[min(100%,16rem)] rounded-full"
-                  : "aspect-[3/2] w-full max-w-sm rounded-2xl"
+              mode === "barcode"
+                ? "aspect-[2/1] w-full max-w-sm rounded-2xl"
+                : mode === "label"
+                  ? "aspect-[4/5] w-[min(100%,16rem)] rounded-2xl"
+                  : mode === "note"
+                    ? "aspect-[3/4] w-[min(100%,15rem)] rounded-2xl"
+                    : "aspect-square w-[min(100%,16rem)] rounded-full"
             }`}
           />
         )}
@@ -247,7 +263,7 @@ export function FoodScanner({
                 role="radio"
                 aria-checked={m === mode}
                 onClick={() => switchMode(m)}
-                className={`tap-target min-h-[36px] rounded-full px-4 text-[14px] font-semibold transition-colors motion-reduce:transition-none ${
+                className={`tap-target min-h-[36px] rounded-full px-3.5 text-[14px] font-semibold transition-colors motion-reduce:transition-none ${
                   m === mode ? "bg-white text-black" : "text-white/85"
                 }`}
               >
@@ -256,26 +272,32 @@ export function FoodScanner({
             ))}
           </div>
         ) : null}
-        <div className="flex w-full max-w-xs items-center justify-between">
-          <button
-            onClick={() => onChoosePhoto(mode)}
-            aria-label={copy.choosePhoto}
-            className="glass flex size-12 items-center justify-center rounded-full text-white active:scale-95"
-          >
-            <ImageIcon className="size-5" />
-          </button>
-          <button
-            onClick={capture}
-            disabled={busy || !!error}
-            aria-label={copy.shutterFor[mode]}
-            className={`flex size-[72px] items-center justify-center rounded-full border-4 border-white text-black active:scale-95 disabled:opacity-40 ${
-              !label || highlight || showHint ? "bg-white" : "bg-white/80"
-            } ${highlight ? "ring-4 ring-primary" : ""}`}
-          >
-            <Camera className="size-7" />
-          </button>
-          <span className="size-12" aria-hidden />
-        </div>
+        {barcode ? (
+          // Nothing to press: a barcode is read the moment it's in view.
+          // The row keeps the shutter's height so switching doesn't jump.
+          <div className="h-[72px]" aria-hidden />
+        ) : (
+          <div className="flex w-full max-w-xs items-center justify-between">
+            <button
+              onClick={() => onChoosePhoto(mode)}
+              aria-label={copy.choosePhoto}
+              className="glass flex size-12 items-center justify-center rounded-full text-white active:scale-95"
+            >
+              <ImageIcon className="size-5" />
+            </button>
+            <button
+              onClick={capture}
+              disabled={!!error}
+              aria-label={copy.shutterFor[mode]}
+              className={`flex size-[72px] items-center justify-center rounded-full border-4 border-white bg-white text-black active:scale-95 disabled:opacity-40 ${
+                highlight ? "ring-4 ring-primary" : ""
+              }`}
+            >
+              <Camera className="size-7" />
+            </button>
+            <span className="size-12" aria-hidden />
+          </div>
+        )}
         <p className="text-[12px] text-white/70">{copy.captionFor[mode]}</p>
       </div>
     </div>

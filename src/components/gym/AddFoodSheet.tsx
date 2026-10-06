@@ -381,14 +381,15 @@ export function AddFoodSheet({
     setStep("review");
   };
 
-  /** One scanner for every kind of photo — see FoodScanner. It opens on a
-   *  label; notes and plates are a switch away. */
+  /** One scanner for every kind of photo — see FoodScanner. It opens on
+   *  Barcode, the quickest and most exact; label, note and plate are a
+   *  switch away. */
   const startScan = () => {
     haptic(15);
     setScanError(null);
     unknownBarcode.current = null;
     setScannerStatus("scanning");
-    setScanMode("label");
+    setScanMode("barcode");
     setScannerOpen(true);
   };
 
@@ -441,8 +442,8 @@ export function AddFoodSheet({
   };
 
   // The camera stays open during the lookup: if the product isn't in the
-  // database the user is already pointing at the package, so the next step
-  // is one shutter tap on its label rather than starting over.
+  // database the user is already pointing at the package, so it switches to
+  // Label and the next step is one shutter tap rather than starting over.
   const onBarcodeDetected = async (code: string) => {
     // A product you've saved before: your own values, instantly and
     // offline, corrections included. Open Food Facts only for new ones.
@@ -458,6 +459,7 @@ export function AddFoodSheet({
       if (!result) {
         unknownBarcode.current = code;
         setScannerStatus("notFound");
+        setScanMode("label");
         return;
       }
       setScannerOpen(false);
@@ -473,8 +475,8 @@ export function AddFoodSheet({
   const onPhotoCaptured = (photo: Blob, mode: ScanMode) => {
     setScannerOpen(false);
     const file = new File([photo], `${mode}.jpg`, { type: photo.type || "image/jpeg" });
-    if (mode === "label") void onFileSelected(file);
-    else readPhoto(mode, file);
+    if (mode === "note" || mode === "plate") readPhoto(mode, file);
+    else void onFileSelected(file);
   };
 
   const gramsNum = parseDecimal(grams) || 0;
@@ -653,8 +655,8 @@ export function AddFoodSheet({
             if (!file) return;
             const mode = photoMode.current;
             photoMode.current = "label";
-            if (mode === "label") void onFileSelected(file);
-            else readPhoto(mode, file);
+            if (mode === "note" || mode === "plate") readPhoto(mode, file);
+            else void onFileSelected(file);
           }}
         />
 
@@ -1085,9 +1087,13 @@ export function AddFoodSheet({
         onBarcode={(barcode) => void onBarcodeDetected(barcode)}
         onPhoto={onPhotoCaptured}
         onChoosePhoto={choosePhoto}
-        modes={listModes ? ["label", "note", "plate"] : ["label"]}
+        modes={listModes ? ["barcode", "label", "note", "plate"] : ["barcode", "label"]}
         mode={scanMode}
-        onMode={setScanMode}
+        onMode={(m) => {
+          setScanMode(m);
+          // Back to Barcode after a miss: look for the next one.
+          if (m === "barcode") setScannerStatus("scanning");
+        }}
       />
     </>
   );

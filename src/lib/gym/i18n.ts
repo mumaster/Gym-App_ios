@@ -2,6 +2,10 @@ import { useGym } from "./store";
 import type { AlcoholDrinkId } from "./alcohol";
 import type { Language } from "./types";
 
+/** The camera's modes (FoodScanner's ScanMode), kept here so the copy
+ *  doesn't import a component. */
+type ScanModeKey = "barcode" | "label" | "note" | "plate";
+
 /** Metadata for the language picker in Settings — id used for storage/lookup,
  *  label always shown in that language's own name (not translated per the
  *  active language) so a user can recognize their language even if the app
@@ -857,34 +861,38 @@ const en = {
   },
   barcodeScanner: {
     titleFor: {
-      label: "Scan a barcode or label",
+      barcode: "Scan a barcode",
+      label: "Photograph the nutrition label",
       note: "Scan a note or recipe",
       plate: "Photograph your plate",
-    } as Record<"label" | "note" | "plate", string>,
+    } as Record<ScanModeKey, string>,
     modeLabel: "What are you scanning?",
-    modes: { label: "Label", note: "Note", plate: "Plate" } as Record<
-      "label" | "note" | "plate",
+    modes: { barcode: "Barcode", label: "Label", note: "Note", plate: "Plate" } as Record<
+      ScanModeKey,
       string
     >,
     aimFor: {
-      label: "Point at the barcode — it's read automatically.",
+      barcode: "Point at the barcode — it's read automatically.",
+      label: "Fit the nutrition table in the frame, then tap the shutter.",
       note: "Fit the whole note or recipe in the frame, then tap the shutter.",
       plate: "Get the whole plate in view, then tap the shutter.",
-    } as Record<"label" | "note" | "plate", string>,
-    noBarcodeHint: "No barcode? Tap the shutter to photograph the nutrition label.",
+    } as Record<ScanModeKey, string>,
+    noBarcodeHint: "No barcode? Switch to Label to photograph the nutrition table.",
     lookingUp: "Looking up that product…",
     notFound: "Not in the product database — photograph the nutrition label instead.",
     shutterFor: {
+      barcode: "",
       label: "Photograph the nutrition label",
       note: "Photograph the note",
       plate: "Photograph the plate",
-    } as Record<"label" | "note" | "plate", string>,
+    } as Record<ScanModeKey, string>,
     choosePhoto: "Choose a photo",
     captionFor: {
-      label: "Shutter = read the label with AI",
+      barcode: "Read automatically — no need to tap",
+      label: "AI reads the values per 100 g",
       note: "AI reads the foods and the grams",
       plate: "AI names the foods; you add the grams",
-    } as Record<"label" | "note" | "plate", string>,
+    } as Record<ScanModeKey, string>,
     cameraAccessDenied:
       "Camera access was denied — allow it in your browser settings, or use a photo or manual entry instead.",
     cameraStartFailed: "Couldn't start the camera — try a photo or manual entry instead.",
@@ -2270,29 +2278,32 @@ const nl: Dict = {
   },
   barcodeScanner: {
     titleFor: {
-      label: "Streepjescode of label scannen",
+      barcode: "Streepjescode scannen",
+      label: "Voedingslabel fotograferen",
       note: "Briefje of recept scannen",
       plate: "Je bord fotograferen",
     },
     modeLabel: "Wat scan je?",
-    modes: { label: "Label", note: "Briefje", plate: "Bord" },
+    modes: { barcode: "Barcode", label: "Label", note: "Briefje", plate: "Bord" },
     aimFor: {
-      label: "Richt op de streepjescode — die wordt automatisch gelezen.",
+      barcode: "Richt op de streepjescode — die wordt automatisch gelezen.",
+      label: "Zet de voedingswaardetabel in beeld en tik op de ontspanknop.",
       note: "Zet het hele briefje of recept in beeld en tik op de ontspanknop.",
       plate: "Zet het hele bord in beeld en tik op de ontspanknop.",
     },
-    noBarcodeHint:
-      "Geen streepjescode? Tik op de ontspanknop om het voedingslabel te fotograferen.",
+    noBarcodeHint: "Geen streepjescode? Kies Label om de voedingswaarden te fotograferen.",
     lookingUp: "Product opzoeken…",
     notFound: "Niet in de productdatabase — fotografeer in plaats daarvan het voedingslabel.",
     shutterFor: {
+      barcode: "",
       label: "Voedingslabel fotograferen",
       note: "Briefje fotograferen",
       plate: "Bord fotograferen",
     },
     choosePhoto: "Kies een foto",
     captionFor: {
-      label: "Ontspanknop = label laten lezen door AI",
+      barcode: "Wordt automatisch gelezen — tikken hoeft niet",
+      label: "AI leest de waarden per 100 g",
       note: "AI leest de producten en de grammen",
       plate: "AI herkent de producten; jij vult de grammen in",
     },
