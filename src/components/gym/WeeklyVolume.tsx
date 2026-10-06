@@ -13,47 +13,74 @@ import {
 import { Card } from "./Screen";
 import { chip } from "./ui";
 
-/** The "muscles to grow" picker: raises a group's weekly target (see
- *  volume.ts) and steers the generator. Lives on the Workout tab, since it
- *  changes what gets generated; the sets-this-week progress it feeds is on
- *  History (WeeklySetsCard below). */
+/** The "muscles to grow" chips: each group's weekly target goes from 10 to
+ *  20 sets (volume.ts), and generated sessions share themselves out by
+ *  what's still missing (generator.ts). Controlled, so the plan builders
+ *  can hold a draft until their save (WeeklyPlanSheet, ProgramBuilderSheet). */
+export function GrowthFocusPicker({
+  value,
+  onChange,
+}: {
+  value: FocusGroup[];
+  onChange: (next: FocusGroup[]) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div className="flex flex-wrap gap-x-1.5 gap-y-2.5">
+      {FOCUS_GROUPS.map((g) => {
+        const on = value.includes(g.id);
+        return (
+          <button
+            key={g.id}
+            onClick={() => {
+              haptic(10);
+              onChange(on ? value.filter((x) => x !== g.id) : [...value, g.id]);
+            }}
+            aria-pressed={on}
+            className={`tap-target flex min-h-[36px] items-center gap-1 rounded-full px-3 text-[13px] font-semibold active:scale-95 ${
+              on ? chip.on : "bg-secondary text-secondary-foreground"
+            }`}
+          >
+            {on ? <Star className="size-3.5" fill="currentColor" /> : null}
+            {t.volume.groups[g.id]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The picker as a card on History → Activity, under the weekly sets it
+ *  sets targets for; the plan builders show it too. */
 export function GrowthFocusCard() {
   const t = useTranslation();
   const { growthFocus, update } = useGym();
-  const toggle = (id: FocusGroup) => {
-    haptic(10);
-    update({
-      growthFocus: growthFocus.includes(id)
-        ? growthFocus.filter((g) => g !== id)
-        : [...growthFocus, id],
-    });
-  };
-
   return (
     <Card className="space-y-3 p-4">
       <div>
         <p className="text-[15px] font-semibold">{t.volume.growTitle}</p>
         <p className="text-[12.5px] text-muted-foreground">{t.volume.growDesc}</p>
       </div>
-      <div className="flex flex-wrap gap-x-1.5 gap-y-2.5">
-        {FOCUS_GROUPS.map((g) => {
-          const on = growthFocus.includes(g.id);
-          return (
-            <button
-              key={g.id}
-              onClick={() => toggle(g.id)}
-              aria-pressed={on}
-              className={`tap-target flex min-h-[36px] items-center gap-1 rounded-full px-3 text-[13px] font-semibold active:scale-95 ${
-                on ? chip.on : "bg-secondary text-secondary-foreground"
-              }`}
-            >
-              {on ? <Star className="size-3.5" fill="currentColor" /> : null}
-              {t.volume.groups[g.id]}
-            </button>
-          );
-        })}
-      </div>
+      <GrowthFocusPicker value={growthFocus} onChange={(next) => update({ growthFocus: next })} />
     </Card>
+  );
+}
+
+/** A labelled picker for inside a sheet (the plan builders). */
+export function GrowthFocusSection({
+  value,
+  onChange,
+}: {
+  value: FocusGroup[];
+  onChange: (next: FocusGroup[]) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div data-growth-focus>
+      <p className="text-[13px] font-semibold text-muted-foreground">{t.volume.growTitle}</p>
+      <p className="mb-2 text-[12.5px] text-muted-foreground">{t.volume.growPlanDesc}</p>
+      <GrowthFocusPicker value={value} onChange={onChange} />
+    </div>
   );
 }
 

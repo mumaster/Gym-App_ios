@@ -1,4 +1,9 @@
-import { KCAL_PER_KG, LOSS_RATE_PER_WEEK, type NutritionProfile } from "./nutrition";
+import {
+  KCAL_PER_KG,
+  LOSS_RATE_PER_WEEK,
+  RECOMP_DEFICIT_KCAL,
+  type NutritionProfile,
+} from "./nutrition";
 
 export interface WeightEntry {
   id: string;
@@ -68,7 +73,8 @@ export function weightTrend(entries: WeightEntry[], today = new Date()): WeightT
   };
 }
 
-/** Target rate in kg/week for the profile's goal: cutting at Helms et al.
+/** Target rate in kg/week for the profile's goal: recomposition at the slow
+ *  loss its 250 kcal deficit gives (about 0.23 kg); cutting at Helms et al.
  *  2014's 0.5 / 0.75 / 1% of bodyweight per week (as in the calorie
  *  target); bulking at Iraki et al. 2019's 0.25–0.5% per week (0.25 / 0.375
  *  / 0.5); maintaining at zero. */
@@ -77,6 +83,8 @@ const GAIN_RATE_PER_WEEK = { mild: 0.0025, moderate: 0.00375, aggressive: 0.005 
 export function targetKgPerWeek(profile: NutritionProfile, weightKg: number): number {
   if (profile.goal === "lose") return -LOSS_RATE_PER_WEEK[profile.pace] * weightKg;
   if (profile.goal === "gain") return GAIN_RATE_PER_WEEK[profile.pace] * weightKg;
+  // Recomposition: the slow loss its small deficit gives (nutrition.ts).
+  if (profile.goal === "recomp") return -(RECOMP_DEFICIT_KCAL * 7) / KCAL_PER_KG;
   return 0;
 }
 

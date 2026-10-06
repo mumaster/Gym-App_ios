@@ -305,7 +305,8 @@ export function estimatedEnergyRequirement(p: NutritionProfile): number {
   return c.intercept - c.age * p.age + c.height * p.heightCm + c.weight * p.weightKg;
 }
 
-export type NutritionGoalType = "lose" | "maintain" | "gain";
+/** "recomp": build muscle while losing fat (body recomposition). */
+export type NutritionGoalType = "lose" | "recomp" | "maintain" | "gain";
 
 export type NutritionPace = "mild" | "moderate" | "aggressive";
 
@@ -328,6 +329,21 @@ export const KCAL_PER_KG = 7700;
 /** Bulking: a 10–20% energy surplus (Iraki, Fitschen, Espinar & Helms,
  *  Sports 2019, for a gain of ~0.25–0.5% bodyweight per week), with
  *  "moderate" at the midpoint. */
+/**
+ * Recomposition (building muscle while losing fat): Barakat, Pearson,
+ * Escalante, Campbell & De Souza's review (Strength Cond J 2020) found it
+ * possible with progressive training, enough protein and a small deficit or
+ * maintenance, most of all for novices, returning lifters and people with
+ * fat to lose. Murphy & Koehler's meta-regression (Scand J Med Sci Sports
+ * 2022, 59 studies) found a deficit of about 500 kcal a day stopped lean
+ * mass gains while strength still improved, so the deficit has to stay well
+ * under that. 250 kcal is halfway between maintenance and that point: the
+ * app's own pick within the "small deficit" the review describes, not a
+ * published number. About 0.23 kg a week at 7700 kcal/kg. Both sources
+ * confirmed through web search results (journal sites are blocked here).
+ */
+export const RECOMP_DEFICIT_KCAL = 250;
+
 const GAIN_SURPLUS: Record<NutritionPace, number> = {
   mild: 0.1,
   moderate: 0.15,
@@ -345,6 +361,9 @@ const GAIN_SURPLUS: Record<NutritionPace, number> = {
  */
 const PROTEIN_PER_KG: Record<NutritionGoalType, number> = {
   lose: 2.2,
+  // Recomposition: 2.2 too, inside Barakat et al. 2020's 1.6–2.4 g/kg and
+  // the same as a cut, since it's also a deficit.
+  recomp: 2.2,
   maintain: 1.6,
   gain: 1.6,
 };
@@ -358,6 +377,8 @@ const PROTEIN_PER_KG: Record<NutritionGoalType, number> = {
  */
 const FAT_SHARE: Record<NutritionGoalType, number> = {
   lose: 0.25,
+  // A deficit this small is close to maintenance, so maintenance's share.
+  recomp: 0.275,
   maintain: 0.275,
   gain: 0.275,
 };
@@ -386,7 +407,7 @@ export interface NutritionProfile {
    *  this was asked. */
   sessionsPerWeek?: number;
   goal: NutritionGoalType;
-  /** Ignored when goal is "maintain". */
+  /** Only used for "lose" and "gain". */
   pace: NutritionPace;
 }
 
@@ -441,12 +462,15 @@ export function suggestNutritionGoals(p: NutritionProfile): NutritionGoals {
       ? tdee - (LOSS_RATE_PER_WEEK[p.pace] * p.weightKg * KCAL_PER_KG) / 7
       : p.goal === "gain"
         ? tdee * (1 + GAIN_SURPLUS[p.pace])
-        : tdee;
+        : p.goal === "recomp"
+          ? tdee - RECOMP_DEFICIT_KCAL
+          : tdee;
   const calories = Math.max(MIN_CALORIES[p.sex], Math.round(target));
 
   const protein = Math.round(PROTEIN_PER_KG[p.goal] * p.weightKg);
   let fat = (calories * FAT_SHARE[p.goal]) / 9;
   if (p.goal !== "lose") {
+    // Includes recomp, whose fat share is maintenance's.
     const [lo, hi] = FAT_G_PER_KG_RANGE;
     fat = Math.min(hi * p.weightKg, Math.max(lo * p.weightKg, fat));
   }

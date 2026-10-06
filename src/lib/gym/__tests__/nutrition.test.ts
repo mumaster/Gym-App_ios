@@ -24,6 +24,7 @@ import {
   WATER_ML_PER_KCAL,
   trainingDayGoalsFromAverage,
   weeklyAverageCalories,
+  RECOMP_DEFICIT_KCAL,
   type NutritionProfile,
 } from "../nutrition";
 
@@ -46,6 +47,17 @@ describe("sessionEnergyKcal (Compendium: (MET − 1) × kg × h)", () => {
 });
 
 describe("suggestNutritionGoals", () => {
+  it("builds muscle while losing fat: a small deficit with cutting protein", () => {
+    // Murphy & Koehler 2022: ~500 kcal/day stopped lean-mass gains; the
+    // recomposition deficit stays at half of that. Barakat et al. 2020: 1.6–2.4 g/kg.
+    expect(RECOMP_DEFICIT_KCAL).toBe(250);
+    const maintain = suggestNutritionGoals(man);
+    const recomp = suggestNutritionGoals({ ...man, goal: "recomp", pace: "aggressive" });
+    expect(recomp.calories).toBe(maintain.calories! - 250);
+    expect(recomp.protein).toBe(Math.round(2.2 * 80));
+    expect(recomp.fat).toBe(Math.round(((maintain.calories! - 250) * 0.275) / 9));
+  });
+
   it("uses the 2023 DRI energy equation for the activity level, workouts included", () => {
     // Low active man: 581.47 − 10.83·30 + 8.30·180 + 14.94·80 = 2945.8
     expect(suggestNutritionGoals(man).calories).toBe(2946);

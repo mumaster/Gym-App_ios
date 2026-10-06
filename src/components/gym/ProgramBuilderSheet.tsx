@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Flame, Pencil, Snowflake, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import {
@@ -14,6 +14,8 @@ import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
+import { GrowthFocusSection } from "./WeeklyVolume";
+import type { FocusGroup } from "../../lib/gym/volume";
 
 /** A sane default spread of weekdays for a given training frequency — same
  *  table as WeeklyPlanSheet's, kept local rather than shared since it's a
@@ -31,8 +33,15 @@ const EVEN_SPREAD: Record<number, number[]> = {
 type Mode = "manage" | "template" | "days" | "weeks";
 
 export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { program, setProgram, updateProgramSlotDow, updateProgramSchedule, clearProgram } =
-    useGym();
+  const {
+    program,
+    setProgram,
+    updateProgramSlotDow,
+    updateProgramSchedule,
+    clearProgram,
+    growthFocus,
+    update,
+  } = useGym();
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [name, setName] = useState("Program");
@@ -43,10 +52,17 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   // True while re-planning the existing program's split/days (keeps its
   // weeks and current week) rather than building a new one from scratch.
   const [editingExisting, setEditingExisting] = useState(false);
+  // Muscles to grow, picked while building or re-planning and saved with it.
+  const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  // Read through a ref so the draft resets when the sheet opens, not on
+  // every change made from its manage view.
+  const focusRef = useRef(growthFocus);
+  focusRef.current = growthFocus;
 
   useEffect(() => {
     if (!open) return;
     setEditingSlot(null);
+    setFocusDraft(focusRef.current);
     setEditingExisting(false);
     setMode(program ? "manage" : "template");
   }, [open, program]);
@@ -84,6 +100,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       anchor: anchorFor(preview, 0),
     };
     setProgram(next);
+    update({ growthFocus: focusDraft });
     onClose();
   };
 
@@ -91,6 +108,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     if (!preview.length) return;
     haptic([20, 30]);
     updateProgramSchedule(templateId, preview);
+    update({ growthFocus: focusDraft });
     onClose();
   };
 
@@ -194,6 +212,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             })}
           </div>
 
+          {/* Applies at once, like the day edits above. */}
+          <GrowthFocusSection
+            value={growthFocus}
+            onChange={(next) => update({ growthFocus: next })}
+          />
+
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => {
@@ -250,7 +274,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
         <div className="space-y-4">
           <button
             onClick={() => setMode("template")}
-            className="text-[13px] font-semibold text-primary-text"
+            className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
           >
             {t.programBuilder.changeSplit(template.label)}
           </button>
@@ -299,6 +323,8 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             <p className="text-[14px] text-muted-foreground">{t.programBuilder.pickOneDay}</p>
           )}
 
+          <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
+
           {editingExisting ? (
             <p className="text-[13px] text-muted-foreground">{t.programBuilder.keepProgressHint}</p>
           ) : null}
@@ -314,7 +340,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
         <div className="space-y-4">
           <button
             onClick={() => setMode("days")}
-            className="text-[13px] font-semibold text-primary-text"
+            className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
           >
             {t.programBuilder.changeTrainingDays}
           </button>

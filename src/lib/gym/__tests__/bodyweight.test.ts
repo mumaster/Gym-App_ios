@@ -42,6 +42,8 @@ describe("adaptive calories", () => {
     expect(targetKgPerWeek(profile, 80)).toBeCloseTo(-0.6);
     expect(targetKgPerWeek({ ...profile, goal: "gain", pace: "aggressive" }, 80)).toBeCloseTo(0.4);
     expect(targetKgPerWeek({ ...profile, goal: "maintain" }, 80)).toBe(0);
+    // Recomposition: 250 kcal a day × 7 / 7700 kcal per kg, whatever the pace.
+    expect(targetKgPerWeek({ ...profile, goal: "recomp" }, 80)).toBeCloseTo(-0.227, 3);
   });
 
   it("suggests eating less when losing slower than the target", () => {

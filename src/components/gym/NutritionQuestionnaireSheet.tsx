@@ -38,6 +38,11 @@ const goalsList = (
     description: t.nutritionQuestionnaire.goalLoseDesc,
   },
   {
+    id: "recomp",
+    label: t.nutritionQuestionnaire.goalRecomp,
+    description: t.nutritionQuestionnaire.goalRecompDesc,
+  },
+  {
     id: "maintain",
     label: t.nutritionQuestionnaire.goalMaintain,
     description: t.nutritionQuestionnaire.goalMaintainDesc,
@@ -369,7 +374,9 @@ export function NutritionQuestionnaireSheet({
                 />
               ))}
             </div>
-            {goal && goal !== "maintain" ? (
+            {/* Only a cut or a bulk has a pace; a recomposition's deficit is
+                fixed small (nutrition.ts's RECOMP_DEFICIT_KCAL). */}
+            {goal === "lose" || goal === "gain" ? (
               <div className="space-y-2">
                 <p className="text-[13px] text-muted-foreground">
                   {t.nutritionQuestionnaire.paceDesc}

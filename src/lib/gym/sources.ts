@@ -37,6 +37,7 @@ export type SourceId =
   | "sessionEnergy"
   | "cut"
   | "bulk"
+  | "recomp"
   | "protein"
   | "fat"
   | "fiberSalt"
@@ -250,6 +251,14 @@ export const SOURCES: SourceEntry[] = [
     refs: ["Helms, Aragon & Fitschen, J Int Soc Sports Nutr 2014"],
   },
   { id: "bulk", group: "nutrition", refs: ["Iraki, Fitschen, Espinar & Helms, 2019"] },
+  {
+    id: "recomp",
+    group: "nutrition",
+    refs: [
+      "Barakat, Pearson, Escalante, Campbell & De Souza, Strength Cond J 2020",
+      "Murphy & Koehler, Scand J Med Sci Sports 2022",
+    ],
+  },
   {
     id: "protein",
     group: "nutrition",

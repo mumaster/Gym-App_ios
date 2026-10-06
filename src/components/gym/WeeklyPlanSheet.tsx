@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -14,6 +14,8 @@ import {
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
+import { GrowthFocusSection } from "./WeeklyVolume";
+import type { FocusGroup } from "../../lib/gym/volume";
 
 /** A sane default spread of weekdays for a given training frequency. */
 const EVEN_SPREAD: Record<number, number[]> = {
@@ -29,16 +31,30 @@ const EVEN_SPREAD: Record<number, number[]> = {
 type Mode = "manage" | "template" | "days";
 
 export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { weeklyScheme, setWeeklyScheme, updateScheduleSlotDow, clearWeeklyScheme } = useGym();
+  const {
+    weeklyScheme,
+    setWeeklyScheme,
+    updateScheduleSlotDow,
+    clearWeeklyScheme,
+    growthFocus,
+    update,
+  } = useGym();
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  // Muscles to grow, picked while setting up a plan and saved with it.
+  const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  // Read through a ref so the draft resets when the sheet opens, not on
+  // every change made from its manage view.
+  const focusRef = useRef(growthFocus);
+  focusRef.current = growthFocus;
 
   useEffect(() => {
     if (!open) return;
     setEditingSlot(null);
+    setFocusDraft(focusRef.current);
     setMode(weeklyScheme ? "manage" : "template");
   }, [open, weeklyScheme]);
 
@@ -69,6 +85,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       cyclePosition,
       anchor: anchorFor(preview, cyclePosition),
     });
+    update({ growthFocus: focusDraft });
     onClose();
   };
 
@@ -149,6 +166,13 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             })}
           </div>
 
+          {/* Applies at once, like the day edits above: no need to rebuild
+              the plan just to change what it prioritises. */}
+          <GrowthFocusSection
+            value={growthFocus}
+            onChange={(next) => update({ growthFocus: next })}
+          />
+
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => setMode("template")}
@@ -191,7 +215,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
         <div className="space-y-4">
           <button
             onClick={() => setMode("template")}
-            className="text-[13px] font-semibold text-primary-text"
+            className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
           >
             {t.weeklyPlan.changeSplitBack(template.label)}
           </button>
@@ -240,6 +264,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.weeklyPlan.pickOneDay}</p>
           )}
+
+          <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 
           <button
             onClick={save}

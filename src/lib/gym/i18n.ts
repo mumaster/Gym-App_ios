@@ -282,6 +282,8 @@ const en = {
       sessionEnergy: "Energy of a training session",
       cut: "Cutting pace: 0.5–1% of bodyweight a week",
       bulk: "Bulking surplus of 10–20%",
+      recomp:
+        "Build muscle, lose fat: a deficit of 250 kcal a day, well under the ~500 kcal at which muscle gains stopped, with 2.2 g/kg protein",
       protein: "Protein: 1.6 g/kg, 2.2 g/kg on a cut",
       fat: "Fat: 25–27.5% of calories",
       fiberSalt: "Fiber (14 g per 1000 kcal) and salt (under 5 g)",
@@ -1191,6 +1193,9 @@ const en = {
     useTheseLimits: "Use these limits",
     goalLose: "Lose weight",
     goalLoseDesc: "Eat in a calorie deficit",
+    goalRecomp: "Build muscle, lose fat",
+    goalRecompDesc:
+      "A small deficit with plenty of protein, so you can still grow. Works best when you're new or coming back to lifting, or have fat to lose.",
     goalMaintain: "Maintain",
     goalMaintainDesc: "Stay around your current weight",
     goalGain: "Gain weight",
@@ -1261,6 +1266,8 @@ const en = {
   },
   volume: {
     growTitle: "Muscles to grow",
+    growPlanDesc:
+      "Optional. These aim for 20 sets a week instead of 10, so your sessions give them a bigger share. You can change it later.",
     growDesc:
       "Picked groups aim for 20 sets a week instead of 10. Generated workouts give each muscle a share of the session by what's still missing from its target this week.",
     groups: {
@@ -1708,6 +1715,8 @@ const nl: Dict = {
       sessionEnergy: "Energie van een trainingssessie",
       cut: "Afvaltempo: 0,5–1% van je lichaamsgewicht per week",
       bulk: "Overschot van 10–20% bij aankomen",
+      recomp:
+        "Spier opbouwen, vet verliezen: een tekort van 250 kcal per dag, ruim onder de ~500 kcal waarbij spiergroei stopte, met 2,2 g/kg eiwit",
       protein: "Eiwit: 1,6 g/kg, 2,2 g/kg tijdens afvallen",
       fat: "Vet: 25–27,5% van de calorieën",
       fiberSalt: "Vezels (14 g per 1000 kcal) en zout (minder dan 5 g)",
@@ -2619,6 +2628,9 @@ const nl: Dict = {
     useTheseLimits: "Gebruik deze limieten",
     goalLose: "Afvallen",
     goalLoseDesc: "Eet in een calorietekort",
+    goalRecomp: "Spier opbouwen, vet verliezen",
+    goalRecompDesc:
+      "Een klein tekort met veel eiwit, zodat je toch kunt groeien. Werkt het best als je net (weer) begint met krachttraining of vet te verliezen hebt.",
     goalMaintain: "Onderhouden",
     goalMaintainDesc: "Blijf rond je huidige gewicht",
     goalGain: "Aankomen",
@@ -2689,6 +2701,8 @@ const nl: Dict = {
   },
   volume: {
     growTitle: "Spieren om te laten groeien",
+    growPlanDesc:
+      "Optioneel. Deze mikken op 20 sets per week in plaats van 10, dus je trainingen geven ze een groter deel. Later aan te passen.",
     growDesc:
       "Gekozen groepen mikken op 20 sets per week in plaats van 10. Gegenereerde trainingen verdelen elke sessie naar wat elke spier deze week nog mist.",
     groups: {
