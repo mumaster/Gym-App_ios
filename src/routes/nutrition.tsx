@@ -15,7 +15,7 @@ import {
   Sun,
   Cookie,
 } from "lucide-react";
-import { AddFoodSheet } from "../components/gym/AddFoodSheet";
+import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
@@ -128,10 +128,7 @@ function NutritionScreen() {
   /** A recipe pre-filled from the list reader ("Save as a recipe"). */
   const [recipeSeed, setRecipeSeed] = useState<RecipeSeed | null>(null);
   /** The list reader (a note, a plate or typed words), opened from Add food. */
-  const [listSheet, setListSheet] = useState<{
-    start: "photo" | "text";
-    meal?: MealType | undefined;
-  } | null>(null);
+  const [listSheet, setListSheet] = useState<ReadListRequest | null>(null);
   const todayKey = dayKeyFromDate(new Date());
   /** The day shown. Only today allows adding. */
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -424,15 +421,15 @@ function NutritionScreen() {
           setRecipeSeed(null);
           setCreateRecipeOpen(true);
         }}
-        onReadList={(start) => {
-          const meal = foodSheet && !("id" in foodSheet) ? foodSheet.meal : undefined;
+        onReadList={(request) => {
           setFoodSheet(null);
-          setListSheet({ start, meal });
+          setListSheet(request);
         }}
       />
       <FoodListSheet
         open={listSheet !== null}
         start={listSheet?.start ?? "photo"}
+        photo={listSheet?.start === "photo" ? listSheet : null}
         target="log"
         initialMeal={listSheet?.meal}
         onClose={() => setListSheet(null)}

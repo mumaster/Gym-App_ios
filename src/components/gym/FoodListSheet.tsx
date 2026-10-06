@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeftRight, Camera, Mic, NotebookPen, Plus, X } from "lucide-react";
-import { AddFoodSheet, MealPicker } from "./AddFoodSheet";
+import { AddFoodSheet, MealPicker, type ListPhoto } from "./AddFoodSheet";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
+import { FoodScanner, type ScanMode } from "./FoodScanner";
 import { button, text } from "./ui";
 import {
   completeLines,
@@ -42,6 +43,7 @@ export function FoodListSheet({
   open,
   onClose,
   start,
+  photo,
   target,
   initialMeal,
   onIngredients,
@@ -51,6 +53,9 @@ export function FoodListSheet({
   onClose: () => void;
   /** Opens on the photo choices or straight on the text field. */
   start: "photo" | "text";
+  /** A note or plate already photographed in Add food's scanner: read
+   *  straight away, so the camera leads directly to the check screen. */
+  photo?: ListPhoto | null | undefined;
   /** "log": log the foods to a meal (or hand them to a new recipe).
    *  "ingredients": hand them back to a recipe being built. */
   target: "log" | "ingredients";
@@ -76,6 +81,8 @@ export function FoodListSheet({
   const [meal, setMeal] = useState<MealType>(
     () => initialMeal ?? mealForTime(new Date().toISOString()),
   );
+  /** The camera, open in this mode (the same scanner Add food uses). */
+  const [scanner, setScanner] = useState<"note" | "plate" | null>(null);
   /** The line whose food is being swapped; -1 adds a new line. */
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
 
@@ -199,11 +206,17 @@ export function FoodListSheet({
     }
   };
 
-  const pickPhoto = (src: FoodListSource) => {
+  const pickPhoto = (src: "note" | "plate") => {
     haptic(15);
-    setSource(src);
-    fileRef.current?.click();
+    setError(null);
+    setScanner(src);
   };
+
+  // A photo taken in Add food's scanner is read as soon as the sheet opens.
+  useEffect(() => {
+    if (open && photo) void read(photo.source, { file: photo.file });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, photo]);
 
   const setLine = (i: number, patch: Partial<FoodListLine>) =>
     setLines((cur) => cur.map((line, j) => (j === i ? { ...line, ...patch } : line)));
@@ -438,6 +451,24 @@ export function FoodListSheet({
         ) : null}
       </BottomSheet>
 
+      <FoodScanner
+        open={scanner !== null}
+        status="scanning"
+        modes={["note", "plate"]}
+        mode={scanner ?? "note"}
+        onMode={(m) => setScanner(listMode(m))}
+        onClose={() => setScanner(null)}
+        onPhoto={(blob, m) => {
+          setScanner(null);
+          const file = new File([blob], `${m}.jpg`, { type: blob.type || "image/jpeg" });
+          void read(listMode(m), { file });
+        }}
+        onChoosePhoto={(m) => {
+          setScanner(null);
+          setSource(listMode(m));
+          fileRef.current?.click();
+        }}
+      />
       <AddFoodSheet
         open={open && swapIndex !== null}
         onClose={() => setSwapIndex(null)}
@@ -477,4 +508,9 @@ export function FoodListSheet({
       />
     </>
   );
+}
+
+/** The scanner's modes a list can come from. */
+function listMode(mode: ScanMode): "note" | "plate" {
+  return mode === "plate" ? "plate" : "note";
 }

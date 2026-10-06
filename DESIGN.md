@@ -183,25 +183,28 @@ Reuse these before building anything new. A new pattern that will appear twice g
 - **Loading:** `DumbbellLoader` (never a spinner of your own). A wait under about 300 ms gets no loader.
 - **Lists of things you delete:** `SwipeToDelete`, plus a delete button in the item's own editor for keyboard and screen-reader users.
 - **Swapping a food, keeping its grams:** a food on a list (the list reader's check screen, a recipe's ingredients) is a row-wide button with `ArrowLeftRight` in the accent after its name; the grams sit in their own field beside it. Swapping opens Add food in swap mode, with the search filled in and the grams read-only, so a wrong match never changes a weighed amount. A line that still needs a food reads "Pick a food" in `text-warning-text`.
+- **One way in per kind of input.** Where there are several ways to add something, the main one is one full-width solid button with a one-line description of what it covers ("Scan — Barcode, label, note or plate"), and the others share one grouped card of full-width rows with an icon and a chevron. Not a grid of half-width buttons: their labels wrap in Dutch. Variations of one action are modes inside it, not buttons beside it.
+- **The camera** (`FoodScanner`) is the one place every food photo is taken: label, note or plate are modes, switched by a segmented capsule above the shutter or a sideways swipe, like the iOS camera. The frame's shape shows what fits in it (a rectangle, a sheet, a circle). Its chrome stays dark in both themes.
 - **Info:** a small ⓘ button opens the longer explanation. Keep the card itself to one line of explanation at most.
 
 ## 8. Icons
 
 Use lucide-react, at 16–20 px in rows and badges and 22–24 px in the tab bar, with a stroke width of 2 (2.2–2.5 on a small solid badge). Each concept has one icon; reuse it everywhere that concept appears:
 
-| Concept       | Icon                                                            |
-| ------------- | --------------------------------------------------------------- |
-| Water         | `Droplet`                                                       |
-| Coffee        | `Coffee`                                                        |
-| Alcohol       | `Beer` / `Wine`                                                 |
-| Strength      | `Dumbbell`                                                      |
-| Cardio        | `CARDIO_ICONS` (per activity)                                   |
-| Streak        | `Flame`                                                         |
-| Records       | `Trophy`                                                        |
-| Meals         | `Sunrise`, `Sun`, `Moon`, `Cookie`                              |
-| Exercises tab | `BookOpen` (not a magnifying glass)                             |
-| Swap a food   | `ArrowLeftRight`                                                |
-| Read a note   | `NotebookPen`; a plate photo `Camera`; typing or speaking `Mic` |
+| Concept                     | Icon                                                            |
+| --------------------------- | --------------------------------------------------------------- |
+| Water                       | `Droplet`                                                       |
+| Coffee                      | `Coffee`                                                        |
+| Alcohol                     | `Beer` / `Wine`                                                 |
+| Strength                    | `Dumbbell`                                                      |
+| Cardio                      | `CARDIO_ICONS` (per activity)                                   |
+| Streak                      | `Flame`                                                         |
+| Records                     | `Trophy`                                                        |
+| Meals                       | `Sunrise`, `Sun`, `Moon`, `Cookie`                              |
+| Exercises tab               | `BookOpen` (not a magnifying glass)                             |
+| Swap a food                 | `ArrowLeftRight`                                                |
+| Scan (the camera, any mode) | `ScanLine`; a label inside it `ScanBarcode`                     |
+| Read a note                 | `NotebookPen`; a plate photo `Camera`; typing or speaking `Mic` |
 
 A decorative icon gets `aria-hidden`.
 

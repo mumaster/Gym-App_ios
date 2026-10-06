@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
-  Camera,
   Check,
+  ChevronRight,
   Keyboard,
   Mic,
   Plus,
   ScanBarcode,
+  ScanLine,
   Search,
   Star,
   Trash2,
   X,
 } from "lucide-react";
-import { FoodScanner, type FoodScannerStatus } from "./FoodScanner";
+import { FoodScanner, type FoodScannerStatus, type ScanMode } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { HapticSwitch } from "./HapticSwitch";
@@ -54,6 +55,17 @@ import { haptic, useGym } from "../../lib/gym/store";
 import { chip } from "./ui";
 
 type Step = "start" | "scanning" | "review";
+
+/** A note or plate already photographed, for the list reader to read. */
+export interface ListPhoto {
+  source: "note" | "plate";
+  file: File;
+}
+
+/** What Add food hands the list reader (FoodListSheet). */
+export type ReadListRequest = { meal: MealType } & (
+  { start: "text" } | ({ start: "photo" } & ListPhoto)
+);
 type MacroKey = NutrientKey;
 
 const emptyPer100 = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
@@ -109,9 +121,10 @@ export function AddFoodSheet({
    *  changed without losing the weighed amount). With `grams` null the
    *  picked food brings its own. Needs `onIngredientCaptured`. */
   swap?: { query: string; grams: number | null } | undefined;
-  /** Open the list reader (FoodListSheet) on a photo or on typed text. The
-   *  parent closes this sheet first, like the builders. */
-  onReadList?: (start: "photo" | "text") => void;
+  /** Open the list reader (FoodListSheet) on typed text, or on a note or
+   *  plate photographed with the scanner's other modes, for the meal picked
+   *  here. The parent closes this sheet first, like the builders. */
+  onReadList?: (request: ReadListRequest) => void;
 }) {
   const {
     addFoodEntry,
@@ -142,6 +155,9 @@ export function AddFoodSheet({
   const [step, setStep] = useState<Step>("start");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState<FoodScannerStatus>("scanning");
+  const [scanMode, setScanMode] = useState<ScanMode>("label");
+  /** The mode a picked photo (the scanner's photo button) belongs to. */
+  const photoMode = useRef<ScanMode>("label");
   /** Which flow the "scanning" step's loading copy below belongs to. */
   const [scanKind, setScanKind] = useState<"label" | "barcode">("label");
   const [scanError, setScanError] = useState<string | null>(null);
@@ -365,18 +381,27 @@ export function AddFoodSheet({
     setStep("review");
   };
 
-  /** One scanner for both paths — see FoodScanner. */
+  /** One scanner for every kind of photo — see FoodScanner. It opens on a
+   *  label; notes and plates are a switch away. */
   const startScan = () => {
     haptic(15);
     setScanError(null);
     unknownBarcode.current = null;
     setScannerStatus("scanning");
+    setScanMode("label");
     setScannerOpen(true);
   };
 
-  const choosePhoto = () => {
+  const choosePhoto = (mode: ScanMode) => {
+    photoMode.current = mode;
     setScannerOpen(false);
     fileInputRef.current?.click();
+  };
+
+  /** A note or a plate goes to the list reader, for the meal picked here. */
+  const readPhoto = (source: "note" | "plate", file: File) => {
+    if (!onReadList) return;
+    openBuilder(() => onReadList({ start: "photo", source, file, meal }));
   };
 
   /** Fills the review form from a label scan or a barcode lookup — both
@@ -445,9 +470,11 @@ export function AddFoodSheet({
     }
   };
 
-  const onPhotoCaptured = (photo: Blob) => {
+  const onPhotoCaptured = (photo: Blob, mode: ScanMode) => {
     setScannerOpen(false);
-    void onFileSelected(new File([photo], "label.jpg", { type: photo.type || "image/jpeg" }));
+    const file = new File([photo], `${mode}.jpg`, { type: photo.type || "image/jpeg" });
+    if (mode === "label") void onFileSelected(file);
+    else readPhoto(mode, file);
   };
 
   const gramsNum = parseDecimal(grams) || 0;
@@ -547,6 +574,9 @@ export function AddFoodSheet({
   };
 
   const showSaved = !onIngredientCaptured && !editEntry;
+  /** Notes, plates and typed lists log foods, so they're only offered when
+   *  this sheet logs (not while capturing an ingredient or swapping). */
+  const listModes = !!onReadList && showSaved;
 
   // Pinned under the title, outside the scrolling list, so the field stays
   // at the top of the screen while results change under it.
@@ -620,7 +650,11 @@ export function AddFoodSheet({
           onChange={(e) => {
             const file = e.target.files?.[0];
             e.target.value = "";
-            if (file) void onFileSelected(file);
+            if (!file) return;
+            const mode = photoMode.current;
+            photoMode.current = "label";
+            if (mode === "label") void onFileSelected(file);
+            else readPhoto(mode, file);
           }}
         />
 
@@ -709,48 +743,56 @@ export function AddFoodSheet({
               </div>
             ) : (
               <>
-                {/* Scan and manual side by side, first: they used to sit under
-                every list, a long scroll down once meals and recipes moved
-                into this sheet. */}
-                <div className="grid grid-cols-[1.7fr_1fr] gap-2">
+                {/* One way in per kind of input (asked for: two scan buttons,
+                    one opening the camera and one a new screen, read as a
+                    jumble). Scan opens the camera, which reads a barcode or
+                    label, a note or a plate; the two quieter buttons are
+                    for typing. */}
+                <div className="space-y-2">
                   <button
                     onClick={startScan}
-                    className="glow flex min-h-[60px] items-center gap-2.5 rounded-2xl bg-primary px-4 text-left text-primary-foreground active:scale-[0.985]"
+                    className="glow flex min-h-[60px] w-full items-center gap-3 rounded-2xl bg-primary px-4 py-2.5 text-left text-primary-foreground active:scale-[0.985]"
                   >
-                    <ScanBarcode className="size-6 shrink-0" />
-                    <span className="text-[15px] font-bold leading-tight">
-                      {t.addFood.scanFood}
+                    <ScanLine className="size-6 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[17px] font-bold leading-tight">
+                        {listModes ? t.addFood.scan : t.addFood.scanFood}
+                      </span>
+                      {listModes ? (
+                        <span className="block truncate text-[13px] leading-snug opacity-85">
+                          {t.addFood.scanDesc}
+                        </span>
+                      ) : null}
                     </span>
                   </button>
-                  <button
-                    onClick={startManual}
-                    className="glass flex min-h-[60px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
-                  >
-                    <Keyboard className="size-5 shrink-0 text-primary-text" />
-                    <span className="text-[14px] font-bold leading-tight">
-                      {t.addFood.enterManually}
-                    </span>
-                  </button>
-                </div>
-                {onReadList && showSaved ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {(
-                      [
-                        ["photo", Camera, t.addFood.readList],
-                        ["text", Mic, t.addFood.typeOrSpeak],
-                      ] as const
-                    ).map(([start, Icon, label]) => (
+                  {/* The quieter ways in, as one grouped list: full-width
+                      rows keep each label on one line in Dutch too. */}
+                  <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+                    {(listModes
+                      ? ([
+                          [
+                            Mic,
+                            t.addFood.typeOrSpeak,
+                            () => openBuilder(() => onReadList?.({ start: "text", meal })),
+                          ],
+                          [Keyboard, t.addFood.enterManually, startManual],
+                        ] as const)
+                      : ([[Keyboard, t.addFood.enterManually, startManual]] as const)
+                    ).map(([Icon, label, onClick]) => (
                       <button
-                        key={start}
-                        onClick={() => openBuilder(() => onReadList(start))}
-                        className="glass flex min-h-[52px] items-center gap-2 rounded-2xl px-3 text-left active:scale-[0.985]"
+                        key={label}
+                        onClick={onClick}
+                        className="flex min-h-[48px] w-full items-center gap-3 px-4 text-left active:bg-foreground/5"
                       >
                         <Icon className="size-5 shrink-0 text-primary-text" />
-                        <span className="text-[13px] font-bold leading-tight">{label}</span>
+                        <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                          {label}
+                        </span>
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                       </button>
                     ))}
                   </div>
-                ) : null}
+                </div>
                 {favoriteFoods.length ? (
                   <FoodList
                     title={t.addFood.favorites}
@@ -1043,6 +1085,9 @@ export function AddFoodSheet({
         onBarcode={(barcode) => void onBarcodeDetected(barcode)}
         onPhoto={onPhotoCaptured}
         onChoosePhoto={choosePhoto}
+        modes={listModes ? ["label", "note", "plate"] : ["label"]}
+        mode={scanMode}
+        onMode={setScanMode}
       />
     </>
   );
