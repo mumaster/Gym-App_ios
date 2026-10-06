@@ -213,12 +213,16 @@ export function PortionLine({
   grams,
   unit = "g",
   macros,
+  kcal,
   className = "",
 }: {
   grams: number;
   /** Drinks are logged in ml (counted as g), everything else in g. */
   unit?: "g" | "ml";
   macros: Pick<Macros, "protein" | "carbs" | "fat">;
+  /** Calories before the macros, for rows with no kcal column of their own
+   *  (Add food's lists, where the right side holds the star and "+"). */
+  kcal?: number;
   className?: string;
 }) {
   const t = useTranslation();
@@ -228,6 +232,7 @@ export function PortionLine({
         {grams} {unit}
       </span>
       <span className="truncate text-muted-foreground">
+        {kcal != null ? `${t.nutrition.kcal(Math.round(kcal))} · ` : ""}
         {t.nutrition.entryMacros(
           Math.round(macros.protein),
           Math.round(macros.carbs),

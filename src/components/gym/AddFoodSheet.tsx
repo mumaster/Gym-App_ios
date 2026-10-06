@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Check,
   ChevronRight,
+  CookingPot,
+  History,
   Keyboard,
+  Leaf,
+  Pencil,
   Mic,
   Plus,
   ScanBarcode,
@@ -11,12 +15,16 @@ import {
   Search,
   Star,
   Trash2,
+  UserRound,
+  UtensilsCrossed,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { FoodScanner, type FoodScannerStatus, type ScanMode } from "./FoodScanner";
 import { BottomSheet } from "./BottomSheet";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { HapticSwitch } from "./HapticSwitch";
+import { PortionLine } from "./MealOverviewSheet";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -52,7 +60,7 @@ import {
 } from "../../lib/gym/myFoods";
 import { useTapFocus } from "../../lib/gym/tapFocus";
 import { haptic, useGym } from "../../lib/gym/store";
-import { chip } from "./ui";
+import { badge, chip } from "./ui";
 
 type Step = "start" | "scanning" | "review";
 
@@ -680,6 +688,7 @@ export function AddFoodSheet({
                 {swap ? scanButton : null}
                 {savedMatches.length ? (
                   <FoodList
+                    icon={UserRound}
                     title={t.addFood.yourFoods}
                     foods={savedMatches}
                     favoriteKeys={favoriteKeys}
@@ -698,11 +707,13 @@ export function AddFoodSheet({
                   />
                 ) : null}
                 {nevoMatches.length ? (
-                  <div>
-                    <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                      {t.addFood.foods}
-                    </p>
-                    <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+                  <ListCard
+                    icon={Leaf}
+                    title={t.addFood.foods}
+                    subtitle={t.mealOverview.foods(nevoMatches.length)}
+                    filled
+                  >
+                    <div className="divide-y divide-border border-t border-border">
                       {nevoMatches.map(({ food, synonym }) => (
                         <button
                           key={food.code}
@@ -719,7 +730,7 @@ export function AddFoodSheet({
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </ListCard>
                 ) : null}
                 {!savedMatches.length && !nevoMatches.length ? (
                   <p className="px-1 text-[14px] text-muted-foreground">{t.addFood.noFoodMatch}</p>
@@ -797,6 +808,7 @@ export function AddFoodSheet({
                 </div>
                 {favoriteFoods.length ? (
                   <FoodList
+                    icon={Star}
                     title={t.addFood.favorites}
                     foods={favoriteFoods}
                     favoriteKeys={favoriteKeys}
@@ -807,6 +819,7 @@ export function AddFoodSheet({
                 ) : null}
                 {recentFoods.length ? (
                   <FoodList
+                    icon={History}
                     title={t.addFood.recent}
                     foods={recentFoods}
                     favoriteKeys={favoriteKeys}
@@ -817,7 +830,9 @@ export function AddFoodSheet({
                 ) : null}
                 {showSaved && onCreateMeal ? (
                   <SavedList
+                    icon={UtensilsCrossed}
                     title={t.nutrition.meals}
+                    count={t.addFood.savedMeals}
                     empty={t.nutrition.mealsEmpty}
                     newLabel={t.nutrition.newMeal}
                     editing={editingSaved}
@@ -842,7 +857,9 @@ export function AddFoodSheet({
                 ) : null}
                 {showSaved && onCreateRecipe ? (
                   <SavedList
+                    icon={CookingPot}
                     title={t.nutrition.recipes}
+                    count={t.addFood.savedRecipes}
                     empty={t.nutrition.recipesEmpty}
                     newLabel={t.nutrition.newRecipe}
                     editing={editingSaved}
@@ -1099,9 +1116,73 @@ export function AddFoodSheet({
   );
 }
 
+/** One of Add food's lists as a card, built like a meal's card on the Food
+ *  tab: a tinted header band (`card-head`) with a badge, the title and a
+ *  count, and the rows under it divided by hairlines. The badge is solid
+ *  once the list has something in it, muted while it's empty. */
+function ListCard({
+  icon: Icon,
+  title,
+  subtitle,
+  filled,
+  actions,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+  filled: boolean;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="glass overflow-hidden rounded-2xl">
+      <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
+        <span aria-hidden className={`${filled ? badge.on : badge.off} size-9`}>
+          <Icon className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[17px] font-bold leading-tight">{title}</span>
+          {/* Not text-muted-foreground: on a card inside a sheet the band
+              sits on a lighter surface, and muted grey measured 4.43:1. */}
+          <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
+            {subtitle}
+          </span>
+        </span>
+        {actions ? <span className="flex shrink-0 items-center gap-2">{actions}</span> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Edit/Done in a list card's header band: a round icon button, like the
+ *  meal card's save button, so a long title ("Maaltijden") keeps its room
+ *  next to "New". */
+function EditToggle({
+  editing,
+  onToggle,
+}: {
+  editing: boolean;
+  onToggle?: (() => void) | undefined;
+}) {
+  const t = useTranslation();
+  return (
+    <button
+      onClick={onToggle}
+      aria-pressed={editing}
+      aria-label={editing ? t.common.done : t.common.edit}
+      className="tap-target flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+    >
+      {editing ? <Check className="size-4" /> : <Pencil className="size-3.5" />}
+    </button>
+  );
+}
+
 /** Favourite, recent or search-result foods. With `onRemove`, an "Edit"
  *  toggle swaps the "+" of each `removable` row for a remove button. */
 function FoodList({
+  icon,
   title,
   foods,
   favoriteKeys,
@@ -1113,6 +1194,7 @@ function FoodList({
   onToggleEdit,
   onRemove,
 }: {
+  icon: LucideIcon;
   title: string;
   foods: ListFood[];
   favoriteKeys: Set<string>;
@@ -1127,73 +1209,67 @@ function FoodList({
   const t = useTranslation();
   const canEdit = !!onRemove && !!removable && foods.some(removable);
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[13px] font-semibold text-muted-foreground">{title}</p>
-        {canEdit ? (
-          <button
-            onClick={onToggleEdit}
-            className="tap-target rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
+    <ListCard
+      icon={icon}
+      title={title}
+      subtitle={t.mealOverview.foods(foods.length)}
+      filled={foods.length > 0}
+      actions={canEdit ? <EditToggle editing={editing} onToggle={onToggleEdit} /> : null}
+    >
+      {foods.map((food) => {
+        const m = scaledMacros(food);
+        const starred = favoriteKeys.has(food.name.trim().toLowerCase());
+        const removing = editing && canEdit && removable!(food);
+        return (
+          <div
+            key={myFoodKey(food)}
+            className="flex items-center gap-1 border-t border-border py-1 pl-4 pr-1.5"
           >
-            {editing ? t.common.done : t.common.edit}
-          </button>
-        ) : null}
-      </div>
-      <div className="space-y-2">
-        {foods.map((food) => {
-          const m = scaledMacros(food);
-          const starred = favoriteKeys.has(food.name.trim().toLowerCase());
-          const removing = editing && canEdit && removable!(food);
-          return (
-            <div
-              key={myFoodKey(food)}
-              className="glass flex items-center gap-1 rounded-2xl py-1 pl-4 pr-1"
+            <button
+              onClick={() => onOpen(food)}
+              className="min-w-0 flex-1 py-1.5 text-left active:opacity-70"
             >
+              <span className="block truncate text-[15px] font-semibold">{food.name}</span>
+              <PortionLine
+                grams={food.grams}
+                macros={m}
+                kcal={m.calories}
+                className="text-[12.5px]"
+              />
+            </button>
+            <button
+              onClick={() => {
+                haptic(10);
+                onToggleFavorite(food);
+              }}
+              aria-pressed={starred}
+              aria-label={starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)}
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary-text active:scale-90"
+            >
+              <Star className="size-4" fill={starred ? "currentColor" : "none"} />
+            </button>
+            {removing ? (
               <button
-                onClick={() => onOpen(food)}
-                className="min-w-0 flex-1 py-2 text-left active:opacity-70"
+                onClick={() => onRemove!(food)}
+                aria-label={t.addFood.forgetFood(food.name)}
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
               >
-                <p className="truncate text-[15px] font-semibold">{food.name}</p>
-                <p className="tabular text-[12px] text-muted-foreground">
-                  {food.grams}g · {m.calories} kcal
-                </p>
+                <Trash2 className="size-4" />
               </button>
+            ) : (
               <button
-                onClick={() => {
-                  haptic(10);
-                  onToggleFavorite(food);
-                }}
-                aria-pressed={starred}
-                aria-label={
-                  starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)
-                }
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary-text active:scale-90"
+                onClick={() => onQuickAdd(food)}
+                aria-label={t.addFood.quickAdd(food.name, food.grams)}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
               >
-                <Star className="size-4" fill={starred ? "currentColor" : "none"} />
+                <HapticSwitch />
+                <Plus className="size-5" />
               </button>
-              {removing ? (
-                <button
-                  onClick={() => onRemove!(food)}
-                  aria-label={t.addFood.forgetFood(food.name)}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => onQuickAdd(food)}
-                  aria-label={t.addFood.quickAdd(food.name, food.grams)}
-                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
-                >
-                  <HapticSwitch />
-                  <Plus className="size-5" />
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            )}
+          </div>
+        );
+      })}
+    </ListCard>
   );
 }
 
@@ -1243,7 +1319,9 @@ export function MealPicker({
  *  swaps the "+" for a delete button — deleting had no way in at all
  *  before these moved here from the Nutrition screen. */
 function SavedList({
+  icon,
   title,
+  count,
   empty,
   newLabel,
   items,
@@ -1253,7 +1331,10 @@ function SavedList({
   onLog,
   onDelete,
 }: {
+  icon: LucideIcon;
   title: string;
+  /** "2 meals" in the header band. */
+  count: (n: number) => string;
   empty: string;
   newLabel: string;
   items: { id: string; name: string; detail: string; logLabel: string }[];
@@ -1265,60 +1346,63 @@ function SavedList({
 }) {
   const t = useTranslation();
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[13px] font-semibold text-muted-foreground">{title}</p>
-        <div className="flex items-center gap-1">
-          {items.length ? (
-            <button
-              onClick={onToggleEdit}
-              className="tap-target rounded-full px-2.5 py-1 text-[13px] font-semibold text-muted-foreground"
-            >
-              {editing ? t.common.done : t.common.edit}
-            </button>
-          ) : null}
+    <ListCard
+      icon={icon}
+      title={title}
+      subtitle={items.length ? count(items.length) : t.nutrition.nothingInMeal}
+      filled={items.length > 0}
+      actions={
+        <>
+          {items.length ? <EditToggle editing={editing} onToggle={onToggleEdit} /> : null}
+          {/* Says "New", not just "+": in a header band "+" means "add to
+              the log" (a meal's card), and this one makes a new meal. */}
           <button
             onClick={onNew}
-            className="tap-target flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
+            aria-label={newLabel}
+            className="tap-target flex items-center gap-1 rounded-full bg-primary/25 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
           >
-            <Plus className="size-3.5" /> {newLabel}
+            <Plus className="size-3.5" /> {t.addFood.newShort}
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
       {items.length === 0 ? (
-        <p className="rounded-2xl bg-muted/60 px-4 py-3 text-[12.5px] leading-snug text-muted-foreground">
+        <p className="border-t border-border px-4 py-3 text-[12.5px] leading-snug text-muted-foreground">
           {empty}
         </p>
       ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div key={item.id} className="glass flex items-center gap-1 rounded-2xl py-1 pl-4 pr-1">
-              <div className="min-w-0 flex-1 py-2">
-                <p className="truncate text-[15px] font-semibold">{item.name}</p>
-                <p className="tabular text-[12px] text-muted-foreground">{item.detail}</p>
-              </div>
-              {editing ? (
-                <button
-                  onClick={() => onDelete(item.id)}
-                  aria-label={t.addFood.deleteMeal(item.name)}
-                  className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => onLog(item.id)}
-                  aria-label={item.logLabel}
-                  className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
-                >
-                  <HapticSwitch />
-                  <Plus className="size-5" />
-                </button>
-              )}
+        items.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center gap-1 border-t border-border py-1 pl-4 pr-1.5"
+          >
+            <div className="min-w-0 flex-1 py-1.5">
+              <p className="truncate text-[15px] font-semibold">{item.name}</p>
+              <p className="tabular mt-0.5 truncate text-[12.5px] text-muted-foreground">
+                {item.detail}
+              </p>
             </div>
-          ))}
-        </div>
+            {editing ? (
+              <button
+                onClick={() => onDelete(item.id)}
+                aria-label={t.addFood.deleteMeal(item.name)}
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive-text active:scale-90"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => onLog(item.id)}
+                aria-label={item.logLabel}
+                className="relative flex size-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-primary/60 text-primary-text active:scale-90 active:bg-primary/10"
+              >
+                <HapticSwitch />
+                <Plus className="size-5" />
+              </button>
+            )}
+          </div>
+        ))
       )}
-    </div>
+    </ListCard>
   );
 }
