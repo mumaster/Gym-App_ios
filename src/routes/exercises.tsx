@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Plus,
   Search,
+  Settings2,
   ShieldOff,
   Trash2,
   Upload,
@@ -46,7 +47,7 @@ import type {
   Muscle,
   TargetMuscle,
 } from "../lib/gym/types";
-import { chip, text } from "../components/gym/ui";
+import { badge, chip, text } from "../components/gym/ui";
 
 const PATTERNS: MovementPattern[] = ["push", "pull", "hinge", "squat", "carry", "core"];
 
@@ -94,8 +95,14 @@ export const Route = createFileRoute("/exercises")({
 
 function ExercisesScreen() {
   const t = useTranslation();
-  const { profiles, activeProfileId, lovedExerciseIds, toggleLovedExercise, avoidedExerciseIds } =
-    useGym();
+  const {
+    profiles,
+    activeProfileId,
+    lovedExerciseIds,
+    toggleLovedExercise,
+    avoidedExerciseIds,
+    update,
+  } = useGym();
   const [moreOpen, setMoreOpen] = useState(false);
   const exercises = useExerciseCatalog();
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
@@ -303,10 +310,57 @@ function ExercisesScreen() {
       />
 
       <div ref={listRef} className={`mt-4 space-y-4 ${searching ? "min-h-[100dvh]" : ""}`}>
-        <p className={`px-1 ${text.meta}`}>
-          {t.exercises.count(results.length, exercises.length)}
-          {onlyAvailable ? ` · ${t.exercises.gymNote(profile.name)}` : ""}
-        </p>
+        {/* My gym's own equipment, changeable right here (asked for: it was
+            only reachable through Settings): switch profile with the chips,
+            or open its gear with Edit, whose back button returns here. */}
+        {onlyAvailable ? (
+          <section className="glass overflow-hidden rounded-2xl">
+            <div className="flex items-center gap-3 py-2.5 pl-4 pr-3">
+              <span aria-hidden className={`${badge.tonal} size-9`}>
+                <Dumbbell className="size-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                {/* With several gyms the chips below name the picked one, so
+                    the title doesn't repeat it (cut off: "Full Commer…"). */}
+                <span className="block truncate text-[15px] font-semibold">
+                  {profiles.length > 1 ? t.equipment.title : profile.name}
+                </span>
+                <span className="block truncate text-[12.5px] text-muted-foreground">
+                  {t.generate.equipmentSummary(profile.active_equipment_ids.length)}
+                </span>
+              </span>
+              <Link
+                to="/equipment"
+                search={{ from: "exercises" }}
+                aria-label={t.exercises.editGym(profile.name)}
+                className="tap-target flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-secondary px-3.5 text-[13.5px] font-semibold text-secondary-foreground active:scale-95"
+              >
+                <Settings2 className="size-4" />
+                {t.generate.editEquipment}
+              </Link>
+            </div>
+            {profiles.length > 1 ? (
+              <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-border px-4 py-2.5">
+                {profiles.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      haptic(12);
+                      update({ activeProfileId: p.id });
+                    }}
+                    aria-pressed={p.id === profile.id}
+                    className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                      p.id === profile.id ? chip.on : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+        <p className={`px-1 ${text.meta}`}>{t.exercises.count(results.length, exercises.length)}</p>
         {onlyLoved && !lovedExerciseIds.length ? (
           <p className={`px-1 ${text.note}`}>{t.exercises.lovedEmpty}</p>
         ) : null}

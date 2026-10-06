@@ -713,7 +713,7 @@ const en = {
     count: (shown: number, total: number) => `${shown} of ${total} exercises`,
     tabs: { all: "All", gym: "My gym", loved: "Loved" },
     inGroup: (n: number) => (n === 1 ? "1 exercise" : `${n} exercises`),
-    gymNote: (profile: string) => `What you can do with ${profile}`,
+    editGym: (profile: string) => `Edit the equipment of ${profile}`,
     lovedEmpty: "Tap the heart on an exercise to keep it here.",
     otherGroup: "Other",
     search: "Search exercises",
@@ -778,6 +778,7 @@ const en = {
   equipment: {
     title: "Equipment",
     subtitle: "Save a setup for every place you train",
+    backToExercises: "Back to My gym",
     addProfile: "Add profile",
     profileName: "Profile name",
     availableEquipment: "Available equipment",
@@ -2137,7 +2138,7 @@ const nl: Dict = {
     count: (shown: number, total: number) => `${shown} van ${total} oefeningen`,
     tabs: { all: "Alle", gym: "Mijn gym", loved: "Favoriet" },
     inGroup: (n: number) => (n === 1 ? "1 oefening" : `${n} oefeningen`),
-    gymNote: (profile: string) => `Wat je kunt doen met ${profile}`,
+    editGym: (profile: string) => `Uitrusting van ${profile} aanpassen`,
     lovedEmpty: "Tik op het hartje bij een oefening om hem hier te bewaren.",
     otherGroup: "Overig",
     search: "Zoek oefeningen",
@@ -2202,6 +2203,7 @@ const nl: Dict = {
   equipment: {
     title: "Uitrusting",
     subtitle: "Sla een setup op voor elke plek waar je traint",
+    backToExercises: "Terug naar Mijn gym",
     addProfile: "Profiel toevoegen",
     profileName: "Profielnaam",
     availableEquipment: "Beschikbare uitrusting",

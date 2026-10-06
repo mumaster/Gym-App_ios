@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
+import { Check, ChevronLeft, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
@@ -12,6 +12,10 @@ import type { EquipmentId } from "../lib/gym/types";
 import { button, chip } from "../components/gym/ui";
 
 export const Route = createFileRoute("/equipment")({
+  // Opened from Exercises → My gym: a back button returns there (the screen
+  // otherwise has no back action, like Settings).
+  validateSearch: (search: Record<string, unknown>): { from?: "exercises" } =>
+    search["from"] === "exercises" ? { from: "exercises" } : {},
   head: () => ({
     meta: [
       { title: "Equipment Profiles — Forge" },
@@ -33,6 +37,7 @@ export const Route = createFileRoute("/equipment")({
 function EquipmentScreen() {
   const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise } = useGym();
   const t = useTranslation();
+  const { from } = Route.useSearch();
   const [editingId, setEditingId] = useState(activeProfileId);
   const editing = profiles.find((p) => p.id === editingId) ?? profiles[0]!;
 
@@ -84,7 +89,22 @@ function EquipmentScreen() {
   };
 
   return (
-    <Screen title={t.equipment.title} subtitle={t.equipment.subtitle}>
+    <Screen
+      title={t.equipment.title}
+      subtitle={t.equipment.subtitle}
+      action={
+        from === "exercises" ? (
+          <Link
+            to="/exercises"
+            search={{ tab: "gym" }}
+            aria-label={t.equipment.backToExercises}
+            className="glass tap-target flex size-10 items-center justify-center rounded-full"
+          >
+            <ChevronLeft className="size-5" />
+          </Link>
+        ) : undefined
+      }
+    >
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
         {profiles.map((p) => (
           <button
@@ -129,6 +149,7 @@ function EquipmentScreen() {
             <button
               key={e.id}
               onClick={() => toggle(e.id)}
+              aria-pressed={on}
               className="flex min-h-[56px] w-full items-center justify-between px-4 text-left"
             >
               <span className="text-[17px] font-medium">{e.label}</span>
