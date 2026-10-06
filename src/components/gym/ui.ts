@@ -48,6 +48,10 @@ export const chip = {
 export const badge = {
   on: "flex shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground",
   off: "flex shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground",
+  /** A light accent wash with an accent icon: for a badge that sits under a
+   *  screen's main solid action and shouldn't compete with it (Add food's
+   *  list cards, under Scan). */
+  tonal: "flex shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text",
 } as const;
 
 /** The type scale's named roles (DESIGN.md, Typography). */

@@ -14,6 +14,7 @@ import {
   ScanLine,
   Search,
   Star,
+  StarOff,
   Trash2,
   UserRound,
   UtensilsCrossed,
@@ -196,6 +197,8 @@ export function AddFoodSheet({
   const unknownBarcode = useRef<string | null>(null);
   /** Edit mode of the "Your foods" search results (remove from the library). */
   const [editingMine, setEditingMine] = useState(false);
+  /** Edit mode of the Favourites card: its rows' "+" becomes unfavourite. */
+  const [editingFavs, setEditingFavs] = useState(false);
 
   // The NEVO table is a separate chunk, loaded the first time the sheet opens.
   useEffect(() => {
@@ -240,6 +243,7 @@ export function AddFoodSheet({
     setBarcode(null);
     unknownBarcode.current = null;
     setEditingMine(false);
+    setEditingFavs(false);
   };
 
   const close = () => {
@@ -815,6 +819,9 @@ export function AddFoodSheet({
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
                     onToggleFavorite={toggleFavoriteFood}
+                    favorites
+                    editing={editingFavs}
+                    onToggleEdit={() => setEditingFavs((v) => !v)}
                   />
                 ) : null}
                 {recentFoods.length ? (
@@ -1118,8 +1125,12 @@ export function AddFoodSheet({
 
 /** One of Add food's lists as a card, built like a meal's card on the Food
  *  tab: a tinted header band (`card-head`) with a badge, the title and a
- *  count, and the rows under it divided by hairlines. The badge is solid
- *  once the list has something in it, muted while it's empty. */
+ *  count, and the rows under it divided by hairlines. The badge is tonal
+ *  (`badge.tonal`) once the list has something in it and muted while it's
+ *  empty, not solid like a meal's: Scan is this screen's one solid accent,
+ *  and up to four solid circles under it competed with it (asked for).
+ *  Favourites and Recent only show when they have items, so a solid fill
+ *  wouldn't say anything there anyway. */
 function ListCard({
   icon: Icon,
   title,
@@ -1138,7 +1149,7 @@ function ListCard({
   return (
     <section className="glass overflow-hidden rounded-2xl">
       <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
-        <span aria-hidden className={`${filled ? badge.on : badge.off} size-9`}>
+        <span aria-hidden className={`${filled ? badge.tonal : badge.off} size-9`}>
           <Icon className="size-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
@@ -1193,6 +1204,7 @@ function FoodList({
   editing = false,
   onToggleEdit,
   onRemove,
+  favorites = false,
 }: {
   icon: LucideIcon;
   title: string;
@@ -1205,9 +1217,13 @@ function FoodList({
   editing?: boolean;
   onToggleEdit?: () => void;
   onRemove?: (food: ListFood) => void;
+  /** The Favourites card: every row would show a filled star, so there's no
+   *  star column (the name gets the room); a favourite is removed in edit
+   *  mode instead, where its "+" becomes an unfavourite button. */
+  favorites?: boolean;
 }) {
   const t = useTranslation();
-  const canEdit = !!onRemove && !!removable && foods.some(removable);
+  const canEdit = favorites ? foods.length > 0 : !!onRemove && !!removable && foods.some(removable);
   return (
     <ListCard
       icon={icon}
@@ -1219,7 +1235,7 @@ function FoodList({
       {foods.map((food) => {
         const m = scaledMacros(food);
         const starred = favoriteKeys.has(food.name.trim().toLowerCase());
-        const removing = editing && canEdit && removable!(food);
+        const removing = editing && canEdit && (favorites || removable!(food));
         return (
           <div
             key={myFoodKey(food)}
@@ -1237,18 +1253,33 @@ function FoodList({
                 className="text-[12.5px]"
               />
             </button>
-            <button
-              onClick={() => {
-                haptic(10);
-                onToggleFavorite(food);
-              }}
-              aria-pressed={starred}
-              aria-label={starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)}
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary-text active:scale-90"
-            >
-              <Star className="size-4" fill={starred ? "currentColor" : "none"} />
-            </button>
-            {removing ? (
+            {favorites ? null : (
+              <button
+                onClick={() => {
+                  haptic(10);
+                  onToggleFavorite(food);
+                }}
+                aria-pressed={starred}
+                aria-label={
+                  starred ? t.addFood.unfavorite(food.name) : t.addFood.favorite(food.name)
+                }
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-primary-text active:scale-90"
+              >
+                <Star className="size-4" fill={starred ? "currentColor" : "none"} />
+              </button>
+            )}
+            {removing && favorites ? (
+              <button
+                onClick={() => {
+                  haptic(10);
+                  onToggleFavorite(food);
+                }}
+                aria-label={t.addFood.unfavorite(food.name)}
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-90"
+              >
+                <StarOff className="size-4" />
+              </button>
+            ) : removing ? (
               <button
                 onClick={() => onRemove!(food)}
                 aria-label={t.addFood.forgetFood(food.name)}
