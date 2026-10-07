@@ -50,6 +50,15 @@ export interface ProgressionSuggestion {
 export const roundToStep = (n: number, step: number) =>
   step > 0 ? Math.round(n / step) * step : n;
 
+/** `from` plus `increase`, rounded to `step`, and always above `from`: a
+ *  weight off the step's grid (17.5 kg with a 2 kg step) could otherwise
+ *  round back down to it or below. */
+function raised(from: number, increase: number, step: number): number {
+  let next = Number(roundToStep(from + increase, step).toFixed(2));
+  if (step > 0) while (next <= from) next = Number((next + step).toFixed(2));
+  return next;
+}
+
 /**
  * Load-increase rule, from two published sources rather than a round number:
  *
@@ -121,7 +130,11 @@ export function suggestWeight(
 
   const base = hitTopTwice
     ? {
-        weight: lastWeight + Math.max(roundStep, roundToStep(moved * increase, roundStep)),
+        weight: raised(
+          lastWeight,
+          Math.max(roundStep, roundToStep(moved * increase, roundStep)),
+          roundStep,
+        ),
         reps: bottom,
         reason: bodyweight ? copy.hitTopBodyweight(top) : copy.hitTop(top),
       }
@@ -133,8 +146,11 @@ export function suggestWeight(
           reason: copy.matching,
         };
 
-  const weight = Number(roundToStep(base.weight, roundStep).toFixed(2));
-  const reason = base.reason;
+  // A repeat keeps the weight actually lifted, unrounded. Rounding it onto
+  // the step's grid moved 17.5 kg dumbbells to 18 kg (a 2 kg step), a weight
+  // that isn't on the rack, and turned "same weight" into an "up"
+  // suggestion (reported). Only an increase is rounded (`raised`).
+  const { weight, reason } = base;
   const direction = weight > lastWeight ? "up" : weight < lastWeight ? "down" : "same";
 
   return { weight, reps: base.reps, bumped: direction === "up", direction, reason };

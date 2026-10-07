@@ -64,6 +64,26 @@ describe("suggestWeight (double progression, ACSM 2009 / NSCA 2-for-2)", () => {
     expect(s).toMatchObject({ weight: 100, reps: 7 });
   });
 
+  it("keeps a weight off the step's grid when repeating it", () => {
+    // 17.5 kg dumbbells with a 2 kg step used to come back as 18 kg, "up".
+    const s = suggestWeight(
+      "db-shoulder-press",
+      [session("1", "db-shoulder-press", [7, 6, 5], 17.5)],
+      "6-10",
+      2,
+    );
+    expect(s).toMatchObject({ weight: 17.5, reps: 6, direction: "same", bumped: false });
+  });
+
+  it("rounds an increase from an off-grid weight upwards", () => {
+    const twice = [
+      session("2", "db-shoulder-press", [10, 10, 10], 17.5),
+      session("1", "db-shoulder-press", [10, 10, 10], 17.5),
+    ];
+    const s = suggestWeight("db-shoulder-press", twice, "6-10", 2);
+    expect(s).toMatchObject({ weight: 20, direction: "up", bumped: true });
+  });
+
   it("returns null without history", () => {
     expect(suggestWeight("bb-bench", [], "6-10")).toBeNull();
   });
