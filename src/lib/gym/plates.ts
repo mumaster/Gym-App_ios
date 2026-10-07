@@ -66,8 +66,11 @@ export function smallestPlate(profile: EquipmentProfile): number | null {
  * plate the profile owns (asked for: the 0.5 and 1.25 kg plates should count
  * for every loaded exercise, not only the barbell):
  *
- * - Loaded on both sides (barbell, Smith bar, loadable dumbbells, a
- *   plate-loaded leg press): one of the smallest plate per side, so twice it.
+ * - Loaded on both sides (barbell, Smith bar, a plate-loaded leg press):
+ *   one of the smallest plate per side, so twice it.
+ * - Loadable dumbbells: the smallest plate itself (asked for: + should add
+ *   0.5 kg with 0.5 kg plates, not a whole kilo; dumbbells are logged per
+ *   dumbbell, and a 12.5 kg one had been lifted that a 1 kg grid skipped).
  * - One loading pin (a cable or machine stack, the leg developer): one small
  *   plate on the pin, never more than the 2.5 kg a stack usually moves by.
  * - Fixed dumbbells (a rack, `loadable_dumbbells` off): FIXED_DUMBBELL_STEP.
@@ -82,7 +85,7 @@ export function plateStep(exercise: Exercise, profile: EquipmentProfile): number
     smallest == null ? fallback : Number((smallest * 2).toFixed(2));
   if (gear.includes("barbell") || gear.includes("smith")) return bothSides(2.5);
   if (gear.includes("dumbbell"))
-    return profile.loadable_dumbbells === false ? FIXED_DUMBBELL_STEP : bothSides(2);
+    return profile.loadable_dumbbells === false ? FIXED_DUMBBELL_STEP : (smallest ?? 2);
   if (gear.includes("leg_press")) return bothSides(2.5);
   if (ONE_PIN.some((g) => gear.includes(g)))
     return smallest == null ? 2.5 : Math.min(2.5, smallest);

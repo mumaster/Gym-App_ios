@@ -24,6 +24,7 @@ import {
   StickyNote,
   CornerDownRight,
   Bandage,
+  Trash2,
 } from "lucide-react";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
@@ -1671,6 +1672,8 @@ function ExerciseBlock({
                     step={step}
                     min={bw ? -(bodyKg ?? 200) : 0}
                     ariaLabel={t.session.weightAriaLabel}
+                    unit="kg"
+                    signed={bw}
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -1681,6 +1684,7 @@ function ExerciseBlock({
                     step={1}
                     min={0}
                     ariaLabel={t.session.repsAriaLabel}
+                    unit="reps"
                   />
                 </div>
                 {s.set_type === "working" ? (
@@ -1702,7 +1706,7 @@ function ExerciseBlock({
                       });
                       setEditIdx(null);
                     }}
-                    className={`${button.primary} flex-1`}
+                    className={`${button.primary} min-w-0 flex-1`}
                   >
                     {t.session.saveEdit}
                   </button>
@@ -1712,13 +1716,16 @@ function ExerciseBlock({
                       removeSetAt(abs);
                       setEditIdx(null);
                     }}
-                    className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-destructive-text active:scale-95"
+                    aria-label={t.session.deleteEdit}
+                    className="flex size-11 shrink-0 items-center justify-center self-center rounded-xl bg-secondary text-destructive-text active:scale-95"
                   >
-                    {t.session.deleteEdit}
+                    {/* An icon, so Save, Cancel and Delete fit one row at
+                        375 pt in Dutch ("Verwijderen" cut off). */}
+                    <Trash2 className="size-4" />
                   </button>
                   <button
                     onClick={() => setEditIdx(null)}
-                    className="min-h-11 rounded-xl bg-secondary px-4 text-[14px] font-semibold text-muted-foreground active:scale-95"
+                    className="min-h-11 shrink-0 self-center rounded-xl bg-secondary px-4 text-[14px] font-semibold text-muted-foreground active:scale-95"
                   >
                     {t.session.cancelEdit}
                   </button>
@@ -2402,22 +2409,35 @@ function RpePicker({
   );
 }
 
-/** Numeric field with big −/+ buttons, for editing a logged set. */
+/** Numeric field with big −/+ buttons, for editing a logged set. The field
+ *  keeps what's typed as text while it's being edited, so "12," can become
+ *  "12,5": it used to show the parsed number, which dropped the comma on
+ *  every keystroke (reported). The unit sits inside the field, like the
+ *  new-set form's "kg" and "reps". */
 function Stepper({
   value,
   onChange,
   step,
   min = 0,
   ariaLabel,
+  unit,
+  signed = false,
 }: {
   value: number;
   onChange: (v: number) => void;
   step: number;
   min?: number;
   ariaLabel: string;
+  unit: string;
+  /** Allows a leading minus (assistance on a bodyweight exercise). */
+  signed?: boolean;
 }) {
   const t = useTranslation();
-  const set = (v: number) => onChange(Number(Math.max(min, v).toFixed(2)));
+  const [draft, setDraft] = useState<string | null>(null);
+  const set = (v: number) => {
+    setDraft(null);
+    onChange(Number(Math.max(min, v).toFixed(2)));
+  };
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1.5">
       <button
@@ -2430,18 +2450,27 @@ function Stepper({
       >
         <Minus className="size-4" />
       </button>
-      <input
-        inputMode="decimal"
-        type="text"
-        value={Number.isFinite(value) ? value : ""}
-        aria-label={ariaLabel}
-        onFocus={selectOnFocus}
-        onChange={(e) => {
-          if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-          onChange(e.target.value === "" ? min : parseDecimal(e.target.value));
-        }}
-        className="tabular h-12 w-full min-w-0 flex-1 rounded-xl bg-muted px-1 text-center text-[16px] font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
-      />
+      <div className="relative min-w-0 flex-1">
+        <input
+          inputMode="decimal"
+          type="text"
+          value={draft ?? (Number.isFinite(value) ? String(value) : "")}
+          aria-label={ariaLabel}
+          onFocus={selectOnFocus}
+          onChange={(e) => {
+            const text = e.target.value;
+            if (!(signed ? SIGNED_DECIMAL_INPUT_RE : DECIMAL_INPUT_RE).test(text)) return;
+            setDraft(text);
+            const n = parseDecimal(text);
+            if (Number.isFinite(n)) onChange(Math.max(min, n));
+          }}
+          onBlur={() => setDraft(null)}
+          className="tabular h-12 w-full min-w-0 rounded-xl bg-muted px-10 text-center text-[16px] font-bold text-foreground outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">
+          {unit}
+        </span>
+      </div>
       <button
         onClick={() => {
           haptic(10);

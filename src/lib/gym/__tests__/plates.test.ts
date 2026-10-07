@@ -21,8 +21,8 @@ describe("plateStep: the smallest plates count for every loaded exercise", () =>
     expect(plateStep(ex("bb-bench"), withPlates(home, { "20": 2, "1.25": 1 }))).toBe(2.5);
   });
 
-  it("steps loadable dumbbells by the smallest plate on each end", () => {
-    expect(plateStep(ex("db-shoulder-press"), home)).toBe(1);
+  it("steps loadable dumbbells by the smallest plate", () => {
+    expect(plateStep(ex("db-shoulder-press"), home)).toBe(0.5);
   });
 
   it("keeps a fixed dumbbell rack at its own step", () => {
