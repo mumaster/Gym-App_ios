@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import {
   BarChart3,
+  CalendarDays,
   ChevronRight,
   Dumbbell,
   Flame,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
-import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { Card, Screen } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { ListCard } from "../components/gym/ListCard";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
@@ -231,91 +232,93 @@ function HistoryScreen() {
           >
             <Watch className="size-4" /> {t.watch.importFromWatch}
           </button>
-          <SectionLabel>{t.history.recent}</SectionLabel>
           <WatchImportSheet open={watchOpen} onClose={() => setWatchOpen(false)} />
-          {/* Grouped by week: an ever-growing list of identical cards was the
-          longest thing in the app (20 sessions ≈ 1,700px). */}
-          <div className="space-y-4">
+          {/* One list card per Monday–Sunday week, like Quick start on the
+          Workout tab (asked for): the band names the week and sums it up,
+          the sessions are its rows. It was a small label over a plain card;
+          before that, one card per session (20 sessions ≈ 1,700px). */}
+          <div className="mt-3 space-y-3">
             {weeks.slice(0, weeksShown).map(({ monday, list }) => {
               const loads = list.map(itemLoad).filter((l): l is number => l != null);
               const cardioCount = list.filter((x) => x.kind === "cardio").length;
               const load = loads.length ? loads.reduce((a, b) => a + b, 0) : null;
+              const weeksAgo = Math.round(
+                (mondayOf(new Date()).getTime() - monday.getTime()) / (7 * 86_400_000),
+              );
               return (
-                <div key={monday.getTime()}>
-                  <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-                    <p className="text-[13px] font-semibold text-foreground">
-                      {t.history.weekOf(
-                        monday.toLocaleDateString(locale, { day: "numeric", month: "short" }),
-                      )}
-                    </p>
-                    <p className="tabular text-[12px] text-muted-foreground">
-                      {t.history.weekSummary(
-                        list.length - cardioCount,
-                        cardioCount,
-                        load != null ? load.toLocaleString(locale) : null,
-                      )}
-                    </p>
-                  </div>
-                  <Card className="overflow-hidden p-0">
-                    {list.map((item, i) => {
-                      if (item.kind === "cardio") {
-                        return (
-                          <CardioRow key={item.cardio.id} cardio={item.cardio} first={i === 0} />
-                        );
-                      }
-                      const w = item.workout;
-                      const volume = w.completed_sets.reduce(
-                        (v, s) => v + Math.max(0, s.weight) * s.reps,
-                        0,
-                      );
-                      return (
-                        <Link
-                          key={w.id}
-                          to="/history/$workoutId"
-                          params={{ workoutId: w.id }}
-                          className={`flex items-center gap-3 px-4 py-3 active:bg-foreground/5 ${
-                            i > 0 ? "border-t border-border" : ""
-                          }`}
-                        >
-                          <SessionIcon icon={Dumbbell} />
-                          <div className="min-w-0 flex-1">
-                            {/* Laid out like a cardio row: date · what, then the
-                            numbers (minutes and heart rate included) on the
-                            second line, so the muscles get the full width. */}
-                            <p className="truncate text-[15px] font-semibold">
-                              {new Date(w.date).toLocaleDateString(locale, {
-                                day: "numeric",
-                                month: "short",
-                              })}
-                              <span className="font-normal text-muted-foreground">
-                                {" · "}
-                                {w.target_muscles.join(" · ") || t.generate.fullBody}
-                              </span>
-                            </p>
-                            <p className="tabular mt-0.5 flex items-center gap-1 truncate text-[12.5px] text-muted-foreground">
-                              {t.history.setsAndVolume(
-                                w.completed_sets.length,
-                                volume.toLocaleString(locale),
-                              )}
+                <ListCard
+                  key={monday.getTime()}
+                  icon={CalendarDays}
+                  title={
+                    weeksAgo === 0
+                      ? t.history.thisWeek
+                      : weeksAgo === 1
+                        ? t.history.lastWeek
+                        : t.history.weekOf(
+                            monday.toLocaleDateString(locale, { day: "numeric", month: "short" }),
+                          )
+                  }
+                  subtitle={t.history.weekSummary(
+                    list.length - cardioCount,
+                    cardioCount,
+                    load != null ? load.toLocaleString(locale) : null,
+                  )}
+                  filled
+                >
+                  {list.map((item) => {
+                    if (item.kind === "cardio") {
+                      return <CardioRow key={item.cardio.id} cardio={item.cardio} />;
+                    }
+                    const w = item.workout;
+                    const volume = w.completed_sets.reduce(
+                      (v, s) => v + Math.max(0, s.weight) * s.reps,
+                      0,
+                    );
+                    return (
+                      <Link
+                        key={w.id}
+                        to="/history/$workoutId"
+                        params={{ workoutId: w.id }}
+                        className="flex items-center gap-3 border-t border-border px-4 py-3 active:bg-foreground/5"
+                      >
+                        <SessionIcon icon={Dumbbell} />
+                        <div className="min-w-0 flex-1">
+                          {/* Laid out like a cardio row: date · what, then the
+                          numbers (minutes and heart rate included) on the
+                          second line, so the muscles get the full width. */}
+                          <p className="truncate text-[15px] font-semibold">
+                            {new Date(w.date).toLocaleDateString(locale, {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                            <span className="font-normal text-muted-foreground">
                               {" · "}
-                              {t.history.minutesShort(sessionMinutes(w))}
-                              {w.watch?.avgHr != null ? (
-                                <span
-                                  className="flex items-center gap-0.5"
-                                  aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
-                                >
-                                  <HeartPulse className="size-3.5 text-primary-text" />
-                                  {w.watch.avgHr}
-                                </span>
-                              ) : null}
-                            </p>
-                          </div>
-                          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                        </Link>
-                      );
-                    })}
-                  </Card>
-                </div>
+                              {w.target_muscles.join(" · ") || t.generate.fullBody}
+                            </span>
+                          </p>
+                          <p className="tabular mt-0.5 flex items-center gap-1 truncate text-[12.5px] text-muted-foreground">
+                            {t.history.setsAndVolume(
+                              w.completed_sets.length,
+                              volume.toLocaleString(locale),
+                            )}
+                            {" · "}
+                            {t.history.minutesShort(sessionMinutes(w))}
+                            {w.watch?.avgHr != null ? (
+                              <span
+                                className="flex items-center gap-0.5"
+                                aria-label={`${t.watch.avgHr} ${w.watch.avgHr} ${t.watch.bpm}`}
+                              >
+                                <HeartPulse className="size-3.5 text-primary-text" />
+                                {w.watch.avgHr}
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      </Link>
+                    );
+                  })}
+                </ListCard>
               );
             })}
           </div>
@@ -541,7 +544,7 @@ function SessionIcon({ icon: Icon }: { icon: LucideIcon }) {
   );
 }
 
-function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean }) {
+function CardioRow({ cardio }: { cardio: CardioSession }) {
   const t = useTranslation();
   const locale = useLocale();
   const { watch } = cardio;
@@ -559,9 +562,7 @@ function CardioRow({ cardio, first }: { cardio: CardioSession; first: boolean })
     <Link
       to="/history/cardio/$cardioId"
       params={{ cardioId: cardio.id }}
-      className={`flex items-center gap-3 px-4 py-3 active:bg-foreground/5 ${
-        first ? "" : "border-t border-border"
-      }`}
+      className="flex items-center gap-3 border-t border-border px-4 py-3 active:bg-foreground/5"
     >
       {/* The route's shape, in the accent, when a map was imported. */}
       {map ? <RouteThumb map={map} className="size-10" /> : <SessionIcon icon={Icon} />}

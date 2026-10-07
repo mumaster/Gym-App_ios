@@ -601,7 +601,8 @@ const en = {
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
     tabs: { sessions: "Sessions", progress: "Progress", activity: "Activity" },
     daysThisWeek: "Days this week",
-    recent: "Recent",
+    thisWeek: "This week",
+    lastWeek: "Last week",
     perExercise: "Per exercise",
     last30Days: "Last 30 days",
     overviewAria:
@@ -2065,7 +2066,8 @@ const nl: Dict = {
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
     tabs: { sessions: "Sessies", progress: "Voortgang", activity: "Activiteit" },
     daysThisWeek: "Dagen deze week",
-    recent: "Recent",
+    thisWeek: "Deze week",
+    lastWeek: "Vorige week",
     perExercise: "Per oefening",
     last30Days: "Laatste 30 dagen",
     overviewAria:
