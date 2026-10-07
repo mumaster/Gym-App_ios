@@ -6,6 +6,9 @@ import type { Language } from "./types";
 /** The camera's modes (FoodScanner's ScanMode), kept here so the copy
  *  doesn't import a component. */
 type ScanModeKey = "barcode" | "label" | "note" | "plate";
+/** How a starting weight was worked out (startWeight.ts): "reference" is
+ *  marked with an asterisk. */
+type EstimateKind = "estimate" | "rough" | "reference";
 
 /** Metadata for the language picker in Settings — id used for storage/lookup,
  *  label always shown in that language's own name (not translated per the
@@ -392,8 +395,10 @@ const en = {
     restSuffix: (seconds: number) => `${seconds}s rest · `,
     suggestedWeight: (load: string, reps?: number) =>
       `Suggested ${load}${reps ? ` × ${reps}` : ""}`,
-    estimatedWeight: (load: string, reps: number | undefined, rough: boolean) =>
-      `≈ ${load}${reps ? ` × ${reps}` : ""} · ${rough ? "rough estimate" : "estimate"}`,
+    estimatedWeight: (load: string, reps: number | undefined, kind: EstimateKind) =>
+      `≈ ${load}${reps ? ` × ${reps}` : ""}${kind === "reference" ? "*" : ""} · ${
+        kind === "reference" ? "reference" : kind === "rough" ? "rough estimate" : "estimate"
+      }`,
     couldGoHeavier: (load: string, reps: number) => `You could go heavier: ${load} × ${reps}`,
     moveUp: "Move up",
     moveDown: "Move down",
@@ -495,8 +500,11 @@ const en = {
     firstTime: "First time on this one",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Suggested ${load} × ${reps} — ${reason}`,
-    estimatedFrom: (name: string, load: string, reps: number, rough: boolean) =>
-      `${rough ? "Rough estimate" : "Estimated"} from your ${name} (${load} × ${reps}) — adjust after your first set`,
+    estimatedFrom: (name: string, load: string, reps: number, kind: EstimateKind) =>
+      kind === "reference"
+        ? `*Reference from your ${name} (${load} × ${reps}), a different kind of exercise — a starting point, adjust after your first set`
+        : `${kind === "rough" ? "Rough estimate" : "Estimated"} from your ${name} (${load} × ${reps}) — adjust after your first set`,
+    referenceFrom: (name: string) => `*Reference from your ${name}`,
     heavierNote: (load: string, reps: number, why: string) =>
       `You could go heavier: ${load} × ${reps} — ${why}`,
     heavierWhyRpe: (rpe: number) => `your last sets were RPE ${rpe}`,
@@ -1859,8 +1867,10 @@ const nl: Dict = {
     restSuffix: (seconds: number) => `${seconds}s rust · `,
     suggestedWeight: (load: string, reps?: number) =>
       `Voorgesteld ${load}${reps ? ` × ${reps}` : ""}`,
-    estimatedWeight: (load: string, reps: number | undefined, rough: boolean) =>
-      `≈ ${load}${reps ? ` × ${reps}` : ""} · ${rough ? "ruwe schatting" : "schatting"}`,
+    estimatedWeight: (load: string, reps: number | undefined, kind: EstimateKind) =>
+      `≈ ${load}${reps ? ` × ${reps}` : ""}${kind === "reference" ? "*" : ""} · ${
+        kind === "reference" ? "referentie" : kind === "rough" ? "ruwe schatting" : "schatting"
+      }`,
     couldGoHeavier: (load: string, reps: number) => `Je kunt zwaarder: ${load} × ${reps}`,
     moveUp: "Omhoog verplaatsen",
     moveDown: "Omlaag verplaatsen",
@@ -1962,8 +1972,11 @@ const nl: Dict = {
     firstTime: "Eerste keer met deze oefening",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Voorgesteld ${load} × ${reps} — ${reason}`,
-    estimatedFrom: (name: string, load: string, reps: number, rough: boolean) =>
-      `${rough ? "Ruwe schatting" : "Geschat"} op basis van je ${name} (${load} × ${reps}) — pas aan na je eerste set`,
+    estimatedFrom: (name: string, load: string, reps: number, kind: EstimateKind) =>
+      kind === "reference"
+        ? `*Referentie op basis van je ${name} (${load} × ${reps}), een ander soort oefening — een startpunt, pas aan na je eerste set`
+        : `${kind === "rough" ? "Ruwe schatting" : "Geschat"} op basis van je ${name} (${load} × ${reps}) — pas aan na je eerste set`,
+    referenceFrom: (name: string) => `*Referentie op basis van je ${name}`,
     heavierNote: (load: string, reps: number, why: string) =>
       `Je kunt zwaarder: ${load} × ${reps} — ${why}`,
     heavierWhyRpe: (rpe: number) => `je laatste sets waren RPE ${rpe}`,

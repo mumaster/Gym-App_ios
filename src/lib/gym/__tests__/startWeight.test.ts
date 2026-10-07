@@ -5,6 +5,7 @@ import {
   crossEstimate,
   heavierHint,
   loadFor,
+  REFERENCE_DISCOUNT,
   ROUGH_DISCOUNT,
   setE1rm,
   TARGET_RIR,
@@ -93,12 +94,47 @@ describe("crossEstimate", () => {
     );
   });
 
-  it("never estimates across compound and isolation, or for bodyweight", () => {
+  it("never estimates an isolation lift's rough estimate from a compound one, or for bodyweight", () => {
     const history = [session(2, [set("bb-squat", 120, 5, 8)])];
-    expect(crossEstimate(ex("leg-extension"), history, "10-14", 2.5)).toBeNull();
+    expect(crossEstimate(ex("leg-extension"), history, "10-14", 2.5)?.basis).not.toBe("rough");
     expect(
       crossEstimate(ex("pushup"), [session(2, [set("bb-bench", 80, 8)])], "8-12", 2),
     ).toBeNull();
+  });
+});
+
+describe("a reference for an isolation exercise from a compound lift", () => {
+  it("halves the compound lift's 1RM, after the equipment factor", () => {
+    // Bench 80 × 10 @ 8 → dumbbell flye, per dumbbell: × 0.415 × 0.5.
+    const history = [session(2, [set("bb-bench", 80, 10, 8)])];
+    const est = crossEstimate(ex("db-fly"), history, "10-14", 1)!;
+    expect(est).toMatchObject({ basis: "reference", fromId: "bb-bench", reps: 14 });
+    expect(est.weight).toBe(
+      loadFor(setE1rm({ weight: 80, reps: 10, rpe: 8 }) * 0.415 * REFERENCE_DISCOUNT, 14, 1),
+    );
+    expect(est.weight).toBe(15);
+  });
+
+  it("works for a machine from a barbell lift, unconverted", () => {
+    const history = [session(2, [set("bb-squat", 120, 5, 8)])];
+    const est = crossEstimate(ex("leg-extension"), history, "10-14", 2.5)!;
+    expect(est.basis).toBe("reference");
+    expect(est.weight).toBe(47.5);
+  });
+
+  it("prefers a closer estimate when one exists", () => {
+    const history = [
+      session(2, [set("bb-bench", 80, 10, 8)]),
+      session(5, [set("cable-crossover", 15, 12, 8)]),
+    ];
+    expect(crossEstimate(ex("db-fly"), history, "10-14", 1)?.basis).toBe("rough");
+  });
+
+  it("never goes from an isolation lift to a compound one, or across muscles", () => {
+    const history = [session(2, [set("db-fly", 14, 12, 8)])];
+    expect(crossEstimate(ex("bb-bench"), history, "6-10", 2.5)).toBeNull();
+    const rows = [session(2, [set("bb-row", 80, 8, 8)])];
+    expect(crossEstimate(ex("db-curl"), rows, "10-14", 1)).toBeNull();
   });
 
   it("isn't used for an exercise you've already done", () => {

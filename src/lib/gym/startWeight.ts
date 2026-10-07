@@ -124,9 +124,25 @@ const VS_BARBELL: Record<Exclude<Family, "other">, number> = {
   smith: 0.95,
 };
 
+/**
+ * A reference for an isolation exercise from a compound lift of the same
+ * muscle group (bench press → dumbbell flye, overhead press → lateral raise,
+ * squat → leg extension), when nothing closer has been logged. Asked for, so
+ * a first session with a new isolation exercise starts somewhere instead of
+ * on "first time", and shown with an asterisk as a reference. NO published
+ * source gives a 1RM ratio between a compound lift and an isolation one;
+ * REFERENCE_DISCOUNT is the app's own pick. As a sanity check only: Strength
+ * Level's user-submitted lifts put the average dumbbell flye at about 57% of
+ * the dumbbell bench press (crowd data, not a study; found through web
+ * search). 0.5 sits under that, so the start errs light, and replaces
+ * ROUGH_DISCOUNT; the equipment factors are the rough rule's.
+ */
+export const REFERENCE_DISCOUNT = 0.5;
+
 /** "entered": the exercise's own lift entered in Settings → Your current
- *  lifts, before it's been logged in the app. */
-export type EstimateBasis = "published" | "personal" | "rough" | "entered";
+ *  lifts, before it's been logged in the app. "reference": from a compound
+ *  lift for an isolation exercise (see REFERENCE_DISCOUNT). */
+export type EstimateBasis = "published" | "personal" | "rough" | "entered" | "reference";
 
 export interface WeightEstimate {
   weight: number;
@@ -258,6 +274,35 @@ export function crossEstimate(
       const weight = loadFor(best.e1rm * factor * ROUGH_DISCOUNT, reps, step);
       if (weight > 0) return { weight, reps, basis: "rough", fromId: ref.id, fromSet: best.set };
     }
+  }
+
+  // Reference: an isolation exercise from a compound lift of the same
+  // muscle group, one with the same main target first, then the most
+  // recent. Never the other way round: an isolation lift says little about
+  // a compound one.
+  if (target.compound) return null;
+  const refs: { ref: Exercise; w: Workout; sameTarget: boolean }[] = [];
+  for (const w of workouts) {
+    for (const id of new Set(w.completed_sets.map((x) => x.exercise_id))) {
+      const ref = exerciseById(id);
+      if (
+        !usable(ref) ||
+        !ref.compound ||
+        ref.primary_muscle !== target.primary_muscle ||
+        refs.some((c) => c.ref.id === id)
+      )
+        continue;
+      refs.push({ ref, w, sameTarget: ref.muscle_targets[0] === target.muscle_targets[0] });
+    }
+  }
+  refs.sort((a, b) => Number(b.sameTarget) - Number(a.sameTarget));
+  for (const { ref, w } of refs) {
+    const best = bestSet(w, ref.id);
+    if (!best) continue;
+    const from = family(ref.equipment_required);
+    const factor = from === "other" || to === "other" ? 1 : VS_BARBELL[to] / VS_BARBELL[from];
+    const weight = loadFor(best.e1rm * factor * REFERENCE_DISCOUNT, reps, step);
+    if (weight > 0) return { weight, reps, basis: "reference", fromId: ref.id, fromSet: best.set };
   }
   return null;
 }

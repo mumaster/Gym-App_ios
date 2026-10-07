@@ -97,8 +97,9 @@ export interface PlannedExercise {
   /** Set when `suggested_weight` is a starting weight worked out from
    *  another exercise (lib/gym/startWeight.ts) rather than this one's own
    *  history: from a published ratio, or a rough estimate; "entered" is the
-   *  exercise's own lift from Settings → Your current lifts. */
-  suggested_basis?: "published" | "rough" | "entered";
+   *  exercise's own lift from Settings → Your current lifts; "reference" is
+   *  an isolation exercise worked out from a compound lift (shown with *). */
+  suggested_basis?: "published" | "rough" | "entered" | "reference";
 }
 
 export interface Workout {

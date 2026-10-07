@@ -379,7 +379,9 @@ function WorkoutHome() {
               ? t.generate.estimatedWeight(
                   formatLoad(p.suggested_weight, false, t.session.bw),
                   p.suggested_reps,
-                  p.suggested_basis === "rough",
+                  p.suggested_basis === "rough" || p.suggested_basis === "reference"
+                    ? p.suggested_basis
+                    : "estimate",
                 )
               : t.generate.suggestedWeight(
                   formatLoad(p.suggested_weight, isBodyweightExercise(ex), t.session.bw),

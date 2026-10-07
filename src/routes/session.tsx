@@ -1828,7 +1828,9 @@ function ExerciseBlock({
                       estimateFrom.name,
                       load(estimate.fromSet.weight),
                       estimate.fromSet.reps,
-                      estimate.basis === "rough",
+                      estimate.basis === "rough" || estimate.basis === "reference"
+                        ? estimate.basis
+                        : "estimate",
                     )}
               </p>
             ) : null}
@@ -2131,6 +2133,8 @@ function NextUpPreview({
             previous?.reps ??
             (nums.length ? Math.max(...nums) : 8);
           const note = exerciseNotes[planned.exercise_id];
+          const referenceFrom =
+            estimate?.basis === "reference" ? exerciseById(estimate.fromId) : undefined;
           return (
             <div
               key={planned.exercise_id + i}
@@ -2147,6 +2151,7 @@ function NextUpPreview({
                   <span className="tabular shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[13px] font-bold">
                     {estimate ? "≈ " : ""}
                     {formatLoad(weight, bw, t.session.bw)} × {reps}
+                    {estimate?.basis === "reference" ? "*" : ""}
                   </span>
                 ) : (
                   <span className="shrink-0 pt-0.5 text-[12px] text-muted-foreground">
@@ -2158,6 +2163,11 @@ function NextUpPreview({
                 {t.session.targetLine(planned.target_sets, planned.target_reps, rest)}
                 <span className="capitalize">{exercise.primary_muscle}</span>
               </p>
+              {estimate?.basis === "reference" && referenceFrom ? (
+                <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                  {t.session.referenceFrom(referenceFrom.name)}
+                </p>
+              ) : null}
               {exercise.instructions ? (
                 <p className="mt-1 line-clamp-2 text-[13px] leading-snug">
                   {exercise.instructions}
