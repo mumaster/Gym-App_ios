@@ -79,3 +79,18 @@ describe("finisherCardioLog", () => {
     });
   });
 });
+
+describe("hybrid with cardio days", () => {
+  it("adds cardio days on the free weekdays between lifting days", async () => {
+    const { separateCardioDays, withSeparateCardioDays } = await import("../splits");
+    const days = separateCardioDays("hybrid_days", [1, 3, 5]);
+    expect(days.map((d) => d.dow)).toEqual([2, 4]);
+    expect(days.map((d) => d.minutes)).toEqual([30, 30]);
+    expect(separateCardioDays("upper_lower", [1, 3, 5])).toEqual([]);
+    const own = { id: "x", dow: 6, activity: "swim", effort: "easy", minutes: 40 } as const;
+    const merged = withSeparateCardioDays([own, ...days], "hybrid_days", [2, 3, 5]);
+    expect(merged.filter((d) => d.id === "x")).toHaveLength(1);
+    expect(merged.map((d) => d.dow)).not.toContain(2);
+    expect(withSeparateCardioDays(merged, "upper_lower", [1]).map((d) => d.id)).toEqual(["x"]);
+  });
+});

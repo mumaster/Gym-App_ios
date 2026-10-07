@@ -205,6 +205,8 @@ const en = {
     alsoStrength: "also strength",
     afterStrength: "after lifting",
     hybridInPlan: "Cardio after lifting comes from your Hybrid plan; change it there.",
+    hybridDaysNote:
+      "Cardio gets days of its own, between the lifting days. They are added to your cardio plan, where you can change them.",
     hybridTitle: "Cardio after lifting",
     hybridWhy:
       "Cardio comes last: lifting first keeps more of your strength gains. About 20 minutes is plenty; much longer or more often can start to slow strength gains, and an easy ride is kindest to legs you just trained.",
@@ -1683,6 +1685,8 @@ const nl: Dict = {
     alsoStrength: "ook kracht",
     afterStrength: "na het krachtwerk",
     hybridInPlan: "Cardio na het krachtwerk komt uit je Hybrid-schema; pas het daar aan.",
+    hybridDaysNote:
+      "Cardio krijgt eigen dagen, tussen de krachtdagen. Ze komen in je cardioschema, waar je ze kunt aanpassen.",
     hybridTitle: "Cardio na het krachtwerk",
     hybridWhy:
       "Cardio komt als laatste: eerst kracht houdt meer van je krachtwinst over. Zo'n 20 minuten is genoeg; veel langer of vaker kan je krachtwinst gaan remmen, en rustig fietsen spaart benen die je net hebt getraind.",

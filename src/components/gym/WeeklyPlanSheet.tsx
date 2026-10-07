@@ -11,6 +11,7 @@ import {
   splitTemplateById,
   templateCardio,
   templateHasCardio,
+  withSeparateCardioDays,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
 import { anchorFor } from "../../lib/gym/schedule";
@@ -41,6 +42,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     updateScheduleSlotDow,
     clearWeeklyScheme,
     growthFocus,
+    cardioPlan,
+    setCardioPlan,
     update,
   } = useGym();
   const t = useTranslation();
@@ -93,6 +96,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       anchor: anchorFor(preview, cyclePosition),
       ...(templateHasCardio(templateId) ? { cardio: cardioDraft } : {}),
     });
+    setCardioPlan(withSeparateCardioDays(cardioPlan, templateId, dows));
     update({ growthFocus: focusDraft });
     onClose();
   };
@@ -279,6 +283,10 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.weeklyPlan.pickOneDay}</p>
           )}
+
+          {template.cardioDays ? (
+            <p className="text-[12.5px] text-muted-foreground">{t.cardio.hybridDaysNote}</p>
+          ) : null}
 
           <HybridCardioSection
             templateId={templateId}
