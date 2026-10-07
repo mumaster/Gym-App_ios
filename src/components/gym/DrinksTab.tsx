@@ -308,7 +308,7 @@ function WaterCard({
                 key={i}
                 onClick={() => {
                   haptic(15);
-                  logWater(ml);
+                  logWater(ml, { tap: true });
                 }}
                 aria-label={t.home.addWater(ml)}
                 className={`${button.add} h-12 text-[12.5px] font-bold tracking-tight`}

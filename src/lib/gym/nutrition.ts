@@ -134,6 +134,45 @@ export function parseWaterMl(text: string): number | null {
   return Number.isFinite(ml) && ml > 0 && ml <= WATER_AMOUNT_MAX_ML ? ml : null;
 }
 
+/** Quick-add taps on water this close together count as one drink
+ *  (asked for: tapping +250ml twice logs 500 ml, not two 250s). A UI
+ *  choice for telling a double tap from a second glass, not a nutrition
+ *  number. */
+export const WATER_MERGE_MS = 2000;
+
+/** The last quick-add tap: which entry it went into and when. */
+export interface WaterTap {
+  id: string;
+  at: number;
+}
+
+/**
+ * Log a quick-add tap. Within WATER_MERGE_MS of the previous tap its amount
+ * is added to that tap's entry (each tap restarts the window, so three quick
+ * taps make one entry), as long as the entry still exists and the sum stays
+ * within WATER_AMOUNT_MAX_ML; otherwise it's a new entry. The entry keeps
+ * the time of its first tap.
+ */
+export function mergeWaterTap(
+  entries: WaterEntry[],
+  ml: number,
+  now: number,
+  last: WaterTap | null,
+  newId: () => string,
+): { entries: WaterEntry[]; tap: WaterTap } {
+  if (last && now - last.at >= 0 && now - last.at <= WATER_MERGE_MS) {
+    const target = entries.find((e) => e.id === last.id);
+    if (target && target.ml + ml <= WATER_AMOUNT_MAX_ML) {
+      return {
+        entries: entries.map((e) => (e.id === target.id ? { ...e, ml: e.ml + ml } : e)),
+        tap: { id: target.id, at: now },
+      };
+    }
+  }
+  const entry: WaterEntry = { id: newId(), ml, logged_at: new Date(now).toISOString() };
+  return { entries: [entry, ...entries], tap: { id: entry.id, at: now } };
+}
+
 /** The user's four water shortcuts (GymState.waterQuickAdd): each slot kept
  *  when it's a usable amount, else that slot's default. */
 export function sanitizeWaterShortcuts(raw: unknown): number[] {

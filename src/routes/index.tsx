@@ -371,7 +371,7 @@ function HomeScreen() {
             caffeine={caffeineMg(todayCoffee)}
             onWater={(ml) => {
               haptic(12);
-              logWater(ml);
+              logWater(ml, { tap: true });
             }}
             onCoffee={(kind) => {
               haptic(12);

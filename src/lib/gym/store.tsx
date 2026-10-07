@@ -27,6 +27,8 @@ import {
   type WaterEntry,
   WATER_QUICK_ADD,
   sanitizeWaterShortcuts,
+  mergeWaterTap,
+  type WaterTap,
   type CoffeeEntry,
   type CoffeeKind,
 } from "./nutrition";
@@ -555,7 +557,9 @@ interface Ctx extends GymState {
   deleteRecipe: (id: string) => void;
   /** Logs one food entry for `servings` servings of a saved recipe, scaled from its per-serving macros. */
   logRecipe: (id: string, servings: number, meal: MealType) => void;
-  logWater: (ml: number) => void;
+  /** `tap`: a quick-add button, merged with a tap just before it
+   *  (mergeWaterTap); a typed amount is always its own entry. */
+  logWater: (ml: number, opts?: { tap?: boolean }) => void;
   removeWaterEntry: (id: string) => void;
   logCoffee: (kind: CoffeeKind) => void;
   removeCoffeeEntry: (id: string) => void;
@@ -576,6 +580,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("offline");
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressPush = useRef(false);
+  const lastWaterTap = useRef<WaterTap | null>(null);
   /** The latest state, for pushes fired from event listeners and timers. */
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -1525,14 +1530,40 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, foodEntries: [entry, ...s.foodEntries] };
         }),
 
-      logWater: (ml) =>
-        setState((s) => ({
-          ...s,
-          waterEntries: [
-            { id: crypto.randomUUID(), ml, logged_at: new Date().toISOString() },
-            ...s.waterEntries,
-          ],
-        })),
+      logWater: (ml, opts) => {
+        if (!opts?.tap) {
+          lastWaterTap.current = null;
+          setState((s) => ({
+            ...s,
+            waterEntries: [
+              { id: crypto.randomUUID(), ml, logged_at: new Date().toISOString() },
+              ...s.waterEntries,
+            ],
+          }));
+          return;
+        }
+        // Decided outside the updater, so a StrictMode double call can't
+        // merge a tap into itself.
+        const result = mergeWaterTap(
+          stateRef.current.waterEntries,
+          ml,
+          Date.now(),
+          lastWaterTap.current,
+          () => crypto.randomUUID(),
+        );
+        lastWaterTap.current = result.tap;
+        const merged = result.entries.find((e) => e.id === result.tap.id)!;
+        setState((s) =>
+          s.waterEntries.some((e) => e.id === merged.id)
+            ? {
+                ...s,
+                waterEntries: s.waterEntries.map((e) =>
+                  e.id === merged.id ? { ...e, ml: e.ml + ml } : e,
+                ),
+              }
+            : { ...s, waterEntries: [merged, ...s.waterEntries] },
+        );
+      },
       logWeight: (kg) =>
         setState((s) => ({
           ...s,

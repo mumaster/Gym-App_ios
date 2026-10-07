@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  mergeWaterTap,
+  WATER_MERGE_MS,
   formatWaterAmount,
   parseWaterMl,
   sanitizeWaterShortcuts,
@@ -261,6 +263,37 @@ describe("water shortcuts", () => {
     expect(formatWaterAmount(600)).toBe("600ml");
     expect(formatWaterAmount(1000)).toBe("1L");
     expect(formatWaterAmount(1500)).toBe("1.5L");
+  });
+});
+
+describe("water taps merge", () => {
+  let n = 0;
+  const id = () => `w${++n}`;
+  const t0 = Date.parse("2026-10-07T10:00:00Z");
+
+  it("adds a second tap within 2 s to the first entry", () => {
+    const a = mergeWaterTap([], 250, t0, null, id);
+    const b = mergeWaterTap(a.entries, 250, t0 + 1500, a.tap, id);
+    expect(WATER_MERGE_MS).toBe(2000);
+    expect(b.entries).toHaveLength(1);
+    expect(b.entries[0]?.ml).toBe(500);
+    expect(b.entries[0]?.logged_at).toBe(new Date(t0).toISOString());
+  });
+
+  it("chains taps, each restarting the window", () => {
+    let r = mergeWaterTap([], 250, t0, null, id);
+    r = mergeWaterTap(r.entries, 250, t0 + 1800, r.tap, id);
+    r = mergeWaterTap(r.entries, 500, t0 + 3600, r.tap, id);
+    expect(r.entries.map((e) => e.ml)).toEqual([1000]);
+  });
+
+  it("starts a new entry after 2 s, once the entry is removed, or past 3 L", () => {
+    const a = mergeWaterTap([], 250, t0, null, id);
+    expect(mergeWaterTap(a.entries, 250, t0 + 2001, a.tap, id).entries).toHaveLength(2);
+    expect(mergeWaterTap([], 250, t0 + 500, a.tap, id).entries).toHaveLength(1);
+    const big = mergeWaterTap([], 2500, t0, null, id);
+    const over = mergeWaterTap(big.entries, 1000, t0 + 500, big.tap, id);
+    expect(over.entries.map((e) => e.ml)).toEqual([1000, 2500]);
   });
 });
 
