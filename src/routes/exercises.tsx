@@ -253,7 +253,10 @@ function ExercisesScreen() {
         </button>
       }
       toolbar={
-        <div className="space-y-2">
+        // 20 pt between the sub-tabs and the search field, the same gap
+        // every tab leaves under its sub-tabs (DESIGN.md §4); at 8 pt the
+        // field sat tight against the tabs (reported).
+        <div className="space-y-5">
           <SegmentedTabs
             tabs={EXERCISE_TABS}
             value={tab}
