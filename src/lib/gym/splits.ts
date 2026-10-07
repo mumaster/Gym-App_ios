@@ -6,7 +6,7 @@ import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
 import type { FocusGroup } from "./volume";
 
 export type SplitTemplateId =
-  "full_body" | "upper_lower" | "push_pull_legs" | "bro_split" | "hybrid";
+  "full_body" | "upper_lower" | "push_pull_legs" | "bro_split" | "hybrid" | "hybrid_days";
 
 export interface SplitDay {
   /** Stable id within a template, e.g. "upper" / "push". */
@@ -27,6 +27,9 @@ export interface SplitTemplate {
   suggestedDaysPerWeek: number;
   /** The repeating sequence of day-types this split rotates through. */
   days: SplitDay[];
+  /** Cardio on days of its own, between the lifting days (hybrid_days only):
+   *  the starting cardio plan, one entry per cardio day. */
+  cardioDays?: CardioFinisher[];
 }
 
 export const SPLIT_TEMPLATES: SplitTemplate[] = [
@@ -91,6 +94,24 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
       },
     ],
   },
+  {
+    id: "hybrid_days",
+    label: "Hybrid · cardio days",
+    description: "Upper and lower body days, with a cardio day in between.",
+    suggestedDaysPerWeek: 3,
+    days: [
+      { id: "upper", label: "Upper Body", muscles: ["Chest", "Back", "Shoulders", "Arms"] },
+      { id: "lower", label: "Lower Body", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
+    ],
+    // 30 minutes: the interference with strength grows with the cardio's
+    // length and frequency (Wilson et al. 2012, see below), and two such days
+    // alongside three lifting days stay near WHO's 150 minutes with the
+    // lifting. A run, then an easy ride, so the legs get a low-impact day.
+    cardioDays: [
+      { activity: "run", effort: "moderate", minutes: 30 },
+      { activity: "cycle", effort: "easy", minutes: 30 },
+    ],
+  },
 ];
 
 /**
@@ -118,6 +139,37 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
  */
 export const templateHasCardio = (id: SplitTemplateId) =>
   splitTemplateById(id).days.some((d) => d.cardio);
+
+/** Weekdays tried, in order, for the cardio days of a hybrid_days plan: the
+ *  days between the lifting days of a Mon/Wed/Fri week come first. */
+const CARDIO_DAY_PREFERENCE = [2, 4, 6, 0, 3, 5, 1];
+export const HYBRID_DAY_PREFIX = "hybrid-";
+
+/** The cardio-plan days a template adds on weekdays free of lifting. */
+export function separateCardioDays(
+  templateId: SplitTemplateId,
+  liftingDows: number[],
+): CardioPlanDay[] {
+  const defaults = splitTemplateById(templateId).cardioDays ?? [];
+  const free = CARDIO_DAY_PREFERENCE.filter((d) => !liftingDows.includes(d));
+  return defaults.flatMap((c, i) =>
+    free[i] === undefined ? [] : [{ id: `${HYBRID_DAY_PREFIX}${i}`, dow: free[i]!, ...c }],
+  );
+}
+
+/** A cardio plan with the previous hybrid_days cardio days replaced by the
+ *  chosen template's (none for other templates). Days of the user's own plan
+ *  are kept. */
+export function withSeparateCardioDays(
+  plan: CardioPlanDay[],
+  templateId: SplitTemplateId,
+  liftingDows: number[],
+): CardioPlanDay[] {
+  return [
+    ...plan.filter((d) => !d.id.startsWith(HYBRID_DAY_PREFIX)),
+    ...separateCardioDays(templateId, liftingDows),
+  ];
+}
 
 export const splitTemplateById = (id: SplitTemplateId): SplitTemplate =>
   SPLIT_TEMPLATES.find((t) => t.id === id) ?? SPLIT_TEMPLATES[0]!;
