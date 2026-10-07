@@ -500,7 +500,7 @@ function WeekStrip({
   };
 
   return (
-    <Card className="mt-1 p-2">
+    <Card className="p-2">
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => move(-1)}

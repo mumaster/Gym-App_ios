@@ -87,6 +87,7 @@ Numbers that change or line up use `tabular`. Weights use `formatLoad` ("80 kg",
 - **A 4 px grid.** Use Tailwind's steps. Use half steps (`py-2.5`, `gap-1.5`) only inside dense components.
 - **Page:**
   - `Screen` gives `max-w-xl` and a `px-4` gutter, plus the sticky header and the tab-bar clearance;
+  - content starts 20 pt under the header's last row (the title, or the sub-tabs and search field): the header's `pb-2` plus `main`'s `pt-3`. The first card on a screen or sub-tab has no top margin of its own. History's first cards had `mt-1` or `mt-4` and Nutrition's week strip `mt-1`, so the gap under the sub-tabs was 20, 24 or 36 pt depending on the tab (reported);
   - put `space-y-4` between cards;
   - a `SectionLabel` sits above a group of cards.
 - **Cards:**

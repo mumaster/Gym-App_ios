@@ -196,7 +196,7 @@ function HistoryScreen() {
           {workouts.length || cardioSessions.length ? (
             <button
               onClick={() => setTab("activity")}
-              className="glass mt-1 grid w-full grid-cols-3 rounded-2xl py-3 text-left active:scale-[0.99]"
+              className="glass grid w-full grid-cols-3 rounded-2xl py-3 text-left active:scale-[0.99]"
               aria-label={t.history.overviewAria}
             >
               {[
@@ -342,7 +342,7 @@ function HistoryScreen() {
           )}
           {workouts.length ? (
             <>
-              <div ref={chartRef} className="mt-4 scroll-mt-28">
+              <div ref={chartRef} className="scroll-mt-28">
                 <Card className="overflow-hidden p-4">
                   <CardHead
                     icon={LineChart}
@@ -471,7 +471,7 @@ function HistoryScreen() {
         <>
           {workouts.length > 0 ? (
             <>
-              <Card className="mt-4 overflow-hidden p-4">
+              <Card className="overflow-hidden p-4">
                 <CardHead icon={Flame} title={t.history.streak} filled={streak > 0} />
                 <div className="flex items-center gap-4">
                   <div>
@@ -507,8 +507,10 @@ function HistoryScreen() {
           ) : null}
 
           {/* Cardio sits with the other "this week" cards; always shown, since
-          someone who only does cardio logs it from here too. */}
-          <div className="mt-4">
+          someone who only does cardio logs it from here too. First on the
+          tab without workouts, so no top margin then: every tab starts the
+          same distance under its sub-tabs. */}
+          <div className={workouts.length > 0 ? "mt-4" : undefined}>
             <CardioWeekCard />
           </div>
 
