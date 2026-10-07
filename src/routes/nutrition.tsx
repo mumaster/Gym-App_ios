@@ -46,6 +46,7 @@ import {
   type NutrientStatus,
   type NutritionGoals,
 } from "../lib/gym/nutrition";
+import { BodyCompositionCard } from "../components/gym/BodyCompositionCard";
 import { BodyweightCard } from "../components/gym/BodyweightCard";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { badge, button } from "../components/gym/ui";
@@ -365,6 +366,7 @@ function NutritionScreen() {
             dayLabel={dayLabel}
             weighIn={selectedWeighIn ? `${kg(selectedWeighIn.kg)} kg` : null}
           />
+          <BodyCompositionCard dayKey={selectedKey} />
         </>
       ) : null}
 

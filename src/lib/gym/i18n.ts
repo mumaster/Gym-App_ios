@@ -1,5 +1,6 @@
 import { useGym } from "./store";
 import type { AlcoholDrinkId } from "./alcohol";
+import type { CompositionField } from "./scale";
 import type { Language } from "./types";
 
 /** The camera's modes (FoodScanner's ScanMode), kept here so the copy
@@ -1256,6 +1257,40 @@ const en = {
     chartLabel: "Bodyweight over the last 8 weeks",
     chartWeighIns: "Weigh-ins",
     chartTrend: "4-week trend",
+  },
+  scale: {
+    importButton: "Import from scale",
+    sheetTitle: "Import from your scale",
+    intro:
+      "Screenshot a weigh-in in your smart scale's app (Huawei Health, Withings, Renpho…) — the whole page, in one or more screenshots — and pick it here. The weight is logged on the day it was measured; the body composition printed with it is kept alongside. Only numbers printed on the screenshot are read.",
+    choose: "Choose screenshot",
+    reading: "Reading your weigh-in…",
+    readingDesc: "This takes a few seconds.",
+    nothingRead: "No weight was found on this screenshot. Try one that shows a single weigh-in.",
+    error: (detail: string) => `Couldn't read the screenshot: ${detail}`,
+    tryAgain: "Choose another screenshot",
+    replaces: (kg: string, day: string) => `Replaces the ${kg} weigh-in on ${day}.`,
+    save: "Save weigh-in",
+    title: "Body composition",
+    since: (day: string) => `Change since ${day}`,
+    note: "As measured by your scale. Forge uses only the weight.",
+    fields: {
+      bodyFatPct: "Body fat",
+      fatMassKg: "Fat mass",
+      fatFreeMassKg: "Fat-free mass",
+      skeletalMuscleKg: "Skeletal muscle",
+      muscleMassKg: "Muscle mass",
+      bodyWaterPct: "Body water",
+      proteinPct: "Protein",
+      boneMassKg: "Bone mass",
+      visceralFat: "Visceral fat",
+      bmi: "BMI",
+      bmrKcal: "Basal metabolism",
+      metabolicAge: "Metabolic age",
+    } as Record<CompositionField, string>,
+    level: "level",
+    years: "yrs",
+    kcalDay: "kcal/day",
   },
   volume: {
     growTitle: "Muscles to grow",
@@ -2685,6 +2720,40 @@ const nl: Dict = {
     chartLabel: "Lichaamsgewicht over de laatste 8 weken",
     chartWeighIns: "Wegingen",
     chartTrend: "Trend over 4 weken",
+  },
+  scale: {
+    importButton: "Importeren van weegschaal",
+    sheetTitle: "Importeren van je weegschaal",
+    intro:
+      "Maak een screenshot van een weging in de app van je slimme weegschaal (Huawei Gezondheid, Withings, Renpho…) — de hele pagina, in een of meer screenshots — en kies die hier. Het gewicht wordt opgeslagen op de dag van de meting; de lichaamssamenstelling die erbij staat, wordt bewaard. Alleen getallen die op de screenshot staan, worden gelezen.",
+    choose: "Screenshot kiezen",
+    reading: "Je weging lezen…",
+    readingDesc: "Dit duurt een paar seconden.",
+    nothingRead: "Geen gewicht gevonden op deze screenshot. Probeer er een met één weging.",
+    error: (detail: string) => `Kon de screenshot niet lezen: ${detail}`,
+    tryAgain: "Andere screenshot kiezen",
+    replaces: (kg: string, day: string) => `Vervangt de weging van ${kg} op ${day}.`,
+    save: "Weging opslaan",
+    title: "Lichaamssamenstelling",
+    since: (day: string) => `Verschil met ${day}`,
+    note: "Zoals gemeten door je weegschaal. Forge gebruikt alleen het gewicht.",
+    fields: {
+      bodyFatPct: "Lichaamsvet",
+      fatMassKg: "Vetmassa",
+      fatFreeMassKg: "Vetvrije massa",
+      skeletalMuscleKg: "Skeletspieren",
+      muscleMassKg: "Spiermassa",
+      bodyWaterPct: "Lichaamsvocht",
+      proteinPct: "Eiwit",
+      boneMassKg: "Botmassa",
+      visceralFat: "Visceraal vet",
+      bmi: "BMI",
+      bmrKcal: "Ruststofwisseling",
+      metabolicAge: "Metabole leeftijd",
+    } as Record<CompositionField, string>,
+    level: "niveau",
+    years: "jr",
+    kcalDay: "kcal/dag",
   },
   volume: {
     growTitle: "Spieren om te laten groeien",

@@ -36,6 +36,7 @@ import { dayKey } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
+import { withWeighIn, type ScaleWeighIn } from "./scale";
 import { canVibrate, markHaptic, pulseTappedControl, switchTick } from "./tapFeedback";
 import {
   advanceRotation,
@@ -559,6 +560,9 @@ interface Ctx extends GymState {
   removeCoffeeEntry: (id: string) => void;
   /** Logs a weigh-in; a second one on the same day replaces the first. */
   logWeight: (kg: number) => void;
+  /** A weigh-in read from a scale's screenshot, on the day it was
+   *  measured (scale.ts); replaces that day's weigh-in. */
+  logWeighIn: (entry: ScaleWeighIn) => void;
   removeWeightEntry: (id: string) => void;
 }
 
@@ -1529,17 +1533,19 @@ export function GymProvider({ children }: { children: ReactNode }) {
           ],
         })),
       logWeight: (kg) =>
-        setState((s) => {
-          const now = new Date();
-          const today = dayKey(now.toISOString());
-          return {
-            ...s,
-            weightLog: [
-              ...s.weightLog.filter((e) => dayKey(e.date) !== today),
-              { id: crypto.randomUUID(), date: now.toISOString(), kg },
-            ],
-          };
-        }),
+        setState((s) => ({
+          ...s,
+          weightLog: withWeighIn(s.weightLog, {
+            id: crypto.randomUUID(),
+            date: new Date().toISOString(),
+            kg,
+          }),
+        })),
+      logWeighIn: (entry) =>
+        setState((s) => ({
+          ...s,
+          weightLog: withWeighIn(s.weightLog, { id: crypto.randomUUID(), ...entry }),
+        })),
       removeWeightEntry: (id) =>
         setState((s) => ({ ...s, weightLog: s.weightLog.filter((e) => e.id !== id) })),
       removeWaterEntry: (id) =>

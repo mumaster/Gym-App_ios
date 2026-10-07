@@ -10,7 +10,37 @@ export interface WeightEntry {
   /** ISO timestamp of the weigh-in. */
   date: string;
   kg: number;
+  /** A smart scale's reading, imported from a screenshot of its app
+   *  (scale.ts). Shown only: everything else uses `kg`. */
+  composition?: BodyComposition;
+  /** The app the reading came from ("Huawei Health"). */
+  source?: string;
 }
+
+/** Body composition as a scale's app prints it, copied, never computed.
+ *  Forge shows these numbers but uses none of them: limits, the trend and
+ *  the energy estimates go by the weight alone. */
+export interface BodyComposition {
+  bmi?: number;
+  bodyFatPct?: number;
+  fatMassKg?: number;
+  fatFreeMassKg?: number;
+  skeletalMuscleKg?: number;
+  muscleMassKg?: number;
+  bodyWaterPct?: number;
+  proteinPct?: number;
+  boneMassKg?: number;
+  visceralFat?: number;
+  bmrKcal?: number;
+  metabolicAge?: number;
+  /** Anything else printed about the weigh-in, as the app words it. */
+  other?: { label: string; value: string; unit?: string }[];
+}
+
+/** The range the weight field accepts (and an imported reading must fall
+ *  in): a typo and misread guard, not a health number. */
+export const WEIGHT_MIN_KG = 30;
+export const WEIGHT_MAX_KG = 300;
 
 /**
  * Minimum data before a trend is trusted. Day-to-day bodyweight varies by

@@ -209,6 +209,8 @@ Use lucide-react, at 16–20 px in rows and badges and 22–24 px in the tab bar
 | Swap a food                 | `ArrowLeftRight`                                                |
 | Scan (the camera, any mode) | `ScanLine`; a label inside it `ScanBarcode`                     |
 | Read a note                 | `NotebookPen`; a plate photo `Camera`; typing or speaking `Mic` |
+| Import a screenshot         | `ImagePlus`                                                     |
+| Body composition            | `PieChart`; bodyweight `Scale`                                  |
 
 A decorative icon gets `aria-hidden`.
 
