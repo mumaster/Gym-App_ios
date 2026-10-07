@@ -861,8 +861,6 @@ const en = {
     per100g: "Per 100g — as printed on the label",
     thisIngredient: "This ingredient",
     thisPortion: "This portion",
-    macroSummary: (c: number, p: number, cb: number, f: number, fi: number, s: number) =>
-      `${c} kcal · ${p}g protein · ${cb}g carbs · ${f}g fat · ${fi}g fiber · ${s}g salt`,
     scanReadError: (detail: string) =>
       `Couldn't read that photo — try a clearer, well-lit shot, or enter it manually. (${detail})`,
     barcodeNotFound:
@@ -2337,8 +2335,6 @@ const nl: Dict = {
     per100g: "Per 100g — zoals op het label vermeld",
     thisIngredient: "Dit ingrediënt",
     thisPortion: "Deze portie",
-    macroSummary: (c: number, p: number, cb: number, f: number, fi: number, s: number) =>
-      `${c} kcal · ${p}g eiwit · ${cb}g koolh. · ${f}g vet · ${fi}g vezels · ${s}g zout`,
     scanReadError: (detail: string) =>
       `Kon die foto niet lezen — probeer een duidelijkere, goed belichte foto, of voer het handmatig in. (${detail})`,
     barcodeNotFound:

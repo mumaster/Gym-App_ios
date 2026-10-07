@@ -1005,39 +1005,46 @@ export function AddFoodSheet({
             ) : null}
 
             {/* What this portion adds up to, right under the grams that set
-                it and above the per-100 g values it's worked out from. */}
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2">
+                it: the numbers you eat, so they come first and big, in the
+                accent (asked for: it was one small line above the label's
+                values). */}
+            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5">
               <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
                 {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
               </p>
-              <p className="tabular mt-0.5 text-[15px] font-semibold leading-snug">
-                {t.addFood.macroSummary(
-                  preview.calories,
-                  preview.protein,
-                  preview.carbs,
-                  preview.fat,
-                  preview.fiber,
-                  preview.salt,
-                )}
-              </p>
+              <div className="mt-1 grid grid-cols-3 gap-x-3 gap-y-1.5">
+                {MACRO_FIELDS.map(({ key, label, unit }) => (
+                  <div key={key} className="min-w-0">
+                    <p className="tabular truncate text-[20px] font-bold leading-tight">
+                      {preview[key]}
+                      <span className="ml-0.5 text-[12px] font-semibold text-muted-foreground">
+                        {unit}
+                      </span>
+                    </p>
+                    <p className="truncate text-[12px] text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* The label's own values per 100 g, which the portion is worked
+                out from: still editable, in one compact pill under it. */}
             <div>
-              <p className="mb-1.5 text-[13px] font-semibold text-muted-foreground">
+              <p className="mb-1.5 px-1 text-[13px] font-semibold text-muted-foreground">
                 {t.addFood.per100g}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1">
                 {MACRO_FIELDS.map(({ key, label, unit }) => (
                   <label
                     key={key}
-                    className={`flex flex-col rounded-2xl px-3.5 py-1.5 ${
-                      unmatched.has(key) ? "bg-warning/10" : "bg-muted"
+                    className={`flex min-w-0 flex-col rounded-xl px-2.5 pt-1.5 pb-2 ${
+                      unmatched.has(key) ? "bg-warning/15" : ""
                     }`}
                   >
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span className="truncate text-[11px] font-semibold text-muted-foreground">
                       {label}
                     </span>
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex items-baseline gap-0.5">
                       <input
                         inputMode="decimal"
                         type="text"
@@ -1053,9 +1060,9 @@ export function AddFoodSheet({
                           });
                         }}
                         placeholder="0"
-                        className="tabular h-6 w-full min-w-0 bg-transparent text-[17px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
+                        className="tabular h-7 w-full min-w-0 bg-transparent text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
                       />
-                      <span className="shrink-0 text-[12px] text-muted-foreground">{unit}</span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{unit}</span>
                     </div>
                   </label>
                 ))}
