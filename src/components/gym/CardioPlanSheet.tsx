@@ -7,6 +7,7 @@ import {
   sortCardioPlan,
 } from "../../lib/gym/cardio";
 import { useTranslation } from "../../lib/gym/i18n";
+import { rotationCardioPlan } from "../../lib/gym/splits";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { CardioPlanDay } from "../../lib/gym/types";
@@ -29,15 +30,17 @@ const MAX_MINUTES = 360;
  */
 export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslation();
-  const { cardioPlan, setCardioPlan, program, weeklyScheme } = useGym();
+  const { cardioPlan, plannedCardio, setCardioPlan, program, weeklyScheme } = useGym();
   const [editing, setEditing] = useState<string | null>(null);
   const strengthDows = new Set((program ?? weeklyScheme)?.schedule.map((s) => s.dow) ?? []);
+  // A hybrid plan's own cardio: shown and counted here, changed in the plan.
+  const hybrid = rotationCardioPlan(program ?? weeklyScheme);
 
   useEffect(() => {
     if (open) setEditing(null);
   }, [open]);
 
-  const total = Math.round(plannedWhoMinutes(cardioPlan));
+  const total = Math.round(plannedWhoMinutes(plannedCardio));
   const pct = Math.min(1, total / WHO_WEEKLY_MINUTES);
 
   const change = (id: string, patch: Partial<CardioPlanDay>) =>
@@ -77,6 +80,31 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       </div>
 
       <div className="mt-4 space-y-2">
+        {hybrid.map((d) => {
+          const Icon = CARDIO_ICONS[d.activity];
+          return (
+            <div
+              key={d.id}
+              className="flex min-h-[56px] items-center gap-3 rounded-2xl bg-foreground/[0.05] px-3"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary-text">
+                <Icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-semibold">
+                  {t.common.dow[d.dow]} · {t.cardio.activities[d.activity]}
+                </span>
+                <span className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
+                  {t.cardio.min(d.minutes)} · {t.cardio.efforts[d.effort]} ·{" "}
+                  <Dumbbell className="size-3" /> {t.cardio.afterStrength}
+                </span>
+              </span>
+            </div>
+          );
+        })}
+        {hybrid.length ? (
+          <p className="px-1 text-[12px] text-muted-foreground">{t.cardio.hybridInPlan}</p>
+        ) : null}
         {cardioPlan.map((d) => {
           const Icon = CARDIO_ICONS[d.activity];
           const open = editing === d.id;

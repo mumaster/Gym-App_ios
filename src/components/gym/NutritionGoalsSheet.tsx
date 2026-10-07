@@ -47,7 +47,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     restDayGoalOverrides,
     setNutritionGoals,
     update,
-    cardioPlan,
+    plannedCardio: cardioPlan,
   } = useGym();
   const t = useTranslation();
   const locale = useLocale();

@@ -77,7 +77,7 @@ export function useDayGoalsResolver(): (date: Date) => {
     weeklyScheme,
     workouts,
     activeWorkout,
-    cardioPlan,
+    plannedCardio,
     cardioSessions,
   } = useGym();
   const session = useSessionEnergy();
@@ -91,7 +91,7 @@ export function useDayGoalsResolver(): (date: Date) => {
       // A day's limit: the rest-day base, plus a strength session's energy
       // on a strength day (which is the training-day limit itself), plus
       // that day's cardio. Cardio only counts with day-type limits on.
-      const cardio = cardioDay(date, cardioPlan, cardioSessions, session?.weightKg ?? null);
+      const cardio = cardioDay(date, plannedCardio, cardioSessions, session?.weightKg ?? null);
       const base =
         nutritionByDayType && dayType === "rest"
           ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
@@ -101,7 +101,7 @@ export function useDayGoalsResolver(): (date: Date) => {
       return { dayType, dayKind, goals };
     },
     [
-      cardioPlan,
+      plannedCardio,
       cardioSessions,
       program,
       weeklyScheme,

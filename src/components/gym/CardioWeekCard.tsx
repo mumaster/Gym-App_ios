@@ -33,20 +33,20 @@ export function CardioWeekCard({
 }) {
   const t = useTranslation();
   const locale = useLocale();
-  const { cardioSessions, cardioPlan, hydrated } = useGym();
+  const { cardioSessions, cardioPlan, plannedCardio, hydrated } = useGym();
   const [logOpen, setLogOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const today = new Date();
   const monday = mondayOf(today);
   const minutes = hydrated ? weekWhoMinutes(cardioSessions, today) : 0;
   const pct = Math.min(1, minutes / WHO_WEEKLY_MINUTES);
-  const todayPlan = hydrated ? remainingCardioOn(cardioPlan, cardioSessions, today, today) : [];
+  const todayPlan = hydrated ? remainingCardioOn(plannedCardio, cardioSessions, today, today) : [];
   const next = todayPlan[0] ?? null;
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
     const done = cardioSessionsOn(cardioSessions, dayKeyFromDate(date));
-    const planned = remainingCardioOn(cardioPlan, cardioSessions, date, today);
+    const planned = remainingCardioOn(plannedCardio, cardioSessions, date, today);
     const activity = done[0]?.activity ?? planned[0]?.activity ?? null;
     return {
       date,
@@ -122,7 +122,7 @@ export function CardioWeekCard({
           })}
         </div>
 
-        {!compact && !cardioPlan.length && !cardioSessions.length ? (
+        {!compact && !plannedCardio.length && !cardioSessions.length ? (
           <p className="mt-3 text-[13px] text-muted-foreground">{t.cardio.noPlan}</p>
         ) : null}
 

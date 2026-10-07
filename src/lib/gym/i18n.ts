@@ -203,6 +203,16 @@ const en = {
     sameDayHint: (hours: number) =>
       `On a strength day: do strength first, and leave ${hours}+ hours between them if you can.`,
     alsoStrength: "also strength",
+    afterStrength: "after lifting",
+    hybridInPlan: "Cardio after lifting comes from your Hybrid plan; change it there.",
+    hybridTitle: "Cardio after lifting",
+    hybridWhy:
+      "Cardio comes last: lifting first keeps more of your strength gains. About 20 minutes is plenty; much longer or more often can start to slow strength gains, and an easy ride is kindest to legs you just trained.",
+    lastAfterLifting: "last, after lifting",
+    lessMinutes: "5 minutes less",
+    moreMinutes: "5 minutes more",
+    finisherDone: "Done",
+    finisherMarkDone: "Mark done",
     planned: "Planned",
     plannedToday: "Planned today",
     session: (activity: string, minutes: number) => `${activity} · ${minutes} min`,
@@ -288,7 +298,7 @@ const en = {
       caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
       energySplit: "A meal's split of energy between protein, carbs and fat",
       concurrent:
-        "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day",
+        "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day; in a Hybrid plan cardio comes last, about 20 minutes",
       cardioMinutes: "150 cardio minutes a week, a hard minute counting as two",
       water:
         "Suggested water goal: at least 2.0 L (women) or 2.5 L (men) of total water, 1 ml per kcal of your energy needs, 80% of it from drinks",
@@ -1671,6 +1681,16 @@ const nl: Dict = {
     sameDayHint: (hours: number) =>
       `Op een krachtdag: eerst kracht, en als het kan ${hours}+ uur ertussen.`,
     alsoStrength: "ook kracht",
+    afterStrength: "na het krachtwerk",
+    hybridInPlan: "Cardio na het krachtwerk komt uit je Hybrid-schema; pas het daar aan.",
+    hybridTitle: "Cardio na het krachtwerk",
+    hybridWhy:
+      "Cardio komt als laatste: eerst kracht houdt meer van je krachtwinst over. Zo'n 20 minuten is genoeg; veel langer of vaker kan je krachtwinst gaan remmen, en rustig fietsen spaart benen die je net hebt getraind.",
+    lastAfterLifting: "als laatste, na het krachtwerk",
+    lessMinutes: "5 minuten minder",
+    moreMinutes: "5 minuten meer",
+    finisherDone: "Gedaan",
+    finisherMarkDone: "Afvinken",
     planned: "Gepland",
     plannedToday: "Vandaag gepland",
     session: (activity: string, minutes: number) => `${activity} · ${minutes} min`,
@@ -1759,7 +1779,7 @@ const nl: Dict = {
       caffeine: "Cafeïne per koffie (espresso 80 mg, filter 90 mg) en de grens van 400 mg per dag",
       energySplit: "Hoe de energie van een maaltijd verdeeld is over eiwit, koolhydraten en vet",
       concurrent:
-        "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen",
+        "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen; in een Hybrid-schema komt cardio als laatste, zo'n 20 minuten",
       cardioMinutes: "150 cardiominuten per week, een zware minuut telt dubbel",
       water:
         "Voorgesteld waterdoel: minstens 2,0 L (vrouwen) of 2,5 L (mannen) totaal water, 1 ml per kcal van je energiebehoefte, waarvan 80% uit drinken",

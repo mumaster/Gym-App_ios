@@ -149,6 +149,8 @@ export const SOURCES: SourceEntry[] = [
       "Held et al., umbrella review of concurrent training, Sports Med 2026",
       "Schumann et al., Sports Med 2022",
       "Robineau et al., J Strength Cond Res 2016",
+      "Eddens et al., Sports Med 2018",
+      "Wilson et al., J Strength Cond Res 2012",
     ],
   },
   {

@@ -350,3 +350,39 @@ export function cardioDay(
   }
   return { any: logged.length + planned.length > 0, kcal };
 }
+
+/**
+ * What finishing a workout logs for its cardio finisher (a hybrid plan's
+ * day), or null when it wasn't marked done. A separate CardioSession, like
+ * hand-logged cardio, so it counts toward cardio minutes and a day's
+ * calories by the same rules (a walk adds no calories, a hike does —
+ * EVERYDAY_ACTIVITIES). It ran up to `end`, so it starts `minutes` before.
+ */
+export function finisherCardioLog(
+  cardio:
+    { activity: CardioActivity; effort: CardioEffort; minutes: number; done?: boolean } | undefined,
+  end: Date,
+  label: string,
+): {
+  activity: CardioActivity;
+  effort: CardioEffort;
+  minutes: number;
+  distanceKm: null;
+  start: string;
+  label: string;
+  rpe: null;
+} | null {
+  if (!cardio?.done || !(cardio.minutes > 0)) return null;
+  const start = new Date(end.getTime() - cardio.minutes * 60_000);
+  const hh = String(start.getHours()).padStart(2, "0");
+  const mm = String(start.getMinutes()).padStart(2, "0");
+  return {
+    activity: cardio.activity,
+    effort: cardio.effort,
+    minutes: cardio.minutes,
+    distanceKm: null,
+    start: `${dayKeyFromDate(start)}T${hh}:${mm}`,
+    label,
+    rpe: null,
+  };
+}

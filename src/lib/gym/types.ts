@@ -130,6 +130,10 @@ export interface Workout {
   /** What a sports watch recorded for this session, read from screenshots of
    *  its app (see watch.ts / watchScan.ts). */
   watch?: WatchData;
+  /** Cardio planned after the lifting (a hybrid plan's day). When `done`,
+   *  finishing the workout logs it as its own CardioSession, so it counts
+   *  toward cardio minutes and calories the way any logged cardio does. */
+  cardio?: CardioFinisher & { done?: boolean };
 }
 
 /** A sports watch's own summary of one session, read from screenshots of
@@ -220,6 +224,14 @@ export type CardioActivity =
 
 /** How hard a cardio session was, in the Compendium's own terms. */
 export type CardioEffort = "easy" | "moderate" | "hard";
+
+/** Cardio done as the last exercise of a strength session (hybrid plans,
+ *  see splits.ts). */
+export interface CardioFinisher {
+  activity: CardioActivity;
+  effort: CardioEffort;
+  minutes: number;
+}
 
 /** One planned cardio session a week: on weekday `dow` (Date#getDay). */
 export interface CardioPlanDay {

@@ -26,6 +26,7 @@ import {
 import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
 import { CardHead } from "../components/gym/CardHead";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
+import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
@@ -61,6 +62,7 @@ import { todaysCheckIn } from "../lib/gym/readiness";
 import { plannedDate } from "../lib/gym/schedule";
 import {
   musclesForSlot,
+  slotCardio,
   splitDayLabel,
   splitTemplateById,
   type ScheduleSlot,
@@ -468,6 +470,15 @@ function WorkoutHome() {
     buildSplitDay(program.templateId, scheduledProgramSlot, "program");
   };
 
+  /** A hybrid plan day's cardio, done after the lifting (splits.ts). */
+  const planCardio = followingProgram
+    ? program
+      ? slotCardio(program.templateId, scheduledProgramSlot, program.cardio)
+      : null
+    : followingSchedule && weeklyScheme
+      ? slotCardio(weeklyScheme.templateId, scheduledSlot, weeklyScheme.cardio)
+      : null;
+
   const start = () => {
     if (!shownPlan) return;
     haptic([20, 40, 20]);
@@ -477,6 +488,7 @@ function WorkoutHome() {
       target_muscles: muscles,
       fromScheduledDay: followingSchedule,
       fromProgramDay: followingProgram,
+      ...(planCardio ? { cardio: planCardio } : {}),
     });
     navigate({ to: "/session" });
   };
@@ -1136,7 +1148,10 @@ function WorkoutHome() {
             data-plan-header
           >
             <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.yourPlan(estimateMinutes(planHere), planHere.length)}
+              {t.generate.yourPlan(
+                estimateMinutes(planHere) + (planCardio?.minutes ?? 0),
+                planHere.length + (planCardio ? 1 : 0),
+              )}
             </p>
             <button
               onClick={() => {
@@ -1244,6 +1259,31 @@ function WorkoutHome() {
                 </Card>
               );
             })}
+            {planCardio
+              ? (() => {
+                  const Icon = CARDIO_ICONS[planCardio.activity];
+                  return (
+                    <Card className="p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex w-6 shrink-0 justify-center text-primary-text">
+                          <Icon className="size-5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[17px] font-semibold leading-tight">
+                            {t.cardio.session(
+                              t.cardio.activities[planCardio.activity],
+                              planCardio.minutes,
+                            )}
+                          </p>
+                          <p className="mt-0.5 text-[13px] text-muted-foreground">
+                            {t.cardio.efforts[planCardio.effort]} · {t.cardio.lastAfterLifting}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })()
+              : null}
           </div>
           {/* Last on the page, so as a sticky element it stays pinned just
               above the tab bar from the top of the page to the bottom: Start

@@ -56,6 +56,7 @@ import {
 } from "./schedule";
 import {
   initialCyclePosition,
+  rotationCardioPlan,
   type ScheduleSlot,
   type SplitTemplateId,
   type WeeklyScheme,
@@ -63,6 +64,7 @@ import {
 import type {
   AccentId,
   CardioActivity,
+  CardioFinisher,
   CardioEffort,
   CardioPlanDay,
   CardioSession,
@@ -453,9 +455,16 @@ interface Ctx extends GymState {
   startWorkout: (
     input: Pick<
       Workout,
-      "plan" | "duration_minutes" | "target_muscles" | "fromScheduledDay" | "fromProgramDay"
+      | "plan"
+      | "duration_minutes"
+      | "target_muscles"
+      | "fromScheduledDay"
+      | "fromProgramDay"
+      | "cardio"
     >,
   ) => void;
+  /** Changes the running workout's cardio finisher (minutes, done). */
+  updateActiveCardio: (patch: Partial<CardioFinisher & { done: boolean }>) => void;
   logSet: (set: LoggedSet) => void;
   /** `rpe: null` clears a set's RPE. */
   updateSet: (
@@ -497,6 +506,10 @@ interface Ctx extends GymState {
   /** Sets a cardio session's activity and effort (e.g. on an older import). */
   setCardioKind: (id: string, activity: CardioActivity, effort: CardioEffort) => void;
   setCardioPlan: (plan: CardioPlanDay[]) => void;
+  /** The cardio plan plus the active strength plan's own cardio (hybrid
+   *  days), Monday-first: what planned cardio minutes and a day's calories
+   *  read. Only `cardioPlan` is edited directly. */
+  plannedCardio: CardioPlanDay[];
   rateCardio: (id: string, rpe: number | null) => void;
   deleteCardioSession: (id: string) => void;
   swapActiveExercise: (index: number, nextExerciseId: string) => void;
@@ -513,7 +526,11 @@ interface Ctx extends GymState {
   updateProgramSlotDow: (index: number, dow: number) => void;
   clearProgram: () => void;
   /** Replaces the program's split/days while keeping its wave progress. */
-  updateProgramSchedule: (templateId: SplitTemplateId, schedule: ScheduleSlot[]) => void;
+  updateProgramSchedule: (
+    templateId: SplitTemplateId,
+    schedule: ScheduleSlot[],
+    cardio?: Record<string, CardioFinisher>,
+  ) => void;
   /** This-cycle-only calendar adjustments for whichever rotation `kind`
    *  names — see lib/gym/schedule.ts. Skipping advances the rotation (and a
    *  program's week, on wrap) exactly like finishing the session would. */
@@ -1066,6 +1083,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
     return {
       ...state,
       hydrated,
+      plannedCardio: sortCardioPlan([
+        ...state.cardioPlan,
+        ...rotationCardioPlan(state.program ?? state.weeklyScheme),
+      ]),
       session,
       syncStatus,
       signIn: authSignIn,
@@ -1087,8 +1108,21 @@ export function GymProvider({ children }: { children: ReactNode }) {
             unit: "kg",
             fromScheduledDay: input.fromScheduledDay ?? false,
             fromProgramDay: input.fromProgramDay ?? false,
+            ...(input.cardio ? { cardio: input.cardio } : {}),
           },
         })),
+      updateActiveCardio: (patch) =>
+        setState((s) =>
+          s.activeWorkout?.cardio
+            ? {
+                ...s,
+                activeWorkout: {
+                  ...s.activeWorkout,
+                  cardio: { ...s.activeWorkout.cardio, ...patch },
+                },
+              }
+            : s,
+        ),
       logSet: (set) =>
         setState((s) =>
           s.activeWorkout
@@ -1355,7 +1389,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, program: resortRotation({ ...s.program, schedule }) };
         }),
       clearProgram: () => setState((s) => ({ ...s, program: null })),
-      updateProgramSchedule: (templateId, schedule) =>
+      updateProgramSchedule: (templateId, schedule, cardio) =>
         setState((s) => {
           if (!s.program) return s;
           const cyclePosition = initialCyclePosition(schedule);
@@ -1365,6 +1399,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
               ...s.program,
               templateId,
               schedule,
+              cardio,
               cyclePosition,
               anchor: anchorFor(schedule, cyclePosition),
               dayOverrides: undefined,

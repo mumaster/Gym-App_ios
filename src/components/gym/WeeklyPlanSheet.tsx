@@ -9,6 +9,8 @@ import {
   initialCyclePosition,
   splitDayLabel,
   splitTemplateById,
+  templateCardio,
+  templateHasCardio,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
 import { anchorFor } from "../../lib/gym/schedule";
@@ -16,6 +18,8 @@ import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
 import type { FocusGroup } from "../../lib/gym/volume";
+import type { CardioFinisher } from "../../lib/gym/types";
+import { HybridCardioSection } from "./HybridCardioSection";
 
 /** A sane default spread of weekdays for a given training frequency. */
 const EVEN_SPREAD: Record<number, number[]> = {
@@ -46,6 +50,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   // Muscles to grow, picked while setting up a plan and saved with it.
   const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  // Cardio after the lifting, per day, for a hybrid split.
+  const [cardioDraft, setCardioDraft] = useState<Record<string, CardioFinisher>>({});
   // Read through a ref so the draft resets when the sheet opens, not on
   // every change made from its manage view.
   const focusRef = useRef(growthFocus);
@@ -61,6 +67,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const pickTemplate = (id: SplitTemplateId) => {
     haptic(15);
     setTemplateId(id);
+    setCardioDraft(templateCardio(id));
     setDows(EVEN_SPREAD[splitTemplateById(id).suggestedDaysPerWeek] ?? EVEN_SPREAD[3]!);
     setMode("days");
   };
@@ -84,6 +91,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       schedule: preview,
       cyclePosition,
       anchor: anchorFor(preview, cyclePosition),
+      ...(templateHasCardio(templateId) ? { cardio: cardioDraft } : {}),
     });
     update({ growthFocus: focusDraft });
     onClose();
@@ -165,6 +173,13 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
               );
             })}
           </div>
+
+          {/* Applies at once, like the day edits above. */}
+          <HybridCardioSection
+            templateId={weeklyScheme.templateId}
+            value={templateCardio(weeklyScheme.templateId, weeklyScheme.cardio)}
+            onChange={(cardio) => setWeeklyScheme({ ...weeklyScheme, cardio })}
+          />
 
           {/* Applies at once, like the day edits above: no need to rebuild
               the plan just to change what it prioritises. */}
@@ -264,6 +279,12 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.weeklyPlan.pickOneDay}</p>
           )}
+
+          <HybridCardioSection
+            templateId={templateId}
+            value={cardioDraft}
+            onChange={setCardioDraft}
+          />
 
           <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 
