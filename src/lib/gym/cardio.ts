@@ -272,14 +272,34 @@ export function manualCardioWatch(input: {
   };
 }
 
-/** Extra kcal of the cardio planned in a weekly plan (null weight → 0). */
+/**
+ * Activities the activity level already counts, so they never raise a day's
+ * calories. The energy need (EER_2023 in nutrition.ts) comes from an
+ * activity level the questionnaire asks to include walking, and the
+ * categories themselves are defined in walking: the US Dietary Guidelines'
+ * calorie table (from the same DRI equations) describes "moderately active"
+ * as the equivalent of walking 1.5–3 miles a day at 3–4 mph, and "active" as
+ * more than 3 miles a day. Adding a logged walk on top counts it twice.
+ * Walks still count toward the WHO minutes (whoMinutes); they just don't
+ * make a day a cardio day for nutrition.
+ */
+export const EVERYDAY_ACTIVITIES: ReadonlySet<CardioActivity> = new Set(["walk"]);
+
+const raisesIntake = (activity: CardioActivity | null | undefined) =>
+  activity != null && !EVERYDAY_ACTIVITIES.has(activity);
+
+/** Extra kcal of the cardio planned in a weekly plan (null weight → 0).
+ *  Walks add nothing, as on the day itself (EVERYDAY_ACTIVITIES). */
 export function plannedWeeklyCardioKcal(plan: CardioPlanDay[], weightKg: number | null): number {
   if (!weightKg) return 0;
-  return plan.reduce(
-    (n, d) =>
-      n + cardioEnergyKcal(weightKg, { minutes: d.minutes, met: cardioMet(d.activity, d.effort) }),
-    0,
-  );
+  return plan
+    .filter((d) => raisesIntake(d.activity))
+    .reduce(
+      (n, d) =>
+        n +
+        cardioEnergyKcal(weightKg, { minutes: d.minutes, met: cardioMet(d.activity, d.effort) }),
+      0,
+    );
 }
 
 /**
@@ -287,7 +307,9 @@ export function plannedWeeklyCardioKcal(plan: CardioPlanDay[], weightKg: number 
  * only what was logged; today and later also count the plan still to do
  * (remainingCardioOn), so a planned run raises the limit before it's run
  * and a logged one keeps it raised. Sessions without an activity/effort
- * (older imports) add nothing until they're set. No bodyweight → 0 kcal.
+ * (older imports) add nothing until they're set. Walks don't count at all
+ * (EVERYDAY_ACTIVITIES): the activity level already includes them. No
+ * bodyweight → 0 kcal.
  */
 export function cardioDay(
   date: Date,
@@ -296,8 +318,12 @@ export function cardioDay(
   weightKg: number | null,
   today = new Date(),
 ): { any: boolean; kcal: number } {
-  const logged = cardioSessionsOn(sessions, dayKeyFromDate(date));
-  const planned = remainingCardioOn(plan, sessions, date, today);
+  const logged = cardioSessionsOn(sessions, dayKeyFromDate(date)).filter(
+    (s) => s.activity == null || raisesIntake(s.activity),
+  );
+  const planned = remainingCardioOn(plan, sessions, date, today).filter((d) =>
+    raisesIntake(d.activity),
+  );
   let kcal = 0;
   if (weightKg) {
     for (const s of logged) {

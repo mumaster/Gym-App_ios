@@ -182,4 +182,18 @@ describe("cardio in the nutrition limits", () => {
     expect(cardioDay(wed, plan, [], null, wed)).toEqual({ any: true, kcal: 0 });
     expect(plannedWeeklyCardioKcal(plan, 80)).toBe(480);
   });
+
+  it("doesn't raise intake for walks, which the activity level already counts", () => {
+    const wed = new Date(2026, 8, 30, 12);
+    const walkPlan: CardioPlanDay[] = [
+      { id: "w", dow: 3, activity: "walk", minutes: 60, effort: "moderate" },
+    ];
+    expect(cardioDay(wed, walkPlan, [], 80, wed)).toEqual({ any: false, kcal: 0 });
+    expect(plannedWeeklyCardioKcal(walkPlan, 80)).toBe(0);
+    const walked = session(new Date(2026, 8, 30, 7), 60, { activity: "walk" });
+    expect(cardioDay(wed, [], [walked], 80, wed)).toEqual({ any: false, kcal: 0 });
+    // A ride on the same day still counts.
+    const rode = session(new Date(2026, 8, 30, 17), 30);
+    expect(cardioDay(wed, [], [walked, rode], 80, wed)).toEqual({ any: true, kcal: 240 });
+  });
 });

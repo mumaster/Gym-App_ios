@@ -1164,7 +1164,7 @@ const en = {
     weeklyAverage: (kcal: string, days: number, cardio: number) =>
       `With ${days} training ${days === 1 ? "day" : "days"}${cardio ? ` and ${cardio} planned cardio ${cardio === 1 ? "session" : "sessions"}` : ""} a week, this averages ${kcal} kcal a day. A suggested limit is that weekly average, so training days sit a little above it and rest days below.`,
     cardioHint:
-      "Cardio adds its own energy to the day it's planned or logged, from carbs — so a cardio day sits above a rest day.",
+      "Cardio adds its own energy to the day it's planned or logged, from carbs — so a cardio day sits above a rest day. Walks don't: your activity level already counts them.",
   },
   nutritionQuestionnaire: {
     title: "Suggest my limits",
@@ -2634,7 +2634,7 @@ const nl: Dict = {
     weeklyAverage: (kcal: string, days: number, cardio: number) =>
       `Met ${days} ${days === 1 ? "trainingsdag" : "trainingsdagen"}${cardio ? ` en ${cardio} geplande ${cardio === 1 ? "cardiosessie" : "cardiosessies"}` : ""} per week is dit gemiddeld ${kcal} kcal per dag. Een voorgestelde limiet is dat weekgemiddelde, dus trainingsdagen liggen er iets boven en rustdagen eronder.`,
     cardioHint:
-      "Cardio telt zijn eigen energie op bij de dag waarop het gepland of gelogd is, uit koolhydraten — een cardiodag ligt dus boven een rustdag.",
+      "Cardio telt zijn eigen energie op bij de dag waarop het gepland of gelogd is, uit koolhydraten — een cardiodag ligt dus boven een rustdag. Wandelen niet: dat telt je activiteitsniveau al mee.",
   },
   nutritionQuestionnaire: {
     title: "Stel mijn limieten voor",
