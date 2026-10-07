@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { DEFAULT_AVATAR_ID, type AvatarId } from "./avatars";
-import { DEFAULT_PROFILES, EXERCISES } from "./data";
+import { DEFAULT_PROFILES, EXERCISES, defaultLoadableDumbbells } from "./data";
 import { isBodyweightExercise, latestBodyKg } from "./load";
 import { DEFAULT_PLATES } from "./plates";
 import {
@@ -318,6 +318,7 @@ function migrate(raw: Partial<GymState>): GymState {
     plates: p.plates ?? { ...DEFAULT_PLATES },
     bar_weight: p.bar_weight ?? 20,
     dumbbell_bar_weight: p.dumbbell_bar_weight ?? 2,
+    loadable_dumbbells: p.loadable_dumbbells ?? defaultLoadableDumbbells(p.id),
   });
 
   // Older rotations were sorted Sunday-first and had no calendar anchor:

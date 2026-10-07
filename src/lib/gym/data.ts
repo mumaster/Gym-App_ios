@@ -78,7 +78,18 @@ export const DEFAULT_PROFILES: EquipmentProfile[] = (
       active_equipment_ids: ["bodyweight", "pullup_bar"],
     },
   ] as Omit<EquipmentProfile, "plates" | "bar_weight" | "dumbbell_bar_weight">[]
-).map((p) => ({ ...p, ...baseProfile() }));
+).map((p) => ({
+  ...p,
+  ...baseProfile(),
+  loadable_dumbbells: defaultLoadableDumbbells(p.id),
+}));
+
+/** Home setups have a handle and plates; a commercial or hotel gym has a
+ *  fixed dumbbell rack. Also what older saves get (migrate()), where a
+ *  profile you made yourself counts as a home setup. */
+export function defaultLoadableDumbbells(profileId: string): boolean {
+  return !["full-gym", "hotel-gym"].includes(profileId);
+}
 
 export const EXERCISES: Exercise[] = [
   {

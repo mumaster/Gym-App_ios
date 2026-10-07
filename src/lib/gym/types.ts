@@ -274,6 +274,10 @@ export interface EquipmentProfile {
   bar_weight: number;
   /** Empty dumbbell handle weight in kg (loadable dumbbells). */
   dumbbell_bar_weight: number;
+  /** Dumbbells are a handle plus plates (true), or a fixed rack (false):
+   *  decides their weight step and whether the plate hint shows. Missing on
+   *  older saves until migrate() fills it. */
+  loadable_dumbbells?: boolean;
 }
 
 export type AccentId = "green" | "blue" | "orange" | "purple" | "pink" | "yellow" | "custom";

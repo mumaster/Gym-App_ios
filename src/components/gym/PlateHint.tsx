@@ -14,7 +14,8 @@ export function PlateHint({ exerciseId, target }: { exerciseId: string; target: 
 
   const gear = exercise.equipment_required;
   const isBar = gear.includes("barbell") || gear.includes("smith");
-  const isDumbbell = gear.includes("dumbbell");
+  // A fixed dumbbell rack has nothing to load.
+  const isDumbbell = gear.includes("dumbbell") && profile.loadable_dumbbells !== false;
   if (!isBar && !isDumbbell) return null;
 
   const bar = isBar ? profile.bar_weight : profile.dumbbell_bar_weight;

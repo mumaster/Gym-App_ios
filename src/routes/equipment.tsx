@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, ChevronLeft, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
+import { SwitchRow } from "../components/gym/SwitchRow";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
@@ -38,8 +39,12 @@ function EquipmentScreen() {
   const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise } = useGym();
   const t = useTranslation();
   const { from } = Route.useSearch();
-  const [editingId, setEditingId] = useState(activeProfileId);
-  const editing = profiles.find((p) => p.id === editingId) ?? profiles[0]!;
+  // Null until a profile is picked here: the saved state loads after the
+  // first render, so seeding this with activeProfileId opened the default
+  // profile instead of the active one.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editing = profiles.find((p) => p.id === (editingId ?? activeProfileId)) ?? profiles[0]!;
+  const loadable = editing.loadable_dumbbells !== false;
 
   const toggle = (id: EquipmentId) => {
     haptic(12);
@@ -82,6 +87,7 @@ function EquipmentScreen() {
           plates: { ...DEFAULT_PLATES },
           bar_weight: 20,
           dumbbell_bar_weight: 2,
+          loadable_dumbbells: true,
         },
       ],
     });
@@ -201,10 +207,20 @@ function EquipmentScreen() {
 
       <SectionLabel>{t.equipment.barWeights}</SectionLabel>
       <Card className="divide-y divide-border p-0">
+        <SwitchRow
+          label={t.equipment.loadableDumbbells}
+          desc={loadable ? t.equipment.loadableDumbbellsOn : t.equipment.loadableDumbbellsOff}
+          ariaLabel={t.equipment.loadableDumbbells}
+          on={loadable}
+          onToggle={() => {
+            haptic(12);
+            patch({ loadable_dumbbells: !loadable });
+          }}
+        />
         {(
           [
             [t.equipment.barbellSmithBar, "bar_weight"],
-            [t.equipment.dumbbellHandle, "dumbbell_bar_weight"],
+            ...(loadable ? ([[t.equipment.dumbbellHandle, "dumbbell_bar_weight"]] as const) : []),
           ] as const
         ).map(([label, key]) => (
           <div key={key} className="flex min-h-[56px] items-center justify-between px-4">

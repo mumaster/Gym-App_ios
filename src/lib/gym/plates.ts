@@ -1,4 +1,4 @@
-import type { EquipmentProfile, Exercise } from "./types";
+import type { EquipmentId, EquipmentProfile, Exercise } from "./types";
 
 export const PLATE_SIZES = [20, 10, 5, 2.5, 1.25, 0.5] as const;
 
@@ -49,19 +49,43 @@ export function solvePlates(
   return { perSide, total, exact: Math.abs(total - target) < 0.01 };
 }
 
+/** The rack jump for fixed dumbbells (a profile without loadable ones): the
+ *  common 2 kg step of a commercial dumbbell rack. An equipment default,
+ *  not a training number. */
+export const FIXED_DUMBBELL_STEP = 2;
+
+/** Smallest plate this profile owns, or null with none. */
+export function smallestPlate(profile: EquipmentProfile): number | null {
+  const owned = PLATE_SIZES.filter((s) => (profile.plates[String(s)] ?? 0) > 0);
+  return owned.length ? Math.min(...owned) : null;
+}
+
 /**
- * Smallest sensible weight change for the +/- steppers on the set-logging row.
- * Barbell/smith: one of the smallest plate you own, per side. Dumbbell: a rack
- * jump. Everything else (machines, cables, bands): 2.5.
+ * Smallest sensible weight change: what the +/- steppers on the set-logging
+ * row move by, and what suggestions round to. It comes from the smallest
+ * plate the profile owns (asked for: the 0.5 and 1.25 kg plates should count
+ * for every loaded exercise, not only the barbell):
+ *
+ * - Loaded on both sides (barbell, Smith bar, loadable dumbbells, a
+ *   plate-loaded leg press): one of the smallest plate per side, so twice it.
+ * - One loading pin (a cable or machine stack, the leg developer): one small
+ *   plate on the pin, never more than the 2.5 kg a stack usually moves by.
+ * - Fixed dumbbells (a rack, `loadable_dumbbells` off): FIXED_DUMBBELL_STEP.
+ * - Anything else (kettlebells, bands): 2.5.
  */
+const ONE_PIN: EquipmentId[] = ["cable", "cable_high", "machine", "leg_developer"];
+
 export function plateStep(exercise: Exercise, profile: EquipmentProfile): number {
   const gear = exercise.equipment_required;
-  if (gear.includes("barbell") || gear.includes("smith")) {
-    const owned = PLATE_SIZES.filter((s) => (profile.plates[String(s)] ?? 0) > 0);
-    const smallest = owned.length ? Math.min(...owned) : 1.25;
-    return Number((smallest * 2).toFixed(2));
-  }
-  if (gear.includes("dumbbell")) return 2;
+  const smallest = smallestPlate(profile);
+  const bothSides = (fallback: number) =>
+    smallest == null ? fallback : Number((smallest * 2).toFixed(2));
+  if (gear.includes("barbell") || gear.includes("smith")) return bothSides(2.5);
+  if (gear.includes("dumbbell"))
+    return profile.loadable_dumbbells === false ? FIXED_DUMBBELL_STEP : bothSides(2);
+  if (gear.includes("leg_press")) return bothSides(2.5);
+  if (ONE_PIN.some((g) => gear.includes(g)))
+    return smallest == null ? 2.5 : Math.min(2.5, smallest);
   return 2.5;
 }
 
