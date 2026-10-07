@@ -65,7 +65,9 @@ export function Screen({
         <div
           className={`relative mx-auto grid min-h-[42px] w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 ${SETTINGS_BUTTON_GUTTER}`}
         >
-          <div className="min-w-0">
+          {/* Top-anchored at the offset a lone title gets when centered in the
+              42px row, so a subtitle (Home) can't pull the title upward. */}
+          <div className="min-w-0 self-start pt-[5px]">
             <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-foreground">
               {title}
             </h1>
