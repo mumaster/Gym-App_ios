@@ -95,6 +95,7 @@ function HomeScreen() {
     readinessLog,
     setTodayReadiness,
     cardioPlan,
+    plannedCardio,
     cardioSessions,
   } = useGym();
   const [readinessEditing, setReadinessEditing] = useState(false);
@@ -223,11 +224,15 @@ function HomeScreen() {
   // (none planned today, none overdue, none running) it takes the hero, with
   // a Log button that opens the log sheet right here; on a strength day it's
   // added to the hero's sub-line instead, so strength stays the one CTA.
-  const cardioToday = remainingCardioOn(cardioPlan, cardioSessions, today, today)[0] ?? null;
+  // A hybrid plan's cardio belongs to its strength session, so it only
+  // shows next to one (plannedCardio), never as a hero of its own.
   const strengthDue =
     !!activeWorkout ||
     (rotation != null && overdueDays(rotation) > 0) ||
     whenLabel === t.home.today;
+  const cardioToday =
+    remainingCardioOn(strengthDue ? plannedCardio : cardioPlan, cardioSessions, today, today)[0] ??
+    null;
   if (cardioToday && !strengthDue) {
     heroIcon = CARDIO_ICONS[cardioToday.activity];
     heroEyebrow = t.cardio.heroEyebrow;
@@ -347,7 +352,7 @@ function HomeScreen() {
                 today={today}
                 rotation={rotation}
                 trainedKeys={trainedKeys}
-                cardioPlan={cardioPlan}
+                cardioPlan={plannedCardio}
                 cardioSessions={cardioSessions}
                 streak={streak}
                 daysThisWeek={daysThisWeek}

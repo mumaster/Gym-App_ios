@@ -7,6 +7,8 @@ import {
   buildSchedule,
   splitDayLabel,
   splitTemplateById,
+  templateCardio,
+  templateHasCardio,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -16,6 +18,8 @@ import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
 import type { FocusGroup } from "../../lib/gym/volume";
+import type { CardioFinisher } from "../../lib/gym/types";
+import { HybridCardioSection } from "./HybridCardioSection";
 
 /** A sane default spread of weekdays for a given training frequency — same
  *  table as WeeklyPlanSheet's, kept local rather than shared since it's a
@@ -54,6 +58,8 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const [editingExisting, setEditingExisting] = useState(false);
   // Muscles to grow, picked while building or re-planning and saved with it.
   const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  // Cardio after the lifting, per day, for a hybrid split.
+  const [cardioDraft, setCardioDraft] = useState<Record<string, CardioFinisher>>({});
   // Read through a ref so the draft resets when the sheet opens, not on
   // every change made from its manage view.
   const focusRef = useRef(growthFocus);
@@ -70,6 +76,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const pickTemplate = (id: SplitTemplateId) => {
     haptic(15);
     setTemplateId(id);
+    setCardioDraft(templateCardio(id));
     setName(splitTemplateById(id).label);
     setDows(EVEN_SPREAD[splitTemplateById(id).suggestedDaysPerWeek] ?? EVEN_SPREAD[3]!);
     setMode("days");
@@ -98,6 +105,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       currentWeek: 0,
       cyclePosition: 0,
       anchor: anchorFor(preview, 0),
+      ...(templateHasCardio(templateId) ? { cardio: cardioDraft } : {}),
     };
     setProgram(next);
     update({ growthFocus: focusDraft });
@@ -107,7 +115,11 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const saveScheduleChanges = () => {
     if (!preview.length) return;
     haptic([20, 30]);
-    updateProgramSchedule(templateId, preview);
+    updateProgramSchedule(
+      templateId,
+      preview,
+      templateHasCardio(templateId) ? cardioDraft : undefined,
+    );
     update({ growthFocus: focusDraft });
     onClose();
   };
@@ -212,7 +224,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             })}
           </div>
 
-          {/* Applies at once, like the day edits above. */}
+          {/* Both apply at once, like the day edits above. */}
+          <HybridCardioSection
+            templateId={program.templateId}
+            value={templateCardio(program.templateId, program.cardio)}
+            onChange={(cardio) => setProgram({ ...program, cardio })}
+          />
           <GrowthFocusSection
             value={growthFocus}
             onChange={(next) => update({ growthFocus: next })}
@@ -222,6 +239,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             <button
               onClick={() => {
                 setTemplateId(program.templateId);
+                setCardioDraft(templateCardio(program.templateId, program.cardio));
                 setDows(program.schedule.map((s) => s.dow));
                 setEditingExisting(true);
                 setMode("days");
@@ -322,6 +340,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.programBuilder.pickOneDay}</p>
           )}
+
+          <HybridCardioSection
+            templateId={templateId}
+            value={cardioDraft}
+            onChange={setCardioDraft}
+          />
 
           <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 

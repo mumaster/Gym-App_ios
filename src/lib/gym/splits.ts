@@ -2,10 +2,11 @@ import { MUSCLES } from "./data";
 import { recommendedMuscles } from "./recommendations";
 import type { Rotation } from "./schedule";
 import { weekIndex } from "./schedule";
-import type { Muscle, Workout } from "./types";
+import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
 import type { FocusGroup } from "./volume";
 
-export type SplitTemplateId = "full_body" | "upper_lower" | "push_pull_legs" | "bro_split";
+export type SplitTemplateId =
+  "full_body" | "upper_lower" | "push_pull_legs" | "bro_split" | "hybrid";
 
 export interface SplitDay {
   /** Stable id within a template, e.g. "upper" / "push". */
@@ -13,6 +14,9 @@ export interface SplitDay {
   label: string;
   /** Target muscle groups for this day. Empty means "whichever's been trained least" (full body). */
   muscles: Muscle[];
+  /** Cardio done after the lifting on this day (hybrid template only); the
+   *  default a plan starts from, changeable per plan. */
+  cardio?: CardioFinisher;
 }
 
 export interface SplitTemplate {
@@ -67,7 +71,53 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
       { id: "arms", label: "Arms", muscles: ["Arms"] },
     ],
   },
+  {
+    id: "hybrid",
+    label: "Hybrid",
+    description: "Upper and lower body sessions, each ending with a block of cardio.",
+    suggestedDaysPerWeek: 4,
+    days: [
+      {
+        id: "upper",
+        label: "Upper + Cardio",
+        muscles: ["Chest", "Back", "Shoulders", "Arms"],
+        cardio: { activity: "run", effort: "moderate", minutes: 20 },
+      },
+      {
+        id: "lower",
+        label: "Lower + Cardio",
+        muscles: ["Quads", "Hamstrings", "Glutes", "Calves"],
+        cardio: { activity: "cycle", effort: "easy", minutes: 20 },
+      },
+    ],
+  },
 ];
+
+/**
+ * The hybrid template: strength and cardio in one session, cardio last.
+ *
+ * Whether it's sound: adding cardio to strength training doesn't reduce
+ * gains in muscle size or maximal strength (Held et al., Sports Med 2026;
+ * Schumann et al., Sports Med 2022 — see cardio.ts), including when both
+ * are done in one session. What the evidence does say about one session:
+ *
+ * - Order. Strength before cardio gave 6.9% more lower-body dynamic strength
+ *   than the reverse, with no difference in muscle growth, aerobic capacity
+ *   or body fat (Eddens et al., Sports Med 2018, 48:177–188). So cardio is
+ *   always the last thing in the session, never the warm-up block.
+ * - Dose. In Wilson et al.'s meta-analysis (J Strength Cond Res 2012,
+ *   26:2293–2307) the interference grew with how long and how often the
+ *   cardio was (r −0.29 to −0.75 for duration), and running, unlike cycling,
+ *   reduced strength and muscle gains. The newer reviews above found no
+ *   effect of modality, so nothing is ruled out, but the defaults take the
+ *   safer side: 20 minutes, a moderate run after upper body, and an easy
+ *   ride (no impact) after legs that were just trained.
+ *
+ * Read from the papers' abstracts (Eddens via the Northumbria repository,
+ * Wilson via PEDro), the rest as cited in cardio.ts.
+ */
+export const templateHasCardio = (id: SplitTemplateId) =>
+  splitTemplateById(id).days.some((d) => d.cardio);
 
 export const splitTemplateById = (id: SplitTemplateId): SplitTemplate =>
   SPLIT_TEMPLATES.find((t) => t.id === id) ?? SPLIT_TEMPLATES[0]!;
@@ -85,6 +135,54 @@ export interface ScheduleSlot {
  *  the calendar fields (`anchor`, `dayOverrides`). */
 export interface WeeklyScheme extends Rotation {
   templateId: SplitTemplateId;
+  /** Day id → this plan's cardio for that day, replacing the template's
+   *  default (hybrid plans). */
+  cardio?: Record<string, CardioFinisher> | undefined;
+}
+
+/** The cardio planned after the lifting on a slot, or null: the plan's own
+ *  choice for that day, else the template's default. */
+export function slotCardio(
+  templateId: SplitTemplateId,
+  slot: ScheduleSlot | undefined,
+  overrides?: Record<string, CardioFinisher>,
+): CardioFinisher | null {
+  if (!slot) return null;
+  const day = splitTemplateById(templateId).days.find((d) => d.id === slot.dayId);
+  if (!day?.cardio) return null;
+  return overrides?.[slot.dayId] ?? day.cardio;
+}
+
+/** A template's per-day cardio with a plan's choices applied, for every day
+ *  that has cardio. */
+export function templateCardio(
+  templateId: SplitTemplateId,
+  overrides?: Record<string, CardioFinisher>,
+): Record<string, CardioFinisher> {
+  const out: Record<string, CardioFinisher> = {};
+  for (const day of splitTemplateById(templateId).days) {
+    if (day.cardio) out[day.id] = overrides?.[day.id] ?? day.cardio;
+  }
+  return out;
+}
+
+/** A hybrid plan's cardio as weekly cardio-plan days, so it counts toward
+ *  planned cardio minutes and a day's calories the way the cardio plan does
+ *  (cardio.ts). On the slot's usual weekday; ids are stable per slot. */
+export function rotationCardioPlan(
+  r: {
+    templateId: SplitTemplateId;
+    schedule: ScheduleSlot[];
+    cardio?: Record<string, CardioFinisher> | undefined;
+  } | null,
+): CardioPlanDay[] {
+  if (!r) return [];
+  const out: CardioPlanDay[] = [];
+  r.schedule.forEach((slot, i) => {
+    const c = slotCardio(r.templateId, slot, r.cardio);
+    if (c) out.push({ id: `plan-${i}`, dow: slot.dow, ...c });
+  });
+  return out;
 }
 
 /** Cyclically assigns a template's day-types across the chosen weekdays, Monday-first. */

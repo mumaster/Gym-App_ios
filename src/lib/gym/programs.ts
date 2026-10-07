@@ -1,5 +1,6 @@
 import { advanceRotation, type Rotation } from "./schedule";
 import type { SplitTemplateId } from "./splits";
+import type { CardioFinisher } from "./types";
 
 export type ProgramWeekType = "build" | "deload";
 
@@ -83,6 +84,8 @@ export interface Program extends Rotation {
   weeks: ProgramWeek[];
   /** Index into `weeks` for the week currently being trained. */
   currentWeek: number;
+  /** Day id → cardio after the lifting (hybrid programs), as WeeklyScheme. */
+  cardio?: Record<string, CardioFinisher> | undefined;
 }
 
 export const currentProgramWeek = (program: Program): ProgramWeek =>

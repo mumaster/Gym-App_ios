@@ -29,6 +29,9 @@ import {
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
+import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
+import { finisherCardioLog } from "../lib/gym/cardio";
+import type { CardioFinisher } from "../lib/gym/types";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
@@ -122,6 +125,8 @@ function SessionScreen() {
     hydrated,
     update,
     finishWorkout,
+    logCardio,
+    updateActiveCardio,
     cancelWorkout,
     restSeconds,
     restOverride,
@@ -636,8 +641,13 @@ function SessionScreen() {
     haptic([30, 50, 30]);
     setCelebrate(plan.some((p) => p.bonus) ? "big" : "normal");
     const planSnapshot = plan;
+    const cardio = activeWorkout.cardio;
     setTimeout(() => {
       clearSessionResume();
+      const log = cardio
+        ? finisherCardioLog(cardio, new Date(), t.cardio.activities[cardio.activity])
+        : null;
+      if (log) logCardio(log);
       finishWorkout();
       setFinishedSummary(planSnapshot);
     }, 1800);
@@ -1098,6 +1108,9 @@ function SessionScreen() {
               setsPlanned={totalSets}
               minutes={Math.max(1, Math.round(elapsed / 60))}
               onFinish={endWorkout}
+              {...(activeWorkout.cardio
+                ? { cardio: activeWorkout.cardio, onCardio: updateActiveCardio }
+                : {})}
               {...(blockIndex > 0 ? { onBack: () => goToBlock(blockIndex - 1) } : {})}
               {...(formOpenHere ? {} : { onExtraSet: () => addExtraSet(planIndex) })}
               {...(bonusOptions.length > 0 ? { onExtraExercise: addBonus } : {})}
@@ -2299,6 +2312,70 @@ function RestPanel({
 }
 
 /**
+ * A hybrid day's cardio as the last exercise: what's planned, its minutes
+ * (adjustable in 5s, as done), and a tick for having done it. Not ticked,
+ * nothing is logged.
+ */
+function CardioFinisherRow({
+  cardio,
+  onChange,
+}: {
+  cardio: CardioFinisher & { done?: boolean };
+  onChange: (patch: Partial<CardioFinisher & { done: boolean }>) => void;
+}) {
+  const t = useTranslation();
+  const Icon = CARDIO_ICONS[cardio.activity];
+  const step = (d: number) => {
+    haptic(10);
+    onChange({ minutes: Math.min(120, Math.max(5, cardio.minutes + d)) });
+  };
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-foreground/[0.05] p-2">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary-text">
+        <Icon className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-semibold leading-tight">
+          {t.cardio.activities[cardio.activity]} · {t.cardio.efforts[cardio.effort]}
+        </p>
+        <div className="mt-0.5 flex items-center gap-1">
+          <button
+            onClick={() => step(-5)}
+            aria-label={t.cardio.lessMinutes}
+            className="flex size-7 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-95"
+          >
+            <Minus className="size-3.5" />
+          </button>
+          <span className="tabular min-w-[52px] text-center text-[13px] text-muted-foreground">
+            {t.cardio.min(cardio.minutes)}
+          </span>
+          <button
+            onClick={() => step(5)}
+            aria-label={t.cardio.moreMinutes}
+            className="flex size-7 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-95"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        </div>
+      </div>
+      <button
+        onClick={() => {
+          haptic(15);
+          onChange({ done: !cardio.done });
+        }}
+        aria-pressed={!!cardio.done}
+        className={`flex min-h-10 shrink-0 items-center gap-1 rounded-2xl px-3 text-[13.5px] font-bold active:scale-95 ${
+          cardio.done ? chip.on : "bg-secondary text-secondary-foreground"
+        }`}
+      >
+        {cardio.done ? <Check className="size-4" /> : null}
+        {cardio.done ? t.cardio.finisherDone : t.cardio.finisherMarkDone}
+      </button>
+    </div>
+  );
+}
+
+/**
  * The end of the workout, docked in the bottom bar once the last exercise's
  * sets are done. Before, the last set started a rest with nothing after it,
  * then the card offered a prefilled "set 4" and the only sign the workout
@@ -2312,11 +2389,17 @@ function FinishPanel({
   onBack,
   onExtraSet,
   onExtraExercise,
+  cardio,
+  onCardio,
 }: {
   setsDone: number;
   setsPlanned: number;
   minutes: number;
   onFinish: () => void;
+  /** A hybrid day's cardio, done after the lifting: ticked off here, and
+   *  logged as cardio when the workout is finished. */
+  cardio?: CardioFinisher & { done?: boolean };
+  onCardio?: (patch: Partial<CardioFinisher & { done: boolean }>) => void;
   onBack?: () => void;
   onExtraSet?: () => void;
   onExtraExercise?: () => void;
@@ -2338,6 +2421,7 @@ function FinishPanel({
           </p>
         </div>
       </div>
+      {cardio && onCardio ? <CardioFinisherRow cardio={cardio} onChange={onCardio} /> : null}
       <button onClick={onFinish} className={`${button.primary} relative mt-2 w-full`}>
         <HapticSwitch />
         {t.session.finishWorkout}
