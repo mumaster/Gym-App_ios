@@ -215,7 +215,8 @@ export interface WatchTable {
 }
 
 /** Cardio activities with their own Compendium entries — see cardio.ts. */
-export type CardioActivity = "run" | "cycle" | "walk" | "hike" | "swim" | "row" | "elliptical" | "intervals";
+export type CardioActivity =
+  "run" | "cycle" | "walk" | "hike" | "swim" | "row" | "elliptical" | "intervals";
 
 /** How hard a cardio session was, in the Compendium's own terms. */
 export type CardioEffort = "easy" | "moderate" | "hard";
