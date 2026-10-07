@@ -44,6 +44,7 @@ describe("cardio METs (2024 Compendium)", () => {
   it("pins the Compendium values used", () => {
     expect(CARDIO_METS.cycle).toEqual({ easy: 4.3, moderate: 7.0, hard: 9.0 }); // 01015–01017
     expect(CARDIO_METS.walk).toEqual({ easy: 3.8, moderate: 4.8, hard: 5.5 }); // 17190/17200/17220
+    expect(CARDIO_METS.hike).toEqual({ easy: 3.8, moderate: 5.3, hard: 6.0 }); // 17081/17082/17080
     expect(CARDIO_METS.run).toEqual({ easy: 7.5, moderate: 10.5, hard: 10.5 }); // 12020/12145
     expect(CARDIO_METS.swim).toEqual({ easy: 5.8, moderate: 8.0, hard: 9.8 });
     expect(CARDIO_METS.row.hard).toBe(7.3); // 02070
@@ -130,6 +131,8 @@ describe("guessing the activity from a watch's name", () => {
     expect(guessCardioActivity("Buiten hardlopen")).toBe("run");
     expect(guessCardioActivity("Outdoor run")).toBe("run");
     expect(guessCardioActivity("Buiten wandelen")).toBe("walk");
+    expect(guessCardioActivity("Hiking")).toBe("hike");
+    expect(guessCardioActivity("Bergwandelen")).toBe("hike");
     expect(guessCardioActivity("Buiten fietsen")).toBe("cycle");
     expect(guessCardioActivity("Zwembad zwemmen")).toBe("swim");
     expect(guessCardioActivity("Roeimachine")).toBe("row");
@@ -181,5 +184,22 @@ describe("cardio in the nutrition limits", () => {
     // No bodyweight: still a cardio day, no energy estimate.
     expect(cardioDay(wed, plan, [], null, wed)).toEqual({ any: true, kcal: 0 });
     expect(plannedWeeklyCardioKcal(plan, 80)).toBe(480);
+  });
+
+  it("doesn't raise intake for walks, which the activity level already counts", () => {
+    const wed = new Date(2026, 8, 30, 12);
+    const walkPlan: CardioPlanDay[] = [
+      { id: "w", dow: 3, activity: "walk", minutes: 60, effort: "moderate" },
+    ];
+    expect(cardioDay(wed, walkPlan, [], 80, wed)).toEqual({ any: false, kcal: 0 });
+    expect(plannedWeeklyCardioKcal(walkPlan, 80)).toBe(0);
+    const walked = session(new Date(2026, 8, 30, 7), 60, { activity: "walk" });
+    expect(cardioDay(wed, [], [walked], 80, wed)).toEqual({ any: false, kcal: 0 });
+    // A hike counts: (5.3 − 1) × 80 × 2 = 688.
+    const hiked = session(new Date(2026, 8, 30, 9), 120, { activity: "hike", effort: "moderate" });
+    expect(cardioDay(wed, [], [walked, hiked], 80, wed)).toEqual({ any: true, kcal: 688 });
+    // A ride on the same day still counts.
+    const rode = session(new Date(2026, 8, 30, 17), 30);
+    expect(cardioDay(wed, [], [walked, rode], 80, wed)).toEqual({ any: true, kcal: 240 });
   });
 });

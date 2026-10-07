@@ -36,6 +36,7 @@ export const CARDIO_ACTIVITIES: CardioActivity[] = [
   "run",
   "cycle",
   "walk",
+  "hike",
   "swim",
   "row",
   "elliptical",
@@ -57,6 +58,12 @@ export const CARDIO_EFFORTS: CardioEffort[] = ["easy", "moderate", "hard"];
  *   "moderate pace" 7.0, 01017 "vigorous pace" 9.0.
  * - walk: 17190 "walking, 2.8–3.4 mph, level, moderate pace" 3.8, 17200
  *   "brisk pace" 4.8, 17220 "very brisk pace" 5.5.
+ * - hike: 17081 "hiking slowly or ambling through fields and hillsides, no
+ *   load" 3.8, 17082 "hiking or walking at a normal pace through fields and
+ *   hillsides, no load" 5.3, 17080 "hiking, cross country" 6.0. With a
+ *   daypack the Compendium goes up to 7.8 (17012); the app doesn't ask about
+ *   a pack, so hard stays at the lighter cross-country entry. Read directly
+ *   from pacompendium.com's walking table.
  * - swim: 18240 "freestyle, slow, recreational" 5.8, 18290 "crawl, medium
  *   speed" 8.0, 18230 "freestyle, fast, vigorous effort" 9.8.
  * - row (ergometer): easy and moderate 02071 "moderate effort" 5.0 (there's
@@ -70,6 +77,7 @@ export const CARDIO_METS: Record<CardioActivity, Record<CardioEffort, number>> =
   run: { easy: 7.5, moderate: 10.5, hard: 10.5 },
   cycle: { easy: 4.3, moderate: 7.0, hard: 9.0 },
   walk: { easy: 3.8, moderate: 4.8, hard: 5.5 },
+  hike: { easy: 3.8, moderate: 5.3, hard: 6.0 },
   swim: { easy: 5.8, moderate: 8.0, hard: 9.8 },
   row: { easy: 5.0, moderate: 5.0, hard: 7.3 },
   elliptical: { easy: 5.0, moderate: 5.0, hard: 9.0 },
@@ -222,7 +230,8 @@ const ACTIVITY_WORDS: [CardioActivity, RegExp][] = [
   ["intervals", /interval|hiit|tabata/i],
   ["run", /hardlo(o)?p|run|jog|loopband|treadmill/i],
   ["cycle", /fiets|cycl|bike|biking|ride|wielren|spinning/i],
-  ["walk", /wandel|walk|hike|hiking|lopen/i],
+  ["hike", /hik(e|ing)|bergwandel|wandeltocht|trektocht/i],
+  ["walk", /wandel|walk|lopen/i],
   ["swim", /zwem|swim/i],
   ["row", /roei|row/i],
   ["elliptical", /crosstrainer|elliptical|cross trainer/i],
@@ -272,14 +281,36 @@ export function manualCardioWatch(input: {
   };
 }
 
-/** Extra kcal of the cardio planned in a weekly plan (null weight → 0). */
+/**
+ * Activities the activity level already counts, so they never raise a day's
+ * calories. The energy need (EER_2023 in nutrition.ts) comes from an
+ * activity level the questionnaire asks to include walking, and the
+ * categories themselves are defined in walking: the US Dietary Guidelines'
+ * calorie table (from the same DRI equations) describes "moderately active"
+ * as the equivalent of walking 1.5–3 miles a day at 3–4 mph, and "active" as
+ * more than 3 miles a day. Adding a logged walk on top counts it twice.
+ * Walks still count toward the WHO minutes (whoMinutes); they just don't
+ * make a day a cardio day for nutrition. A hike is its own activity and
+ * does count: hours over hills are beyond the everyday walking the levels
+ * describe, so logging one doesn't mean changing the activity level.
+ */
+export const EVERYDAY_ACTIVITIES: ReadonlySet<CardioActivity> = new Set(["walk"]);
+
+const raisesIntake = (activity: CardioActivity | null | undefined) =>
+  activity != null && !EVERYDAY_ACTIVITIES.has(activity);
+
+/** Extra kcal of the cardio planned in a weekly plan (null weight → 0).
+ *  Walks add nothing, as on the day itself (EVERYDAY_ACTIVITIES). */
 export function plannedWeeklyCardioKcal(plan: CardioPlanDay[], weightKg: number | null): number {
   if (!weightKg) return 0;
-  return plan.reduce(
-    (n, d) =>
-      n + cardioEnergyKcal(weightKg, { minutes: d.minutes, met: cardioMet(d.activity, d.effort) }),
-    0,
-  );
+  return plan
+    .filter((d) => raisesIntake(d.activity))
+    .reduce(
+      (n, d) =>
+        n +
+        cardioEnergyKcal(weightKg, { minutes: d.minutes, met: cardioMet(d.activity, d.effort) }),
+      0,
+    );
 }
 
 /**
@@ -287,7 +318,9 @@ export function plannedWeeklyCardioKcal(plan: CardioPlanDay[], weightKg: number 
  * only what was logged; today and later also count the plan still to do
  * (remainingCardioOn), so a planned run raises the limit before it's run
  * and a logged one keeps it raised. Sessions without an activity/effort
- * (older imports) add nothing until they're set. No bodyweight → 0 kcal.
+ * (older imports) add nothing until they're set. Walks don't count at all
+ * (EVERYDAY_ACTIVITIES): the activity level already includes them. No
+ * bodyweight → 0 kcal.
  */
 export function cardioDay(
   date: Date,
@@ -296,8 +329,12 @@ export function cardioDay(
   weightKg: number | null,
   today = new Date(),
 ): { any: boolean; kcal: number } {
-  const logged = cardioSessionsOn(sessions, dayKeyFromDate(date));
-  const planned = remainingCardioOn(plan, sessions, date, today);
+  const logged = cardioSessionsOn(sessions, dayKeyFromDate(date)).filter(
+    (s) => s.activity == null || raisesIntake(s.activity),
+  );
+  const planned = remainingCardioOn(plan, sessions, date, today).filter((d) =>
+    raisesIntake(d.activity),
+  );
   let kcal = 0;
   if (weightKg) {
     for (const s of logged) {
