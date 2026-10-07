@@ -298,7 +298,7 @@ const en = {
       caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
       energySplit: "A meal's split of energy between protein, carbs and fat",
       concurrent:
-        "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day",
+        "Cardio and strength in one week: no loss of strength or muscle, strength first, 3+ hours apart on the same day; in a Hybrid plan cardio comes last, about 20 minutes",
       cardioMinutes: "150 cardio minutes a week, a hard minute counting as two",
       water:
         "Suggested water goal: at least 2.0 L (women) or 2.5 L (men) of total water, 1 ml per kcal of your energy needs, 80% of it from drinks",
@@ -1779,7 +1779,7 @@ const nl: Dict = {
       caffeine: "Cafeïne per koffie (espresso 80 mg, filter 90 mg) en de grens van 400 mg per dag",
       energySplit: "Hoe de energie van een maaltijd verdeeld is over eiwit, koolhydraten en vet",
       concurrent:
-        "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen",
+        "Cardio en kracht in één week: geen verlies aan kracht of spier, eerst kracht, op dezelfde dag 3+ uur ertussen; in een Hybrid-schema komt cardio als laatste, zo'n 20 minuten",
       cardioMinutes: "150 cardiominuten per week, een zware minuut telt dubbel",
       water:
         "Voorgesteld waterdoel: minstens 2,0 L (vrouwen) of 2,5 L (mannen) totaal water, 1 ml per kcal van je energiebehoefte, waarvan 80% uit drinken",
