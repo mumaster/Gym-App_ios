@@ -76,7 +76,7 @@ export function ExerciseDetailSheet({
               <button
                 onClick={() => onEdit(exercise)}
                 aria-label={t.exercises.edit(exercise.name)}
-                className={button.icon}
+                className={button.edit}
               >
                 <Pencil className="size-4" />
               </button>

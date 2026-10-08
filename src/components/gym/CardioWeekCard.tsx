@@ -69,7 +69,7 @@ export function CardioWeekCard({
               type="button"
               onClick={() => setPlanOpen(true)}
               aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
-              className={button.icon}
+              className={button.edit}
             >
               <Pencil className="size-4" />
             </button>

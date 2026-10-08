@@ -204,7 +204,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
                       aria-label={t.programBuilder.changeDay(dayLabel)}
-                      className={button.icon}
+                      className={button.edit}
                     >
                       <Pencil className="size-4" />
                     </button>

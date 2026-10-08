@@ -343,7 +343,7 @@ function ExercisesScreen() {
                 to="/equipment"
                 search={{ from: "exercises" }}
                 aria-label={t.exercises.editGym(profile.name)}
-                className={button.icon}
+                className={button.edit}
               >
                 <Pencil className="size-4" />
               </Link>

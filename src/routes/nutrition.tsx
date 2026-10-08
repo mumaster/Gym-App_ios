@@ -642,7 +642,7 @@ function DaySummary({
         <button
           onClick={onSetGoals}
           aria-label={t.nutrition.setDailyLimits}
-          className={button.icon}
+          className={button.edit}
         >
           <Pencil className="size-4" />
         </button>
