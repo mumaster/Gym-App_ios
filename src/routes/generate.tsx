@@ -642,7 +642,7 @@ function WorkoutHome() {
                 <button
                   onClick={() => setProgramSheetOpen(true)}
                   aria-label={t.generate.editProgram}
-                  className={button.icon}
+                  className={button.edit}
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -700,7 +700,7 @@ function WorkoutHome() {
                 <button
                   onClick={() => setPlanSheetOpen(true)}
                   aria-label={t.generate.editWeeklyPlan}
-                  className={button.icon}
+                  className={button.edit}
                 >
                   <Pencil className="size-4" />
                 </button>
@@ -835,7 +835,7 @@ function WorkoutHome() {
                     <button
                       onClick={() => setTemplatesOpen(true)}
                       aria-label={t.generate.manageTemplates}
-                      className={button.icon}
+                      className={button.edit}
                     >
                       <Pencil className="size-4" />
                     </button>
@@ -912,7 +912,7 @@ function WorkoutHome() {
                 <Link
                   to="/equipment"
                   aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-                  className={button.icon}
+                  className={button.edit}
                 >
                   <Pencil className="size-4" />
                 </Link>

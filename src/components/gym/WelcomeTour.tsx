@@ -1045,7 +1045,7 @@ function DrinksMock() {
             </>
           }
           trailing={
-            <span className="flex size-9 items-center justify-center rounded-full bg-secondary">
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-primary-text">
               <Pencil className="size-4" />
             </span>
           }

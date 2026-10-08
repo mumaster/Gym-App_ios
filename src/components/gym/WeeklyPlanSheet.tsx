@@ -153,7 +153,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
                       aria-label={t.weeklyPlan.changeDay(dayLabel)}
-                      className={button.icon}
+                      className={button.edit}
                     >
                       <Pencil className="size-4" />
                     </button>

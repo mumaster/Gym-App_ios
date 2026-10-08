@@ -29,6 +29,9 @@ export const button = {
   /** A round, icon-only button (settings, info, close). Always pass an
    *  aria-label. Drawn at 36 pt, tapped at 44 (tap-target). */
   icon: "tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90",
+  /** The pencil that edits a card: `icon` sized and shaped, but in the same
+   *  light accent wash as the card's own `badge.tonal` icon. */
+  edit: "tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-text active:scale-90",
 } as const;
 
 /** A choice chip: a time, a profile, a filter, a muscle. The picked one is

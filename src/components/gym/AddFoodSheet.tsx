@@ -1141,7 +1141,7 @@ function EditToggle({
       onClick={onToggle}
       aria-pressed={editing}
       aria-label={editing ? t.common.done : t.common.edit}
-      className={button.icon}
+      className={button.edit}
     >
       {editing ? <Check className="size-4" /> : <Pencil className="size-4" />}
     </button>

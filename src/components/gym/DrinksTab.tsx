@@ -229,7 +229,7 @@ function WaterCard({
           <button
             onClick={onOpenSettings}
             aria-label={t.nutrition.waterSettings}
-            className={button.icon}
+            className={button.edit}
           >
             <Pencil className="size-4" />
           </button>
