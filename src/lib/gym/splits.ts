@@ -67,7 +67,10 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     description:
       "Three upper body sessions for every lower body one, so each upper muscle is trained about 3 times a week.",
     suggestedDaysPerWeek: 4,
-    days: [UPPER_DAY, UPPER_DAY, UPPER_DAY, LOWER_DAY],
+    // The week repeats, so the order is a rotation of the same ring; putting the
+    // odd day third spaces the three main days 1/3/3 days apart on Mon/Tue/Thu/Fri
+    // instead of 1/2/4 (the app's own spacing choice, not a published number).
+    days: [UPPER_DAY, UPPER_DAY, LOWER_DAY, UPPER_DAY],
   },
   {
     id: "lower_focus",
@@ -75,7 +78,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     description:
       "Three lower body sessions for every upper body one, so each lower muscle is trained about 3 times a week.",
     suggestedDaysPerWeek: 4,
-    days: [LOWER_DAY, LOWER_DAY, LOWER_DAY, UPPER_DAY],
+    days: [LOWER_DAY, LOWER_DAY, UPPER_DAY, LOWER_DAY],
   },
   {
     id: "push_pull_legs",
