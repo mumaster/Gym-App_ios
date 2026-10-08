@@ -1487,16 +1487,38 @@ function ExerciseBlock({
    *  related done either (also not earlier in this workout). The card then
    *  explains how to pick the first weight instead of offering 0 kg. */
   const noReference = !bw && workingRef == null;
+  // The fields only ever carry over what was physically on the bar (the
+  // last set, else last session's); progression and RPE adjustments are
+  // offered as a suggestion to tap, never filled in by themselves.
+  const offer: { weight: number; reps: number | null; text: string } | null =
+    setType !== "working"
+      ? null
+      : rpeAdjustment && lastLogged?.rpe != null
+        ? {
+            weight: rpeAdjustment.weight,
+            reps: null,
+            text: t.session.rpeAdjusted(
+              lastLogged.rpe,
+              TARGET_RPE[0],
+              TARGET_RPE[1],
+              rpeAdjustment.direction === "down",
+            ),
+          }
+        : !lastWorking && progression
+          ? {
+              weight: progression.weight,
+              reps: progression.reps,
+              text: t.session.suggestedInline(
+                load(progression.weight),
+                progression.reps,
+                progression.reason,
+              ),
+            }
+          : null;
   const prefillWeight =
     setType === "warmup"
       ? (warmup?.weight ?? lastLogged?.weight ?? 0)
-      : (rpeAdjustment?.weight ??
-        lastWorking?.weight ??
-        progression?.weight ??
-        prevSet?.weight ??
-        estimate?.weight ??
-        previous?.weight ??
-        0);
+      : (lastWorking?.weight ?? prevSet?.weight ?? estimate?.weight ?? previous?.weight ?? 0);
   // Reps carry on from the last working set too, like the weight; before
   // any this session, the double-progression target, then last session's.
   // (It used to be the most reps ever logged, so after a set of 10 the
@@ -1505,12 +1527,7 @@ function ExerciseBlock({
     ? warmup.reps
     : setType === "warmup" && noReference
       ? WARMUP_REPS
-      : (lastWorking?.reps ??
-        progression?.reps ??
-        prevSet?.reps ??
-        estimate?.reps ??
-        previous?.reps ??
-        targetTopReps);
+      : (lastWorking?.reps ?? prevSet?.reps ?? estimate?.reps ?? previous?.reps ?? targetTopReps);
 
   if (!exercise) return null;
 
@@ -1932,19 +1949,28 @@ function ExerciseBlock({
               </div>
             ) : null}
 
-            {!lastLogged && suggestion && suggestion.direction !== "same" ? (
-              <p className="flex items-center gap-1.5 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-semibold text-primary-text">
-                {suggestion.direction === "up" ? (
-                  <TrendingUp className="size-4 shrink-0" />
+            {offer &&
+            (offer.weight !== currentKg || (offer.reps != null && offer.reps !== currentReps)) ? (
+              <div className="flex items-center gap-2 rounded-xl bg-primary/15 py-1.5 pl-3 pr-1.5">
+                {offer.weight >= prefillWeight ? (
+                  <TrendingUp className="size-4 shrink-0 text-primary-text" />
                 ) : (
-                  <TrendingDown className="size-4 shrink-0" />
-                )}{" "}
-                {t.session.suggestedInline(
-                  load(suggestion.weight),
-                  suggestion.reps,
-                  suggestion.reason,
+                  <TrendingDown className="size-4 shrink-0 text-primary-text" />
                 )}
-              </p>
+                <p className="min-w-0 flex-1 text-[12.5px] font-semibold leading-snug text-primary-text">
+                  {offer.text}
+                </p>
+                <button
+                  onClick={() => {
+                    haptic(12);
+                    setWeight(String(offer.weight));
+                    if (offer.reps != null) setReps(String(offer.reps));
+                  }}
+                  className="tap-target shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12.5px] font-bold text-primary-foreground active:scale-95"
+                >
+                  {t.session.useWeight}
+                </button>
+              </div>
             ) : null}
 
             <div className="flex items-center gap-1.5">
@@ -2038,14 +2064,7 @@ function ExerciseBlock({
             ) : null}
             {setType === "working" ? (
               <p className="text-[12px] text-muted-foreground">
-                {rpeAdjustment && lastLogged?.rpe != null
-                  ? t.session.rpeAdjusted(
-                      lastLogged.rpe,
-                      TARGET_RPE[0],
-                      TARGET_RPE[1],
-                      rpeAdjustment.direction === "down",
-                    )
-                  : t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
+                {t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
               </p>
             ) : null}
 
