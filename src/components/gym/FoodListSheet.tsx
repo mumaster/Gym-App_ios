@@ -78,6 +78,8 @@ export function FoodListSheet({
     title: null,
     servings: null,
   });
+  /** How many portions the whole list makes; every amount is divided by it. */
+  const [portions, setPortions] = useState("1");
   const [meal, setMeal] = useState<MealType>(
     () => initialMeal ?? mealForTime(new Date().toISOString()),
   );
@@ -118,12 +120,26 @@ export function FoodListSheet({
     setError(null);
     setLines([]);
     setMeta({ title: null, servings: null });
+    setPortions("1");
     setMeal(initialMeal ?? mealForTime(new Date().toISOString()));
     setSwapIndex(null);
   };
 
-  const ready = completeLines(lines, (s) => parseDecimal(s) || 0);
-  const incomplete = lines.length - ready.length;
+  const fullList = completeLines(lines, (s) => parseDecimal(s) || 0);
+  const portionCount = Math.max(parseDecimal(portions) || 1, 1);
+  const divided = portionCount !== 1;
+  /** What one portion holds: the written grams divided by the portions. */
+  const ready = useMemo(
+    () =>
+      divided
+        ? fullList.map((ing) => ({
+            ...ing,
+            grams: Math.round((ing.grams / portionCount) * 10) / 10,
+          }))
+        : fullList,
+    [fullList, portionCount, divided],
+  );
+  const incomplete = lines.length - fullList.length;
   const totalKcal = ready.reduce((sum, ing) => sum + scaledMacros(ing).calories, 0);
 
   const logAll = () => {
@@ -320,7 +336,9 @@ export function FoodListSheet({
             {lines.map((line, i) => {
               const grams = parseDecimal(line.grams) || 0;
               const m =
-                line.food && grams > 0 ? scaledMacros({ grams, per100: line.food.per100 }) : null;
+                line.food && grams > 0
+                  ? scaledMacros({ grams: grams / portionCount, per100: line.food.per100 })
+                  : null;
               const label = line.food?.name ?? line.name;
               return (
                 <div key={line.id} className="glass rounded-2xl px-3 py-2">
@@ -402,6 +420,25 @@ export function FoodListSheet({
               <Plus className="size-4" /> {t.foodList.addLine}
             </button>
 
+            <label className="glass flex min-h-[52px] items-center justify-between gap-3 rounded-2xl px-4 py-2">
+              <span className="min-w-0">
+                <span className={`block ${text.rowTitle}`}>{t.foodList.portions}</span>
+                <span className={`block ${text.meta}`}>{t.foodList.portionsDesc}</span>
+              </span>
+              <input
+                inputMode="decimal"
+                type="text"
+                value={portions}
+                onFocus={selectOnFocus}
+                onChange={(e) => {
+                  if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                  setPortions(e.target.value);
+                }}
+                aria-label={t.foodList.portions}
+                className="tabular h-11 w-[72px] shrink-0 rounded-xl bg-muted px-2.5 text-right text-[16px] font-bold text-foreground outline-none"
+              />
+            </label>
+
             {target === "log" ? (
               <div className="pt-2">
                 <MealPicker label={t.foodList.logTo} meal={meal} onPick={setMeal} compact />
@@ -414,7 +451,9 @@ export function FoodListSheet({
                 {t.foodList.incomplete(incomplete)}
               </p>
             ) : ready.length ? (
-              <p className={`tabular px-1 ${text.meta}`}>{t.foodList.total(totalKcal)}</p>
+              <p className={`tabular px-1 ${text.meta}`}>
+                {divided ? t.foodList.totalPerPortion(totalKcal) : t.foodList.total(totalKcal)}
+              </p>
             ) : null}
 
             <button
@@ -431,8 +470,8 @@ export function FoodListSheet({
                 onClick={() => {
                   if (!ready.length || incomplete) return;
                   haptic(15);
-                  const list = ready;
-                  const m = meta;
+                  const list = fullList;
+                  const m = divided ? { ...meta, servings: portionCount } : meta;
                   reset();
                   onSaveAsRecipe(list, m);
                 }}

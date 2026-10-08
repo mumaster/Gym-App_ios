@@ -1074,6 +1074,9 @@ const en = {
     saveAsRecipe: "Save as a recipe",
     addToRecipe: (n: number) => (n === 1 ? "Add 1 ingredient" : `Add ${n} ingredients`),
     scanIngredients: "Scan ingredients from paper",
+    portions: "Portions",
+    portionsDesc: "Amounts are divided by this",
+    totalPerPortion: (kcal: number) => `${kcal.toLocaleString("en-US")} kcal per portion`,
   },
   coffee: {
     title: "Coffee",
@@ -2569,6 +2572,9 @@ const nl: Dict = {
     addToRecipe: (n: number) =>
       n === 1 ? "1 ingrediënt toevoegen" : `${n} ingrediënten toevoegen`,
     scanIngredients: "Ingrediënten van papier scannen",
+    portions: "Porties",
+    portionsDesc: "Hoeveelheden worden hierdoor gedeeld",
+    totalPerPortion: (kcal: number) => `${kcal.toLocaleString("nl-NL")} kcal per portie`,
   },
   coffee: {
     title: "Koffie",
