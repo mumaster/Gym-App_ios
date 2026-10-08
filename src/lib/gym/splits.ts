@@ -6,7 +6,7 @@ import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
 import type { FocusGroup } from "./volume";
 
 export type SplitTemplateId =
-  "full_body" | "upper_lower" | "push_pull_legs" | "bro_split" | "hybrid" | "hybrid_days";
+  "full_body" | "upper_lower" | "upper_focus" | "lower_focus" | "push_pull_legs" | "bro_split" | "hybrid" | "hybrid_days";
 
 export interface SplitDay {
   /** Stable id within a template, e.g. "upper" / "push". */
@@ -32,6 +32,17 @@ export interface SplitTemplate {
   cardioDays?: CardioFinisher[];
 }
 
+const UPPER_DAY: SplitDay = {
+  id: "upper",
+  label: "Upper Body",
+  muscles: ["Chest", "Back", "Shoulders", "Arms"],
+};
+const LOWER_DAY: SplitDay = {
+  id: "lower",
+  label: "Lower Body",
+  muscles: ["Quads", "Hamstrings", "Glutes", "Calves"],
+};
+
 export const SPLIT_TEMPLATES: SplitTemplate[] = [
   {
     id: "full_body",
@@ -49,6 +60,22 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
       { id: "upper", label: "Upper Body", muscles: ["Chest", "Back", "Shoulders", "Arms"] },
       { id: "lower", label: "Lower Body", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
     ],
+  },
+  {
+    id: "upper_focus",
+    label: "Upper focus (3:1)",
+    description:
+      "Three upper body sessions for every lower body one, so each upper muscle is trained about 3 times a week.",
+    suggestedDaysPerWeek: 4,
+    days: [UPPER_DAY, UPPER_DAY, UPPER_DAY, LOWER_DAY],
+  },
+  {
+    id: "lower_focus",
+    label: "Lower focus (3:1)",
+    description:
+      "Three lower body sessions for every upper body one, so each lower muscle is trained about 3 times a week.",
+    suggestedDaysPerWeek: 4,
+    days: [LOWER_DAY, LOWER_DAY, LOWER_DAY, UPPER_DAY],
   },
   {
     id: "push_pull_legs",
