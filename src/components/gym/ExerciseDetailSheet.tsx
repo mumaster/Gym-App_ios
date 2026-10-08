@@ -1,3 +1,4 @@
+import { limbOf } from "../../lib/gym/unilateral";
 import { Heart, Pencil, ShieldOff, Youtube } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { ExerciseProgressChart } from "./ExerciseProgressChart";
@@ -105,6 +106,11 @@ export function ExerciseDetailSheet({
             locale={locale}
           />
           <p className="text-[15px] text-muted-foreground">{exercise.instructions}</p>
+          {exercise.unilateral ? (
+            <p className="rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary-text">
+              {t.exercises.eachLimbNote(t.exercises.limb[limbOf(exercise)])}
+            </p>
+          ) : null}
           <div>
             <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
               {t.exercises.targets}

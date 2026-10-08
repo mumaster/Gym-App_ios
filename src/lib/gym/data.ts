@@ -1097,8 +1097,9 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "push",
     compound: false,
+    unilateral: true,
     instructions:
-      "Hold one dumbbell overhead with both hands and lower it behind the head, then extend to lockout.",
+      "Hold one dumbbell overhead in one hand (or both hands for a two-handed version) and lower it behind the head, then extend to lockout. Do every set for each arm.",
     cues: ["Keep the elbows pointing forward, not flaring", "Full stretch at the bottom"],
   },
   {
@@ -1110,6 +1111,7 @@ export const EXERCISES: Exercise[] = [
     equipment_required: ["dumbbell"],
     movement_pattern: "push",
     compound: false,
+    unilateral: true,
     instructions:
       "Hinge forward, pin the upper arm to the side and straighten the elbow behind you.",
     cues: ["Upper arm stays still — only the forearm moves", "Squeeze 1s at full lockout"],

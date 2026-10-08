@@ -60,6 +60,7 @@ import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
 import { useWakeLock } from "../lib/gym/useWakeLock";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
+import { limbOf } from "../lib/gym/unilateral";
 import { WARMUP_REPS, warmupFractions, warmupLoad } from "../lib/gym/warmup";
 import {
   clearSessionResume,
@@ -1189,7 +1190,14 @@ function SessionScreen() {
                     <div className="flex-1">
                       <p className="text-[16px] font-semibold">{ex?.name}</p>
                       <p className="text-[13px] text-muted-foreground">
-                        {t.session.overviewProgress(logged, p.target_sets, p.target_reps)}
+                        {t.session.overviewProgress(
+                          logged,
+                          p.target_sets,
+                          p.target_reps,
+                          ex?.unilateral
+                            ? t.exercises.perLimb(t.exercises.limb[limbOf(ex)])
+                            : undefined,
+                        )}
                       </p>
                     </div>
                     {logged >= p.target_sets ? (
@@ -1563,7 +1571,14 @@ function ExerciseBlock({
           </h2>
           <p className="mt-1.5 line-clamp-2 text-[12px] text-muted-foreground">
             {plannedWarmups ? t.session.warmupPrefix(plannedWarmups) : ""}
-            {t.session.targetLine(planned.target_sets, planned.target_reps, restForThisExercise)}
+            {t.session.targetLine(
+              planned.target_sets,
+              planned.target_reps,
+              restForThisExercise,
+              exercise.unilateral
+                ? t.exercises.perLimb(t.exercises.limb[limbOf(exercise)])
+                : undefined,
+            )}
             <span className="capitalize">{exercise.primary_muscle}</span>
           </p>
         </div>
@@ -1667,7 +1682,11 @@ function ExerciseBlock({
           <span className="text-center">{t.session.setCol}</span>
           <span>{t.session.prevCol}</span>
           <span className="text-center">{t.session.kgCol}</span>
-          <span className="text-center">{t.session.repsCol}</span>
+          <span className="text-center">
+            {exercise.unilateral
+              ? t.session.repsColPer(t.exercises.limb[limbOf(exercise)])
+              : t.session.repsCol}
+          </span>
         </div>
 
         {logged.map((s, i) => {
