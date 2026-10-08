@@ -29,7 +29,11 @@ const CACHE_VERSION = "v3";
 const OCR_CACHE = `forge-ocr-${CACHE_VERSION}`;
 const PAGES_CACHE = `forge-pages-${CACHE_VERSION}`;
 const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;
-const CURRENT_CACHES = [OCR_CACHE, PAGES_CACHE, ASSETS_CACHE];
+// Holds the app-language rest notification copy the page writes (see
+// src/lib/gym/push.ts); not versioned so it survives SW updates.
+const PREFS_CACHE = "forge-prefs";
+const REST_COPY_URL = "/__forge/rest-notification-copy";
+const CURRENT_CACHES = [OCR_CACHE, PAGES_CACHE, ASSETS_CACHE, PREFS_CACHE];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -212,6 +216,16 @@ self.addEventListener("fetch", (event) => {
 // navigate handler's existing logic) naturally repopulates the cache
 // afterward, so there's no need to duplicate that here.
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "forge:rest-copy") {
+    const { title, body } = event.data;
+    event.waitUntil(
+      caches
+        .open(PREFS_CACHE)
+        .then((cache) => cache.put(REST_COPY_URL, new Response(JSON.stringify({ title, body }))))
+        .catch(() => undefined),
+    );
+    return;
+  }
   if (event.data?.type !== "forge:revalidate-shell") return;
   const reply = () => {
     try {
@@ -234,18 +248,30 @@ self.addEventListener("message", (event) => {
 // (see supabase/functions/) while the page itself may be fully suspended —
 // this is what lets a rest-complete alert land with the screen locked.
 self.addEventListener("push", (event) => {
-  let payload = { title: "Rest complete", body: "Time to lift — back to Forge." };
-  try {
-    if (event.data) payload = { ...payload, ...event.data.json() };
-  } catch {
-    /* fall back to the default copy above */
-  }
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      tag: "forge-rest",
-      icon: "/pwa/icon-192.png",
-    }),
+    (async () => {
+      let payload = { title: "Rest complete", body: "Time to lift — back to Forge." };
+      try {
+        if (event.data) payload = { ...payload, ...event.data.json() };
+      } catch {
+        /* fall back to the default copy above */
+      }
+      // The server row carries fixed English copy; prefer the copy in the
+      // language the app is set to, saved by the page.
+      try {
+        const cache = await caches.open(PREFS_CACHE);
+        const saved = await cache.match(REST_COPY_URL);
+        const copy = saved && (await saved.json());
+        if (copy?.title) payload = { title: copy.title, body: copy.body ?? payload.body };
+      } catch {
+        /* keep the payload copy */
+      }
+      await self.registration.showNotification(payload.title, {
+        body: payload.body,
+        tag: "forge-rest",
+        icon: "/pwa/icon-192.png",
+      });
+    })(),
   );
 });
 
