@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Flame, Pencil, Snowflake, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { DayTypePicker } from "./DayTypePicker";
 import {
   DOW_DISPLAY_ORDER,
   SPLIT_TEMPLATES,
+  applyDayPicks,
+  distinctDays,
   buildSchedule,
   splitDayLabel,
   splitTemplateById,
@@ -42,6 +45,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     program,
     setProgram,
     updateProgramSlotDow,
+    updateProgramSlotDay,
     updateProgramSchedule,
     clearProgram,
     growthFocus,
@@ -56,6 +60,8 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
   const [presetId, setPresetId] = useState<string>(PROGRAM_PRESETS[1]!.id);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  // Day type picked per weekday while building (overrides the split's own order).
+  const [dayPicks, setDayPicks] = useState<Record<number, string>>({});
   // True while re-planning the existing program's split/days (keeps its
   // weeks and current week) rather than building a new one from scratch.
   const [editingExisting, setEditingExisting] = useState(false);
@@ -71,6 +77,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   useEffect(() => {
     if (!open) return;
     setEditingSlot(null);
+    setDayPicks({});
     setFocusDraft(focusRef.current);
     setEditingExisting(false);
     setMode(program ? "manage" : "template");
@@ -79,6 +86,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const pickTemplate = (id: SplitTemplateId) => {
     haptic(15);
     setTemplateId(id);
+    setDayPicks({});
     setCardioDraft(templateCardio(id));
     setName(splitTemplateById(id).label);
     setDows(EVEN_SPREAD[splitTemplateById(id).suggestedDaysPerWeek] ?? EVEN_SPREAD[3]!);
@@ -92,7 +100,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     );
   };
 
-  const preview = buildSchedule(templateId, dows);
+  const preview = applyDayPicks(templateId, buildSchedule(templateId, dows), dayPicks);
   const template = splitTemplateById(templateId);
   const preset = programPresetById(presetId);
 
@@ -202,26 +210,33 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                     </button>
                   </div>
                   {editingSlot === i ? (
-                    <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
-                      {DOW_DISPLAY_ORDER.map((dow) => {
-                        const taken = usedDows.has(dow) && dow !== slot.dow;
-                        return (
-                          <button
-                            key={dow}
-                            disabled={taken}
-                            onClick={() => setSlotDow(i, dow)}
-                            className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                              dow === slot.dow
-                                ? chip.on
-                                : taken
-                                  ? "bg-secondary text-muted-foreground opacity-40"
-                                  : chip.off
-                            }`}
-                          >
-                            {t.common.dow[dow]}
-                          </button>
-                        );
-                      })}
+                    <div className="mt-3 space-y-2">
+                      <DayTypePicker
+                        templateId={program.templateId}
+                        value={slot.dayId}
+                        onChange={(dayId) => updateProgramSlotDay(i, dayId)}
+                      />
+                      <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                        {DOW_DISPLAY_ORDER.map((dow) => {
+                          const taken = usedDows.has(dow) && dow !== slot.dow;
+                          return (
+                            <button
+                              key={dow}
+                              disabled={taken}
+                              onClick={() => setSlotDow(i, dow)}
+                              className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                dow === slot.dow
+                                  ? chip.on
+                                  : taken
+                                    ? "bg-secondary text-muted-foreground opacity-40"
+                                    : chip.off
+                              }`}
+                            >
+                              {t.common.dow[dow]}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -246,6 +261,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                 setTemplateId(program.templateId);
                 setCardioDraft(templateCardio(program.templateId, program.cardio));
                 setDows(program.schedule.map((s) => s.dow));
+                setDayPicks(Object.fromEntries(program.schedule.map((s) => [s.dow, s.dayId])));
                 setEditingExisting(true);
                 setMode("days");
               }}
@@ -326,18 +342,27 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
                 {t.programBuilder.proposedSchedule}
               </p>
+              {distinctDays(templateId).length > 1 ? (
+                <p className="mb-2 text-[12.5px] text-muted-foreground">
+                  {t.programBuilder.sessionTypeHint}
+                </p>
+              ) : null}
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
-                  <div
-                    key={`${slot.dayId}-${i}`}
-                    className="glass flex items-center justify-between rounded-xl px-3 py-2.5"
-                  >
-                    <span className="text-[14px] font-semibold">
-                      {splitDayLabel(templateId, slot.dayId)}
-                    </span>
-                    <span className="text-[13px] text-muted-foreground">
-                      {t.common.dow[slot.dow]}
-                    </span>
+                  <div key={`${slot.dow}-${i}`} className="glass space-y-2 rounded-xl px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-semibold">
+                        {splitDayLabel(templateId, slot.dayId)}
+                      </span>
+                      <span className="text-[13px] text-muted-foreground">
+                        {t.common.dow[slot.dow]}
+                      </span>
+                    </div>
+                    <DayTypePicker
+                      templateId={templateId}
+                      value={slot.dayId}
+                      onChange={(dayId) => setDayPicks((cur) => ({ ...cur, [slot.dow]: dayId }))}
+                    />
                   </div>
                 ))}
               </div>

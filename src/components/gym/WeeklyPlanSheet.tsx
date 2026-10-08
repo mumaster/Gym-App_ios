@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { DayTypePicker } from "./DayTypePicker";
 import { useTranslation } from "../../lib/gym/i18n";
 import {
   DOW_DISPLAY_ORDER,
   SPLIT_TEMPLATES,
+  applyDayPicks,
+  distinctDays,
   buildSchedule,
   initialCyclePosition,
   splitDayLabel,
@@ -40,6 +43,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     weeklyScheme,
     setWeeklyScheme,
     updateScheduleSlotDow,
+    updateScheduleSlotDay,
     clearWeeklyScheme,
     growthFocus,
     cardioPlan,
@@ -51,6 +55,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  // Day type picked per weekday while building (overrides the split's own order).
+  const [dayPicks, setDayPicks] = useState<Record<number, string>>({});
   // Muscles to grow, picked while setting up a plan and saved with it.
   const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
   // Cardio after the lifting, per day, for a hybrid split.
@@ -63,6 +69,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   useEffect(() => {
     if (!open) return;
     setEditingSlot(null);
+    setDayPicks({});
     setFocusDraft(focusRef.current);
     setMode(weeklyScheme ? "manage" : "template");
   }, [open, weeklyScheme]);
@@ -70,6 +77,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const pickTemplate = (id: SplitTemplateId) => {
     haptic(15);
     setTemplateId(id);
+    setDayPicks({});
     setCardioDraft(templateCardio(id));
     setDows(EVEN_SPREAD[splitTemplateById(id).suggestedDaysPerWeek] ?? EVEN_SPREAD[3]!);
     setMode("days");
@@ -82,7 +90,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     );
   };
 
-  const preview = buildSchedule(templateId, dows);
+  const preview = applyDayPicks(templateId, buildSchedule(templateId, dows), dayPicks);
   const template = splitTemplateById(templateId);
 
   const save = () => {
@@ -151,26 +159,33 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                     </button>
                   </div>
                   {editingSlot === i ? (
-                    <div className="mt-3 flex flex-wrap gap-x-1.5 gap-y-2">
-                      {DOW_DISPLAY_ORDER.map((dow) => {
-                        const taken = usedDows.has(dow) && dow !== slot.dow;
-                        return (
-                          <button
-                            key={dow}
-                            disabled={taken}
-                            onClick={() => setSlotDow(i, dow)}
-                            className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                              dow === slot.dow
-                                ? chip.on
-                                : taken
-                                  ? "bg-secondary text-muted-foreground opacity-40"
-                                  : chip.off
-                            }`}
-                          >
-                            {t.common.dow[dow]}
-                          </button>
-                        );
-                      })}
+                    <div className="mt-3 space-y-2">
+                      <DayTypePicker
+                        templateId={weeklyScheme.templateId}
+                        value={slot.dayId}
+                        onChange={(dayId) => updateScheduleSlotDay(i, dayId)}
+                      />
+                      <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                        {DOW_DISPLAY_ORDER.map((dow) => {
+                          const taken = usedDows.has(dow) && dow !== slot.dow;
+                          return (
+                            <button
+                              key={dow}
+                              disabled={taken}
+                              onClick={() => setSlotDow(i, dow)}
+                              className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                dow === slot.dow
+                                  ? chip.on
+                                  : taken
+                                    ? "bg-secondary text-muted-foreground opacity-40"
+                                    : chip.off
+                              }`}
+                            >
+                              {t.common.dow[dow]}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -263,18 +278,27 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
                 {t.weeklyPlan.proposedSchedule}
               </p>
+              {distinctDays(templateId).length > 1 ? (
+                <p className="mb-2 text-[12.5px] text-muted-foreground">
+                  {t.programBuilder.sessionTypeHint}
+                </p>
+              ) : null}
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
-                  <div
-                    key={`${slot.dayId}-${i}`}
-                    className="glass flex items-center justify-between rounded-xl px-3 py-2.5"
-                  >
-                    <span className="text-[14px] font-semibold">
-                      {splitDayLabel(templateId, slot.dayId)}
-                    </span>
-                    <span className="text-[13px] text-muted-foreground">
-                      {t.common.dow[slot.dow]}
-                    </span>
+                  <div key={`${slot.dow}-${i}`} className="glass space-y-2 rounded-xl px-3 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-semibold">
+                        {splitDayLabel(templateId, slot.dayId)}
+                      </span>
+                      <span className="text-[13px] text-muted-foreground">
+                        {t.common.dow[slot.dow]}
+                      </span>
+                    </div>
+                    <DayTypePicker
+                      templateId={templateId}
+                      value={slot.dayId}
+                      onChange={(dayId) => setDayPicks((cur) => ({ ...cur, [slot.dow]: dayId }))}
+                    />
                   </div>
                 ))}
               </div>

@@ -1250,6 +1250,8 @@ const en = {
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} of ${weeks} · ${days} ${days === 1 ? "day" : "days"} a week`,
     nextUp: "Next up",
+    sessionType: "Session type",
+    sessionTypeHint: "Choose what each day trains, for example Upper, Upper, Lower, Upper.",
     changeDay: (day: string) => `Change day for ${day}`,
     startNewProgram: "Start a new program",
     removeProgram: "Remove program",
@@ -2740,6 +2742,8 @@ const nl: Dict = {
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} van ${weeks} · ${days} ${days === 1 ? "dag" : "dagen"} per week`,
     nextUp: "Hierna",
+    sessionType: "Soort training",
+    sessionTypeHint: "Kies wat elke dag traint, bijvoorbeeld Boven, Boven, Onder, Boven.",
     changeDay: (day: string) => `Dag wijzigen voor ${day}`,
     startNewProgram: "Start een nieuw programma",
     removeProgram: "Programma verwijderen",
