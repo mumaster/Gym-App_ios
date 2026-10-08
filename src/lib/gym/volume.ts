@@ -28,14 +28,15 @@ export const FOCUS_WEEKLY_SETS = 20;
 export const MAX_SESSION_SETS_PER_MUSCLE = 11;
 const SECONDARY_SET_WEIGHT = 0.5;
 
-export type FocusGroup = "chest" | "back" | "shoulders" | "arms" | "legs" | "core";
+export type FocusGroup = "chest" | "back" | "shoulders" | "arms" | "glutes" | "legs" | "core";
 
 export const FOCUS_GROUPS: { id: FocusGroup; muscles: Muscle[] }[] = [
   { id: "chest", muscles: ["Chest"] },
   { id: "back", muscles: ["Back"] },
   { id: "shoulders", muscles: ["Shoulders"] },
   { id: "arms", muscles: ["Arms"] },
-  { id: "legs", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
+  { id: "glutes", muscles: ["Glutes"] },
+  { id: "legs", muscles: ["Quads", "Hamstrings", "Calves"] },
   { id: "core", muscles: ["Core"] },
 ];
 
