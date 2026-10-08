@@ -57,7 +57,8 @@ describe("targets (Schoenfeld 2017, Baz-Valle 2022)", () => {
   it("uses 10 sets normally and 20 for muscles to grow", () => {
     expect(BASE_WEEKLY_SETS).toBe(10);
     expect(FOCUS_WEEKLY_SETS).toBe(20);
-    expect([...focusMuscles(["legs"])]).toEqual(["Quads", "Hamstrings", "Glutes", "Calves"]);
+    expect([...focusMuscles(["legs"])]).toEqual(["Quads", "Hamstrings", "Calves"]);
+    expect([...focusMuscles(["glutes"])]).toEqual(["Glutes"]);
   });
 
   it("recommends the muscle furthest below target, which a focus changes", () => {

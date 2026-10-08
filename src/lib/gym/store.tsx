@@ -137,6 +137,8 @@ interface GymState {
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
   growthFocus: FocusGroup[];
+  /** Set once the old "legs" focus (which then included glutes) has been split into legs + glutes. */
+  glutesFocusSplit: boolean;
   supersetRounds: number;
   /** Exercise ids the user "loved" — always forced into a generated plan. */
   lovedExerciseIds: string[];
@@ -232,6 +234,7 @@ const initialState: GymState = {
   alcoholEnabled: true,
   alcoholWeekdays: false,
   growthFocus: [],
+  glutesFocusSplit: true,
   supersetRounds: 3,
   lovedExerciseIds: [],
   avoidedExerciseIds: [],
@@ -304,6 +307,12 @@ function updateRotation(
 }
 
 /** Older saves may lack warmup_sets or carry a non-kg unit. */
+/** "Legs" used to include the glutes; keep that for saves made before Glutes was its own focus. */
+function splitLegsFocus(focus: FocusGroup[], alreadySplit: boolean | undefined): FocusGroup[] {
+  if (alreadySplit || !focus.includes("legs") || focus.includes("glutes")) return focus;
+  return [...focus, "glutes"];
+}
+
 function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
     plan.map((p) => ({ ...p, warmup_sets: p.warmup_sets ?? 0 }));
@@ -386,7 +395,8 @@ function migrate(raw: Partial<GymState>): GymState {
     warmupsEnabled: raw.warmupsEnabled ?? true,
     alcoholEnabled: raw.alcoholEnabled ?? true,
     alcoholWeekdays: raw.alcoholWeekdays ?? false,
-    growthFocus: raw.growthFocus ?? [],
+    growthFocus: splitLegsFocus(raw.growthFocus ?? [], raw.glutesFocusSplit),
+    glutesFocusSplit: true,
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
     avoidedExerciseIds: raw.avoidedExerciseIds ?? [],

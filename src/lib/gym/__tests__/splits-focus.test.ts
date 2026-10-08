@@ -12,3 +12,14 @@ describe("3:1 focus splits", () => {
     expect(splitDayLabel("lower_focus", "upper")).toBe("Upper Body");
   });
 });
+
+describe("glute work", () => {
+  it("counts split squats and walking lunges as glute exercises", async () => {
+    const { EXERCISES } = await import("../data");
+    for (const name of ["Bulgarian Split Squat", "Split Squat", "Dumbbell Walking Lunge"]) {
+      const ex = EXERCISES.find((e) => e.name === name);
+      expect(ex?.primary_muscle).toBe("Glutes");
+      expect(ex?.muscle_targets[0]).toBe("Glutes");
+    }
+  });
+});
