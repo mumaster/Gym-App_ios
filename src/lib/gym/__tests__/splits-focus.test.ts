@@ -23,3 +23,14 @@ describe("glute work", () => {
     }
   });
 });
+
+describe("choosing the day type per session", () => {
+  it("lists a 3:1 split's day types once and applies picks by weekday", async () => {
+    const { distinctDays, applyDayPicks } = await import("../splits");
+    expect(distinctDays("upper_focus").map((d) => d.id)).toEqual(["upper", "lower"]);
+    expect(distinctDays("full_body")).toHaveLength(1);
+    const base = buildSchedule("upper_focus", [1, 2, 4, 5]);
+    const picked = applyDayPicks("upper_focus", base, { 2: "lower", 5: "upper", 4: "nope" });
+    expect(picked.map((s) => s.dayId)).toEqual(["upper", "lower", "lower", "upper"]);
+  });
+});

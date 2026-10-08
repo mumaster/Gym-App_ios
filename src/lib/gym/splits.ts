@@ -6,7 +6,14 @@ import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
 import type { FocusGroup } from "./volume";
 
 export type SplitTemplateId =
-  "full_body" | "upper_lower" | "upper_focus" | "lower_focus" | "push_pull_legs" | "bro_split" | "hybrid" | "hybrid_days";
+  | "full_body"
+  | "upper_lower"
+  | "upper_focus"
+  | "lower_focus"
+  | "push_pull_legs"
+  | "bro_split"
+  | "hybrid"
+  | "hybrid_days";
 
 export interface SplitDay {
   /** Stable id within a template, e.g. "upper" / "push". */
@@ -272,6 +279,26 @@ export function buildSchedule(templateId: SplitTemplateId, dows: number[]): Sche
   const template = splitTemplateById(templateId);
   const sorted = [...new Set(dows)].sort((a, b) => weekIndex(a) - weekIndex(b));
   return sorted.map((dow, i) => ({ dow, dayId: template.days[i % template.days.length]!.id }));
+}
+
+/** The template's distinct day types, in first-seen order (a 3:1 split repeats one). */
+export function distinctDays(templateId: SplitTemplateId): SplitDay[] {
+  const seen = new Set<string>();
+  return splitTemplateById(templateId).days.filter((d) => !seen.has(d.id) && !!seen.add(d.id));
+}
+
+/** A schedule with the picked day type applied per weekday (picks keyed by `dow`);
+ *  unknown ids are ignored so a stale pick can't produce a slot the template lacks. */
+export function applyDayPicks(
+  templateId: SplitTemplateId,
+  schedule: ScheduleSlot[],
+  picks: Record<number, string>,
+): ScheduleSlot[] {
+  const valid = new Set(distinctDays(templateId).map((d) => d.id));
+  return schedule.map((slot) => {
+    const pick = picks[slot.dow];
+    return pick && valid.has(pick) ? { ...slot, dayId: pick } : slot;
+  });
 }
 
 /** Best starting slot for a freshly-created schedule: the next slot due today or later. */

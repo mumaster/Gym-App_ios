@@ -55,6 +55,7 @@ import {
   type Rotation,
 } from "./schedule";
 import {
+  distinctDays,
   initialCyclePosition,
   rotationCardioPlan,
   type ScheduleSlot,
@@ -313,6 +314,19 @@ function splitLegsFocus(focus: FocusGroup[], alreadySplit: boolean | undefined):
   return [...focus, "glutes"];
 }
 
+/** Changes which day type one slot of a rotation trains; its weekday and progress stay. */
+function withSlotDay<R extends { templateId: SplitTemplateId; schedule: ScheduleSlot[] }>(
+  r: R,
+  index: number,
+  dayId: string,
+): R {
+  if (!distinctDays(r.templateId).some((d) => d.id === dayId)) return r;
+  return {
+    ...r,
+    schedule: r.schedule.map((slot, i) => (i === index ? { ...slot, dayId } : slot)),
+  };
+}
+
 function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
     plan.map((p) => ({ ...p, warmup_sets: p.warmup_sets ?? 0 }));
@@ -531,9 +545,11 @@ interface Ctx extends GymState {
   bestSet: (exerciseId: string) => LoggedSet | undefined;
   setWeeklyScheme: (scheme: WeeklyScheme) => void;
   updateScheduleSlotDow: (index: number, dow: number) => void;
+  updateScheduleSlotDay: (index: number, dayId: string) => void;
   clearWeeklyScheme: () => void;
   setProgram: (program: Program) => void;
   updateProgramSlotDow: (index: number, dow: number) => void;
+  updateProgramSlotDay: (index: number, dayId: string) => void;
   clearProgram: () => void;
   /** Replaces the program's split/days while keeping its wave progress. */
   updateProgramSchedule: (
@@ -1387,6 +1403,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
           );
           return { ...s, weeklyScheme: resortRotation({ ...s.weeklyScheme, schedule }) };
         }),
+      updateScheduleSlotDay: (index, dayId) =>
+        setState((s) =>
+          s.weeklyScheme ? { ...s, weeklyScheme: withSlotDay(s.weeklyScheme, index, dayId) } : s,
+        ),
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
 
       setProgram: (program) => setState((s) => ({ ...s, program })),
@@ -1398,6 +1418,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
           );
           return { ...s, program: resortRotation({ ...s.program, schedule }) };
         }),
+      updateProgramSlotDay: (index, dayId) =>
+        setState((s) => (s.program ? { ...s, program: withSlotDay(s.program, index, dayId) } : s)),
       clearProgram: () => setState((s) => ({ ...s, program: null })),
       updateProgramSchedule: (templateId, schedule, cardio) =>
         setState((s) => {
