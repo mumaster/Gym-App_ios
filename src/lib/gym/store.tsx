@@ -1379,7 +1379,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, readinessLog: [entry, ...withoutToday] };
         }),
 
-      lastPerformance: (exerciseId) => allSets(exerciseId).slice(-1)[0],
+      // `workouts` is newest-first, so the latest session comes first; it used
+      // to take the last of the flattened list, i.e. the *oldest* set ever.
+      lastPerformance: (exerciseId) => {
+        const sets = (
+          state.workouts.find((w) => w.completed_sets.some((s) => s.exercise_id === exerciseId))
+            ?.completed_sets ?? []
+        ).filter((s) => s.exercise_id === exerciseId);
+        return sets.filter((s) => s.set_type === "working").pop() ?? sets.pop();
+      },
       // Ranked by estimated 1RM (Epley) so "best set" agrees with the PR
       // definition used everywhere else (progress.ts, history) — it used to
       // rank by raw weight*reps, a third, different notion of "best".

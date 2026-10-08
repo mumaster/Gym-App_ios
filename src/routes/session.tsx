@@ -1461,8 +1461,14 @@ function ExerciseBlock({
   // Working sets carry on from the last *working* set — after warm-ups the
   // last logged set is a light one, which used to become the prefill.
   const lastWorking = [...logged].reverse().find((s) => s.set_type === "working");
+  /** The same-numbered set from the last session: the one source for the
+   *  "Previous" hint and the prefill, so they can't disagree. */
+  const sameSetBefore = previousSets[logged.filter((s) => s.set_type === "working").length];
+  const prevSet = sameSetBefore ?? previousSets[previousSets.length - 1];
+  /** An actual progression step (up/down) beats repeating last time's set. */
+  const progression = suggestion && suggestion.direction !== "same" ? suggestion : null;
   const workingRef =
-    lastWorking?.weight ?? suggestion?.weight ?? estimate?.weight ?? previous?.weight ?? null;
+    lastWorking?.weight ?? prevSet?.weight ?? estimate?.weight ?? previous?.weight ?? null;
   const gear = exercise?.equipment_required ?? [];
   const warmupCount = Math.max(plannedWarmups, 1);
   // Sourced warm-up ramp (see warmup.ts); not for bodyweight exercises,
@@ -1486,7 +1492,8 @@ function ExerciseBlock({
       ? (warmup?.weight ?? lastLogged?.weight ?? 0)
       : (rpeAdjustment?.weight ??
         lastWorking?.weight ??
-        suggestion?.weight ??
+        progression?.weight ??
+        prevSet?.weight ??
         estimate?.weight ??
         previous?.weight ??
         0);
@@ -1499,7 +1506,8 @@ function ExerciseBlock({
     : setType === "warmup" && noReference
       ? WARMUP_REPS
       : (lastWorking?.reps ??
-        suggestion?.reps ??
+        progression?.reps ??
+        prevSet?.reps ??
         estimate?.reps ??
         previous?.reps ??
         targetTopReps);
@@ -1561,7 +1569,6 @@ function ExerciseBlock({
     currentWeight > 0 &&
     currentReps > 0 &&
     estimated1RM({ weight: currentWeight, reps: currentReps }) > estimated1RM(best);
-  const nextPrevious = previousSets[logged.filter((s) => s.set_type === "working").length];
 
   // The set column is as wide as the next set's round button (size-11) and
   // centred, so a logged set's number sits right above that button's.
@@ -1844,8 +1851,8 @@ function ExerciseBlock({
                 {setType === "warmup" ? "W" : logged.length + 1}
               </button>
               <span className="text-[12px] text-muted-foreground">
-                {nextPrevious
-                  ? t.session.lastTime(load(nextPrevious.weight), nextPrevious.reps)
+                {sameSetBefore
+                  ? t.session.lastTime(load(sameSetBefore.weight), sameSetBefore.reps)
                   : t.session.firstTime}
               </span>
             </div>
@@ -2078,12 +2085,6 @@ function ExerciseBlock({
           </button>
         )}
       </div>
-
-      <p className="mt-2 text-right text-[13px] text-muted-foreground">
-        {previous
-          ? t.session.lastPerformance(load(previous.weight), previous.reps)
-          : t.session.noHistoryYet}
-      </p>
 
       {isPR ? (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary/15 px-3 py-2 text-[14px] font-semibold text-primary-text">
