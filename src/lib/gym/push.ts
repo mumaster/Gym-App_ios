@@ -229,3 +229,15 @@ async function removeRestEnd(): Promise<void> {
     console.error("cancelRestNotification:", err);
   }
 }
+
+/** Tells the service worker which language to use for the server-sent rest
+ *  push, whose own title/body are fixed English. Best-effort. */
+export async function syncRestNotificationCopy(title: string, body: string): Promise<void> {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    const registration = await navigator.serviceWorker.ready;
+    registration.active?.postMessage({ type: "forge:rest-copy", title, body });
+  } catch {
+    /* the push falls back to its own copy */
+  }
+}

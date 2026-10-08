@@ -55,6 +55,7 @@ import {
   cancelRestNotification,
   ensurePushSubscription,
   scheduleRestNotification,
+  syncRestNotificationCopy,
 } from "../lib/gym/push";
 import { playRestEndBeep, unlockAudio } from "../lib/gym/sound";
 import { useRestTimer } from "../lib/gym/useRestTimer";
@@ -219,6 +220,9 @@ function SessionScreen() {
     setTimeout(() => setCardFlash(false), 2200);
   }, []);
 
+  /** True while a server push is scheduled for the current rest. */
+  const pushScheduled = useRef(false);
+
   const rest = useRestTimer({
     onCountdownEnd: () => {
       haptic([60, 60, 120]);
@@ -227,8 +231,12 @@ function SessionScreen() {
       // The server-sent push (scheduled in startRest below) is now moot
       // either way — it already fired, or rest ended before it was due.
       void cancelRestNotification();
+      // When the server push is scheduled it is the one notification (the
+      // service worker shows it in the app language); the in-page one is
+      // only the fallback, otherwise both would fire.
       if (
         notifyEnabled &&
+        !pushScheduled.current &&
         document.visibilityState !== "visible" &&
         typeof Notification !== "undefined" &&
         Notification.permission === "granted"
@@ -264,8 +272,10 @@ function SessionScreen() {
   const startRest = useCallback(
     (seconds: number) => {
       rest.start(seconds);
+      pushScheduled.current = false;
       if (notifyEnabled) {
         void scheduleRestNotification(seconds).then((result) => {
+          pushScheduled.current = result.ok;
           if (result.ok) return;
           console.warn("scheduleRestNotification:", result.reason);
           if (pushErrorShown.current) return;
@@ -282,6 +292,14 @@ function SessionScreen() {
   // (the browser can rotate it, and the server drops one the push service
   // rejects). Silent: a rest that still can't be scheduled reports it.
   const subscriptionChecked = useRef(false);
+
+  // Keep the service worker's push copy in the app's current language.
+  useEffect(() => {
+    void syncRestNotificationCopy(
+      t.session.restCompleteNotifTitle,
+      t.session.restCompleteNotifBody,
+    );
+  }, [t.session.restCompleteNotifTitle, t.session.restCompleteNotifBody]);
   useEffect(() => {
     if (
       notifyEnabled &&
@@ -806,7 +824,11 @@ function SessionScreen() {
   const extendRest = () => {
     haptic(10);
     rest.extend(30);
-    if (notifyEnabled) void scheduleRestNotification(rest.secondsLeft + 30);
+    if (notifyEnabled) {
+      void scheduleRestNotification(rest.secondsLeft + 30).then((result) => {
+        pushScheduled.current = result.ok;
+      });
+    }
   };
 
   return (
