@@ -26,6 +26,7 @@ import {
   Bandage,
   Trash2,
 } from "lucide-react";
+import { muscleIcon } from "../lib/gym/muscleIcons";
 import { BottomSheet } from "../components/gym/BottomSheet";
 import { Confetti } from "../components/gym/Confetti";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
@@ -1625,7 +1626,7 @@ function ExerciseBlock({
                 ? t.exercises.perLimb(t.exercises.limb[limbOf(exercise)])
                 : undefined,
             )}
-            <span className="capitalize">{exercise.primary_muscle}</span>
+            <MuscleLabel muscle={exercise.primary_muscle} />
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -2247,7 +2248,7 @@ function NextUpPreview({
               </div>
               <p className="tabular mt-0.5 text-[12.5px] text-muted-foreground">
                 {t.session.targetLine(planned.target_sets, planned.target_reps, rest)}
-                <span className="capitalize">{exercise.primary_muscle}</span>
+                <MuscleLabel muscle={exercise.primary_muscle} />
               </p>
               {estimate?.basis === "reference" && referenceFrom ? (
                 <p className="mt-0.5 text-[12.5px] text-muted-foreground">
@@ -2632,5 +2633,16 @@ function Stepper({
         <Plus className="size-4" />
       </button>
     </div>
+  );
+}
+
+/** The muscle group with its icon, as in the Exercises tab. */
+function MuscleLabel({ muscle }: { muscle: string }) {
+  const Icon = muscleIcon(muscle);
+  return (
+    <span className="inline-flex items-center gap-1 align-middle capitalize">
+      <Icon aria-hidden className="size-3.5 text-primary-text" />
+      {muscle}
+    </span>
   );
 }

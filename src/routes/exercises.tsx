@@ -11,6 +11,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { muscleIcon } from "../lib/gym/muscleIcons";
 import { SearchField } from "../components/gym/SearchField";
 import { toast } from "sonner";
 import { BottomSheet } from "../components/gym/BottomSheet";
@@ -391,7 +392,7 @@ function ExercisesScreen() {
         {groups.map(({ group, list }) => (
           <ListCard
             key={group}
-            icon={Dumbbell}
+            icon={muscleIcon(group)}
             title={group}
             subtitle={t.exercises.inGroup(list.length)}
             filled
