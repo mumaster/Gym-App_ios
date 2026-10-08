@@ -443,8 +443,8 @@ const en = {
     closeSession: "Close session",
     workoutOverview: "Workout overview",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
-    overviewProgress: (done: number, total: number, reps: string) =>
-      `${done}/${total} sets · ${reps} reps`,
+    overviewProgress: (done: number, total: number, reps: string, side?: string) =>
+      `${done}/${total} sets · ${reps} reps${side ? ` ${side}` : ""}`,
     skipRest: "Skip Rest",
     restLabel: "Rest",
     restOverLabel: "Rest over",
@@ -493,8 +493,8 @@ const en = {
     exerciseLetter: (letter: string) => `Exercise ${letter}`,
     exerciseOf: (index: number, total: number) => `Exercise ${index} of ${total}`,
     warmupPrefix: (n: number) => `${n} warm-up · `,
-    targetLine: (sets: number, reps: string, rest: number) =>
-      `Target ${sets} × ${reps} · ${rest}s rest · `,
+    targetLine: (sets: number, reps: string, rest: number, side?: string) =>
+      `Target ${sets} × ${reps}${side ? ` ${side}` : ""} · ${rest}s rest · `,
     watchDemo: "Watch demo",
     wellDone: (n: number) => `Well done — ${n} ${n === 1 ? "set" : "sets"} logged`,
     finishBelow: "Finish your workout below.",
@@ -509,6 +509,7 @@ const en = {
     prevCol: "Prev",
     kgCol: "kg",
     repsCol: "Reps",
+    repsColPer: (limb: string) => `Reps/${limb}`,
     saveEdit: "Save",
     deleteEdit: "Delete",
     cancelEdit: "Cancel",
@@ -734,6 +735,9 @@ const en = {
       `✓ = at least ${target} g protein in that meal (0.4 g per kg of bodyweight), the amount that builds muscle best.`,
   },
   exercises: {
+    limb: { arm: "arm", leg: "leg", side: "side" },
+    perLimb: (limb: string) => `per ${limb}`,
+    eachLimbNote: (limb: string) => `Done one ${limb} at a time: every set is for each ${limb}.`,
     title: "Exercises",
     count: (shown: number, total: number) => `${shown} of ${total} exercises`,
     tabs: { all: "All", gym: "My gym", loved: "Loved" },
@@ -1938,8 +1942,8 @@ const nl: Dict = {
     closeSession: "Sessie sluiten",
     workoutOverview: "Trainingsoverzicht",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
-    overviewProgress: (done: number, total: number, reps: string) =>
-      `${done}/${total} sets · ${reps} herhalingen`,
+    overviewProgress: (done: number, total: number, reps: string, side?: string) =>
+      `${done}/${total} sets · ${reps} herhalingen${side ? ` ${side}` : ""}`,
     skipRest: "Rust overslaan",
     restLabel: "Rust",
     restOverLabel: "Rust voorbij",
@@ -1988,8 +1992,8 @@ const nl: Dict = {
     exerciseLetter: (letter: string) => `Oefening ${letter}`,
     exerciseOf: (index: number, total: number) => `Oefening ${index} van ${total}`,
     warmupPrefix: (n: number) => `${n} warming-up · `,
-    targetLine: (sets: number, reps: string, rest: number) =>
-      `Doel ${sets} × ${reps} · ${rest}s rust · `,
+    targetLine: (sets: number, reps: string, rest: number, side?: string) =>
+      `Doel ${sets} × ${reps}${side ? ` ${side}` : ""} · ${rest}s rust · `,
     watchDemo: "Bekijk demo",
     wellDone: (n: number) => `Goed gedaan — ${n} ${n === 1 ? "set" : "sets"} gelogd`,
     finishBelow: "Rond je training hieronder af.",
@@ -2004,6 +2008,7 @@ const nl: Dict = {
     prevCol: "Vorige",
     kgCol: "kg",
     repsCol: "Reps",
+    repsColPer: (limb: string) => `Reps/${limb}`,
     saveEdit: "Opslaan",
     deleteEdit: "Verwijderen",
     cancelEdit: "Annuleren",
@@ -2231,6 +2236,10 @@ const nl: Dict = {
       `✓ = minstens ${target} g eiwit in die maaltijd (0,4 g per kg lichaamsgewicht), de hoeveelheid die spieropbouw het best helpt.`,
   },
   exercises: {
+    limb: { arm: "arm", leg: "been", side: "kant" },
+    perLimb: (limb: string) => `per ${limb}`,
+    eachLimbNote: (limb: string) =>
+      `Wordt per ${limb} gedaan: elke set doe je voor beide ${limb === "been" ? "benen" : limb === "arm" ? "armen" : "kanten"}.`,
     title: "Oefeningen",
     count: (shown: number, total: number) => `${shown} van ${total} oefeningen`,
     tabs: { all: "Alle", gym: "Mijn gym", loved: "Favoriet" },

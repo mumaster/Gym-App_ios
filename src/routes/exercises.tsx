@@ -35,6 +35,7 @@ import {
   slugifyId,
   useExerciseCatalog,
 } from "../lib/gym/catalog";
+import { limbOf } from "../lib/gym/unilateral";
 import { popularityOf } from "../lib/gym/exercisePopularity";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
@@ -424,6 +425,11 @@ function ExercisesScreen() {
                   >
                     <p className="text-[15px] font-semibold leading-snug">
                       {e.name}
+                      {e.unilateral ? (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-primary-text">
+                          {t.exercises.perLimb(t.exercises.limb[limbOf(e)])}
+                        </span>
+                      ) : null}
                       {avoided ? (
                         <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 align-middle text-[11px] font-semibold text-destructive-text">
                           <ShieldOff className="size-3" />
