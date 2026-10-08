@@ -1958,6 +1958,11 @@ function ExerciseBlock({
                   <TrendingDown className="size-4 shrink-0 text-primary-text" />
                 )}
                 <p className="min-w-0 flex-1 text-[12.5px] font-semibold leading-snug text-primary-text">
+                  <span className="tabular text-[14px] font-bold">
+                    {load(offer.weight)}
+                    {offer.reps != null ? ` × ${offer.reps}` : ""}
+                  </span>
+                  <br />
                   {offer.text}
                 </p>
                 <button
