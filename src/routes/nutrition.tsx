@@ -15,6 +15,7 @@ import {
   Sun,
   Cookie,
   Pencil,
+  Download,
 } from "lucide-react";
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
@@ -351,11 +352,8 @@ function NutritionScreen() {
             </div>
           )}
 
-          <button
-            onClick={() => setImportOpen(true)}
-            className="mt-4 w-full text-center text-[13px] font-semibold text-muted-foreground active:opacity-60"
-          >
-            {t.mealShare.importFrom}
+          <button onClick={() => setImportOpen(true)} className={`${button.secondary} mt-4 w-full`}>
+            <Download className="size-4" /> {t.mealShare.importFrom}
           </button>
 
           {/* RIVM's conditions of use require this reference on nutritional
