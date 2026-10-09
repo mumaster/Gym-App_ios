@@ -90,6 +90,7 @@ import {
   type Session,
 } from "./auth";
 import { deleteRouteMap } from "./routeMapStore";
+import { applyAccentIcon } from "./accentIcon";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
@@ -872,6 +873,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
     } else {
       CUSTOM_VARS.forEach((v) => root.style.removeProperty(v));
     }
+    void applyAccentIcon(state.accent, state.customAccent);
   }, [state.accent, state.customAccent]);
 
   // Applies light/dark to <html> the same way the accent effect above
