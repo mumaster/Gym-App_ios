@@ -49,12 +49,16 @@ export function SegmentedTabs<T extends string>({
     <div
       ref={trackRef}
       role="tablist"
-      className="relative grid gap-1 rounded-full glass-chip p-1"
-      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      className="relative grid gap-1 rounded-full glass-chip p-1 [--tab-tint:color-mix(in_oklab,var(--primary)_11%,transparent)]"
+      style={{
+        gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+        // The card header band's tint over the card surface.
+        backgroundImage: "linear-gradient(var(--tab-tint), var(--tab-tint))",
+      }}
     >
       <span
         aria-hidden
-        className={`card-head pointer-events-none absolute left-0 top-0 rounded-full motion-reduce:transition-none ${
+        className={`pointer-events-none absolute left-0 top-0 rounded-full bg-[var(--chart-surface)] shadow-[0_1px_3px_oklch(0_0_0/18%)] motion-reduce:transition-none ${
           box.placed ? "opacity-100" : "opacity-0"
         } ${
           box.animate
