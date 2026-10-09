@@ -986,6 +986,8 @@ const en = {
       "Food, drinks and bodyweight in one place",
       "Progress, records and cardio you can see",
     ] as string[],
+    introHaveAccount: "Already know Forge and have an account?",
+    introSignIn: "Sign in and skip the tour",
     homeTitle: "Your day at a glance",
     homeBody:
       "Home shows what's next in your plan, your week, how you feel and today's food, water and coffee. Log water and coffee straight from here.",
@@ -998,11 +1000,11 @@ const en = {
     workoutPlan: "Your plan · ~45 min · 4 exercises",
     sessionTitle: "Log every set in one tap",
     sessionBody:
-      "Weight and reps are filled in for you. Rate how hard the set felt and the next one adjusts. Your rest is timed, with +30 s and skip.",
+      "Weight and reps are filled in for you. Rate how hard the set felt and the next one adjusts. Your rest is timed, with +30 s and skip. Something hurts? Swap the exercise, or do it later.",
     sessionNextSet: "Set 3 of 3",
     progressTitle: "Watch yourself get stronger",
     progressBody:
-      "Hit the top of the rep range on every set twice in a row and Forge adds weight next time. History shows your records, an estimated 1RM per exercise and your week streak.",
+      "Hit the top of the rep range on every set twice in a row and Forge adds weight next time. History shows your records, an estimated 1RM per exercise and your week streak, and you can share a recap picture of every workout.",
     progressNextTime: "Next time",
     progressWhy: "10 reps on every set, twice — add weight",
     progressStreakSub: "2+ days a week",
@@ -1035,7 +1037,7 @@ const en = {
     drinksWeekend: "Beer and wine on weekends",
     limitsTitle: "Limits that fit you",
     limitsBody:
-      "Answer a few questions to get calorie and macro limits, lower on rest days if you like. Weigh in on the Weight tab and Forge compares your trend with your goal.",
+      "Answer a few questions to get calorie and macro limits, lower on rest days if you like. Weigh in on the Weight tab, or import a smart-scale screenshot with body composition, and Forge compares your trend with your goal.",
     limitsLeft: (n: string) => `${n} left`,
     watchTitle: "Bring in your watch",
     watchBody:
@@ -1043,9 +1045,18 @@ const en = {
     watchScreenshot: "Screenshot",
     watchRun: "Outdoor run",
     watchZones: "Heart-rate zones",
+    accountTitle: "Back it up, take it anywhere",
+    accountBody:
+      "Everything is saved on this phone. Create a free account and your workouts, plans, food and weight are backed up and follow you to another phone. Forge works offline without one, and you can sign in later from Settings.",
+    accountPoints: [
+      "Backed up to the cloud",
+      "Pick up on another phone",
+      "Works offline too",
+    ] as string[],
+    accountSignIn: "Sign in or create an account",
     readyTitle: "Ready when you are",
     readyBody:
-      "Everything is saved on this phone; create an account in Settings to back it up. Settings is also where you set up your equipment, enter lifts you already do and watch this tour again.",
+      "Settings is where you set up your equipment, enter lifts you already do, switch language or theme and watch this tour again.",
     readyWorkout: "Build my first workout",
     readyFood: "Log my first food",
     readyEquipment: "Set up my equipment",
@@ -2497,6 +2508,8 @@ const nl: Dict = {
       "Voeding, drinken en gewicht op één plek",
       "Voortgang, records en cardio die je ziet",
     ] as string[],
+    introHaveAccount: "Ken je Forge al en heb je een account?",
+    introSignIn: "Log in en sla de rondleiding over",
     homeTitle: "Je dag in één oogopslag",
     homeBody:
       "Home toont wat er volgt in je schema, je week, hoe je je voelt en de voeding, het water en de koffie van vandaag. Water en koffie log je hier meteen.",
@@ -2509,11 +2522,11 @@ const nl: Dict = {
     workoutPlan: "Je plan · ~45 min · 4 oefeningen",
     sessionTitle: "Log elke set in één tik",
     sessionBody:
-      "Gewicht en herhalingen staan al klaar. Geef aan hoe zwaar de set voelde en de volgende past zich aan. Je rust wordt getimed, met +30 s en overslaan.",
+      "Gewicht en herhalingen staan al klaar. Geef aan hoe zwaar de set voelde en de volgende past zich aan. Je rust wordt getimed, met +30 s en overslaan. Doet iets pijn? Wissel de oefening, of doe hem later.",
     sessionNextSet: "Set 3 van 3",
     progressTitle: "Zie jezelf sterker worden",
     progressBody:
-      "Haal je twee keer op rij bij elke set de bovenkant van het herhalingsbereik, dan legt Forge er de volgende keer gewicht bij. Historie toont je records, een geschat 1RM per oefening en je weekreeks.",
+      "Haal je twee keer op rij bij elke set de bovenkant van het herhalingsbereik, dan legt Forge er de volgende keer gewicht bij. Historie toont je records, een geschat 1RM per oefening en je weekreeks, en van elke training deel je een samenvattingsplaatje.",
     progressNextTime: "Volgende keer",
     progressWhy: "Twee keer 10 herhalingen bij elke set — gewicht erbij",
     progressStreakSub: "2+ dagen per week",
@@ -2546,7 +2559,7 @@ const nl: Dict = {
     drinksWeekend: "Bier en wijn in het weekend",
     limitsTitle: "Limieten die bij je passen",
     limitsBody:
-      "Beantwoord een paar vragen en krijg limieten voor calorieën en macro's, op rustdagen lager als je wilt. Weeg jezelf op het tabblad Gewicht en Forge vergelijkt je trend met je doel.",
+      "Beantwoord een paar vragen en krijg limieten voor calorieën en macro's, op rustdagen lager als je wilt. Weeg jezelf op het tabblad Gewicht, of importeer een screenshot van je slimme weegschaal met lichaamssamenstelling, en Forge vergelijkt je trend met je doel.",
     limitsLeft: (n: string) => `nog ${n}`,
     watchTitle: "Haal je horloge erbij",
     watchBody:
@@ -2554,9 +2567,18 @@ const nl: Dict = {
     watchScreenshot: "Screenshot",
     watchRun: "Buiten hardlopen",
     watchZones: "Hartslagzones",
+    accountTitle: "Bewaar het, neem het overal mee",
+    accountBody:
+      "Alles wordt op deze telefoon bewaard. Maak een gratis account en je trainingen, schema's, voeding en gewicht krijgen een back-up en volgen je naar een andere telefoon. Forge werkt ook zonder account offline, en inloggen kan later nog via Instellingen.",
+    accountPoints: [
+      "Back-up in de cloud",
+      "Verder op een andere telefoon",
+      "Werkt ook offline",
+    ] as string[],
+    accountSignIn: "Inloggen of account aanmaken",
     readyTitle: "Klaar als jij het bent",
     readyBody:
-      "Alles wordt op deze telefoon bewaard; maak in Instellingen een account aan voor een back-up. Daar stel je ook je materiaal in, voer je lifts in die je al doet en bekijk je deze rondleiding opnieuw.",
+      "In Instellingen stel je je materiaal in, voer je lifts in die je al doet, wissel je van taal of thema en bekijk je deze rondleiding opnieuw.",
     readyWorkout: "Bouw mijn eerste training",
     readyFood: "Log mijn eerste voeding",
     readyEquipment: "Stel mijn materiaal in",
