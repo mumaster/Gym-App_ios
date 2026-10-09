@@ -17,14 +17,14 @@ const MACRO_KEYS: (keyof Macros)[] = ["calories", "protein", "carbs", "fat", "fi
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
-function toBase64Url(text: string): string {
+export function toBase64Url(text: string): string {
   const bytes = new TextEncoder().encode(text);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function fromBase64Url(code: string): string {
+export function fromBase64Url(code: string): string {
   const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
   const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
   return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
