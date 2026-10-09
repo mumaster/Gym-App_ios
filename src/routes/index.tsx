@@ -463,10 +463,11 @@ function MoodPicker({
   onPick: (score: ReadinessScore) => void;
 }) {
   const t = useTranslation();
+  const { firstName } = useGym();
   return (
     <div>
-      <p className="text-[13px] font-semibold leading-5 text-foreground/75">
-        {t.home.howAreYouFeeling}
+      <p className="truncate whitespace-nowrap text-[13px] font-semibold leading-5 text-foreground/75">
+        {firstName ? t.name.howAreYouFeeling(firstName) : t.home.howAreYouFeeling}
       </p>
       <div className="mt-2 grid grid-cols-5 gap-2">
         {([1, 2, 3, 4, 5] as ReadinessScore[]).map((score) => (
