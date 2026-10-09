@@ -854,7 +854,7 @@ const en = {
     addFood: "Add food",
     scanFood: "Scan label or barcode",
     scan: "Scan",
-    scanDesc: "Barcode, label, note or plate",
+    scanDesc: "Barcode, label, note, plate or QR",
     enterManually: "Enter manually",
     recent: "Recent",
     favorites: "Favourites",
@@ -926,7 +926,7 @@ const en = {
       string
     >,
     aimFor: {
-      barcode: "Point at the barcode — it's read automatically.",
+      barcode: "Point at the barcode or a shared-meal QR — it's read automatically.",
       label: "Fit the nutrition table in the frame, then tap the shutter.",
       note: "Fit the whole note or recipe in the frame, then tap the shutter.",
       plate: "Get the whole plate in view, then tap the shutter.",
@@ -2395,7 +2395,7 @@ const nl: Dict = {
     addFood: "Voedsel toevoegen",
     scanFood: "Label of barcode scannen",
     scan: "Scannen",
-    scanDesc: "Barcode, label, briefje of bord",
+    scanDesc: "Barcode, label, briefje, bord of QR",
     enterManually: "Handmatig invoeren",
     recent: "Recent",
     favorites: "Favorieten",
@@ -2466,7 +2466,8 @@ const nl: Dict = {
     modeLabel: "Wat scan je?",
     modes: { barcode: "Barcode", label: "Label", note: "Briefje", plate: "Bord" },
     aimFor: {
-      barcode: "Richt op de streepjescode — die wordt automatisch gelezen.",
+      barcode:
+        "Richt op de streepjescode of een QR van een gedeelde maaltijd — die wordt automatisch gelezen.",
       label: "Zet de voedingswaardetabel in beeld en tik op de ontspanknop.",
       note: "Zet het hele briefje of recept in beeld en tik op de ontspanknop.",
       plate: "Zet het hele bord in beeld en tik op de ontspanknop.",
