@@ -1,4 +1,4 @@
-import { BookmarkPlus, Check, Plus } from "lucide-react";
+import { BookmarkPlus, Check, Plus, Share2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { drinkOf } from "../../lib/gym/alcohol";
@@ -30,6 +30,7 @@ export function MealOverviewSheet({
   onClose,
   onAdd,
   onSaveAsMeal,
+  onShare,
   onEdit,
 }: {
   meal: MealType | null;
@@ -42,6 +43,7 @@ export function MealOverviewSheet({
   onClose: () => void;
   onAdd: () => void;
   onSaveAsMeal: () => void;
+  onShare: () => void;
   onEdit: (entry: FoodEntry) => void;
 }) {
   const t = useTranslation();
@@ -186,6 +188,15 @@ export function MealOverviewSheet({
                 className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
               >
                 <BookmarkPlus className="size-4" /> {t.mealOverview.save}
+              </button>
+            ) : null}
+            {entries.length ? (
+              <button
+                onClick={onShare}
+                aria-label={t.mealShare.share}
+                className="glass flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 text-[15px] font-semibold active:scale-[0.985]"
+              >
+                <Share2 className="size-4" /> {t.mealShare.share}
               </button>
             ) : null}
           </div>
