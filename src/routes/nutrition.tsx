@@ -404,6 +404,10 @@ function NutritionScreen() {
           setRecipeSeed(null);
           setCreateRecipeOpen(true);
         }}
+        onMealCode={(code) => {
+          setImportCode(code);
+          setImportOpen(true);
+        }}
         onReadList={(request) => {
           setFoodSheet(null);
           setListSheet(request);

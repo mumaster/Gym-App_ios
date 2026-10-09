@@ -27,6 +27,7 @@ import { HapticSwitch } from "./HapticSwitch";
 import { ListCard } from "./ListCard";
 import { PortionLine } from "./MealOverviewSheet";
 import { lookupBarcode } from "../../lib/gym/barcodeLookup";
+import { decodeMeal, mealCodeFrom } from "../../lib/gym/mealShare";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
@@ -107,6 +108,7 @@ export function AddFoodSheet({
   onCreateRecipe,
   swap,
   onReadList,
+  onMealCode,
 }: {
   open: boolean;
   onClose: () => void;
@@ -137,6 +139,9 @@ export function AddFoodSheet({
    *  plate photographed with the scanner's other modes, for the meal picked
    *  here. The parent closes this sheet first, like the builders. */
   onReadList?: (request: ReadListRequest) => void;
+  /** A shared meal's QR was scanned (the Barcode mode reads QR codes too):
+   *  open the import sheet on it. The parent closes this sheet first. */
+  onMealCode?: (code: string) => void;
 }) {
   const {
     addFoodEntry,
@@ -465,6 +470,14 @@ export function AddFoodSheet({
   // database the user is already pointing at the package, so it switches to
   // Label and the next step is one shutter tap rather than starting over.
   const onBarcodeDetected = async (code: string) => {
+    // A shared meal's QR rather than a product barcode.
+    const mealCode = onMealCode && code.includes("meal=") ? mealCodeFrom(code) : null;
+    if (mealCode && decodeMeal(mealCode)) {
+      setScannerOpen(false);
+      onClose();
+      onMealCode?.(mealCode);
+      return;
+    }
     // A product you've saved before: your own values, instantly and
     // offline, corrections included. Open Food Facts only for new ones.
     const saved = findByBarcode(myFoods, code);
