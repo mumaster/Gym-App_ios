@@ -5,7 +5,7 @@ import type { Language } from "./types";
 
 /** The camera's modes (FoodScanner's ScanMode), kept here so the copy
  *  doesn't import a component. */
-type ScanModeKey = "barcode" | "label" | "note" | "plate";
+type ScanModeKey = "barcode" | "label" | "note" | "plate" | "qr";
 /** How a starting weight was worked out (startWeight.ts): "reference" is
  *  marked with an asterisk. */
 type EstimateKind = "estimate" | "rough" | "reference";
@@ -919,17 +919,22 @@ const en = {
       label: "Photograph the nutrition label",
       note: "Scan a note or recipe",
       plate: "Photograph your plate",
+      qr: "Scan a shared QR code",
     } as Record<ScanModeKey, string>,
     modeLabel: "What are you scanning?",
-    modes: { barcode: "Barcode", label: "Label", note: "Note", plate: "Plate" } as Record<
-      ScanModeKey,
-      string
-    >,
+    modes: {
+      barcode: "Barcode",
+      label: "Label",
+      note: "Note",
+      plate: "Plate",
+      qr: "QR",
+    } as Record<ScanModeKey, string>,
     aimFor: {
       barcode: "Point at the barcode or a shared-meal QR — it's read automatically.",
       label: "Fit the nutrition table in the frame, then tap the shutter.",
       note: "Fit the whole note or recipe in the frame, then tap the shutter.",
       plate: "Get the whole plate in view, then tap the shutter.",
+      qr: "Point at the QR code — it's read automatically.",
     } as Record<ScanModeKey, string>,
     noBarcodeHint: "No barcode? Switch to Label to photograph the nutrition table.",
     lookingUp: "Looking up that product…",
@@ -939,6 +944,7 @@ const en = {
       label: "Photograph the nutrition label",
       note: "Photograph the note",
       plate: "Photograph the plate",
+      qr: "",
     } as Record<ScanModeKey, string>,
     choosePhoto: "Choose a photo",
     captionFor: {
@@ -946,6 +952,7 @@ const en = {
       label: "AI reads the values per 100 g",
       note: "AI reads the foods and the grams",
       plate: "AI names the foods; you add the grams",
+      qr: "Read automatically — no need to tap",
     } as Record<ScanModeKey, string>,
     cameraAccessDenied:
       "Camera access was denied — allow it in your browser settings, or use a photo or manual entry instead.",
@@ -1176,6 +1183,19 @@ const en = {
     log: "Log meal",
     saveOnly: "Save as meal",
     saved: "Saved to your meals",
+  },
+  gymShare: {
+    share: "Share this gym",
+    title: (gym: string) => `Share ${gym}`,
+    hint: "Let the other person scan this in Forge (Equipment → Scan a gym), or send them the link.",
+    shareText: (name: string) => `${name} — a gym setup from Forge`,
+    importTitle: "Shared gym",
+    scan: "Scan a gym QR",
+    items: (n: number) => (n === 1 ? "1 piece of equipment" : `${n} pieces of equipment`),
+    unlocks: (n: number) => `${n} exercises possible`,
+    add: "Add gym",
+    addAndUse: "Add and use now",
+    added: "Added to your gyms",
   },
   createMeal: {
     title: "Create meal",
@@ -2462,15 +2482,17 @@ const nl: Dict = {
       label: "Voedingslabel fotograferen",
       note: "Briefje of recept scannen",
       plate: "Je bord fotograferen",
+      qr: "Gedeelde QR-code scannen",
     },
     modeLabel: "Wat scan je?",
-    modes: { barcode: "Barcode", label: "Label", note: "Briefje", plate: "Bord" },
+    modes: { barcode: "Barcode", label: "Label", note: "Briefje", plate: "Bord", qr: "QR" },
     aimFor: {
       barcode:
         "Richt op de streepjescode of een QR van een gedeelde maaltijd — die wordt automatisch gelezen.",
       label: "Zet de voedingswaardetabel in beeld en tik op de ontspanknop.",
       note: "Zet het hele briefje of recept in beeld en tik op de ontspanknop.",
       plate: "Zet het hele bord in beeld en tik op de ontspanknop.",
+      qr: "Richt op de QR-code — die wordt automatisch gelezen.",
     },
     noBarcodeHint: "Geen streepjescode? Kies Label om de voedingswaarden te fotograferen.",
     lookingUp: "Product opzoeken…",
@@ -2480,6 +2502,7 @@ const nl: Dict = {
       label: "Voedingslabel fotograferen",
       note: "Briefje fotograferen",
       plate: "Bord fotograferen",
+      qr: "",
     },
     choosePhoto: "Kies een foto",
     captionFor: {
@@ -2487,6 +2510,7 @@ const nl: Dict = {
       label: "AI leest de waarden per 100 g",
       note: "AI leest de producten en de grammen",
       plate: "AI herkent de producten; jij vult de grammen in",
+      qr: "Wordt automatisch gelezen — tikken hoeft niet",
     },
     cameraAccessDenied:
       "Cameratoegang werd geweigerd — sta dit toe in je browserinstellingen, of gebruik een foto of handmatige invoer.",
@@ -2716,6 +2740,19 @@ const nl: Dict = {
     log: "Maaltijd loggen",
     saveOnly: "Opslaan als maaltijd",
     saved: "Opgeslagen bij je maaltijden",
+  },
+  gymShare: {
+    share: "Deze gym delen",
+    title: (gym: string) => `${gym} delen`,
+    hint: "Laat de ander dit scannen in Forge (Uitrusting → Gym scannen), of stuur de link.",
+    shareText: (name: string) => `${name} — een gym-setup uit Forge`,
+    importTitle: "Gedeelde gym",
+    scan: "Gym-QR scannen",
+    items: (n: number) => (n === 1 ? "1 stuk uitrusting" : `${n} stukken uitrusting`),
+    unlocks: (n: number) => `${n} oefeningen mogelijk`,
+    add: "Gym toevoegen",
+    addAndUse: "Toevoegen en nu gebruiken",
+    added: "Toegevoegd aan je gyms",
   },
   createMeal: {
     title: "Maaltijd samenstellen",

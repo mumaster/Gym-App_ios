@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Check, ChevronLeft, Minus, Plus, ShieldOff, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Check,
+  ChevronLeft,
+  Minus,
+  Plus,
+  ScanLine,
+  Share2,
+  ShieldOff,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { EQUIPMENT, exerciseById } from "../lib/gym/data";
@@ -11,6 +21,9 @@ import { DEFAULT_PLATES, PLATE_SIZES } from "../lib/gym/plates";
 import { haptic, useGym } from "../lib/gym/store";
 import type { EquipmentId } from "../lib/gym/types";
 import { button, chip } from "../components/gym/ui";
+import { FoodScanner } from "../components/gym/FoodScanner";
+import { ImportGymSheet, ShareGymSheet } from "../components/gym/GymShareSheets";
+import { decodeGym, gymCodeFrom } from "../lib/gym/equipmentShare";
 
 export const Route = createFileRoute("/equipment")({
   // Opened from Exercises → My gym: a back button returns there (the screen
@@ -45,6 +58,17 @@ function EquipmentScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const editing = profiles.find((p) => p.id === (editingId ?? activeProfileId)) ?? profiles[0]!;
   const loadable = editing.loadable_dumbbells !== false;
+
+  // Sharing a gym: its QR, the in-app camera, and an incoming #gym= link.
+  const [sharing, setSharing] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [importCode, setImportCode] = useState<string | null>(null);
+  useEffect(() => {
+    const code = gymCodeFrom(window.location.hash);
+    if (!code) return;
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    setImportCode(code);
+  }, []);
 
   const toggle = (id: EquipmentId) => {
     haptic(12);
@@ -300,6 +324,48 @@ function EquipmentScreen() {
           </button>
         ) : null}
       </div>
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={() => {
+            haptic(15);
+            setSharing(true);
+          }}
+          className={`${button.secondary} flex-1`}
+        >
+          <Share2 className="size-4" /> {t.gymShare.share}
+        </button>
+        <button
+          onClick={() => {
+            haptic(15);
+            setScanning(true);
+          }}
+          className={`${button.secondary} flex-1`}
+        >
+          <ScanLine className="size-4" /> {t.gymShare.scan}
+        </button>
+      </div>
+
+      <ShareGymSheet gym={sharing ? editing : null} onClose={() => setSharing(false)} />
+      <ImportGymSheet
+        code={importCode}
+        onClose={() => setImportCode(null)}
+        onAdded={setEditingId}
+      />
+      <FoodScanner
+        open={scanning}
+        status="scanning"
+        modes={["qr"]}
+        mode="qr"
+        onClose={() => setScanning(false)}
+        onBarcode={(text) => {
+          const code = gymCodeFrom(text);
+          if (!code || !decodeGym(code)) return;
+          setScanning(false);
+          setImportCode(code);
+        }}
+        onPhoto={() => {}}
+        onChoosePhoto={() => {}}
+      />
     </Screen>
   );
 }

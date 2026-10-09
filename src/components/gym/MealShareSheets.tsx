@@ -8,23 +8,33 @@ import { decodeMeal, mealCodeFrom, mealShareUrl, type SharedMeal } from "../../l
 import { MEAL_ORDER, dailyTotals, type MealType } from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
 
-/** A meal's QR plus the iOS share sheet: the other person scans it with
- *  their camera (or taps the link) and lands on the import sheet. */
-export function ShareMealSheet({
-  meal,
+/** A QR plus the iOS share sheet for a shared link: the other person scans
+ *  it (in the app or with their camera) or taps the link. Used for meals and
+ *  for gyms. */
+export function ShareQrSheet({
+  open,
+  title,
+  label,
+  url,
+  hint,
+  shareText,
   onClose,
 }: {
-  meal: SharedMeal | null;
+  open: boolean;
+  title: string;
+  label: string;
+  url: string;
+  hint: string;
+  shareText: string;
   onClose: () => void;
 }) {
   const t = useTranslation();
   const [svg, setSvg] = useState("");
   const [copied, setCopied] = useState(false);
-  const url = meal ? mealShareUrl(meal, window.location.origin) : "";
 
   useEffect(() => {
     setCopied(false);
-    if (!url) return setSvg("");
+    if (!open || !url) return setSvg("");
     let live = true;
     QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "L" })
       .then((s) => live && setSvg(s))
@@ -32,18 +42,8 @@ export function ShareMealSheet({
     return () => {
       live = false;
     };
-  }, [url]);
+  }, [open, url]);
 
-  const send = async () => {
-    if (!meal) return;
-    try {
-      if (navigator.share)
-        await navigator.share({ title: meal.name, text: t.mealShare.shareText(meal.name), url });
-      else await copy();
-    } catch {
-      // closing the share sheet rejects too — nothing to report.
-    }
-  };
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -52,24 +52,28 @@ export function ShareMealSheet({
       // clipboard blocked: the QR and share sheet still work.
     }
   };
+  const send = async () => {
+    try {
+      if (navigator.share) await navigator.share({ title: label, text: shareText, url });
+      else await copy();
+    } catch {
+      // closing the share sheet rejects too — nothing to report.
+    }
+  };
 
   return (
-    <BottomSheet
-      open={meal != null}
-      onClose={onClose}
-      title={meal ? t.mealShare.title(meal.name) : ""}
-    >
-      {meal ? (
+    <BottomSheet open={open} onClose={onClose} title={title}>
+      {open ? (
         <div className="space-y-4">
           {svg ? (
             <div
               className="mx-auto size-64 overflow-hidden rounded-2xl bg-white p-2 [&>svg]:size-full"
               dangerouslySetInnerHTML={{ __html: svg }}
               role="img"
-              aria-label={meal.name}
+              aria-label={label}
             />
           ) : null}
-          <p className="text-center text-[13px] text-muted-foreground">{t.mealShare.hint}</p>
+          <p className="text-center text-[13px] text-muted-foreground">{hint}</p>
           <div className="flex gap-2">
             <button onClick={send} className={`${button.primary} flex-1`}>
               <Share2 className="size-4" /> {t.mealShare.send}
@@ -85,6 +89,29 @@ export function ShareMealSheet({
         </div>
       ) : null}
     </BottomSheet>
+  );
+}
+
+/** A meal's QR plus the iOS share sheet: the other person scans it with
+ *  their camera (or taps the link) and lands on the import sheet. */
+export function ShareMealSheet({
+  meal,
+  onClose,
+}: {
+  meal: SharedMeal | null;
+  onClose: () => void;
+}) {
+  const t = useTranslation();
+  return (
+    <ShareQrSheet
+      open={meal != null}
+      title={meal ? t.mealShare.title(meal.name) : ""}
+      label={meal?.name ?? ""}
+      url={meal ? mealShareUrl(meal, window.location.origin) : ""}
+      hint={t.mealShare.hint}
+      shareText={meal ? t.mealShare.shareText(meal.name) : ""}
+      onClose={onClose}
+    />
   );
 }
 

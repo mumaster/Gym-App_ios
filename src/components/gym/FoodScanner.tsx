@@ -9,7 +9,7 @@ export type FoodScannerStatus = "scanning" | "lookingUp" | "notFound";
 /** What the camera is pointed at. "barcode" reads barcodes live, with no
  *  shutter; "label" sends the shutter's photo to the AI label reader; "note"
  *  and "plate" send it to the list reader (FoodListSheet). */
-export type ScanMode = "barcode" | "label" | "note" | "plate";
+export type ScanMode = "barcode" | "label" | "note" | "plate" | "qr";
 
 /** A sideways swipe this far over the picture switches mode, like the iOS
  *  camera. A gesture threshold, not a measured value. */
@@ -118,7 +118,11 @@ export function FoodScanner({
             if (cancelled || !result || statusRef.current !== "scanning") return;
             // Only in Barcode mode: in the others you're photographing
             // something, and a package in view isn't the point.
-            if (modeRef.current !== "barcode" || !onBarcodeRef.current) return;
+            if (
+              (modeRef.current !== "barcode" && modeRef.current !== "qr") ||
+              !onBarcodeRef.current
+            )
+              return;
             const code = result.getText();
             if (reported.current.has(code)) return;
             reported.current.add(code);
@@ -180,7 +184,7 @@ export function FoodScanner({
   if (!open) return null;
 
   const copy = t.barcodeScanner;
-  const barcode = mode === "barcode";
+  const barcode = mode === "barcode" || mode === "qr";
   const busy = barcode && status === "lookingUp";
   // A barcode the database didn't know lands here, in Label mode.
   const highlight = mode === "label" && status === "notFound";
@@ -233,11 +237,13 @@ export function FoodScanner({
             className={`border-2 border-white/70 transition-[aspect-ratio,border-radius,width] duration-200 motion-reduce:transition-none ${
               mode === "barcode"
                 ? "aspect-[2/1] w-full max-w-sm rounded-2xl"
-                : mode === "label"
-                  ? "aspect-[4/5] w-[min(100%,16rem)] rounded-2xl"
-                  : mode === "note"
-                    ? "aspect-[3/4] w-[min(100%,15rem)] rounded-2xl"
-                    : "aspect-square w-[min(100%,16rem)] rounded-full"
+                : mode === "qr"
+                  ? "aspect-square w-[min(100%,16rem)] rounded-2xl"
+                  : mode === "label"
+                    ? "aspect-[4/5] w-[min(100%,16rem)] rounded-2xl"
+                    : mode === "note"
+                      ? "aspect-[3/4] w-[min(100%,15rem)] rounded-2xl"
+                      : "aspect-square w-[min(100%,16rem)] rounded-full"
             }`}
           />
         )}
