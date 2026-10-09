@@ -108,9 +108,11 @@ function useFitsAboveTabBar(
   useLayoutEffect(() => {
     onSpaceRef.current = onSpace;
   });
+  const checkRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const main = mainRef.current;
     if (!enabled || !main) {
+      checkRef.current = null;
       setFits(false);
       return;
     }
@@ -123,6 +125,7 @@ function useFitsAboveTabBar(
       setFits(space >= FIT_GAP_PX);
       onSpaceRef.current?.(space);
     };
+    checkRef.current = check;
     check();
     // The header (status-bar inset) and the tab bar (home-indicator inset)
     // move the content or the pill without resizing main, so watch them too.
@@ -131,12 +134,39 @@ function useFitsAboveTabBar(
       // border-box: the insets are padding, which content-box sizes miss.
       if (el) ro.observe(el, { box: "border-box" });
     }
+    // A first measurement can land mid page-transition or before fonts and
+    // the tab bar have settled, and none of the observers fire when the
+    // content ends up where it was measured (Home then kept a stale `room`
+    // and dropped its intake bars until the next resize). Measure again once
+    // things have settled, and whenever the page comes back.
+    const raf = requestAnimationFrame(() => requestAnimationFrame(check));
+    const timer = window.setTimeout(check, 350);
+    void document.fonts?.ready.then(check);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
     window.addEventListener("resize", check);
+    window.addEventListener("pageshow", check);
+    document.addEventListener("visibilitychange", onVisible);
+    window.visualViewport?.addEventListener("resize", check);
     return () => {
+      checkRef.current = null;
       ro.disconnect();
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
       window.removeEventListener("resize", check);
+      window.removeEventListener("pageshow", check);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.visualViewport?.removeEventListener("resize", check);
     };
   }, [mainRef, enabled]);
+  // After every render, too: whatever re-rendered the page (data arriving, an
+  // extra drawn) may have moved its bottom edge without resizing `main`. A
+  // passive effect, so the parent's layout effects (Home's `drawnCost`) have
+  // already run when `onSpace` reads them.
+  useEffect(() => {
+    checkRef.current?.();
+  });
   return fits;
 }
 
