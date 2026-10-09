@@ -78,7 +78,7 @@ export function SegmentedTabs<T extends string>({
           aria-selected={id === value}
           onClick={() => onChange(id)}
           className={`tap-target relative min-h-[34px] min-w-0 rounded-full px-2 text-[13.5px] font-semibold transition-colors ${
-            id === value ? "text-foreground" : "text-muted-foreground"
+            id === value ? "text-primary-text" : "text-muted-foreground"
           }`}
         >
           <span className="block truncate">{labels[id]}</span>
