@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { fitFontSize } from "../../lib/gym/name";
 import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
 
 export function Screen({
@@ -68,9 +69,7 @@ export function Screen({
           {/* Top-anchored at the offset a lone title gets when centered in the
               42px row, so a subtitle (Home) can't pull the title upward. */}
           <div className="min-w-0 self-start pt-[5px]">
-            <h1 className="truncate text-[26px] font-bold leading-tight tracking-tight text-foreground">
-              {title}
-            </h1>
+            <FitTitle text={title} />
             {subtitle ? (
               <p className="mt-0.5 text-[13px] text-muted-foreground">{subtitle}</p>
             ) : null}
@@ -195,5 +194,46 @@ export function SectionLabel({ children }: { children: ReactNode }) {
     <p className="mb-1.5 mt-4 px-1 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
       {children}
     </p>
+  );
+}
+
+const TITLE_MAX_PX = 26;
+const TITLE_MIN_PX = 11;
+
+/** The screen title on one line: 26 px, shrunk (down to 11 px) only as far as
+ *  the text needs to fit the room beside the settings button. A greeting with
+ *  a long name is the case; ellipsis stays as the last resort below 11 px. */
+function FitTitle({ text }: { text: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const [size, setSize] = useState(TITLE_MAX_PX);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      // Measured at the full size, whatever the current one is.
+      const previous = el.style.fontSize;
+      el.style.fontSize = `${TITLE_MAX_PX}px`;
+      el.style.overflow = "visible";
+      const width = el.scrollWidth;
+      el.style.fontSize = previous;
+      el.style.overflow = "";
+      const available = el.clientWidth;
+      setSize(fitFontSize(width / TITLE_MAX_PX, available, TITLE_MAX_PX, TITLE_MIN_PX));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    // The web font can land after the first measurement and change the width.
+    void document.fonts?.ready.then(measure);
+    return () => ro.disconnect();
+  }, [text]);
+  return (
+    <h1
+      ref={ref}
+      style={{ fontSize: size }}
+      className="truncate whitespace-nowrap font-bold leading-tight tracking-tight text-foreground"
+    >
+      {text}
+    </h1>
   );
 }
