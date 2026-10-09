@@ -101,7 +101,7 @@ export function ImportMealSheet({
   onClose: () => void;
 }) {
   const t = useTranslation();
-  const { logIngredients, saveMealTemplate } = useGym();
+  const { logIngredients, saveMealTemplate, rememberFood } = useGym();
   const [pasted, setPasted] = useState("");
   const [saved, setSaved] = useState(false);
   const [slot, setSlot] = useState<MealType>("dinner");
@@ -117,6 +117,11 @@ export function ImportMealSheet({
 
   const activeCode = code ?? mealCodeFrom(pasted);
   const meal = activeCode ? decodeMeal(activeCode) : null;
+  /** The ingredients join "your foods" so they can go into new meals. NEVO
+   *  foods stay out, as everywhere: the NEVO search already finds them. */
+  const rememberIngredients = () => {
+    for (const ing of meal?.ingredients ?? []) if (!ing.nevo?.length) rememberFood(ing);
+  };
   const totals = meal ? dailyTotals(meal.ingredients) : null;
 
   return (
@@ -179,6 +184,7 @@ export function ImportMealSheet({
                   onClick={() => {
                     haptic(15);
                     logIngredients(meal.ingredients, slot);
+                    rememberIngredients();
                     onClose();
                   }}
                   className={`${button.primary} flex-1`}
@@ -190,6 +196,7 @@ export function ImportMealSheet({
                   onClick={() => {
                     haptic(15);
                     saveMealTemplate(meal.name, meal.ingredients);
+                    rememberIngredients();
                     setSaved(true);
                   }}
                   className="glass flex min-h-[48px] flex-1 items-center justify-center rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
