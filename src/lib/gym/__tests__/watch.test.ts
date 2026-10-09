@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, matchWorkout, roundWatchNumbers } from "../watch";
+import { describeHrRecovery, formatDuration, matchWorkout, roundWatchNumbers } from "../watch";
 import type { Workout } from "../types";
 
 const at = (y: number, m: number, d: number, h: number, min: number, id: string): Workout => ({
@@ -73,5 +73,27 @@ describe("roundWatchNumbers", () => {
     expect(roundWatchNumbers("49,6")).toBe("49,6");
     expect(roundWatchNumbers("Links 49,6 · Rechts 50,4")).toBe("Links 49,6 · Rechts 50,4");
     expect(roundWatchNumbers(null)).toBeNull();
+  });
+});
+
+describe("describeHrRecovery", () => {
+  const r = (drop: number | null, startBpm: number | null, endBpm: number | null) => ({
+    drop,
+    startBpm,
+    endBpm,
+    minutes: null,
+  });
+  it("calls 124 → 128 a rise, whatever the printed drop says", () => {
+    expect(describeHrRecovery(r(2, 124, 128))).toMatchObject({ direction: "rose", amount: 4 });
+  });
+  it("keeps the app's own drop for a fall", () => {
+    expect(describeHrRecovery(r(10, 154, 133))).toMatchObject({ direction: "fell", amount: 10 });
+  });
+  it("reads a negative drop without a pair as a rise", () => {
+    expect(describeHrRecovery(r(-3, null, null))).toMatchObject({ direction: "rose", amount: 3 });
+  });
+  it("says nothing without data", () => {
+    expect(describeHrRecovery(null)).toBeNull();
+    expect(describeHrRecovery(r(null, null, null))).toBeNull();
   });
 });

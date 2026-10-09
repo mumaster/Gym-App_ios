@@ -16,7 +16,13 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import type { WatchData } from "../../lib/gym/types";
-import { formatDuration, formatPace, roundWatchNumbers, WATCH_DECIMALS } from "../../lib/gym/watch";
+import {
+  describeHrRecovery,
+  formatDuration,
+  formatPace,
+  roundWatchNumbers,
+  WATCH_DECIMALS,
+} from "../../lib/gym/watch";
 
 interface Stat {
   icon: LucideIcon;
@@ -127,6 +133,7 @@ export function WatchDataCard({ data: raw }: { data: WatchData }) {
       unit: "%",
     },
   ];
+  const hrRecovery = describeHrRecovery(data.hrRecovery);
   const shown = stats.filter((x): x is Stat => x !== false);
   const splits = data.splits ?? [];
 
@@ -201,16 +208,17 @@ export function WatchDataCard({ data: raw }: { data: WatchData }) {
         </div>
       ) : null}
 
-      {data.recoveryHours != null || data.hrRecovery?.drop != null ? (
+      {data.recoveryHours != null || hrRecovery ? (
         <div className="space-y-1 text-[13.5px]">
           {data.recoveryHours != null ? <p>{t.watch.recovery(fmt(data.recoveryHours))}</p> : null}
-          {data.hrRecovery?.drop != null ? (
+          {hrRecovery ? (
             <p>
               {t.watch.hrRecovery(
-                data.hrRecovery.drop,
-                data.hrRecovery.startBpm,
-                data.hrRecovery.endBpm,
-                data.hrRecovery.minutes,
+                hrRecovery.direction,
+                hrRecovery.amount,
+                hrRecovery.startBpm,
+                hrRecovery.endBpm,
+                hrRecovery.minutes,
               )}
             </p>
           ) : null}

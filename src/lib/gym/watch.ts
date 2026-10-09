@@ -122,3 +122,35 @@ export function cardioTargetId(
   if (!watch.start || watch.start.length <= 10) return null;
   return sessions.find((c) => c.watch.start === watch.start)?.id ?? null;
 }
+
+export interface HrRecoveryView {
+  /** Which way the heart rate actually moved after the session. */
+  direction: "fell" | "rose" | "same";
+  /** Size of the move in bpm, always positive. */
+  amount: number;
+  startBpm: number | null;
+  endBpm: number | null;
+  minutes: number | null;
+}
+
+/**
+ * What to say about a watch's heart-rate recovery. The Start/End pair decides
+ * the direction (a heart rate that went 124 → 128 rose, whatever the app's
+ * own "drop" figure says); for a fall the app's printed drop is the size
+ * (it is its own measurement, not always start − end), for a rise it is the
+ * gap between the pair. Without a pair, a negative printed drop is a rise.
+ * Null when there is nothing to say.
+ */
+export function describeHrRecovery(r: WatchData["hrRecovery"]): HrRecoveryView | null {
+  if (!r) return null;
+  const { drop, startBpm, endBpm, minutes } = r;
+  const base = { startBpm, endBpm, minutes };
+  if (startBpm != null && endBpm != null) {
+    if (endBpm > startBpm) return { ...base, direction: "rose", amount: endBpm - startBpm };
+    if (endBpm === startBpm) return { ...base, direction: "same", amount: 0 };
+    const printed = drop != null && drop > 0 ? drop : startBpm - endBpm;
+    return { ...base, direction: "fell", amount: printed };
+  }
+  if (drop == null || drop === 0) return null;
+  return { ...base, direction: drop < 0 ? "rose" : "fell", amount: Math.abs(drop) };
+}
