@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -19,6 +19,8 @@ import {
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
+import { ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
+import { mealCodeFrom, type SharedMeal } from "../lib/gym/mealShare";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
 import { FoodListSheet } from "../components/gym/FoodListSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
@@ -127,6 +129,18 @@ function NutritionScreen() {
     ingredients: MealIngredient[];
     meal: MealType;
   } | null>(null);
+  /** A meal being shared, and the importer (a shared link's code, or "" to paste one). */
+  const [shareMeal, setShareMeal] = useState<SharedMeal | null>(null);
+  const [importCode, setImportCode] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  useEffect(() => {
+    // A shared meal's link lands here as #meal=<code>.
+    const code = mealCodeFrom(window.location.hash);
+    if (!code) return;
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    setImportCode(code);
+    setImportOpen(true);
+  }, []);
   const [createRecipeOpen, setCreateRecipeOpen] = useState(false);
   /** A recipe pre-filled from the list reader ("Save as a recipe"). */
   const [recipeSeed, setRecipeSeed] = useState<RecipeSeed | null>(null);
@@ -337,6 +351,13 @@ function NutritionScreen() {
             </div>
           )}
 
+          <button
+            onClick={() => setImportOpen(true)}
+            className="mt-4 w-full text-center text-[13px] font-semibold text-muted-foreground active:opacity-60"
+          >
+            {t.mealShare.importFrom}
+          </button>
+
           {/* RIVM's conditions of use require this reference on nutritional
           output based on NEVO data — shown whenever the day's figures
           include a NEVO food (see nevoFoods.ts). */}
@@ -423,10 +444,28 @@ function NutritionScreen() {
           setOverviewMeal(null);
           if (meal) saveMealFrom(meal);
         }}
+        onShare={() => {
+          const meal = overviewMeal;
+          setOverviewMeal(null);
+          if (meal)
+            setShareMeal({
+              name: t.mealTypes[meal],
+              ingredients: ingredientsFromEntries(selectedEntries.filter((e) => e.meal === meal)),
+            });
+        }}
         onEdit={(entry) => {
           haptic(12);
           setOverviewMeal(null);
           setFoodSheet(entry);
+        }}
+      />
+      <ShareMealSheet meal={shareMeal} onClose={() => setShareMeal(null)} />
+      <ImportMealSheet
+        open={importOpen}
+        code={importCode}
+        onClose={() => {
+          setImportOpen(false);
+          setImportCode(null);
         }}
       />
       <NutritionGoalsSheet open={goalsSheetOpen} onClose={() => setGoalsSheetOpen(false)} />
