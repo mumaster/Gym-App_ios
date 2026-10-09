@@ -16,6 +16,7 @@ import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
 import { KnownLiftsSheet } from "../components/gym/KnownLiftsSheet";
+import { NameField } from "../components/gym/NameField";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { ListCard } from "../components/gym/ListCard";
 import { Screen } from "../components/gym/Screen";
@@ -41,7 +42,8 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsScreen() {
-  const { session, syncStatus, signOut, update, alcoholEnabled, alcoholWeekdays } = useGym();
+  const { session, syncStatus, signOut, update, alcoholEnabled, alcoholWeekdays, firstName } =
+    useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -157,6 +159,17 @@ function SettingsScreen() {
                 update({ alcoholWeekdays: !alcoholWeekdays });
               }}
             />
+          </div>
+        </ListCard>
+
+        <ListCard
+          icon={UserRound}
+          title={t.name.title}
+          subtitle={t.name.sub}
+          filled={Boolean(firstName)}
+        >
+          <div className="border-t border-border">
+            <NameField />
           </div>
         </ListCard>
 

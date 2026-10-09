@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { cleanFirstName } from "./name";
 import { DEFAULT_AVATAR_ID, type AvatarId } from "./avatars";
 import { DEFAULT_PROFILES, EXERCISES, defaultLoadableDumbbells } from "./data";
 import { isBodyweightExercise, latestBodyKg } from "./load";
@@ -124,6 +125,9 @@ interface GymState {
   language: Language;
   /** Which character represents the user in the profile/settings icon. */
   avatarId: AvatarId;
+  /** The user's first name, for greetings and encouragement ("" = not set).
+   *  Part of the saved state, so it syncs with the account like the rest. */
+  firstName: string;
   /** The welcome tour has been seen (or skipped). Settings can reset it. */
   welcomeSeen: boolean;
   supersetsEnabled: boolean;
@@ -230,6 +234,7 @@ const initialState: GymState = {
   colorScheme: "dark",
   language: "en",
   avatarId: DEFAULT_AVATAR_ID,
+  firstName: "",
   welcomeSeen: false,
   supersetsEnabled: false,
   warmupsEnabled: true,
@@ -395,6 +400,7 @@ function migrate(raw: Partial<GymState>): GymState {
     colorScheme: raw.colorScheme ?? "dark",
     language: raw.language ?? "en",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
+    firstName: cleanFirstName(raw.firstName),
     // Saves from before the tour: someone who already logged something
     // knows the app, so only an empty save gets the tour.
     welcomeSeen:

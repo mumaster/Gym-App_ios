@@ -149,8 +149,12 @@ function SessionScreen() {
     updateSet,
     weightLog,
     nutritionProfile,
+    firstName,
   } = useGym();
   const bodyKg = latestBodyKg(weightLog, nutritionProfile);
+  const restNotifBody = firstName
+    ? t.name.restCompleteBody(firstName)
+    : t.session.restCompleteNotifBody;
 
   const [pos, setPos] = useState<SessionPos>({ block: 0, slot: 0, round: 1 });
   /** Plan indices whose target sets are done but that got "+ Extra set",
@@ -244,7 +248,7 @@ function SessionScreen() {
       ) {
         try {
           new Notification(t.session.restCompleteNotifTitle, {
-            body: t.session.restCompleteNotifBody,
+            body: restNotifBody,
             tag: "forge-rest",
           });
         } catch {
@@ -294,13 +298,11 @@ function SessionScreen() {
   // rejects). Silent: a rest that still can't be scheduled reports it.
   const subscriptionChecked = useRef(false);
 
-  // Keep the service worker's push copy in the app's current language.
+  // Keep the service worker's push copy in the app's current language, with
+  // the first name when one is set.
   useEffect(() => {
-    void syncRestNotificationCopy(
-      t.session.restCompleteNotifTitle,
-      t.session.restCompleteNotifBody,
-    );
-  }, [t.session.restCompleteNotifTitle, t.session.restCompleteNotifBody]);
+    void syncRestNotificationCopy(t.session.restCompleteNotifTitle, restNotifBody);
+  }, [t.session.restCompleteNotifTitle, restNotifBody]);
   useEffect(() => {
     if (
       notifyEnabled &&
@@ -490,7 +492,9 @@ function SessionScreen() {
         <div className="mx-auto w-full max-w-xl">
           <div className="flex flex-col items-center gap-2 pb-6 pt-10 text-center">
             <Trophy className="size-10 text-primary-text" />
-            <h1 className="text-[26px] font-bold">{t.session.workoutComplete}</h1>
+            <h1 className="text-[26px] font-bold">
+              {firstName ? t.name.niceJob(firstName) : t.session.workoutComplete}
+            </h1>
             <p className="text-[14px] text-muted-foreground">{t.session.workoutCompleteSub}</p>
           </div>
           {finishedWorkout ? (
@@ -755,7 +759,8 @@ function SessionScreen() {
     // Straight into the partner exercise — no rest between A and B.
     if (loggedSlot === 0 && remaining(other) > 0) {
       const bEx = exerciseById(plan[block.indices[1]!]!.exercise_id);
-      setToast(t.session.straightInto(bEx?.name ?? t.session.exerciseBFallback));
+      const bName = bEx?.name ?? t.session.exerciseBFallback;
+      setToast(firstName ? t.name.straightInto(firstName, bName) : t.session.straightInto(bName));
       setPos((p) => ({ ...p, slot: 1 }));
       return;
     }
@@ -1346,6 +1351,7 @@ function ExerciseBlock({
     exerciseNotes,
     setExerciseNote,
     warmupsEnabled,
+    firstName,
   } = useGym();
   const t = useTranslation();
   const exercise = exerciseById(planned.exercise_id);
@@ -1714,7 +1720,11 @@ function ExerciseBlock({
         <div className="mt-3 flex items-center gap-3 rounded-2xl bg-primary/15 px-4 py-3">
           <CheckCircle2 className="size-6 shrink-0 text-primary-text" />
           <div className="min-w-0">
-            <p className="text-[15px] font-bold">{t.session.wellDone(planned.target_sets)}</p>
+            <p className="text-[15px] font-bold">
+              {firstName
+                ? t.name.wellDone(firstName, planned.target_sets)
+                : t.session.wellDone(planned.target_sets)}
+            </p>
             <p className="text-[13px] text-muted-foreground">
               {index >= total - 1 ? t.session.finishBelow : t.session.moveToNext}
             </p>
@@ -2298,13 +2308,18 @@ function RestPanel({
   onRateLastSet: (rpe: number | null) => void;
 }) {
   const t = useTranslation();
+  const { firstName } = useGym();
   const pct = done ? 0 : Math.max(0, Math.min(100, (secondsLeft / Math.max(1, duration)) * 100));
   return (
     <div className="mx-auto w-full max-w-xl" role="region" aria-label={t.session.restLabel}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {done ? t.session.restOverLabel : t.session.restLabel}
+            {done
+              ? firstName
+                ? t.name.restOver(firstName)
+                : t.session.restOverLabel
+              : t.session.restLabel}
           </p>
           <p
             className={`tabular mt-0.5 truncate text-[30px] font-bold leading-none ${

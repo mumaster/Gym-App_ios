@@ -97,6 +97,7 @@ function HomeScreen() {
     cardioPlan,
     plannedCardio,
     cardioSessions,
+    firstName,
   } = useGym();
   const [readinessEditing, setReadinessEditing] = useState(false);
   const [cardioLogOpen, setCardioLogOpen] = useState(false);
@@ -137,12 +138,19 @@ function HomeScreen() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 4) return t.home.greetingLate;
-    if (hour < 11) return t.home.greetingMorning;
-    if (hour < 14) return t.home.greetingMidday;
-    if (hour < 18) return t.home.greetingAfternoon;
-    if (hour < 22) return t.home.greetingEvening;
-    return t.home.greetingNight;
+    const base =
+      hour < 4
+        ? t.home.greetingLate
+        : hour < 11
+          ? t.home.greetingMorning
+          : hour < 14
+            ? t.home.greetingMidday
+            : hour < 18
+              ? t.home.greetingAfternoon
+              : hour < 22
+                ? t.home.greetingEvening
+                : t.home.greetingNight;
+    return firstName ? t.name.greeting(base, firstName) : base;
   };
 
   const dateLabel = useMemo(() => {

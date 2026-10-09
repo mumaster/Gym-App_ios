@@ -92,6 +92,21 @@ const en = {
     streakAria: (weeks: number, days: number) =>
       `Week streak: ${weeks} ${weeks === 1 ? "week" : "weeks"} in a row with 2+ training days. This week: ${days} ${days === 1 ? "training day" : "training days"}`,
   },
+  name: {
+    title: "Your name",
+    sub: "Used to greet you in the app",
+    label: "First name",
+    placeholder: "First name",
+    clear: "Remove name",
+    greeting: (greeting: string, name: string) => `${greeting}, ${name}`,
+    niceJob: (name: string) => `Nice job, ${name}!`,
+    wellDone: (name: string, n: number) =>
+      `Well done, ${name} — ${n} ${n === 1 ? "set" : "sets"} logged`,
+    straightInto: (name: string, exercise: string) =>
+      `Great set, ${name}. Straight into ${exercise}`,
+    restOver: (name: string) => `Rest over, ${name}`,
+    restCompleteBody: (name: string) => `Time to lift, ${name} — back to Forge.`,
+  },
   watch: {
     title: "Watch",
     add: "Add watch data",
@@ -1646,6 +1661,21 @@ const nl: Dict = {
     howAreYouFeeling: "Hoe voel je je vandaag?",
     streakAria: (weeks: number, days: number) =>
       `Reeks: ${weeks} ${weeks === 1 ? "week" : "weken"} op rij met 2+ trainingsdagen. Deze week: ${days} ${days === 1 ? "trainingsdag" : "trainingsdagen"}`,
+  },
+  name: {
+    title: "Je naam",
+    sub: "Om je in de app te begroeten",
+    label: "Voornaam",
+    placeholder: "Voornaam",
+    clear: "Naam verwijderen",
+    greeting: (greeting: string, name: string) => `${greeting}, ${name}`,
+    niceJob: (name: string) => `Goed gedaan, ${name}!`,
+    wellDone: (name: string, n: number) =>
+      `Goed gedaan, ${name} — ${n} ${n === 1 ? "set" : "sets"} gelogd`,
+    straightInto: (name: string, exercise: string) =>
+      `Sterke set, ${name}. Direct door naar ${exercise}`,
+    restOver: (name: string) => `Rust voorbij, ${name}`,
+    restCompleteBody: (name: string) => `Tijd om te trainen, ${name} — terug naar Forge.`,
   },
   watch: {
     title: "Horloge",
