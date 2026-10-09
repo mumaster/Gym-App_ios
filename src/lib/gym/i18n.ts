@@ -104,6 +104,7 @@ const en = {
       `Well done, ${name} — ${n} ${n === 1 ? "set" : "sets"} logged`,
     straightInto: (name: string, exercise: string) =>
       `Great set, ${name}. Straight into ${exercise}`,
+    howAreYouFeeling: (name: string) => `How are you feeling today, ${name}?`,
     restOver: (name: string) => `Rest over, ${name}`,
     restCompleteBody: (name: string) => `Time to lift, ${name} — back to Forge.`,
   },
@@ -1674,6 +1675,7 @@ const nl: Dict = {
       `Goed gedaan, ${name} — ${n} ${n === 1 ? "set" : "sets"} gelogd`,
     straightInto: (name: string, exercise: string) =>
       `Sterke set, ${name}. Direct door naar ${exercise}`,
+    howAreYouFeeling: (name: string) => `Hoe voel je je vandaag, ${name}?`,
     restOver: (name: string) => `Rust voorbij, ${name}`,
     restCompleteBody: (name: string) => `Tijd om te trainen, ${name} — terug naar Forge.`,
   },
