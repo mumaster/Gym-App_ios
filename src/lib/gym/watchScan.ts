@@ -30,15 +30,16 @@ Rules:
   158 / 137 / 116 / 95 / 74 beside the heart-rate graph) are never values: most apps print no
   minimum heart rate, so minHr is usually null. The same holds for elevation, pace, cadence and
   SpO2: use the labelled values above each chart, never its axis.
-- hrZones: minutes spent per heart-rate zone with the app's zone names, in the legend's own
+- hrZones: minutes spent per heart-rate zone (convert "1:30" or seconds to minutes) with the app's zone names, in the legend's own
   order (its first line first — Huawei lists the hardest zone first); don't re-sort them.
 - trainingEffects: scores like "Aerobic training stress 1.7" or "Aerobic TE 3.2" with the word
   rating shown next to them (e.g. "Herstel"), if any.
-- recoveryHours: recommended recovery time in hours.
+- recoveryHours: recommended recovery time in hours (convert if printed in days or minutes).
 - hrRecovery: heart-rate recovery after the workout. drop is the number printed under
   "Dropped" / "Daalde" — its own measurement, which is usually NOT start minus end (e.g.
-  "Daalde 10" beside "Begin / Einde 154 / 133" means drop 10). startBpm/endBpm are the pair
-  under "Start / End" / "Begin / Einde". minutes only when stated as a value; the "1 min" /
+  "Daalde 10" beside "Begin / Einde 154 / 133" means drop 10). Keep the sign as printed: a
+  minus sign (or a "rose"/"steeg" label) means a negative drop. startBpm/endBpm are the pair
+  under "Start / End" / "Begin / Einde", in that order (start first). minutes only when stated as a value; the "1 min" /
   "2 min" under its chart is an axis label, not a value, so return null then.
 - source is the app's name; device is the watch model if printed.
 - kind: "cardio" for running, walking, hiking, cycling, swimming, rowing, elliptical, skiing and

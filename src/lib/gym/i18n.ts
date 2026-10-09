@@ -126,8 +126,18 @@ const en = {
     zones: "Heart-rate zones",
     minutes: (n: string) => `${n} min`,
     recovery: (h: string) => `Recovery time ${h} h`,
-    hrRecovery: (drop: number, start: number | null, end: number | null, min: number | null) =>
-      `Heart rate fell ${drop} bpm${start != null && end != null ? ` (${start} → ${end})` : ""}${min ? ` in ${min} min` : ""} after the session`,
+    hrRecovery: (
+      dir: "fell" | "rose" | "same",
+      amount: number,
+      start: number | null,
+      end: number | null,
+      min: number | null,
+    ) => {
+      const pair = start != null && end != null ? ` (${start} → ${end})` : "";
+      const span = min ? ` in ${min} min` : "";
+      if (dir === "same") return `Heart rate stayed the same${pair}${span} after the session`;
+      return `Heart rate ${dir === "fell" ? "fell" : "rose"} ${amount} bpm${pair}${span} after the session`;
+    },
     more: "More from your watch",
     caloriesNote:
       "Watch calories are shown but not used for your nutrition limits — wrist devices' calorie estimates can be off by 20% or more.",
@@ -1622,8 +1632,18 @@ const nl: Dict = {
     zones: "Hartslagzones",
     minutes: (n: string) => `${n} min`,
     recovery: (h: string) => `Hersteltijd ${h} u`,
-    hrRecovery: (drop: number, start: number | null, end: number | null, min: number | null) =>
-      `Hartslag daalde ${drop} spm${start != null && end != null ? ` (${start} → ${end})` : ""}${min ? ` in ${min} min` : ""} na de sessie`,
+    hrRecovery: (
+      dir: "fell" | "rose" | "same",
+      amount: number,
+      start: number | null,
+      end: number | null,
+      min: number | null,
+    ) => {
+      const pair = start != null && end != null ? ` (${start} → ${end})` : "";
+      const span = min ? ` in ${min} min` : "";
+      if (dir === "same") return `Hartslag bleef gelijk${pair}${span} na de sessie`;
+      return `Hartslag ${dir === "fell" ? "daalde" : "steeg"} ${amount} spm${pair}${span} na de sessie`;
+    },
     more: "Meer van je horloge",
     caloriesNote:
       "Horlogecalorieën worden getoond maar niet gebruikt voor je voedingslimieten — de calorieschatting van polsapparaten kan 20% of meer afwijken.",
