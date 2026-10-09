@@ -6,6 +6,7 @@ import {
   BookmarkPlus,
   Check,
   ChevronLeft,
+  Cloud,
   ChevronRight,
   Coffee,
   Droplet,
@@ -24,6 +25,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { AnatomyPreview } from "./AnatomyMap";
+import { AuthSheet } from "./AuthSheet";
 import { CARDIO_ICONS } from "./cardioDisplay";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { CAFFEINE_DAILY_LIMIT_MG, COFFEE_CAFFEINE_MG } from "../../lib/gym/nutrition";
@@ -70,7 +72,14 @@ type ReadyTarget = "/generate" | "/equipment" | "/nutrition" | "/settings";
 
 function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void }) {
   const t = useTranslation();
-  const { update } = useGym();
+  const { update, session } = useGym();
+  const [authOpen, setAuthOpen] = useState(false);
+  // Someone who signs in from the tour already has an account to restore
+  // from, so the tour ends. (Replaying it while signed in must not close it.)
+  const startedSignedIn = useRef(Boolean(session));
+  useEffect(() => {
+    if (session && !startedSignedIn.current) onDone();
+  }, [session, onDone]);
   const navigate = useNavigate();
   const scroller = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
@@ -89,6 +98,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
     { key: "drinks", title: w.drinksTitle, body: w.drinksBody, mock: <DrinksMock /> },
     { key: "limits", title: w.limitsTitle, body: w.limitsBody, mock: <LimitsMock /> },
     { key: "watch", title: w.watchTitle, body: w.watchBody, mock: <WatchMock /> },
+    { key: "account", title: w.accountTitle, body: w.accountBody, mock: <AccountMock /> },
     { key: "ready", title: w.readyTitle, body: w.readyBody, mock: null },
   ];
   const last = slides.length - 1;
@@ -196,6 +206,26 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
               <div className="shrink-0 pb-3 pt-1.5">
                 <h2 className="text-[26px] font-bold leading-tight tracking-tight">{s.title}</h2>
                 <p className="mt-1.5 text-[15px] leading-snug text-muted-foreground">{s.body}</p>
+                {s.key === "intro" ? (
+                  <div className="mt-3 text-center">
+                    <p className="text-[13px] text-muted-foreground">{w.introHaveAccount}</p>
+                    <button
+                      onClick={() => setAuthOpen(true)}
+                      className="min-h-[44px] px-3 text-[15px] font-semibold text-primary-text active:opacity-70"
+                    >
+                      {w.introSignIn}
+                    </button>
+                  </div>
+                ) : null}
+                {s.key === "account" ? (
+                  <button
+                    onClick={() => setAuthOpen(true)}
+                    className="glass mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold text-primary-text active:scale-[0.985]"
+                  >
+                    <Cloud className="size-5" />
+                    {w.accountSignIn}
+                  </button>
+                ) : null}
                 {s.key === "ready" ? (
                   <div className="mt-5 space-y-2">
                     <ReadyAction
@@ -272,6 +302,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
           )}
         </div>
       </div>
+      <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }
@@ -406,6 +437,26 @@ function IntroMock() {
         })}
       </Panel>
     </div>
+  );
+}
+
+function AccountMock() {
+  const t = useTranslation();
+  const icons = [Cloud, Dumbbell, Check];
+  return (
+    <Panel className="w-full space-y-3 p-4">
+      {t.welcome.accountPoints.map((p, i) => {
+        const Icon = icons[i] ?? Check;
+        return (
+          <div key={p} className="flex items-center gap-3">
+            <Badge size="size-9">
+              <Icon className="size-[18px]" />
+            </Badge>
+            <span className="text-[15px] font-semibold leading-snug">{p}</span>
+          </div>
+        );
+      })}
+    </Panel>
   );
 }
 
