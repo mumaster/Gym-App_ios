@@ -17,7 +17,7 @@ export function SegmentedTabs<T extends string>({
   return (
     <div
       role="tablist"
-      className="grid gap-1 rounded-full bg-secondary p-1"
+      className="grid gap-1 rounded-full glass-chip p-1"
       style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
     >
       {tabs.map((id) => (

@@ -165,7 +165,7 @@ Reuse these before building anything new. A new pattern that will appear twice g
 
   The accent means "you are here", so it never appears on the circle off Home: not dimmed, not mixed into the background, not as a tinted fill (both were tried and read as half-active). The inactive circle has no fill either, since a grey fill looks like the selection lozenge.
 
-- **Sub-tabs:** `SegmentedTabs`, in `Screen`'s `toolbar`, with the tab in the URL (`validateSearch`, `?tab=`, `replace`, scrolled to the top on switch). Use 2–3 tabs. The first is the default and has no query.
+- **Sub-tabs:** `SegmentedTabs`, in `Screen`'s `toolbar`, with the tab in the URL (`validateSearch`, `?tab=`, `replace`, scrolled to the top on switch). Use 2–3 tabs. The first is the default and has no query. The track is the card colour (`glass-chip`: the card surface with a hairline ring), not `bg-secondary` (asked for: it looked better), for every sub-tab bar; the picked segment is `bg-background` with a soft shadow. Any new segmented control uses `SegmentedTabs`, so it gets this for free.
 - **Switches:** `SwitchRow` (white knob, label and optional one-line description; `className` replaces its padding inside a padded card). Every on/off setting uses it, never an "On/Off" pill. Settings apply straight away, with no save button.
 - **Bottom sheets:** `BottomSheet`.
   - Done, the backdrop and a pull down all close it, and **a filled-in form is saved on close**. Multi-step setup wizards are the exception.
