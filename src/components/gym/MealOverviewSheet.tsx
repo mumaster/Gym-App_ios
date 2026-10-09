@@ -64,10 +64,21 @@ export function MealOverviewSheet({
       {meal ? (
         <div className="space-y-4">
           <div>
-            <p className="tabular leading-none">
-              <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
-              <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="tabular leading-none">
+                <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
+                <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
+              </p>
+              {entries.length ? (
+                <button
+                  onClick={onSaveAsMeal}
+                  aria-label={t.mealOverview.save}
+                  className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+                >
+                  <BookmarkPlus className="size-[18px]" />
+                </button>
+              ) : null}
+            </div>
             <p className="mt-1.5 text-[13px] text-muted-foreground">
               {t.mealOverview.foods(entries.length)}
               {dayKcal > 0 ? ` · ${t.mealOverview.ofDay(Math.round((kcal / dayKcal) * 100))}` : ""}
@@ -184,17 +195,9 @@ export function MealOverviewSheet({
             ) : null}
             {entries.length ? (
               <button
-                onClick={onSaveAsMeal}
-                className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
-              >
-                <BookmarkPlus className="size-4" /> {t.mealOverview.save}
-              </button>
-            ) : null}
-            {entries.length ? (
-              <button
                 onClick={onShare}
                 aria-label={t.mealShare.share}
-                className="glass flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 text-[15px] font-semibold active:scale-[0.985]"
+                className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
               >
                 <Share2 className="size-4" /> {t.mealShare.share}
               </button>
