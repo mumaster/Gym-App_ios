@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, Screen } from "../components/gym/Screen";
 import {
   CardioCard,
@@ -16,6 +16,7 @@ import { useDayGoalsResolver } from "../lib/gym/dayNutrition";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { mondayOf } from "../lib/gym/schedule";
 import { useGym } from "../lib/gym/store";
+import { addDays, dayKeyFromDate } from "../lib/gym/date";
 import { buildWeekRecap, parseWeekKey } from "../lib/gym/weekRecap";
 
 export const Route = createFileRoute("/history/week/$weekStart")({
@@ -82,6 +83,35 @@ function WeekRecapScreen() {
     ],
   );
 
+  const prevRecap = useMemo(
+    () =>
+      monday
+        ? buildWeekRecap(
+            {
+              workouts,
+              cardioSessions,
+              foodEntries,
+              waterEntries,
+              coffeeEntries,
+              weightLog,
+              waterGoalMl,
+            },
+            addDays(monday, -7),
+          )
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      weekStart,
+      workouts,
+      cardioSessions,
+      foodEntries,
+      waterEntries,
+      coffeeEntries,
+      weightLog,
+      waterGoalMl,
+    ],
+  );
+
   const back = (
     <Link to="/history" aria-label={t.weekRecap.back} className={button.icon}>
       <ChevronLeft aria-hidden className="size-5" />
@@ -114,12 +144,38 @@ function WeekRecapScreen() {
   return (
     <Screen title={title} subtitle={range} action={back}>
       <div className="space-y-4">
-        <WeekHero recap={recap} />
+        <WeekHero
+          recap={recap}
+          nav={
+            <span className="flex gap-2">
+              <Link
+                to="/history/week/$weekStart"
+                params={{ weekStart: dayKeyFromDate(addDays(recap.weekStart, -7)) }}
+                replace
+                aria-label={t.weekRecap.prevWeek}
+                className={button.icon}
+              >
+                <ChevronLeft aria-hidden className="size-4" />
+              </Link>
+              {weeksAgo > 0 ? (
+                <Link
+                  to="/history/week/$weekStart"
+                  params={{ weekStart: dayKeyFromDate(addDays(recap.weekStart, 7)) }}
+                  replace
+                  aria-label={t.weekRecap.nextWeek}
+                  className={button.icon}
+                >
+                  <ChevronRight aria-hidden className="size-4" />
+                </Link>
+              ) : null}
+            </span>
+          }
+        />
         {recap.hasData ? (
           <>
-            <StrengthCard recap={recap} />
-            <CardioCard recap={recap} />
-            <FoodCard recap={recap} />
+            <StrengthCard recap={recap} prev={prevRecap} />
+            <CardioCard recap={recap} prev={prevRecap} />
+            <FoodCard recap={recap} prev={prevRecap} />
             <WaterCard recap={recap} />
             <DrinksCard recap={recap} />
             <WeightCard recap={recap} />
