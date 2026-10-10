@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Trophy } from "lucide-react";
 import { Card } from "./Screen";
 import { CardHead } from "./CardHead";
@@ -9,7 +10,8 @@ import type { LoggedSet } from "../../lib/gym/types";
 
 /** One exercise's logged sets as shown in History: a card headed by the
  *  muscle-group icon, name and PR pill, then one row per set. Self-contained
- *  so a post-workout summary can reuse it. */
+ *  so the post-workout summary reuses it; `children` render below the set
+ *  rows (the summary's "next time" suggestion). */
 export function HistoryExerciseCard({
   exerciseId,
   name,
@@ -17,6 +19,7 @@ export function HistoryExerciseCard({
   rows,
   isPR,
   bestE1rm,
+  children,
 }: {
   exerciseId: string;
   name: string;
@@ -24,6 +27,7 @@ export function HistoryExerciseCard({
   rows: LoggedSet[];
   isPR: boolean;
   bestE1rm: number;
+  children?: ReactNode;
 }) {
   const t = useTranslation();
   return (
@@ -67,6 +71,7 @@ export function HistoryExerciseCard({
           </div>
         ))}
       </div>
+      {children}
     </Card>
   );
 }
