@@ -185,7 +185,17 @@ function demoState() {
       { id: "x", ml: 500, logged_at: today },
       { id: "y", ml: 250, logged_at: today },
     ],
-    coffeeEntries: [{ id: "c1", kind: "espresso", logged_at: today }],
+    coffeeEntries: [
+      { id: "c1", kind: "espresso", logged_at: today },
+      // Earlier days, for the recap's cups per day.
+      ...[1, 2, 3].flatMap((d) =>
+        ["espresso", "filter", d === 2 ? "milk" : "espresso"].slice(0, d + 1).map((kind, i) => ({
+          id: `cd${d}-${i}`,
+          kind,
+          logged_at: iso(now - d * day + i * 60000),
+        })),
+      ),
+    ],
     foodEntries: [
       ...[1, 2, 3, 4].map((d) => ({
         id: `fd${d}`,
@@ -194,6 +204,20 @@ function demoState() {
         meal: "dinner",
         logged_at: iso(now - d * day),
         per100: per(150 + d * 5, 6, 28, 3),
+      })),
+      // A couple of drinks on earlier days, for the recap's drinks card.
+      ...[
+        [2, "pils", 330],
+        [2, "pils", 330],
+        [3, "redWine", 125],
+      ].map(([d, drink, ml], i) => ({
+        id: `ad${i}`,
+        name: drink,
+        grams: ml,
+        meal: "dinner",
+        drink,
+        logged_at: iso(now - d * day),
+        per100: per(44, 0.4, 3, 0),
       })),
       {
         id: "f1",
@@ -633,6 +657,20 @@ for (const [lang, scheme] of combos) {
       const top = await page.evaluate(inspect, w);
       const designTop = await page.evaluate(designChecks, scope);
       if (shots) await page.screenshot({ path: join(shots, `${name}-top.png`) });
+      // Long pages: a shot per screen in between, so the middle is seen too.
+      if (shots && !sheet) {
+        for (let step = 1; step < 6; step++) {
+          const more = await page.evaluate((n) => {
+            const y = n * (window.innerHeight - 120);
+            if (y >= document.documentElement.scrollHeight - window.innerHeight - 40) return false;
+            window.scrollTo(0, y);
+            return true;
+          }, step);
+          if (!more) break;
+          await page.waitForTimeout(150);
+          await page.screenshot({ path: join(shots, `${name}-s${step}.png`) });
+        }
+      }
       // Scrolled to the end, nothing may still be behind the bar.
       await page.evaluate((inSheet) => {
         if (!inSheet) return window.scrollTo(0, document.documentElement.scrollHeight);

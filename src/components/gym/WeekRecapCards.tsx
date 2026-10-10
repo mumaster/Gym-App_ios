@@ -1,7 +1,18 @@
 import type { ReactNode } from "react";
-import { Beer, Check, Coffee, Droplet, Dumbbell, Footprints, Scale, Utensils } from "lucide-react";
+import {
+  Beer,
+  Check,
+  Coffee,
+  Droplet,
+  Dumbbell,
+  Footprints,
+  Scale,
+  Sparkles,
+  Utensils,
+} from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
-import { formatWaterAmount } from "../../lib/gym/nutrition";
+import { COFFEE_KINDS, formatWaterAmount, type CoffeeKind } from "../../lib/gym/nutrition";
+import { parseDayKey } from "../../lib/gym/schedule";
 import type { WeekRecap, WeekRecapDay } from "../../lib/gym/weekRecap";
 import { Card } from "./Screen";
 import { CardHead } from "./CardHead";
@@ -57,6 +68,126 @@ const formatMinutes = (m: number, locale: string) => {
     ? { value: `${h.toLocaleString(locale)} h ${rest}`, unit: "min" }
     : { value: h.toLocaleString(locale), unit: "h" };
 };
+
+/** One quiet line about the week, under a card's figures. */
+function FunFact({ children }: { children: ReactNode }) {
+  const t = useTranslation();
+  return (
+    <p className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-[13px] text-muted-foreground">
+      <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-primary-text" />
+      <span>
+        <span className="sr-only">{t.weekRecap.funFact}: </span>
+        {children}
+      </span>
+    </p>
+  );
+}
+
+/** The weekday name of a day key, in the app's language. */
+function useDayName() {
+  const locale = useLocale();
+  return (key: string) => parseDayKey(key).toLocaleDateString(locale, { weekday: "long" });
+}
+
+interface ChartSegment {
+  value: number;
+  /** Tailwind background class of this part of the bar. */
+  className: string;
+}
+
+/**
+ * Seven bars, one per day, for any per-day figure. Bars are slim rounded
+ * columns on a shared baseline with the day's value printed above (no box
+ * behind them), the weekday under. A limit or goal is a short solid tick
+ * across its own day's bar, at that day's height, since limits can differ per
+ * day; no dashed line. A day with nothing is a small stub so the row reads as
+ * seven. Over the limit the bar turns destructive (calories only).
+ */
+function DayChart({
+  days,
+  segments,
+  limit,
+  label,
+  ariaLabel,
+}: {
+  days: WeekRecapDay[];
+  segments: (d: WeekRecapDay) => ChartSegment[];
+  limit?: (d: WeekRecapDay) => number | undefined;
+  label: (d: WeekRecapDay) => string | null;
+  ariaLabel: (d: WeekRecapDay) => string;
+}) {
+  const t = useTranslation();
+  const total = (d: WeekRecapDay) => segments(d).reduce((s, x) => s + x.value, 0);
+  const max = Math.max(1, ...days.map((d) => Math.max(total(d), limit?.(d) ?? 0)));
+  return (
+    <ul className="grid grid-cols-7 gap-1">
+      {days.map((d) => {
+        const sum = total(d);
+        const lim = limit?.(d);
+        const text = label(d);
+        return (
+          <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
+            <span className="tabular h-4 text-[10px] font-medium leading-4 text-muted-foreground">
+              {text}
+            </span>
+            <div className="relative flex h-28 w-full items-end justify-center border-b border-border">
+              {sum > 0 ? (
+                <div
+                  className="flex w-5 flex-col-reverse overflow-hidden rounded-t-md"
+                  style={{ height: `${Math.max(4, (sum / max) * 100)}%` }}
+                >
+                  {segments(d).map((seg, i) =>
+                    seg.value > 0 ? (
+                      <div
+                        key={i}
+                        className={seg.className}
+                        style={{ height: `${(seg.value / sum) * 100}%` }}
+                      />
+                    ) : null,
+                  )}
+                </div>
+              ) : (
+                <div className="h-1 w-5 rounded-t-sm bg-foreground/10" />
+              )}
+              {lim != null ? (
+                <div
+                  aria-hidden
+                  className="absolute left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-foreground/70 ring-1 ring-background/70"
+                  style={{ bottom: `${(lim / max) * 100}%` }}
+                />
+              ) : null}
+            </div>
+            <span
+              className={`mt-1.5 text-[10px] font-semibold uppercase ${
+                d.today ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {t.common.dow[d.date.getDay()]}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** A dot, a name and a figure: the legend that also gives each part's total. */
+function Legend({ items }: { items: { dot?: string; tick?: boolean; label: string }[] }) {
+  return (
+    <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+      {items.map((i) => (
+        <li key={i.label} className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          {i.tick ? (
+            <span aria-hidden className="h-0.5 w-3 rounded-full bg-foreground/70" />
+          ) : (
+            <span aria-hidden className={`size-2.5 rounded-full ${i.dot}`} />
+          )}
+          <span className="tabular">{i.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** The seven days as a Health-style strip: a check on days with training. */
 function DayStrip({ days }: { days: WeekRecapDay[] }) {
@@ -163,6 +294,7 @@ export function WeekHero({
 export function StrengthCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
+  const dayName = useDayName();
   const { training } = recap;
   if (!training.sessions) return null;
   const time = formatMinutes(training.minutes, locale);
@@ -199,6 +331,14 @@ export function StrengthCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRec
           <Stat label={t.weekRecap.load} value={training.load.toLocaleString(locale)} />
         ) : null}
       </div>
+      {training.heaviest ? (
+        <FunFact>
+          {t.weekRecap.factHeaviest(
+            dayName(training.heaviest.key),
+            training.heaviest.value.toLocaleString(locale),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }
@@ -206,6 +346,7 @@ export function StrengthCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRec
 export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
+  const dayName = useDayName();
   const { cardio } = recap;
   if (!cardio.sessions) return null;
   const time = formatMinutes(cardio.minutes, locale);
@@ -242,56 +383,44 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
           </p>
         </div>
       ) : null}
+      {cardio.longest ? (
+        <FunFact>
+          {t.weekRecap.factCardioLongest(
+            dayName(cardio.longest.key),
+            lastTime(cardio.longest.value, locale),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }
 
-/** Calories per day as seven bars with the day's limit as a tick. */
+/** Calories per day, with each day's own limit as a tick across its bar. */
 function CalorieBars({ days }: { days: WeekRecapDay[] }) {
   const t = useTranslation();
   const locale = useLocale();
-  const max = Math.max(1, ...days.map((d) => Math.max(d.calories, d.calorieGoal ?? 0)));
+  const hasLimit = days.some((d) => d.calorieGoal != null);
   return (
     <div>
       <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDay}</p>
-      <ul className="grid grid-cols-7 gap-1.5">
-        {days.map((d) => {
-          const name = d.date.toLocaleDateString(locale, { weekday: "long" });
-          const over = d.calorieGoal != null && d.calories > d.calorieGoal;
-          return (
-            <li
-              key={d.key}
-              aria-label={`${name}: ${
-                d.logged ? `${d.calories.toLocaleString(locale)} kcal` : t.weekRecap.notLogged
-              }`}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="relative flex h-24 w-full items-end overflow-hidden rounded-lg bg-foreground/5">
-                {d.logged ? (
-                  <div
-                    className={`w-full rounded-lg ${over ? "bg-destructive" : "bg-primary"}`}
-                    style={{ height: `${Math.max(6, (d.calories / max) * 100)}%` }}
-                  />
-                ) : null}
-                {d.calorieGoal != null ? (
-                  <div
-                    aria-hidden
-                    className="absolute inset-x-0 border-t-2 border-dashed border-foreground/40"
-                    style={{ bottom: `${(d.calorieGoal / max) * 100}%` }}
-                  />
-                ) : null}
-              </div>
-              <span
-                className={`text-[10px] font-semibold uppercase ${
-                  d.today ? "text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {t.common.dow[d.date.getDay()]}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <DayChart
+        days={days}
+        segments={(d) => [
+          {
+            value: d.logged ? d.calories : 0,
+            className:
+              d.calorieGoal != null && d.calories > d.calorieGoal ? "bg-destructive" : "bg-primary",
+          },
+        ]}
+        limit={(d) => d.calorieGoal}
+        label={(d) => (d.logged ? d.calories.toLocaleString(locale) : null)}
+        ariaLabel={(d) =>
+          `${d.date.toLocaleDateString(locale, { weekday: "long" })}: ${
+            d.logged ? `${d.calories.toLocaleString(locale)} kcal` : t.weekRecap.notLogged
+          }`
+        }
+      />
+      {hasLimit ? <Legend items={[{ tick: true, label: t.weekRecap.limitLegend }]} /> : null}
     </div>
   );
 }
@@ -299,6 +428,7 @@ function CalorieBars({ days }: { days: WeekRecapDay[] }) {
 export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
+  const dayName = useDayName();
   const { nutrition } = recap;
   if (!nutrition.loggedDays || !nutrition.average) return null;
   const { average, calorieGoal } = nutrition;
@@ -361,12 +491,21 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
           {t.weekRecap.withinLimit(nutrition.daysWithinGoal, finishedLogged)}
         </p>
       ) : null}
+      {nutrition.highest ? (
+        <FunFact>
+          {t.weekRecap.factHighest(
+            dayName(nutrition.highest.key),
+            nutrition.highest.value.toLocaleString(locale),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }
 
 export function WaterCard({ recap }: { recap: WeekRecap }) {
   const t = useTranslation();
+  const dayName = useDayName();
   const { water } = recap;
   if (!water.daysLogged || water.averageMl == null) return null;
   return (
@@ -384,16 +523,45 @@ export function WaterCard({ recap }: { recap: WeekRecap }) {
         <Stat label={t.weekRecap.waterAvg} value={formatWaterAmount(water.averageMl)} />
         <Stat label={t.weekRecap.waterTotal} value={formatWaterAmount(water.totalMl)} />
       </div>
+      <div className="mt-4">
+        <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayWater}</p>
+        <DayChart
+          days={recap.days}
+          segments={(d) => [{ value: d.waterMl, className: "bg-primary" }]}
+          {...(water.goalMl ? { limit: () => water.goalMl ?? undefined } : {})}
+          label={(d) => (d.waterMl > 0 ? formatWaterAmount(d.waterMl) : null)}
+          ariaLabel={(d) =>
+            `${dayName(d.key)}: ${d.waterMl > 0 ? formatWaterAmount(d.waterMl) : t.weekRecap.notLogged}`
+          }
+        />
+        {water.goalMl ? <Legend items={[{ tick: true, label: t.weekRecap.goalLegend }]} /> : null}
+      </div>
+      {water.busiest ? (
+        <FunFact>
+          {t.weekRecap.factWater(
+            dayName(water.busiest.key),
+            formatWaterAmount(water.busiest.value),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }
 
-/** Coffee and alcohol share a card: both are a few small numbers. */
+const KIND_SHADE: Record<CoffeeKind, string> = {
+  espresso: "bg-primary",
+  filter: "bg-primary/65",
+  milk: "bg-primary/35",
+};
+
+/** Coffee and alcohol: a card each, with the days broken down. */
 export function DrinksCard({ recap }: { recap: WeekRecap }) {
   const t = useTranslation();
   const locale = useLocale();
+  const dayName = useDayName();
   const { coffee, alcohol } = recap;
-  if (!coffee.cups && !alcohol.glasses) return null;
+  const drinks = alcohol.beers + alcohol.wines;
+  if (!coffee.cups && !drinks) return null;
   return (
     <>
       {coffee.cups ? (
@@ -404,17 +572,77 @@ export function DrinksCard({ recap }: { recap: WeekRecap }) {
             subtitle={t.weekRecap.cups(coffee.cups)}
           />
           {coffee.averageMg != null ? (
-            <p className={text.meta}>{t.weekRecap.caffeineAvg(coffee.averageMg)}</p>
+            <p className={`${text.meta} mb-3`}>{t.weekRecap.caffeineAvg(coffee.averageMg)}</p>
+          ) : null}
+          <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayCoffee}</p>
+          <DayChart
+            days={recap.days}
+            segments={(d) =>
+              COFFEE_KINDS.map((k) => ({ value: d.coffeeByKind[k], className: KIND_SHADE[k] }))
+            }
+            label={(d) => (d.coffeeCups > 0 ? d.coffeeCups.toLocaleString(locale) : null)}
+            ariaLabel={(d) =>
+              `${dayName(d.key)}: ${d.coffeeCups > 0 ? t.weekRecap.cups(d.coffeeCups) : t.weekRecap.notLogged}`
+            }
+          />
+          <Legend
+            items={COFFEE_KINDS.filter((k) => coffee.byKind[k] > 0).map((k) => ({
+              dot: KIND_SHADE[k],
+              label: `${t.coffee.kinds[k]} ${coffee.byKind[k]}`,
+            }))}
+          />
+          {coffee.busiest ? (
+            <FunFact>
+              {t.weekRecap.factCoffeeBusiest(dayName(coffee.busiest.key), coffee.busiest.value)}
+              {coffee.favourite
+                ? ` ${t.weekRecap.factFavourite(t.coffee.kinds[coffee.favourite])}`
+                : ""}
+            </FunFact>
+          ) : coffee.favourite ? (
+            <FunFact>{t.weekRecap.factFavourite(t.coffee.kinds[coffee.favourite])}</FunFact>
           ) : null}
         </Card>
       ) : null}
-      {alcohol.glasses ? (
+      {drinks ? (
         <Card className="overflow-hidden p-4">
           <CardHead
             icon={Beer}
             title={t.weekRecap.alcohol}
             subtitle={t.weekRecap.glasses(alcohol.glasses.toLocaleString(locale))}
           />
+          <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayDrinks}</p>
+          <DayChart
+            days={recap.days}
+            segments={(d) => [
+              { value: d.beers, className: "bg-primary" },
+              { value: d.wines, className: "bg-primary/45" },
+            ]}
+            label={(d) =>
+              d.beers + d.wines > 0 ? (d.beers + d.wines).toLocaleString(locale) : null
+            }
+            ariaLabel={(d) =>
+              `${dayName(d.key)}: ${
+                d.beers + d.wines > 0
+                  ? t.weekRecap.drinksCount(d.beers + d.wines)
+                  : t.weekRecap.notLogged
+              }`
+            }
+          />
+          <Legend
+            items={[
+              ...(alcohol.beers
+                ? [{ dot: "bg-primary", label: t.weekRecap.beers(alcohol.beers) }]
+                : []),
+              ...(alcohol.wines
+                ? [{ dot: "bg-primary/45", label: t.weekRecap.wines(alcohol.wines) }]
+                : []),
+            ]}
+          />
+          {alcohol.busiest ? (
+            <FunFact>
+              {t.weekRecap.factAlcohol(dayName(alcohol.busiest.key), alcohol.busiest.value)}
+            </FunFact>
+          ) : null}
         </Card>
       ) : null}
     </>

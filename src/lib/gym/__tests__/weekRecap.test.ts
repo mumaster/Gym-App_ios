@@ -137,4 +137,64 @@ describe("buildWeekRecap", () => {
     expect(r.coffee.daysLogged).toBe(1);
     expect(r.weight).toEqual({ first: 80.4, last: 79.8, change: -0.6, weighIns: 2 });
   });
+
+  it("breaks drinks down per day and finds the busiest day", () => {
+    const at = (day: number) => new Date(2026, 8, day, 9).toISOString();
+    const drink = (day: number, id: string, drinkId: string, ml: number): FoodEntry => ({
+      ...food(day, 40, id),
+      grams: ml,
+      drink: drinkId,
+    });
+    const r = buildWeekRecap(
+      {
+        ...base,
+        waterEntries: [
+          { id: "1", ml: 500, logged_at: at(21) },
+          { id: "2", ml: 1500, logged_at: at(22) },
+        ],
+        coffeeEntries: [
+          { id: "c1", kind: "espresso", logged_at: at(21) },
+          { id: "c2", kind: "espresso", logged_at: at(22) },
+          { id: "c3", kind: "espresso", logged_at: at(22) },
+          { id: "c4", kind: "milk", logged_at: at(22) },
+        ],
+        foodEntries: [
+          drink(25, "d1", "pils", 330),
+          drink(25, "d2", "pils", 330),
+          drink(25, "d3", "redWine", 125),
+        ],
+      },
+      monday,
+      now,
+    );
+    const tue = r.days[1]!;
+    expect(tue.waterMl).toBe(1500);
+    expect(tue.coffeeCups).toBe(3);
+    expect(tue.coffeeByKind).toEqual({ espresso: 2, filter: 0, milk: 1 });
+    expect(r.days[4]).toMatchObject({ beers: 2, wines: 1 });
+    expect(r.coffee.byKind.espresso).toBe(3);
+    expect(r.coffee.favourite).toBe("espresso");
+    expect(r.coffee.busiest).toEqual({ key: tue.key, value: 3 });
+    expect(r.water.busiest).toEqual({ key: tue.key, value: 1500 });
+    expect(r.alcohol).toMatchObject({ beers: 2, wines: 1 });
+    // One day with drinks is trivially the busiest, so no fact for it.
+    expect(r.alcohol.busiest).toBeNull();
+  });
+
+  it("only names a peak when two or more sessions or days compete", () => {
+    const one = buildWeekRecap({ ...base, workouts: [workout(21, "a")] }, monday, now);
+    expect(one.training.heaviest).toBeNull();
+    const two = buildWeekRecap(
+      { ...base, workouts: [workout(21, "a"), workout(23, "b")] },
+      monday,
+      now,
+    );
+    expect(two.training.heaviest).not.toBeNull();
+    const kcal = buildWeekRecap(
+      { ...base, foodEntries: [food(21, 400), food(22, 900)] },
+      monday,
+      now,
+    );
+    expect(kcal.nutrition.highest).toEqual({ key: "2026-09-22", value: 900 * 1 });
+  });
 });
