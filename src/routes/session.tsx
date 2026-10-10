@@ -41,6 +41,7 @@ import { RecapShare } from "../components/gym/RecapShare";
 import { exerciseById } from "../lib/gym/data";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises, estimateSeconds } from "../lib/gym/generator";
+import { learnPace } from "../lib/gym/pace";
 import { useTranslation } from "../lib/gym/i18n";
 import {
   DECIMAL_INPUT_RE,
@@ -151,6 +152,9 @@ function SessionScreen() {
     nutritionProfile,
     firstName,
   } = useGym();
+  /** The user's own set pace (lib/gym/pace.ts), so the overtime projection
+   *  matches how fast they actually train rather than the fixed constants. */
+  const pace = useMemo(() => learnPace(workouts), [workouts]);
   const bodyKg = latestBodyKg(weightLog, nutritionProfile);
   const restNotifBody = firstName
     ? t.name.restCompleteBody(firstName)
@@ -606,7 +610,7 @@ function SessionScreen() {
         warmup_sets: warmupsEnabled ? Math.max(0, p.warmup_sets - warmDone(p.exercise_id)) : 0,
       }))
       .filter((p) => p.target_sets > 0);
-    const projected = Math.round(elapsed / 60 + estimateSeconds(remaining) / 60);
+    const projected = Math.round(elapsed / 60 + estimateSeconds(remaining, pace) / 60);
     const plannedMin = activeWorkout.duration_minutes;
     if (projected <= plannedMin) return null;
     const unstarted = blocks
@@ -618,7 +622,12 @@ function SessionScreen() {
     if (!pick) return null;
     const saves = Math.max(
       1,
-      Math.round(estimateSeconds(pick.b.indices.map((x) => plan[x]!)) / 60),
+      Math.round(
+        estimateSeconds(
+          pick.b.indices.map((x) => plan[x]!),
+          pace,
+        ) / 60,
+      ),
     );
     const name = exerciseById(plan[pick.b.indices[0]!]!.exercise_id)?.name ?? "";
     return { projected, plannedMin, indices: pick.b.indices, saves, name };
