@@ -20,6 +20,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as HistoryIndexRouteImport } from './routes/history.index'
 import { Route as HistoryWorkoutIdRouteImport } from './routes/history.$workoutId'
 import { Route as HistoryCardioCardioIdRouteImport } from './routes/history.cardio.$cardioId'
+import { Route as HistoryWeekWeekStartRouteImport } from './routes/history.week.$weekStart'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,11 @@ const HistoryCardioCardioIdRoute = HistoryCardioCardioIdRouteImport.update({
   path: '/cardio/$cardioId',
   getParentRoute: () => HistoryRoute,
 } as any)
+const HistoryWeekWeekStartRoute = HistoryWeekWeekStartRouteImport.update({
+  id: '/week/$weekStart',
+  path: '/week/$weekStart',
+  getParentRoute: () => HistoryRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history/': typeof HistoryIndexRoute
   '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
+  '/history/week/$weekStart': typeof HistoryWeekWeekStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history': typeof HistoryIndexRoute
   '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
+  '/history/week/$weekStart': typeof HistoryWeekWeekStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/history/$workoutId': typeof HistoryWorkoutIdRoute
   '/history/': typeof HistoryIndexRoute
   '/history/cardio/$cardioId': typeof HistoryCardioCardioIdRoute
+  '/history/week/$weekStart': typeof HistoryWeekWeekStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/history/$workoutId'
     | '/history/'
     | '/history/cardio/$cardioId'
+    | '/history/week/$weekStart'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/history/$workoutId'
     | '/history'
     | '/history/cardio/$cardioId'
+    | '/history/week/$weekStart'
   id:
     | '__root__'
     | '/'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/history/$workoutId'
     | '/history/'
     | '/history/cardio/$cardioId'
+    | '/history/week/$weekStart'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -247,6 +259,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryCardioCardioIdRouteImport
       parentRoute: typeof HistoryRoute
     }
+    '/history/week/$weekStart': {
+      id: '/history/week/$weekStart'
+      path: '/week/$weekStart'
+      fullPath: '/history/week/$weekStart'
+      preLoaderRoute: typeof HistoryWeekWeekStartRouteImport
+      parentRoute: typeof HistoryRoute
+    }
   }
 }
 
@@ -254,12 +273,14 @@ interface HistoryRouteChildren {
   HistoryWorkoutIdRoute: typeof HistoryWorkoutIdRoute
   HistoryIndexRoute: typeof HistoryIndexRoute
   HistoryCardioCardioIdRoute: typeof HistoryCardioCardioIdRoute
+  HistoryWeekWeekStartRoute: typeof HistoryWeekWeekStartRoute
 }
 
 const HistoryRouteChildren: HistoryRouteChildren = {
   HistoryWorkoutIdRoute: HistoryWorkoutIdRoute,
   HistoryIndexRoute: HistoryIndexRoute,
   HistoryCardioCardioIdRoute: HistoryCardioCardioIdRoute,
+  HistoryWeekWeekStartRoute: HistoryWeekWeekStartRoute,
 }
 
 const HistoryRouteWithChildren =

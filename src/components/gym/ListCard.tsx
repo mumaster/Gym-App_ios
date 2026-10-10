@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import { badge } from "./ui";
 
 /** A list as a card, built like a meal's card on the Food tab (Add food's
@@ -19,6 +19,7 @@ export function ListCard({
   filled,
   actions,
   fold,
+  bandLink,
   children,
 }: {
   icon: LucideIcon;
@@ -27,6 +28,10 @@ export function ListCard({
   filled: boolean;
   actions?: ReactNode;
   fold?: { open: boolean; onToggle: () => void } | undefined;
+  /** Makes the whole band a link to another screen (History's weeks open
+   *  their recap): the caller draws the `Link` with the className and
+   *  children it's handed, and a chevron closes the band. */
+  bandLink?: (band: { className: string; children: ReactNode }) => ReactNode;
   children: ReactNode;
 }) {
   const bodyId = useId();
@@ -62,6 +67,17 @@ export function ListCard({
             }`}
           />
         </button>
+      ) : bandLink ? (
+        bandLink({
+          className:
+            "card-head flex min-h-[56px] w-full items-center gap-3 px-4 py-2 text-left active:brightness-95",
+          children: (
+            <>
+              {heading}
+              <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+            </>
+          ),
+        })
       ) : (
         <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
           {heading}
