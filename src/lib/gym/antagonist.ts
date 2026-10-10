@@ -39,11 +39,17 @@ export function isAntagonistPair(a: Exercise, b: Exercise): boolean {
   );
 }
 
+/** The muscle to show for an exercise: Arms is split into Biceps (pull) and
+ *  Triceps (push), anything else keeps its group. An arm exercise that is
+ *  neither (a custom one) stays "Arms". */
+export function muscleLabel(e: Exercise): string {
+  if (e.primary_muscle !== "Arms") return e.primary_muscle;
+  return isPush(e) ? "Triceps" : isPull(e) ? "Biceps" : "Arms";
+}
+
 /** Muscles that oppose this exercise, for user-facing copy. */
 export function antagonistLabel(a: Exercise, b: Exercise): string {
-  const arm = (e: Exercise) =>
-    e.primary_muscle === "Arms" ? (isPush(e) ? "Triceps" : "Biceps") : e.primary_muscle;
-  return `${arm(a)} / ${arm(b)}`.toUpperCase();
+  return `${muscleLabel(a)} / ${muscleLabel(b)}`.toUpperCase();
 }
 
 export const opposingLabel = (a: Exercise): string => {
@@ -58,4 +64,17 @@ export function antagonistAlternatives(a: Exercise, pool: Exercise[]): Exercise[
   return pool
     .filter((e) => e.id !== a.id && isAntagonistPair(a, e))
     .sort((x, y) => popularityOf(y.id) - popularityOf(x.id));
+}
+
+/** Swaps for `current` inside an antagonist superset that keep its muscle:
+ *  `sameMuscle` (alternativesFor, best match first) minus `current` and the
+ *  partner, and minus anything that wouldn't still pair with the partner. */
+export function sameMuscleSwaps(
+  current: Exercise,
+  partner: Exercise,
+  sameMuscle: Exercise[],
+): Exercise[] {
+  return sameMuscle.filter(
+    (e) => e.id !== current.id && e.id !== partner.id && isAntagonistPair(partner, e),
+  );
 }
