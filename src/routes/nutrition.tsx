@@ -865,7 +865,7 @@ function MealGroup({
             <button
               onClick={onSaveAsMeal}
               aria-label={t.nutrition.saveAsMeal(t.mealTypes[meal])}
-              className="tap-target flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+              className="tap-target flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
             >
               <HapticSwitch />
               <BookmarkPlus className="size-4" />
