@@ -17,6 +17,11 @@ export const button = {
   /** A second, quieter action next to or under a primary one. */
   secondary:
     "flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl bg-secondary px-4 text-[14px] font-bold text-secondary-foreground active:scale-[0.985] disabled:opacity-40",
+  /** `secondary` in the accent: a light accent wash with accent text, for
+   *  a second action that should read as the accent without competing with
+   *  the solid main one above it (Weight's Import from scale). */
+  tonal:
+    "flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl bg-primary/15 px-4 text-[14px] font-bold text-primary-text active:scale-[0.985] disabled:opacity-40",
   /** Logs something in one tap, repeated in a row or grid (the drink
    *  quick-adds). Outlined so a card full of them stays calm. Give it a
    *  height (h-12, h-14) at the call site. */

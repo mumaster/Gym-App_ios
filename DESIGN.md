@@ -148,6 +148,7 @@ Reuse these before building anything new. A new pattern that will appear twice g
 - **Buttons** (`button.*` in `ui.ts`):
   - `primary` is the one main action, 52 pt, 16 px bold. Every main action uses it, never a hand-built copy (about 35 had drifted to 48, 52 and 56 pt with 15–17 px text). Width, margins and `flex-1` go at the call site; it has no glow (the glow is Home's circle and the hero's button). Two exceptions: the session's Log set is 56, the button pressed dozens of times a workout with tired hands; Add food's review form uses 48 so it fits without scrolling. Compact actions beside an input (water's Add, bodyweight's Log) and inside the rest panel stay smaller.
   - `secondary` is a quieter action, 44 px.
+  - `tonal` is `secondary` in a light accent wash with accent text, for a second action that should carry the accent under a solid one without competing with it (asked for: Weight's Import from scale was grey).
   - `add` is an outlined one-tap key. It is repeated, so it is never solid.
   - `more` is a dashed key that opens more choices next to `add` keys.
   - `destructive` is a tinted red action. Deleting something big takes two taps (the button turns into "Tap again to delete").
