@@ -5,6 +5,7 @@ import { isNiche, popularityOf } from "./exercisePopularity";
 import { crossEstimate, withKnownLifts, type KnownLift } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
+import type { Pace } from "./pace";
 import { sharesLoadStation } from "./stations";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets, setContribution, weeklyTarget } from "./volume";
 import type {
@@ -76,8 +77,22 @@ const overSessionCap = (plan: PlannedExercise[]) =>
 const sidesOf = (p: PlannedExercise) =>
   EXERCISES.find((e) => e.id === p.exercise_id)?.unilateral ? 2 : 1;
 
-export function estimateSeconds(plan: PlannedExercise[]): number {
+/** No working-set cycle (rest + work) is shorter than this, so a learned
+ *  pace that is faster than the planned rest can't make sets free. */
+const MIN_SET_CYCLE_SECONDS = 20;
+
+/**
+ * Estimated session length. Without `pace` every working set takes
+ * WORKING_SET_SECONDS and every exercise change TRANSITION_SECONDS. With the
+ * user's own pace (pace.ts, learned from their finished workouts) the work
+ * per set and the transition are replaced by their measured medians, so
+ * the same plan gets a different — more honest — length per person.
+ * Warm-ups and the superset shuttle stay on the constants: pace.ts doesn't
+ * measure them.
+ */
+export function estimateSeconds(plan: PlannedExercise[], pace?: Pace | null): number {
   let total = 0;
+  const transition = pace?.transitionSeconds ?? TRANSITION_SECONDS;
   plan.forEach((p, i) => {
     const next = plan[i + 1];
     const pairedWithNext =
@@ -85,19 +100,23 @@ export function estimateSeconds(plan: PlannedExercise[]): number {
     const warm = p.warmup_sets ?? 0;
     const sides = sidesOf(p);
     total += warm * (WARMUP_SET_SECONDS * sides + WARMUP_REST_SECONDS);
-    total += p.target_sets * WORKING_SET_SECONDS * sides;
+    const work =
+      sides * (pace?.workPerSide[p.exercise_id] ?? pace?.defaultWorkPerSide ?? WORKING_SET_SECONDS);
     // rest after every working set except the very last set of the session
-    const rests = i === plan.length - 1 ? p.target_sets - 1 : p.target_sets;
-    total += Math.max(0, rests) * p.rest_seconds;
+    const unrested = i === plan.length - 1 ? Math.min(1, p.target_sets) : 0;
+    const rested = p.target_sets - unrested;
+    total += rested * (p.rest_seconds + Math.max(MIN_SET_CYCLE_SECONDS - p.rest_seconds, work));
+    total += unrested * Math.max(MIN_SET_CYCLE_SECONDS, work);
     if (i < plan.length - 1) {
       // inside a superset pair you shuttle between two stations every round
-      total += pairedWithNext ? 15 * p.target_sets : TRANSITION_SECONDS;
+      total += pairedWithNext ? 15 * p.target_sets : transition;
     }
   });
   return total;
 }
 
-export const estimateMinutes = (plan: PlannedExercise[]) => Math.round(estimateSeconds(plan) / 60);
+export const estimateMinutes = (plan: PlannedExercise[], pace?: Pace | null) =>
+  Math.round(estimateSeconds(plan, pace) / 60);
 
 /* ---------------- generation ---------------- */
 
@@ -256,6 +275,11 @@ interface GenerateArgs {
    *  from each muscle's weekly target, so a muscle that's behind gets more
    *  and one that's done gets least. Empty = a fresh week. */
   weekDone?: Partial<Record<Muscle, number>>;
+  /** The user's own set pace and transition time (pace.ts), learned from
+   *  their finished workouts. The plan is fitted to the time budget with
+   *  it, so a slower lifter gets fewer sets for the same minutes. Omitted
+   *  or null = the app's fixed constants. */
+  pace?: Pace | null;
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -392,7 +416,7 @@ function applySupersets(plan: PlannedExercise[], startGroup = 0): PlannedExercis
 
 /**
  * Builds a plan against a real time budget:
- *   (working sets x 45s) + (warm-ups) + (rest intervals) + (transitions)
+ *   (working sets x 45s, or the user's own pace) + (warm-ups) + (rest intervals) + (transitions)
  * so the estimate lands within ~±8% of the requested duration.
  */
 export function generateWorkout({
@@ -412,6 +436,7 @@ export function generateWorkout({
   volumeMultiplier = 1,
   focusMuscles = [],
   weekDone = {},
+  pace = null,
 }: GenerateArgs): PlannedExercise[] {
   const focus = new Set(focusMuscles);
   /** Sets still missing from a muscle's weekly target (10, or 20 for a
@@ -603,12 +628,12 @@ export function generateWorkout({
     hits.set(target, hits.get(target)! + 1);
 
     const candidatePlan = [...plan, entry];
-    const projected = estimateSeconds(candidatePlan);
+    const projected = estimateSeconds(candidatePlan, pace);
     // always keep a minimum of 2 exercises, otherwise respect the budget
     if (plan.length >= 2 && projected > budget * 1.04) break;
     used.add(choice.id);
     plan.push(entry);
-    if (estimateSeconds(plan) >= budget * 0.93) break;
+    if (estimateSeconds(plan, pace) >= budget * 0.93) break;
   }
 
   // top up with extra sets if we finished well under the budget
@@ -629,7 +654,7 @@ export function generateWorkout({
     .map((p, i) => ({ i, n: needOf(p) }))
     .sort((a, b) => b.n - a.n || a.i - b.i)
     .map(({ i }) => i);
-  while (estimateSeconds(plan) < budget * 0.9 && plan.length && guard < 24) {
+  while (estimateSeconds(plan, pace) < budget * 0.9 && plan.length && guard < 24) {
     guard++;
     const idx = order[guard % order.length]!;
     const entry = plan[idx]!;
@@ -637,12 +662,12 @@ export function generateWorkout({
     const bumped = { ...entry, target_sets: entry.target_sets + 1 };
     const next = plan.map((p, i) => (i === idx ? bumped : p));
     if (overSessionCap(next)) continue;
-    if (estimateSeconds(next) > budget * 1.04) break;
+    if (estimateSeconds(next, pace) > budget * 1.04) break;
     plan[idx] = bumped;
   }
 
   // trim if we overshot badly (e.g. very short sessions) — never touch loved picks
-  while (plan.length > 2 && estimateSeconds(plan) > budget * 1.08) {
+  while (plan.length > 2 && estimateSeconds(plan, pace) > budget * 1.08) {
     let idx = -1;
     for (let i = plan.length - 1; i >= 0; i--) {
       if (!plan[i]!.loved) {
@@ -730,14 +755,14 @@ export function generateWorkout({
     }
     return false;
   };
-  while (paired.length > 2 && estimateSeconds(paired) > budget * 1.06) {
+  while (paired.length > 2 && estimateSeconds(paired, pace) > budget * 1.06) {
     if (!dropLastFreeBlock(paired)) break;
   }
 
   // keep adding complementary pairs / finishers until we actually fill the time
   let group = paired.reduce((m, p) => Math.max(m, p.superset_group ?? 0), 0);
   let fillGuard = 0;
-  while (estimateSeconds(paired) < budget * 0.92 && fillGuard < 12) {
+  while (estimateSeconds(paired, pace) < budget * 0.92 && fillGuard < 12) {
     fillGuard++;
 
     const picks: { entry: PlannedExercise; ex: Exercise }[] = [];
@@ -778,7 +803,7 @@ export function generateWorkout({
         ...paired,
         ...makePair(picks[0]!.entry, picks[1]!.entry, picks[0]!.ex, picks[1]!.ex, group),
       ];
-      if (estimateSeconds(next) > budget * 1.06) break;
+      if (estimateSeconds(next, pace) > budget * 1.06) break;
       paired = next;
       continue;
     }
@@ -797,7 +822,7 @@ export function generateWorkout({
     const bumped = paired.map((p, i) =>
       i === idx || i === idx + 1 ? { ...p, target_sets: p.target_sets + 1 } : p,
     );
-    if (estimateSeconds(bumped) > budget * 1.06 || overSessionCap(bumped)) break;
+    if (estimateSeconds(bumped, pace) > budget * 1.06 || overSessionCap(bumped)) break;
     paired = bumped;
   }
 

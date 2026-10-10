@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Play, Trash2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { estimateMinutes } from "../../lib/gym/generator";
 import { useTranslation } from "../../lib/gym/i18n";
+import { learnPace } from "../../lib/gym/pace";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Muscle, PlannedExercise } from "../../lib/gym/types";
 
@@ -31,7 +32,8 @@ export function WorkoutTemplatesSheet({
   draft?: Draft | null;
   onStart: (plan: PlannedExercise[], duration_minutes: number, target_muscles: Muscle[]) => void;
 }) {
-  const { workoutTemplates, saveWorkoutTemplate, deleteWorkoutTemplate } = useGym();
+  const { workoutTemplates, saveWorkoutTemplate, deleteWorkoutTemplate, workouts } = useGym();
+  const pace = useMemo(() => learnPace(workouts), [workouts]);
   const t = useTranslation();
   const [name, setName] = useState("");
 
@@ -51,7 +53,10 @@ export function WorkoutTemplatesSheet({
       <BottomSheet open={open} onClose={onClose} title={t.workoutTemplates.saveAsTemplate}>
         <div className="space-y-4">
           <p className="text-[13px] text-muted-foreground">
-            {t.workoutTemplates.exerciseSummary(draft.plan.length, estimateMinutes(draft.plan))}
+            {t.workoutTemplates.exerciseSummary(
+              draft.plan.length,
+              estimateMinutes(draft.plan, pace),
+            )}
           </p>
           <input
             autoFocus
@@ -78,7 +83,10 @@ export function WorkoutTemplatesSheet({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold">{tpl.name}</p>
                 <p className="text-[13px] text-muted-foreground">
-                  {t.workoutTemplates.exerciseSummary(tpl.plan.length, estimateMinutes(tpl.plan))}
+                  {t.workoutTemplates.exerciseSummary(
+                    tpl.plan.length,
+                    estimateMinutes(tpl.plan, pace),
+                  )}
                 </p>
               </div>
               <button
