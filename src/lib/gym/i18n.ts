@@ -32,6 +32,8 @@ export const LOCALE: Record<Language, string> = { en: "en-US", nl: "nl-NL" };
  *  and lifters commonly know these terms in English regardless of app
  *  language — translating a 350+ entry exercise database is a distinct,
  *  much larger undertaking from translating the app's own chrome. */
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 const en = {
   common: {
     save: "Save",
@@ -723,6 +725,25 @@ const en = {
     weighIns: (n: number) => `${n} ${n === 1 ? "weigh-in" : "weigh-ins"}`,
     weightLatest: "Latest",
     weightChange: "Change this week",
+    funFact: "Fun fact",
+    limitLegend: "Limit",
+    goalLegend: "Goal",
+    perDayWater: "Water per day",
+    perDayCoffee: "Cups per day",
+    perDayDrinks: "Drinks per day",
+    beers: (n: number) => `${n} ${n === 1 ? "beer" : "beers"}`,
+    wines: (n: number) => `${n} ${n === 1 ? "glass of wine" : "glasses of wine"}`,
+    drinksCount: (n: number) => `${n} ${n === 1 ? "drink" : "drinks"}`,
+    factHeaviest: (day: string, kg: string) => `${day} was your heaviest session: ${kg} kg lifted.`,
+    factLongest: (day: string, time: string) => `${day} was your longest session at ${time}.`,
+    factCardioLongest: (day: string, time: string) =>
+      `${day} was your longest cardio session at ${time}.`,
+    factHighest: (day: string, kcal: string) =>
+      `${day} was your biggest eating day at ${kcal} kcal.`,
+    factWater: (day: string, amount: string) => `${day} was your thirstiest day with ${amount}.`,
+    factCoffeeBusiest: (day: string, n: number) => `${day} was the coffee peak with ${n} cups.`,
+    factFavourite: (kind: string) => `Your go-to this week was ${kind.toLowerCase()}.`,
+    factAlcohol: (day: string, n: number) => `Most drinks were on ${day}: ${n}.`,
   },
   historyDetail: {
     title: "Session",
@@ -2362,6 +2383,26 @@ const nl: Dict = {
     weighIns: (n: number) => `${n} ${n === 1 ? "weeg-in" : "weeg-ins"}`,
     weightLatest: "Laatste",
     weightChange: "Verschil deze week",
+    funFact: "Weetje",
+    limitLegend: "Limiet",
+    goalLegend: "Doel",
+    perDayWater: "Water per dag",
+    perDayCoffee: "Koppen per dag",
+    perDayDrinks: "Drankjes per dag",
+    beers: (n: number) => `${n} ${n === 1 ? "biertje" : "biertjes"}`,
+    wines: (n: number) => `${n} ${n === 1 ? "glas wijn" : "glazen wijn"}`,
+    drinksCount: (n: number) => `${n} ${n === 1 ? "drankje" : "drankjes"}`,
+    factHeaviest: (day: string, kg: string) =>
+      `${cap(day)} was je zwaarste sessie: ${kg} kg getild.`,
+    factLongest: (day: string, time: string) => `${cap(day)} was je langste sessie: ${time}.`,
+    factCardioLongest: (day: string, time: string) =>
+      `${cap(day)} was je langste cardiosessie: ${time}.`,
+    factHighest: (day: string, kcal: string) =>
+      `${cap(day)} was je zwaarste eetdag met ${kcal} kcal.`,
+    factWater: (day: string, amount: string) => `${cap(day)} was je dorstigste dag met ${amount}.`,
+    factCoffeeBusiest: (day: string, n: number) => `${cap(day)} was de koffiepiek met ${n} koppen.`,
+    factFavourite: (kind: string) => `Je favoriet deze week was ${kind.toLowerCase()}.`,
+    factAlcohol: (day: string, n: number) => `De meeste drankjes waren op ${day}: ${n}.`,
   },
   historyDetail: {
     title: "Sessie",
