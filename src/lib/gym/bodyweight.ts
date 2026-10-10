@@ -103,6 +103,19 @@ export function weightTrend(entries: WeightEntry[], today = new Date()): WeightT
   };
 }
 
+/** Which chart point to read out. The pick is remembered by timestamp, not
+ *  index: removing a weigh-in shifts the indices, and a stale one would point
+ *  at the wrong dot, or past the end. A pick that is gone falls back to the
+ *  latest weigh-in, unhighlighted. Null when there is nothing to show. */
+export function chartSelection(
+  pts: { t: number }[],
+  activeT: number | null,
+): { index: number; picked: boolean } | null {
+  if (pts.length === 0) return null;
+  const at = activeT === null ? -1 : pts.findIndex((p) => p.t === activeT);
+  return at >= 0 ? { index: at, picked: true } : { index: pts.length - 1, picked: false };
+}
+
 /** Target rate in kg/week for the profile's goal: recomposition at the slow
  *  loss its 250 kcal deficit gives (about 0.23 kg); cutting at Helms et al.
  *  2014's 0.5 / 0.75 / 1% of bodyweight per week (as in the calorie
