@@ -89,137 +89,79 @@ function useDayName() {
   return (key: string) => parseDayKey(key).toLocaleDateString(locale, { weekday: "long" });
 }
 
+interface BarSegment {
+  value: number;
+  /** Tailwind background class of this part of the bar. */
+  className: string;
+}
+
 /**
- * Seven progress rings, one per day, for a figure with a daily limit or goal
- * (calories, water): the ring fills to that day's own limit, so a closed ring
- * means "reached it" whatever the day's limit was. Every ring is the same
- * size, the arc has round ends and nothing is ever cut off: a day over its
- * limit is a closed ring in red (when `overIsBad`). Without a limit the ring
- * is relative to the week's biggest day. The day's value and weekday sit
- * under the ring, as in `DayDots`; a day with nothing logged is just the empty track.
+ * Seven vertical bars, one per day, on a shared baseline. A day's bar is a
+ * grey track as tall as its goal (or, without one, the week's biggest day) and
+ * the accent fills it up to what was reached. Over the goal the bar grows
+ * taller than the track and the part above the goal turns red (when
+ * `overIsBad`), so the heights differ by design: a taller bar is a bigger
+ * day. The pill is one clipped shape, so its top is always round. The value
+ * and weekday sit under each bar; a day with nothing logged is just its track.
+ * `segments` stacks several kinds (coffee, beer and wine) from the bottom.
  */
-function DayRings({
+function DayBars({
   days,
-  value,
+  segments,
   limit,
   overIsBad,
   label,
   ariaLabel,
 }: {
   days: WeekRecapDay[];
-  value: (d: WeekRecapDay) => number;
+  segments: (d: WeekRecapDay) => BarSegment[];
   limit?: (d: WeekRecapDay) => number | null | undefined;
   overIsBad?: boolean;
   label: (d: WeekRecapDay) => string | null;
   ariaLabel: (d: WeekRecapDay) => string;
 }) {
   const t = useTranslation();
-  const max = Math.max(1, ...days.map(value));
-  const R = 15;
-  const C = 2 * Math.PI * R;
+  const sum = (d: WeekRecapDay) => segments(d).reduce((s, p) => s + p.value, 0);
+  const scale = Math.max(1, ...days.map((d) => Math.max(limit?.(d) ?? 0, sum(d))));
   return (
     <ul className="grid grid-cols-7 gap-1">
       {days.map((d) => {
-        const v = value(d);
-        const ref = limit?.(d) ?? max;
-        const ratio = v > 0 ? Math.min(1, v / ref) : 0;
-        const over = overIsBad && v > ref && limit?.(d) != null;
+        const total = sum(d);
+        const goal = limit?.(d) ?? null;
+        const ref = goal ?? scale;
+        const height = Math.max(ref, total);
+        const over = goal != null && total > goal;
+        const parts: BarSegment[] = [];
+        if (over && overIsBad) {
+          parts.push({ value: goal, className: "bg-primary" });
+          parts.push({ value: total - goal, className: "bg-destructive" });
+        } else {
+          parts.push(...segments(d).filter((p) => p.value > 0));
+          if (ref > total) parts.push({ value: ref - total, className: "bg-foreground/10" });
+        }
         const text = label(d);
         return (
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
-            <svg viewBox="0 0 36 36" className="size-9 -rotate-90" aria-hidden>
-              <circle
-                cx="18"
-                cy="18"
-                r={R}
-                fill="none"
-                strokeWidth="4"
-                className="stroke-foreground/10"
-              />
-              {ratio > 0 ? (
-                <circle
-                  cx="18"
-                  cy="18"
-                  r={R}
-                  fill="none"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray={`${Math.max(0.01, ratio * C)} ${C}`}
-                  className={over ? "stroke-destructive" : "stroke-primary"}
-                />
-              ) : null}
-            </svg>
+            <div className="flex h-28 w-full items-end justify-center" aria-hidden>
+              <div
+                className="flex w-5 flex-col-reverse overflow-hidden rounded-full"
+                style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+              >
+                {parts.map((p, i) => (
+                  <span
+                    key={i}
+                    className={p.className}
+                    style={{ height: `${(p.value / height) * 100}%` }}
+                  />
+                ))}
+              </div>
+            </div>
             <span
               className={`tabular mt-1.5 h-4 text-[11px] font-semibold leading-4 ${
-                over ? "text-destructive-text" : ""
+                over && overIsBad ? "text-destructive-text" : ""
               }`}
             >
               {text}
-            </span>
-            <span
-              className={`text-[10px] font-semibold uppercase ${
-                d.today ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {t.common.dow[d.date.getDay()]}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-interface DotPart {
-  count: number;
-  /** Tailwind background class of these dots. */
-  className: string;
-}
-
-/** The most dots a day shows; the printed count is always the real one. */
-const MAX_DOTS = 8;
-
-/**
- * Countable things per day (cups, drinks) as a stack of dots, one per item,
- * coloured by kind and growing up from a shared baseline, so the week reads
- * like a tally: count the dots or read the number under them. The column is
- * as tall as the week's busiest day (at most `MAX_DOTS`).
- */
-function DayDots({
-  days,
-  parts,
-  ariaLabel,
-}: {
-  days: WeekRecapDay[];
-  parts: (d: WeekRecapDay) => DotPart[];
-  ariaLabel: (d: WeekRecapDay) => string;
-}) {
-  const t = useTranslation();
-  const locale = useLocale();
-  const count = (d: WeekRecapDay) => parts(d).reduce((s, p) => s + p.count, 0);
-  const rows = Math.min(MAX_DOTS, Math.max(1, ...days.map(count)));
-  return (
-    <ul className="grid grid-cols-7 gap-1">
-      {days.map((d) => {
-        const n = count(d);
-        const dots = parts(d)
-          .flatMap((p) => Array.from({ length: p.count }, () => p.className))
-          .slice(0, MAX_DOTS);
-        return (
-          <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
-            <div
-              className="flex flex-col-reverse items-center gap-[3px]"
-              style={{ height: rows * 8 + (rows - 1) * 3 }}
-              aria-hidden
-            >
-              {dots.length ? (
-                dots.map((c, i) => <span key={i} className={`size-2 rounded-full ${c}`} />)
-              ) : (
-                <span className="size-2 rounded-full bg-foreground/10" />
-              )}
-            </div>
-            <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
-              {n > 0 ? n.toLocaleString(locale) : ""}
             </span>
             <span
               className={`text-[10px] font-semibold uppercase ${
@@ -241,7 +183,7 @@ function Legend({ items }: { items: { dot: string; label: string }[] }) {
     <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
       {items.map((i) => (
         <li key={i.label} className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <span aria-hidden className={`size-2.5 rounded-full ${i.dot}`} />
+          <span aria-hidden className={`size-2.5 rounded-sm ${i.dot}`} />
           <span className="tabular">{i.label}</span>
         </li>
       ))}
@@ -463,9 +405,9 @@ function CalorieBars({ days }: { days: WeekRecapDay[] }) {
   return (
     <div>
       <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDay}</p>
-      <DayRings
+      <DayBars
         days={days}
-        value={(d) => (d.logged ? d.calories : 0)}
+        segments={(d) => [{ value: d.logged ? d.calories : 0, className: "bg-primary" }]}
         limit={(d) => d.calorieGoal}
         overIsBad
         label={(d) => (d.logged ? d.calories.toLocaleString(locale) : null)}
@@ -580,10 +522,10 @@ export function WaterCard({ recap }: { recap: WeekRecap }) {
       </div>
       <div className="mt-4">
         <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayWater}</p>
-        <DayRings
+        <DayBars
           days={recap.days}
-          value={(d) => d.waterMl}
-          {...(water.goalMl ? { limit: () => water.goalMl } : {})}
+          segments={(d) => [{ value: d.waterMl, className: "bg-primary" }]}
+          {...(water.goalMl ? { limit: () => water.goalMl, overIsBad: true } : {})}
           label={(d) => (d.waterMl > 0 ? formatWaterAmount(d.waterMl) : null)}
           ariaLabel={(d) =>
             `${dayName(d.key)}: ${d.waterMl > 0 ? formatWaterAmount(d.waterMl) : t.weekRecap.notLogged}`
@@ -630,11 +572,12 @@ export function DrinksCard({ recap }: { recap: WeekRecap }) {
             <p className={`${text.meta} mb-3`}>{t.weekRecap.caffeineAvg(coffee.averageMg)}</p>
           ) : null}
           <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayCoffee}</p>
-          <DayDots
+          <DayBars
             days={recap.days}
-            parts={(d) =>
-              COFFEE_KINDS.map((k) => ({ count: d.coffeeByKind[k], className: KIND_SHADE[k] }))
+            segments={(d) =>
+              COFFEE_KINDS.map((k) => ({ value: d.coffeeByKind[k], className: KIND_SHADE[k] }))
             }
+            label={(d) => (d.coffeeCups > 0 ? String(d.coffeeCups) : null)}
             ariaLabel={(d) =>
               `${dayName(d.key)}: ${d.coffeeCups > 0 ? t.weekRecap.cups(d.coffeeCups) : t.weekRecap.notLogged}`
             }
@@ -665,12 +608,13 @@ export function DrinksCard({ recap }: { recap: WeekRecap }) {
             subtitle={t.weekRecap.glasses(alcohol.glasses.toLocaleString(locale))}
           />
           <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayDrinks}</p>
-          <DayDots
+          <DayBars
             days={recap.days}
-            parts={(d) => [
-              { count: d.beers, className: "bg-primary" },
-              { count: d.wines, className: "bg-primary/45" },
+            segments={(d) => [
+              { value: d.beers, className: "bg-primary" },
+              { value: d.wines, className: "bg-primary/45" },
             ]}
+            label={(d) => (d.beers + d.wines > 0 ? String(d.beers + d.wines) : null)}
             ariaLabel={(d) =>
               `${dayName(d.key)}: ${
                 d.beers + d.wines > 0
