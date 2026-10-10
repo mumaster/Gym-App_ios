@@ -128,7 +128,7 @@ export function BodyweightCard({
             haptic(10);
             setImportOpen(true);
           }}
-          className={`${button.secondary} w-full`}
+          className={`${button.tonal} w-full`}
         >
           <ImagePlus className="size-4" /> {t.scale.importButton}
         </button>
