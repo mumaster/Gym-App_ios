@@ -40,6 +40,7 @@ import {
   trainingDaysThisWeek,
 } from "../lib/gym/streak";
 import { useGym } from "../lib/gym/store";
+import { weekKeyOf } from "../lib/gym/weekRecap";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import type { CardioSession, Muscle, Workout } from "../lib/gym/types";
 import { button, chip } from "../components/gym/ui";
@@ -163,6 +164,10 @@ function HistoryScreen() {
       const key = mondayOf(new Date(item.date)).getTime();
       groups.set(key, [...(groups.get(key) ?? []), item]);
     }
+    // This week always has a card once anything is tracked, so its recap
+    // is reachable before the first session of the week.
+    const thisMonday = mondayOf(new Date()).getTime();
+    if (items.length && !groups.has(thisMonday)) groups.set(thisMonday, []);
     return [...groups.entries()]
       .sort((a, b) => b[0] - a[0])
       .map(([monday, list]) => ({
@@ -241,25 +246,35 @@ function HistoryScreen() {
               const weeksAgo = Math.round(
                 (mondayOf(new Date()).getTime() - monday.getTime()) / (7 * 86_400_000),
               );
+              const weekLabel =
+                weeksAgo === 0
+                  ? t.history.thisWeek
+                  : weeksAgo === 1
+                    ? t.history.lastWeek
+                    : t.history.weekOf(
+                        monday.toLocaleDateString(locale, { day: "numeric", month: "short" }),
+                      );
               return (
                 <ListCard
                   key={monday.getTime()}
                   icon={CalendarDays}
-                  title={
-                    weeksAgo === 0
-                      ? t.history.thisWeek
-                      : weeksAgo === 1
-                        ? t.history.lastWeek
-                        : t.history.weekOf(
-                            monday.toLocaleDateString(locale, { day: "numeric", month: "short" }),
-                          )
-                  }
+                  title={weekLabel}
                   subtitle={t.history.weekSummary(
                     list.length - cardioCount,
                     cardioCount,
                     load != null ? load.toLocaleString(locale) : null,
                   )}
                   filled
+                  bandLink={({ className, children }) => (
+                    <Link
+                      to="/history/week/$weekStart"
+                      params={{ weekStart: weekKeyOf(monday) }}
+                      aria-label={t.weekRecap.openAria(weekLabel)}
+                      className={className}
+                    >
+                      {children}
+                    </Link>
+                  )}
                 >
                   {list.map((item) => {
                     if (item.kind === "cardio") {

@@ -176,11 +176,25 @@ function demoState() {
     nutritionGoals: { calories: 2600, protein: 180, carbs: 300, fat: 80, fiber: 35, salt: 5 },
     waterGoalMl: 2600,
     waterEntries: [
+      // A few earlier days, so the weekly recap has more than today to sum.
+      ...[1, 2, 3, 4].map((d) => ({
+        id: `wd${d}`,
+        ml: 1800 + d * 250,
+        logged_at: iso(now - d * day),
+      })),
       { id: "x", ml: 500, logged_at: today },
       { id: "y", ml: 250, logged_at: today },
     ],
     coffeeEntries: [{ id: "c1", kind: "espresso", logged_at: today }],
     foodEntries: [
+      ...[1, 2, 3, 4].map((d) => ({
+        id: `fd${d}`,
+        name: "Pasta",
+        grams: 600 + d * 80,
+        meal: "dinner",
+        logged_at: iso(now - d * day),
+        per100: per(150 + d * 5, 6, 28, 3),
+      })),
       {
         id: "f1",
         name: "Banaan",
