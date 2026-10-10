@@ -99,8 +99,8 @@ interface BarSegment {
  * Seven vertical bars, one per day, on a shared baseline. A day's bar is a
  * grey track as tall as its goal (or, without one, the week's biggest day) and
  * the accent fills it up to what was reached. Over the goal the bar grows
- * taller than the track and the part above the goal turns amber (when
- * `overIsBad`), so the heights differ by design: a taller bar is a bigger
+ * taller than the track and the whole bar turns the solid accent (when
+ * `overIsBad`), under it the fill is the card header's tint, so the heights differ by design: a taller bar is a bigger
  * day. The track and the fill are each a rounded pill, so every top is round. The value
  * and weekday sit under each bar; a day with nothing logged is just its track.
  * `segments` stacks several kinds (coffee, beer and wine) from the bottom.
@@ -131,13 +131,9 @@ function DayBars({
         const ref = goal ?? scale;
         const height = Math.max(ref, total);
         const over = goal != null && total > goal;
-        const parts: BarSegment[] =
-          over && overIsBad
-            ? [
-                { value: goal, className: "bg-primary" },
-                { value: total - goal, className: "bg-warning" },
-              ]
-            : segments(d).filter((p) => p.value > 0);
+        const parts: BarSegment[] = overIsBad
+          ? [{ value: total, className: over ? "bg-primary" : "intake-fill" }]
+          : segments(d).filter((p) => p.value > 0);
         const text = label(d);
         return (
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
@@ -168,7 +164,7 @@ function DayBars({
             </div>
             <span
               className={`tabular mt-1.5 h-4 text-[11px] font-semibold leading-4 ${
-                over && overIsBad ? "text-warning-text" : ""
+                over && overIsBad ? "text-primary-text" : ""
               }`}
             >
               {text}
@@ -535,7 +531,8 @@ export function WaterCard({ recap }: { recap: WeekRecap }) {
         <DayBars
           days={recap.days}
           segments={(d) => [{ value: d.waterMl, className: "bg-primary" }]}
-          {...(water.goalMl ? { limit: () => water.goalMl, overIsBad: true } : {})}
+          overIsBad
+          {...(water.goalMl ? { limit: () => water.goalMl } : {})}
           label={(d) => (d.waterMl > 0 ? formatWaterAmount(d.waterMl) : null)}
           ariaLabel={(d) =>
             `${dayName(d.key)}: ${d.waterMl > 0 ? formatWaterAmount(d.waterMl) : t.weekRecap.notLogged}`
