@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { calorieAdjustment, targetKgPerWeek, weightTrend, type WeightEntry } from "../bodyweight";
+import {
+  calorieAdjustment,
+  chartSelection,
+  targetKgPerWeek,
+  weightTrend,
+  type WeightEntry,
+} from "../bodyweight";
 import type { NutritionProfile } from "../nutrition";
 
 const today = new Date(2026, 8, 28, 12);
@@ -55,5 +61,34 @@ describe("adaptive calories", () => {
   it("suggests eating more when losing faster than the target", () => {
     const trend = { ...base, kgPerWeek: -1, pctPerWeek: -0.0125 };
     expect(calorieAdjustment(trend, -0.6)).toBe(440);
+  });
+});
+
+describe("chartSelection", () => {
+  const pts = [{ t: 100 }, { t: 200 }, { t: 300 }];
+
+  it("returns the picked weigh-in's index while it still exists", () => {
+    expect(chartSelection(pts, 200)).toEqual({ index: 1, picked: true });
+  });
+
+  it("follows the picked weigh-in when earlier ones are removed", () => {
+    expect(chartSelection(pts.slice(1), 200)).toEqual({ index: 0, picked: true });
+  });
+
+  it("falls back to the latest, unpicked, when the picked weigh-in is removed", () => {
+    // Pick the newest, then remove it: the old index (2) is now out of range.
+    const after = pts.slice(0, 2);
+    const sel = chartSelection(after, 300)!;
+    expect(sel).toEqual({ index: 1, picked: false });
+    expect(after[sel.index]).toBeDefined();
+  });
+
+  it("shows the latest when nothing is picked", () => {
+    expect(chartSelection(pts, null)).toEqual({ index: 2, picked: false });
+  });
+
+  it("is null when there are no points", () => {
+    expect(chartSelection([], null)).toBeNull();
+    expect(chartSelection([], 100)).toBeNull();
   });
 });

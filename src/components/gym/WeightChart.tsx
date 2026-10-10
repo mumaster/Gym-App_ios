@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
-import type { WeightEntry, WeightTrend } from "../../lib/gym/bodyweight";
+import { chartSelection, type WeightEntry, type WeightTrend } from "../../lib/gym/bodyweight";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 
 const DAY_MS = 86_400_000;
@@ -38,7 +38,7 @@ export function WeightChart({
   const locale = useLocale();
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
-  const [active, setActive] = useState<number | null>(null);
+  const [activeT, setActiveT] = useState<number | null>(null);
 
   useEffect(() => {
     const el = boxRef.current;
@@ -82,10 +82,13 @@ export function WeightChart({
     pts.forEach((p, i) => {
       if (Math.abs(x(p.t) - px) < Math.abs(x(pts[best]!.t) - px)) best = i;
     });
-    setActive(best);
+    setActiveT(pts[best]!.t);
   };
 
-  const shown = pts[active ?? pts.length - 1]!;
+  // pts is length >= 2 here, so a selection always exists.
+  const sel = chartSelection(pts, activeT)!;
+  const active = sel.picked ? sel.index : null;
+  const shown = pts[sel.index]!;
 
   return (
     <div>
@@ -102,10 +105,10 @@ export function WeightChart({
           className="block touch-pan-y select-none"
           onPointerDown={pick}
           onPointerMove={(e) =>
-            (e.pointerType !== "mouse" || e.buttons || active !== null) && pick(e)
+            (e.pointerType !== "mouse" || e.buttons || activeT !== null) && pick(e)
           }
           onPointerEnter={(e) => e.pointerType === "mouse" && pick(e)}
-          onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
+          onPointerLeave={(e) => e.pointerType === "mouse" && setActiveT(null)}
         >
           {y.ticks.map((v) => (
             <g key={v}>
