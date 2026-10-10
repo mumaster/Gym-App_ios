@@ -264,11 +264,7 @@ function HomeScreen() {
   // (asked for: an iPhone 17 Pro had 149 pt free once the check-in was
   // answered).
   const [room, setRoom] = useState<number | null>(null);
-  const hasWaterGoal = waterGoalMl != null && waterGoalMl > 0;
-  const extras = useMemo(
-    () => homeExtras(room, readinessOpen, hasWaterGoal),
-    [room, readinessOpen, hasWaterGoal],
-  );
+  const extras = useMemo(() => homeExtras(room, readinessOpen), [room, readinessOpen]);
   const moodShown = readinessOpen || extras.mood;
   // The height the picker and extras add to what's on screen now, set after
   // each render: a measurement can arrive before a new set of extras is
@@ -276,7 +272,7 @@ function HomeScreen() {
   // (counting planned extras made the room grow on every measurement).
   const drawnCost = useRef(0);
   useLayoutEffect(() => {
-    drawnCost.current = extrasCost(extras, readinessOpen, hasWaterGoal);
+    drawnCost.current = extrasCost(extras, readinessOpen);
   });
   const onSpace = useCallback(
     (space: number) => setRoom(Math.round(space + drawnCost.current)),
@@ -390,7 +386,6 @@ function HomeScreen() {
               haptic(12);
               logCoffee(kind);
             }}
-            bars={extras.bars}
             onOpenFood={() => navigate({ to: "/nutrition" })}
             onOpenDrinks={() => navigate({ to: "/nutrition", search: { tab: "drinks" } })}
           />
@@ -408,20 +403,16 @@ function HomeScreen() {
 /** What Home adds when the screen has room (see `room` in HomeScreen), in
  *  this order, each only while the content still ends FIT_GAP above the tab
  *  bar: the check-in picker kept after it's answered (instead of the header
- *  chip), the day's intake as a bar under the water and coffee lines (asked
- *  for instead of taller quick-adds), and dates in the week strip. Each costs a
- *  fixed height, so the choice can't flip back and forth. Layout choices. */
+ *  chip) and dates in the week strip (the water and coffee bars are always
+ *  drawn). Each costs a fixed height, so the choice can't flip back and forth. Layout choices. */
 const FIT_GAP = 12; // Screen's FIT_GAP_PX
 const MOOD_COST = 80; // label 20 + 8 + buttons 40 + the 12 gap above the week
-const BAR_COST = 10; // a 6 pt bar and its 4 pt gap; water's only with a goal
 const DATES_COST = 18; // a 14 pt date line plus its 4 pt gap
 
-type HomeExtras = { mood: boolean; bars: boolean; dates: boolean };
+type HomeExtras = { mood: boolean; dates: boolean };
 
-const barsCost = (waterGoal: boolean) => BAR_COST * (waterGoal ? 2 : 1);
-
-function homeExtras(room: number | null, moodOpen: boolean, waterGoal: boolean): HomeExtras {
-  const out = { mood: false, bars: false, dates: false };
+function homeExtras(room: number | null, moodOpen: boolean): HomeExtras {
+  const out = { mood: false, dates: false };
   if (room == null) return out;
   let left = room - (moodOpen ? MOOD_COST : 0);
   const take = (cost: number) => {
@@ -430,18 +421,13 @@ function homeExtras(room: number | null, moodOpen: boolean, waterGoal: boolean):
     return true;
   };
   out.mood = !moodOpen && take(MOOD_COST);
-  out.bars = take(barsCost(waterGoal));
   out.dates = take(DATES_COST);
   return out;
 }
 
 /** The height the picker and the extras add to what's on screen. */
-function extrasCost(e: HomeExtras, moodOpen: boolean, waterGoal: boolean) {
-  return (
-    (moodOpen || e.mood ? MOOD_COST : 0) +
-    (e.bars ? barsCost(waterGoal) : 0) +
-    (e.dates ? DATES_COST : 0)
-  );
+function extrasCost(e: HomeExtras, moodOpen: boolean) {
+  return (moodOpen || e.mood ? MOOD_COST : 0) + (e.dates ? DATES_COST : 0);
 }
 
 const barClass = (status: NutrientStatus) =>
@@ -508,7 +494,6 @@ function NutritionCard({
   caffeine,
   onWater,
   onCoffee,
-  bars,
   onOpenFood,
   onOpenDrinks,
 }: {
@@ -523,9 +508,6 @@ function NutritionCard({
   caffeine: number;
   onWater: (ml: number) => void;
   onCoffee: (kind: CoffeeKind) => void;
-  /** The day's water and caffeine as bars under their lines, when Home has
-   *  room for them. */
-  bars: boolean;
   onOpenFood: () => void;
   onOpenDrinks: () => void;
 }) {
@@ -653,12 +635,14 @@ function NutritionCard({
           onOpen={openDrinks}
           value={
             <>
-              <span className="font-semibold text-foreground">{formatLiters(waterMl)}</span>
+              <span className="text-[15px] font-bold text-primary-text">
+                {formatLiters(waterMl)}
+              </span>
               {waterGoalMl ? ` / ${formatLiters(waterGoalMl)}` : ""}
             </>
           }
         />
-        {bars && waterGoalMl ? <IntakeBar pct={(waterMl / waterGoalMl) * 100} /> : null}
+        {waterGoalMl ? <IntakeBar pct={(waterMl / waterGoalMl) * 100} /> : null}
         <div className="mt-2 grid grid-cols-4 gap-2">
           {waterQuickAdd.map((ml, i) => (
             <button
@@ -687,18 +671,16 @@ function NutritionCard({
           }
           value={
             <>
-              <span className="font-semibold text-foreground">{t.coffee.cups(cups)}</span>
+              <span className="text-[15px] font-bold text-primary-text">{t.coffee.cups(cups)}</span>
               {" · "}
               {t.coffee.caffeineShort(caffeine, CAFFEINE_DAILY_LIMIT_MG)}
             </>
           }
         />
-        {bars ? (
-          <IntakeBar
-            pct={(caffeine / CAFFEINE_DAILY_LIMIT_MG) * 100}
-            className={barClass(caffeineStatus)}
-          />
-        ) : null}
+        <IntakeBar
+          pct={(caffeine / CAFFEINE_DAILY_LIMIT_MG) * 100}
+          className={barClass(caffeineStatus)}
+        />
         <div className="mt-2 grid grid-cols-3 gap-2">
           {COFFEE_KINDS.map((kind) => (
             <button
@@ -721,7 +703,7 @@ function NutritionCard({
  *  Drinks tab's bars (accent, or amber/red for caffeine near or over). */
 function IntakeBar({ pct, className = "bg-primary" }: { pct: number; className?: string }) {
   return (
-    <div aria-hidden className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+    <div aria-hidden className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
       <div
         className={`h-full rounded-full ${className}`}
         style={{ width: `${Math.min(100, pct)}%` }}
@@ -752,7 +734,7 @@ function DrinkLine({
       className="tap-target flex min-h-8 w-full items-center gap-2 text-left active:opacity-70"
     >
       <Icon aria-hidden className="size-4 shrink-0 text-primary-text" />
-      <span className="text-[13px] font-semibold">{label}</span>
+      <span className="text-[14px] font-semibold">{label}</span>
       <span className={`tabular ml-auto min-w-0 truncate text-[13px] ${tone}`}>{value}</span>
       <ChevronRight aria-hidden className="-mr-1 size-4 shrink-0 text-muted-foreground" />
     </button>
