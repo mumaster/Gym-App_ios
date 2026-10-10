@@ -1,16 +1,16 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, ChevronLeft, Dumbbell, Trophy, Watch } from "lucide-react";
+import { Activity, ChevronLeft, Watch } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
 import { RecapShare } from "../components/gym/RecapShare";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
-import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
 import { estimated1RM } from "../lib/gym/progress";
 import { useGym } from "../lib/gym/store";
 import type { LoggedSet } from "../lib/gym/types";
@@ -201,47 +201,15 @@ function SessionDetailScreen() {
 
       <div className="space-y-3">
         {byExercise.map((ex) => (
-          <Card key={ex.id} className="overflow-hidden p-4">
-            <CardHead
-              icon={Dumbbell}
-              title={ex.name}
-              subtitle={ex.muscle}
-              actions={
-                ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
-                  // On the band's accent tint a 15% accent pill left the text
-                  // at 4.17:1 in the light theme; the page colour behind it
-                  // gives the accent text its full contrast.
-                  <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-bold text-primary-text">
-                    <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
-                  </span>
-                ) : null
-              }
-            />
-
-            <div className="space-y-1.5">
-              {ex.rows.map((s, i) => (
-                <div
-                  key={`${s.set_number}-${i}`}
-                  className="grid grid-cols-[44px_1fr_1fr] items-center gap-2 rounded-xl bg-muted px-3 py-2"
-                >
-                  <span className="tabular text-[13px] font-bold text-primary-text">
-                    {s.set_type === "warmup" ? "W" : s.set_number}
-                  </span>
-                  <span className="tabular text-[15px] font-semibold">
-                    {formatLoad(
-                      s.weight,
-                      isBodyweightExercise(exerciseById(s.exercise_id)),
-                      t.session.bw,
-                    )}
-                  </span>
-                  <span className="tabular text-right text-[15px] font-semibold">
-                    {t.historyDetail.reps(s.reps)}
-                    {s.rpe ? <span className="text-primary-text"> @{s.rpe}</span> : null}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <HistoryExerciseCard
+            key={ex.id}
+            exerciseId={ex.id}
+            name={ex.name}
+            muscle={ex.muscle}
+            rows={ex.rows}
+            isPR={ex.isPR}
+            bestE1rm={ex.bestE1rm}
+          />
         ))}
       </div>
       <SectionLabel>{t.recap.title}</SectionLabel>
