@@ -99,9 +99,9 @@ interface BarSegment {
  * Seven vertical bars, one per day, on a shared baseline. A day's bar is a
  * grey track as tall as its goal (or, without one, the week's biggest day) and
  * the accent fills it up to what was reached. Over the goal the bar grows
- * taller than the track and the part above the goal turns red (when
+ * taller than the track and the part above the goal turns amber (when
  * `overIsBad`), so the heights differ by design: a taller bar is a bigger
- * day. The pill is one clipped shape, so its top is always round. The value
+ * day. The track and the fill are each a rounded pill, so every top is round. The value
  * and weekday sit under each bar; a day with nothing logged is just its track.
  * `segments` stacks several kinds (coffee, beer and wine) from the bottom.
  */
@@ -131,34 +131,44 @@ function DayBars({
         const ref = goal ?? scale;
         const height = Math.max(ref, total);
         const over = goal != null && total > goal;
-        const parts: BarSegment[] = [];
-        if (over && overIsBad) {
-          parts.push({ value: goal, className: "bg-primary" });
-          parts.push({ value: total - goal, className: "bg-destructive" });
-        } else {
-          parts.push(...segments(d).filter((p) => p.value > 0));
-          if (ref > total) parts.push({ value: ref - total, className: "bg-foreground/10" });
-        }
+        const parts: BarSegment[] =
+          over && overIsBad
+            ? [
+                { value: goal, className: "bg-primary" },
+                { value: total - goal, className: "bg-warning" },
+              ]
+            : segments(d).filter((p) => p.value > 0);
         const text = label(d);
         return (
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
             <div className="flex h-28 w-full items-end justify-center" aria-hidden>
               <div
-                className="flex w-5 flex-col-reverse overflow-hidden rounded-full"
+                className="relative w-5"
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
-                {parts.map((p, i) => (
-                  <span
-                    key={i}
-                    className={p.className}
-                    style={{ height: `${(p.value / height) * 100}%` }}
-                  />
-                ))}
+                <span
+                  className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
+                  style={{ height: `${(ref / height) * 100}%` }}
+                />
+                {total > 0 && (
+                  <div
+                    className="absolute inset-x-0 bottom-0 flex flex-col-reverse overflow-hidden rounded-full"
+                    style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
+                  >
+                    {parts.map((p, i) => (
+                      <span
+                        key={i}
+                        className={p.className}
+                        style={{ height: `${(p.value / total) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <span
               className={`tabular mt-1.5 h-4 text-[11px] font-semibold leading-4 ${
-                over && overIsBad ? "text-destructive-text" : ""
+                over && overIsBad ? "text-warning-text" : ""
               }`}
             >
               {text}
