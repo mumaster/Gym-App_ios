@@ -12,7 +12,19 @@ import { text } from "./ui";
  *  a card whose slice is empty isn't drawn, so a week with no cardio simply
  *  has no cardio card. A new figure goes into the data first. */
 
-function Stat({ label, value, unit }: { label: string; value: ReactNode; unit?: string }) {
+function Stat({
+  label,
+  value,
+  unit,
+  last,
+}: {
+  label: string;
+  value: ReactNode;
+  unit?: string;
+  /** The same figure a week earlier, shown quietly under the value. */
+  last?: string | undefined;
+}) {
+  const t = useTranslation();
   return (
     <div className="min-w-0 rounded-lg bg-foreground/5 px-3 py-2.5">
       <p className="truncate text-[12px] text-muted-foreground">{label}</p>
@@ -22,11 +34,21 @@ function Stat({ label, value, unit }: { label: string; value: ReactNode; unit?: 
           <span className="ml-1 text-[13px] font-semibold text-muted-foreground">{unit}</span>
         ) : null}
       </p>
+      {last ? (
+        <p className="tabular mt-0.5 truncate text-[12px] text-muted-foreground">
+          {t.weekRecap.lastWeekValue(last)}
+        </p>
+      ) : null}
     </div>
   );
 }
 
 /** "45 min", "3 h", "3 h 20 min": the value and its unit, units lower case. */
+const lastTime = (m: number, locale: string) => {
+  const f = formatMinutes(m, locale);
+  return `${f.value} ${f.unit}`;
+};
+
 const formatMinutes = (m: number, locale: string) => {
   if (m < 60) return { value: m.toLocaleString(locale), unit: "min" };
   const h = Math.floor(m / 60);
@@ -83,18 +105,28 @@ function DayStrip({ days }: { days: WeekRecapDay[] }) {
 
 /** The week at a glance: the day strip and the three figures most people
  *  open a recap for. */
-export function WeekHero({ recap }: { recap: WeekRecap }) {
+export function WeekHero({
+  recap,
+  nav,
+}: {
+  recap: WeekRecap;
+  /** Previous / next week buttons, drawn at the end of the status line. */
+  nav?: ReactNode;
+}) {
   const t = useTranslation();
   const locale = useLocale();
   const { training, cardio, nutrition } = recap;
   const active = formatMinutes(training.minutes + cardio.minutes, locale);
   return (
     <Card className="p-4">
-      <p className={`${text.eyebrow} mb-2`}>
-        {recap.inProgress
-          ? `${t.weekRecap.dayOf(recap.daysElapsed)} · ${t.weekRecap.soFar}`
-          : t.weekRecap.complete}
-      </p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className={text.eyebrow}>
+          {recap.inProgress
+            ? `${t.weekRecap.dayOf(recap.daysElapsed)} · ${t.weekRecap.soFar}`
+            : t.weekRecap.complete}
+        </p>
+        {nav}
+      </div>
       <DayStrip days={recap.days} />
       <div className="mt-3 grid grid-cols-3 border-t border-border pt-3">
         {[
@@ -128,7 +160,7 @@ export function WeekHero({ recap }: { recap: WeekRecap }) {
   );
 }
 
-export function StrengthCard({ recap }: { recap: WeekRecap }) {
+export function StrengthCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
   const { training } = recap;
@@ -142,8 +174,21 @@ export function StrengthCard({ recap }: { recap: WeekRecap }) {
         subtitle={`${t.weekRecap.sessionsCount(training.sessions)} · ${t.weekRecap.onDays(training.days)}`}
       />
       <div className="grid grid-cols-2 gap-2">
-        <Stat label={t.weekRecap.time} value={time.value} unit={time.unit} />
-        <Stat label={t.weekRecap.sets} value={training.workingSets.toLocaleString(locale)} />
+        <Stat
+          label={t.weekRecap.time}
+          value={time.value}
+          unit={time.unit}
+          last={prev?.training.minutes ? lastTime(prev.training.minutes, locale) : undefined}
+        />
+        <Stat
+          label={t.weekRecap.sets}
+          value={training.workingSets.toLocaleString(locale)}
+          last={
+            prev?.training.workingSets
+              ? prev.training.workingSets.toLocaleString(locale)
+              : undefined
+          }
+        />
         <Stat
           label={t.weekRecap.volume}
           value={training.volumeKg.toLocaleString(locale)}
@@ -158,7 +203,7 @@ export function StrengthCard({ recap }: { recap: WeekRecap }) {
   );
 }
 
-export function CardioCard({ recap }: { recap: WeekRecap }) {
+export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
   const { cardio } = recap;
@@ -173,7 +218,12 @@ export function CardioCard({ recap }: { recap: WeekRecap }) {
         subtitle={t.weekRecap.sessionsCount(cardio.sessions)}
       />
       <div className="grid grid-cols-2 gap-2">
-        <Stat label={t.weekRecap.time} value={time.value} unit={time.unit} />
+        <Stat
+          label={t.weekRecap.time}
+          value={time.value}
+          unit={time.unit}
+          last={prev?.cardio.minutes ? lastTime(prev.cardio.minutes, locale) : undefined}
+        />
         {cardio.distanceKm > 0 ? (
           <Stat
             label={t.weekRecap.distance}
@@ -246,7 +296,7 @@ function CalorieBars({ days }: { days: WeekRecapDay[] }) {
   );
 }
 
-export function FoodCard({ recap }: { recap: WeekRecap }) {
+export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap | null }) {
   const t = useTranslation();
   const locale = useLocale();
   const { nutrition } = recap;
@@ -275,6 +325,13 @@ export function FoodCard({ recap }: { recap: WeekRecap }) {
         </span>
         <span className="text-[14px] font-semibold text-muted-foreground">kcal</span>
       </p>
+      {prev?.nutrition.average ? (
+        <p className={`${text.meta} tabular mt-1`}>
+          {t.weekRecap.lastWeekValue(
+            `${prev.nutrition.average.calories.toLocaleString(locale)} kcal`,
+          )}
+        </p>
+      ) : null}
       {calorieGoal != null ? (
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
