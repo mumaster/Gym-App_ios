@@ -132,7 +132,12 @@ function DayBars({
         const height = Math.max(ref, total);
         const over = goal != null && total > goal;
         const parts: BarSegment[] = overIsBad
-          ? [{ value: total, className: over ? "bg-primary" : "intake-fill" }]
+          ? over
+            ? [
+                { value: goal, className: "intake-fill" },
+                { value: total - goal, className: "bg-primary" },
+              ]
+            : [{ value: total, className: "intake-fill" }]
           : segments(d).filter((p) => p.value > 0);
         const text = label(d);
         return (
