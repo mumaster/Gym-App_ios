@@ -1,38 +1,68 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Repeat } from "lucide-react";
-import { button } from "./ui";
+import { badge, button } from "./ui";
+import { ListCard } from "./ListCard";
 import { BottomSheet } from "./BottomSheet";
 import { EQUIPMENT, exerciseById } from "../../lib/gym/data";
 import { alternativesFor, availableExercises } from "../../lib/gym/generator";
-import { antagonistAlternatives, isAntagonistPair, opposingLabel } from "../../lib/gym/antagonist";
+import {
+  antagonistAlternatives,
+  isAntagonistPair,
+  muscleLabel,
+  opposingLabel,
+  sameMuscleSwaps,
+} from "../../lib/gym/antagonist";
+import { muscleIcon } from "../../lib/gym/muscleIcons";
 import { sharesLoadStation } from "../../lib/gym/stations";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
 import type { Exercise } from "../../lib/gym/types";
 
+/** "Chest · Barbell · Bench": the muscle first, then the gear needed. */
+const subtitleOf = (e: Exercise) =>
+  [muscleLabel(e), ...e.equipment_required.map((id) => EQUIPMENT.find((q) => q.id === id)?.label)]
+    .filter(Boolean)
+    .join(" · ");
+
+function MuscleTile({ e }: { e: Exercise }) {
+  const Icon = muscleIcon(e.primary_muscle);
+  return (
+    <span aria-hidden className={`${badge.tonal} size-9`}>
+      <Icon className="size-[18px]" />
+    </span>
+  );
+}
+
 function Row({
   e,
   onPick,
   clash,
+  variant = "glass",
 }: {
   e: Exercise;
   onPick: (e: Exercise) => void;
   /** Shown when this exercise shares its superset partner's equipment. */
   clash?: string;
+  /** "card" is a row inside a ListCard: no surface of its own, a hairline
+   *  above it (like the Exercises tab). */
+  variant?: "glass" | "card";
 }) {
   return (
     <button
       onClick={() => onPick(e)}
-      className="glass flex min-h-[56px] w-full items-center justify-between rounded-2xl p-4 text-left active:scale-[0.985]"
+      className={`flex min-h-[56px] w-full items-center gap-3 text-left active:scale-[0.985] ${
+        variant === "card" ? "border-t border-border px-4 py-2" : "glass rounded-2xl p-4"
+      }`}
     >
-      <div className="min-w-0">
+      <MuscleTile e={e} />
+      <div className="min-w-0 flex-1">
         <p className="truncate text-[17px] font-semibold">{e.name}</p>
         <p data-cut-ok className="truncate text-[13px] text-muted-foreground">
-          {e.equipment_required.map((id) => EQUIPMENT.find((q) => q.id === id)?.label).join(" · ")}
+          {subtitleOf(e)}
         </p>
         {clash ? <p className="text-[13px] text-warning-text">{clash}</p> : null}
       </div>
-      <Repeat className="ml-3 size-5 shrink-0 text-primary-text" />
+      <Repeat className="size-5 shrink-0 text-primary-text" />
     </button>
   );
 }
@@ -82,11 +112,27 @@ export function SwapSheet({
     ? antagonistAlternatives(partner, pool).filter((e) => !clashes(e))
     : [];
   const recommendedIds = new Set(recommended.map((e) => e.id));
+  // Shown first in a superset: the swaps that keep the muscle and still pair
+  // with the partner. They're taken out of the lists below, so nothing shows
+  // twice.
+  const keepMuscle =
+    current && partner
+      ? sameMuscleSwaps(current, partner, sameMuscle).filter((e) => !clashes(e))
+      : [];
+  const keepMuscleIds = new Set(keepMuscle.map((e) => e.id));
+  const recommendedShown = recommended.filter((e) => !keepMuscleIds.has(e.id));
   // Never the partner itself: both halves would be the same exercise.
   const listed = (partner ? pool : sameMuscle).filter(
     (e) => e.id !== current?.id && e.id !== pairWith?.id && !recommendedIds.has(e.id),
   );
   const others = [...listed.filter((e) => !clashes(e)), ...listed.filter(clashes)];
+  // Without a partner the whole list is the same muscle: the card holds the
+  // ones that fit, the clashing ones follow it with their note.
+  const cardRows = partner ? keepMuscle : others.filter((e) => !clashes(e));
+  const afterCard = partner ? others : others.filter(clashes);
+  // Arms is one group in the data; the card names the exercise's own muscle
+  // when it's a partner swap (Triceps), the group otherwise (it holds both).
+  const cardTitle = current ? (partner ? muscleLabel(current) : current.primary_muscle) : "";
   // What to offer instead of a pick that clashes or breaks the pattern.
   const better = (partner ? recommended : others.filter((e) => !clashes(e))).slice(0, 3);
 
@@ -133,10 +179,18 @@ export function SwapSheet({
                 <button
                   key={e.id}
                   onClick={() => onPick(e)}
-                  className="glass flex min-h-[52px] w-full items-center justify-between rounded-2xl px-4 text-left text-[16px] font-semibold active:scale-[0.985]"
+                  className="glass flex min-h-[56px] w-full items-center gap-3 rounded-2xl px-4 py-2 text-left active:scale-[0.985]"
                 >
-                  {t.swapSheet.swapTo(e.name)}
-                  <Repeat className="ml-3 size-5 shrink-0 text-primary-text" />
+                  <MuscleTile e={e} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[16px] font-semibold">
+                      {t.swapSheet.swapTo(e.name)}
+                    </span>
+                    <span data-cut-ok className="block truncate text-[13px] text-muted-foreground">
+                      {muscleLabel(e)}
+                    </span>
+                  </span>
+                  <Repeat className="size-5 shrink-0 text-primary-text" />
                 </button>
               ))}
             </div>
@@ -170,31 +224,48 @@ export function SwapSheet({
       ) : (
         <div className="space-y-2">
           {partner ? (
-            <>
-              <p className="mb-1 text-[13px] text-muted-foreground">
-                {t.swapSheet.pairedWith(partner.name)}
-              </p>
-              <p className="pt-1 text-[12px] font-bold uppercase tracking-widest text-primary-text">
-                {t.swapSheet.recommendedAlternatives}
-              </p>
-              {recommended.length ? (
-                recommended.map((e) => <Row key={e.id} e={e} onPick={choose} />)
-              ) : (
-                <p className="text-[14px] text-muted-foreground">{t.swapSheet.noOpposingOptions}</p>
-              )}
-              <p className="pt-3 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
-                {t.swapSheet.otherExercises}
-              </p>
-            </>
+            <p className="mb-1 text-[13px] text-muted-foreground">
+              {t.swapSheet.pairedWith(partner.name)}
+            </p>
           ) : (
             <p className="mb-3 text-[13px] text-muted-foreground">
               {t.swapSheet.sameMuscleOnly(current?.primary_muscle ?? "", profile.name)}
             </p>
           )}
+          {current && cardRows.length ? (
+            <ListCard
+              icon={muscleIcon(current.primary_muscle)}
+              title={cardTitle}
+              subtitle={t.swapSheet.sameMuscleAs(current.name)}
+              filled
+            >
+              {cardRows.map((e) => (
+                <Row key={e.id} e={e} onPick={choose} variant="card" />
+              ))}
+            </ListCard>
+          ) : null}
+          {partner ? (
+            <>
+              {recommendedShown.length || !keepMuscle.length ? (
+                <p className="pt-1 text-[12px] font-bold uppercase tracking-widest text-primary-text">
+                  {t.swapSheet.recommendedAlternatives}
+                </p>
+              ) : null}
+              {recommendedShown.map((e) => (
+                <Row key={e.id} e={e} onPick={choose} />
+              ))}
+              {!recommended.length ? (
+                <p className="text-[14px] text-muted-foreground">{t.swapSheet.noOpposingOptions}</p>
+              ) : null}
+              <p className="pt-3 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
+                {t.swapSheet.otherExercises}
+              </p>
+            </>
+          ) : null}
           {others.length === 0 && !partner ? (
             <p className="text-[14px] text-muted-foreground">{t.swapSheet.noAlternatives}</p>
           ) : null}
-          {others.map((e) => (
+          {afterCard.map((e) => (
             <Row
               key={e.id}
               e={e}

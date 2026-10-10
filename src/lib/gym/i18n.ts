@@ -577,7 +577,7 @@ const en = {
     resting: "Resting…",
     logSetWith: (load: string, reps: number, rpe: number | null): string =>
       `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
-    rateLastSet: "RPE of that set",
+    rateLastSet: "RPE from last set",
     addRpe: "+RPE",
     addRpeAria: (n: number) => `Add an RPE to set ${n}`,
     bw: "BW",
@@ -1501,6 +1501,7 @@ const en = {
     sameMuscleOnly: (muscle: string, profile: string) =>
       `Same primary muscle (${muscle}), only gear available in ${profile}.`,
     noAlternatives: "No alternatives with this equipment profile.",
+    sameMuscleAs: (name: string) => `Same muscle as ${name}`,
   },
   bottomSheet: {
     close: "Close",
@@ -2151,7 +2152,7 @@ const nl: Dict = {
     resting: "Rusten…",
     logSetWith: (load: string, reps: number, rpe: number | null): string =>
       `Log set · ${load} × ${reps}${rpe != null ? ` · RPE ${rpe}` : ""}`,
-    rateLastSet: "RPE van die set",
+    rateLastSet: "RPE vorige set",
     addRpe: "+RPE",
     addRpeAria: (n: number) => `RPE toevoegen aan set ${n}`,
     bw: "LG",
@@ -3075,6 +3076,7 @@ const nl: Dict = {
     sameMuscleOnly: (muscle: string, profile: string) =>
       `Zelfde primaire spier (${muscle}), alleen uitrusting beschikbaar in ${profile}.`,
     noAlternatives: "Geen alternatieven met dit uitrustingsprofiel.",
+    sameMuscleAs: (name: string) => `Zelfde spier als ${name}`,
   },
   bottomSheet: {
     close: "Sluiten",

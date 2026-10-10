@@ -2392,7 +2392,7 @@ function RestPanel({
         // Rest is when you'd rate the set anyway, and logging moves straight
         // on, so the set that just finished can be rated (or corrected) here.
         <div className="mt-2 flex items-center gap-2">
-          <span className="w-16 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+          <span className="w-20 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
             {t.session.rateLastSet}
           </span>
           <RpePicker value={lastSetRpe} onChange={onRateLastSet} />
