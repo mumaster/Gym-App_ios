@@ -36,11 +36,15 @@ import type { CardioFinisher } from "../lib/gym/types";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
+import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
+import { SectionLabel } from "../components/gym/Screen";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { RecapShare } from "../components/gym/RecapShare";
 import { exerciseById } from "../lib/gym/data";
+import { exerciseBreakdown } from "../lib/gym/exerciseBreakdown";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises, estimateSeconds } from "../lib/gym/generator";
+import { learnPace } from "../lib/gym/pace";
 import { useTranslation } from "../lib/gym/i18n";
 import {
   DECIMAL_INPUT_RE,
@@ -151,6 +155,9 @@ function SessionScreen() {
     nutritionProfile,
     firstName,
   } = useGym();
+  /** The user's own set pace (lib/gym/pace.ts), so the overtime projection
+   *  matches how fast they actually train rather than the fixed constants. */
+  const pace = useMemo(() => learnPace(workouts), [workouts]);
   const bodyKg = latestBodyKg(weightLog, nutritionProfile);
   const restNotifBody = firstName
     ? t.name.restCompleteBody(firstName)
@@ -508,45 +515,96 @@ function SessionScreen() {
             </div>
           ) : null}
           {finishedWorkout ? (
-            <div className="mb-6">
+            <div className="mb-2">
               <RecapShare workout={finishedWorkout} />
             </div>
           ) : null}
-          <div className="space-y-2">
-            {uniqueIds.map((id) => {
-              const ex = exerciseById(id);
-              const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
-              if (!ex || !plannedEntry) return null;
-              const step = plateStep(ex, summaryProfile);
-              const bw = isBodyweightExercise(ex);
-              const suggestion = suggestWeight(
-                id,
-                workouts,
-                plannedEntry.target_reps,
-                step,
-                t.progression,
-                bw ? bodyKg : null,
-              );
-              return (
-                <div key={id} className="glass rounded-2xl p-3">
-                  <p className="text-[15px] font-semibold">{ex.name}</p>
-                  {suggestion ? (
-                    <p className="text-[13px] text-muted-foreground">
-                      {t.session.nextTime(
-                        formatLoad(suggestion.weight, bw, t.session.bw),
-                        suggestion.reps,
-                        suggestion.reason,
-                      )}
-                    </p>
-                  ) : (
-                    <p className="text-[13px] text-muted-foreground">
-                      {t.session.loggedNoSuggestion}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {finishedWorkout ? (
+            <>
+              <SectionLabel>{t.historyDetail.exercises}</SectionLabel>
+              <div className="space-y-3">
+                {exerciseBreakdown(finishedWorkout, workouts).map((entry) => {
+                  const ex = exerciseById(entry.id);
+                  // A bonus exercise has no planned entry; its best set's reps
+                  // stand in for the target.
+                  const targetReps =
+                    finishedSummary.find((p) => p.exercise_id === entry.id)?.target_reps ??
+                    (entry.bestSet ? String(entry.bestSet.reps) : null);
+                  const bw = isBodyweightExercise(ex);
+                  const suggestion =
+                    ex && targetReps
+                      ? suggestWeight(
+                          entry.id,
+                          workouts,
+                          targetReps,
+                          plateStep(ex, summaryProfile),
+                          t.progression,
+                          bw ? bodyKg : null,
+                        )
+                      : null;
+                  return (
+                    <HistoryExerciseCard
+                      key={entry.id}
+                      exerciseId={entry.id}
+                      name={ex?.name ?? entry.id}
+                      muscle={ex?.primary_muscle ?? ""}
+                      rows={entry.rows}
+                      isPR={entry.isPR}
+                      bestE1rm={entry.bestE1rm}
+                    >
+                      {targetReps ? (
+                        <p className="mt-3 text-[13px] text-muted-foreground">
+                          {suggestion
+                            ? t.session.nextTime(
+                                formatLoad(suggestion.weight, bw, t.session.bw),
+                                suggestion.reps,
+                                suggestion.reason,
+                              )
+                            : t.session.loggedNoSuggestion}
+                        </p>
+                      ) : null}
+                    </HistoryExerciseCard>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              {uniqueIds.map((id) => {
+                const ex = exerciseById(id);
+                const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
+                if (!ex || !plannedEntry) return null;
+                const step = plateStep(ex, summaryProfile);
+                const bw = isBodyweightExercise(ex);
+                const suggestion = suggestWeight(
+                  id,
+                  workouts,
+                  plannedEntry.target_reps,
+                  step,
+                  t.progression,
+                  bw ? bodyKg : null,
+                );
+                return (
+                  <div key={id} className="glass rounded-2xl p-3">
+                    <p className="text-[15px] font-semibold">{ex.name}</p>
+                    {suggestion ? (
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.session.nextTime(
+                          formatLoad(suggestion.weight, bw, t.session.bw),
+                          suggestion.reps,
+                          suggestion.reason,
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.session.loggedNoSuggestion}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <button
             onClick={() => navigate({ to: "/history" })}
             className={`${button.primary} mt-6 w-full`}
@@ -606,7 +664,7 @@ function SessionScreen() {
         warmup_sets: warmupsEnabled ? Math.max(0, p.warmup_sets - warmDone(p.exercise_id)) : 0,
       }))
       .filter((p) => p.target_sets > 0);
-    const projected = Math.round(elapsed / 60 + estimateSeconds(remaining) / 60);
+    const projected = Math.round(elapsed / 60 + estimateSeconds(remaining, pace) / 60);
     const plannedMin = activeWorkout.duration_minutes;
     if (projected <= plannedMin) return null;
     const unstarted = blocks
@@ -618,7 +676,12 @@ function SessionScreen() {
     if (!pick) return null;
     const saves = Math.max(
       1,
-      Math.round(estimateSeconds(pick.b.indices.map((x) => plan[x]!)) / 60),
+      Math.round(
+        estimateSeconds(
+          pick.b.indices.map((x) => plan[x]!),
+          pace,
+        ) / 60,
+      ),
     );
     const name = exerciseById(plan[pick.b.indices[0]!]!.exercise_id)?.name ?? "";
     return { projected, plannedMin, indices: pick.b.indices, saves, name };
@@ -2383,7 +2446,7 @@ function RestPanel({
         // Rest is when you'd rate the set anyway, and logging moves straight
         // on, so the set that just finished can be rated (or corrected) here.
         <div className="mt-2 flex items-center gap-2">
-          <span className="w-16 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+          <span className="w-20 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
             {t.session.rateLastSet}
           </span>
           <RpePicker value={lastSetRpe} onChange={onRateLastSet} />

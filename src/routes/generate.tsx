@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -42,6 +42,7 @@ import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
 import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gym/data";
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
+import { learnPace } from "../lib/gym/pace";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import {
   PAIRINGS,
@@ -133,6 +134,9 @@ function WorkoutHome() {
     weightLog,
     nutritionProfile,
   } = useGym();
+  /** The user's own set pace, learned from their history — plans are fitted
+   *  to it and their length is estimated with it (lib/gym/pace.ts). */
+  const pace = useMemo(() => learnPace(workouts), [workouts]);
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("45");
   const [regions, setRegions] = useState<RegionId[]>([]);
@@ -282,6 +286,7 @@ function WorkoutHome() {
         loved: lovedExerciseIds,
         avoided: avoidedExerciseIds,
         history: workouts,
+        pace,
         knownLifts,
         profile,
         bodyKg: latestBodyKg(weightLog, nutritionProfile),
@@ -541,7 +546,7 @@ function WorkoutHome() {
           ? t.generate.lastWorkout
           : new Date(w.date).toLocaleDateString(locale, { day: "numeric", month: "short" }),
       title: w.target_muscles.join(" · ") || t.generate.fullBody,
-      detail: t.generate.exerciseCount(w.plan.length, estimateMinutes(w.plan)),
+      detail: t.generate.exerciseCount(w.plan.length, estimateMinutes(w.plan, pace)),
       start: () => repeat(w),
     })),
     ...workoutTemplates.slice(0, 3).map((tpl) => ({
@@ -549,7 +554,7 @@ function WorkoutHome() {
       icon: "template" as const,
       eyebrow: t.generate.template,
       title: tpl.name,
-      detail: t.generate.exerciseCount(tpl.plan.length, estimateMinutes(tpl.plan)),
+      detail: t.generate.exerciseCount(tpl.plan.length, estimateMinutes(tpl.plan, pace)),
       start: () => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles),
     })),
   ];
@@ -1149,7 +1154,7 @@ function WorkoutHome() {
           >
             <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
               {t.generate.yourPlan(
-                estimateMinutes(planHere) + (planCardio?.minutes ?? 0),
+                estimateMinutes(planHere, pace) + (planCardio?.minutes ?? 0),
                 planHere.length + (planCardio ? 1 : 0),
               )}
             </p>

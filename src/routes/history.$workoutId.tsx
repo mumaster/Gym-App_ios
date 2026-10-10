@@ -1,19 +1,18 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, ChevronLeft, Dumbbell, Trophy, Watch } from "lucide-react";
+import { Activity, ChevronLeft, Watch } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
+import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
 import { RecapShare } from "../components/gym/RecapShare";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
-import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
-import { estimated1RM } from "../lib/gym/progress";
+import { exerciseBreakdown } from "../lib/gym/exerciseBreakdown";
 import { useGym } from "../lib/gym/store";
-import type { LoggedSet } from "../lib/gym/types";
 
 export const Route = createFileRoute("/history/$workoutId")({
   head: () => ({
@@ -65,38 +64,13 @@ function SessionDetailScreen() {
   // Assistance (a negative load on a bodyweight exercise) isn't volume.
   const volume = sets.reduce((v, s) => v + Math.max(0, s.weight) * s.reps, 0);
 
-  // Best estimated-1RM per exercise across all *other* sessions, to flag PRs
-  // set here — the same definition progress.ts and the History tab use, so a
-  // set badged "PR" here always agrees with the PR list there.
-  const priorBestE1rm = new Map<string, number>();
-  for (const w of workouts) {
-    if (w.id === workout.id) continue;
-    for (const s of w.completed_sets) {
-      if (s.set_type === "warmup") continue;
-      const e1rm = estimated1RM(s);
-      priorBestE1rm.set(s.exercise_id, Math.max(priorBestE1rm.get(s.exercise_id) ?? 0, e1rm));
-    }
-  }
-
-  const byExercise = [...new Set(sets.map((s) => s.exercise_id))].map((id) => {
-    const rows = sets.filter((s) => s.exercise_id === id);
-    const bestSet = rows
-      .filter((s) => s.set_type === "working")
-      .reduce<LoggedSet | null>(
-        (best, s) => (!best || estimated1RM(s) > estimated1RM(best) ? s : best),
-        null,
-      );
-    const bestE1rm = bestSet ? estimated1RM(bestSet) : 0;
-    return {
-      id,
-      name: exerciseById(id)?.name ?? id,
-      muscle: exerciseById(id)?.primary_muscle ?? "",
-      rows,
-      isPR: bestE1rm > 0 && bestE1rm > (priorBestE1rm.get(id) ?? 0),
-      bestSet,
-      bestE1rm,
-    };
-  });
+  // PRs are judged against every *other* session (see exerciseBreakdown),
+  // so a set badged "PR" here agrees with the History tab's PR list.
+  const byExercise = exerciseBreakdown(workout, workouts).map((entry) => ({
+    ...entry,
+    name: exerciseById(entry.id)?.name ?? entry.id,
+    muscle: exerciseById(entry.id)?.primary_muscle ?? "",
+  }));
 
   const date = new Date(workout.date);
 
@@ -201,47 +175,15 @@ function SessionDetailScreen() {
 
       <div className="space-y-3">
         {byExercise.map((ex) => (
-          <Card key={ex.id} className="overflow-hidden p-4">
-            <CardHead
-              icon={Dumbbell}
-              title={ex.name}
-              subtitle={ex.muscle}
-              actions={
-                ex.isPR && !isBodyweightExercise(exerciseById(ex.id)) ? (
-                  // On the band's accent tint a 15% accent pill left the text
-                  // at 4.17:1 in the light theme; the page colour behind it
-                  // gives the accent text its full contrast.
-                  <span className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-[13px] font-bold text-primary-text">
-                    <Trophy className="size-4" /> {t.historyDetail.pr(ex.bestE1rm)}
-                  </span>
-                ) : null
-              }
-            />
-
-            <div className="space-y-1.5">
-              {ex.rows.map((s, i) => (
-                <div
-                  key={`${s.set_number}-${i}`}
-                  className="grid grid-cols-[44px_1fr_1fr] items-center gap-2 rounded-xl bg-muted px-3 py-2"
-                >
-                  <span className="tabular text-[13px] font-bold text-primary-text">
-                    {s.set_type === "warmup" ? "W" : s.set_number}
-                  </span>
-                  <span className="tabular text-[15px] font-semibold">
-                    {formatLoad(
-                      s.weight,
-                      isBodyweightExercise(exerciseById(s.exercise_id)),
-                      t.session.bw,
-                    )}
-                  </span>
-                  <span className="tabular text-right text-[15px] font-semibold">
-                    {t.historyDetail.reps(s.reps)}
-                    {s.rpe ? <span className="text-primary-text"> @{s.rpe}</span> : null}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <HistoryExerciseCard
+            key={ex.id}
+            exerciseId={ex.id}
+            name={ex.name}
+            muscle={ex.muscle}
+            rows={ex.rows}
+            isPR={ex.isPR}
+            bestE1rm={ex.bestE1rm}
+          />
         ))}
       </div>
       <SectionLabel>{t.recap.title}</SectionLabel>
