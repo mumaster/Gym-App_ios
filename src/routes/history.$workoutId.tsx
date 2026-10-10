@@ -11,9 +11,8 @@ import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
 import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
-import { estimated1RM } from "../lib/gym/progress";
+import { exerciseBreakdown } from "../lib/gym/exerciseBreakdown";
 import { useGym } from "../lib/gym/store";
-import type { LoggedSet } from "../lib/gym/types";
 
 export const Route = createFileRoute("/history/$workoutId")({
   head: () => ({
@@ -65,38 +64,13 @@ function SessionDetailScreen() {
   // Assistance (a negative load on a bodyweight exercise) isn't volume.
   const volume = sets.reduce((v, s) => v + Math.max(0, s.weight) * s.reps, 0);
 
-  // Best estimated-1RM per exercise across all *other* sessions, to flag PRs
-  // set here — the same definition progress.ts and the History tab use, so a
-  // set badged "PR" here always agrees with the PR list there.
-  const priorBestE1rm = new Map<string, number>();
-  for (const w of workouts) {
-    if (w.id === workout.id) continue;
-    for (const s of w.completed_sets) {
-      if (s.set_type === "warmup") continue;
-      const e1rm = estimated1RM(s);
-      priorBestE1rm.set(s.exercise_id, Math.max(priorBestE1rm.get(s.exercise_id) ?? 0, e1rm));
-    }
-  }
-
-  const byExercise = [...new Set(sets.map((s) => s.exercise_id))].map((id) => {
-    const rows = sets.filter((s) => s.exercise_id === id);
-    const bestSet = rows
-      .filter((s) => s.set_type === "working")
-      .reduce<LoggedSet | null>(
-        (best, s) => (!best || estimated1RM(s) > estimated1RM(best) ? s : best),
-        null,
-      );
-    const bestE1rm = bestSet ? estimated1RM(bestSet) : 0;
-    return {
-      id,
-      name: exerciseById(id)?.name ?? id,
-      muscle: exerciseById(id)?.primary_muscle ?? "",
-      rows,
-      isPR: bestE1rm > 0 && bestE1rm > (priorBestE1rm.get(id) ?? 0),
-      bestSet,
-      bestE1rm,
-    };
-  });
+  // PRs are judged against every *other* session (see exerciseBreakdown),
+  // so a set badged "PR" here agrees with the History tab's PR list.
+  const byExercise = exerciseBreakdown(workout, workouts).map((entry) => ({
+    ...entry,
+    name: exerciseById(entry.id)?.name ?? entry.id,
+    muscle: exerciseById(entry.id)?.primary_muscle ?? "",
+  }));
 
   const date = new Date(workout.date);
 

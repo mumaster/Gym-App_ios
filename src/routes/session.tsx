@@ -36,9 +36,12 @@ import type { CardioFinisher } from "../lib/gym/types";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { PlateHint } from "../components/gym/PlateHint";
+import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
+import { SectionLabel } from "../components/gym/Screen";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { RecapShare } from "../components/gym/RecapShare";
 import { exerciseById } from "../lib/gym/data";
+import { exerciseBreakdown } from "../lib/gym/exerciseBreakdown";
 import { antagonistLabel, isAntagonistPair } from "../lib/gym/antagonist";
 import { availableExercises, estimateSeconds } from "../lib/gym/generator";
 import { useTranslation } from "../lib/gym/i18n";
@@ -508,45 +511,96 @@ function SessionScreen() {
             </div>
           ) : null}
           {finishedWorkout ? (
-            <div className="mb-6">
+            <div className="mb-2">
               <RecapShare workout={finishedWorkout} />
             </div>
           ) : null}
-          <div className="space-y-2">
-            {uniqueIds.map((id) => {
-              const ex = exerciseById(id);
-              const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
-              if (!ex || !plannedEntry) return null;
-              const step = plateStep(ex, summaryProfile);
-              const bw = isBodyweightExercise(ex);
-              const suggestion = suggestWeight(
-                id,
-                workouts,
-                plannedEntry.target_reps,
-                step,
-                t.progression,
-                bw ? bodyKg : null,
-              );
-              return (
-                <div key={id} className="glass rounded-2xl p-3">
-                  <p className="text-[15px] font-semibold">{ex.name}</p>
-                  {suggestion ? (
-                    <p className="text-[13px] text-muted-foreground">
-                      {t.session.nextTime(
-                        formatLoad(suggestion.weight, bw, t.session.bw),
-                        suggestion.reps,
-                        suggestion.reason,
-                      )}
-                    </p>
-                  ) : (
-                    <p className="text-[13px] text-muted-foreground">
-                      {t.session.loggedNoSuggestion}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {finishedWorkout ? (
+            <>
+              <SectionLabel>{t.historyDetail.exercises}</SectionLabel>
+              <div className="space-y-3">
+                {exerciseBreakdown(finishedWorkout, workouts).map((entry) => {
+                  const ex = exerciseById(entry.id);
+                  // A bonus exercise has no planned entry; its best set's reps
+                  // stand in for the target.
+                  const targetReps =
+                    finishedSummary.find((p) => p.exercise_id === entry.id)?.target_reps ??
+                    (entry.bestSet ? String(entry.bestSet.reps) : null);
+                  const bw = isBodyweightExercise(ex);
+                  const suggestion =
+                    ex && targetReps
+                      ? suggestWeight(
+                          entry.id,
+                          workouts,
+                          targetReps,
+                          plateStep(ex, summaryProfile),
+                          t.progression,
+                          bw ? bodyKg : null,
+                        )
+                      : null;
+                  return (
+                    <HistoryExerciseCard
+                      key={entry.id}
+                      exerciseId={entry.id}
+                      name={ex?.name ?? entry.id}
+                      muscle={ex?.primary_muscle ?? ""}
+                      rows={entry.rows}
+                      isPR={entry.isPR}
+                      bestE1rm={entry.bestE1rm}
+                    >
+                      {targetReps ? (
+                        <p className="mt-3 text-[13px] text-muted-foreground">
+                          {suggestion
+                            ? t.session.nextTime(
+                                formatLoad(suggestion.weight, bw, t.session.bw),
+                                suggestion.reps,
+                                suggestion.reason,
+                              )
+                            : t.session.loggedNoSuggestion}
+                        </p>
+                      ) : null}
+                    </HistoryExerciseCard>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2">
+              {uniqueIds.map((id) => {
+                const ex = exerciseById(id);
+                const plannedEntry = finishedSummary.find((p) => p.exercise_id === id);
+                if (!ex || !plannedEntry) return null;
+                const step = plateStep(ex, summaryProfile);
+                const bw = isBodyweightExercise(ex);
+                const suggestion = suggestWeight(
+                  id,
+                  workouts,
+                  plannedEntry.target_reps,
+                  step,
+                  t.progression,
+                  bw ? bodyKg : null,
+                );
+                return (
+                  <div key={id} className="glass rounded-2xl p-3">
+                    <p className="text-[15px] font-semibold">{ex.name}</p>
+                    {suggestion ? (
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.session.nextTime(
+                          formatLoad(suggestion.weight, bw, t.session.bw),
+                          suggestion.reps,
+                          suggestion.reason,
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.session.loggedNoSuggestion}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <button
             onClick={() => navigate({ to: "/history" })}
             className={`${button.primary} mt-6 w-full`}
