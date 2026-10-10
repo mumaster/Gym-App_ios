@@ -367,6 +367,12 @@
   background-color: color-mix(in oklab, var(--primary) 11%, transparent);
 }
 
+/* The weekly recap's intake fill: the card header's accent tint, stronger so
+   it shows on the grey goal track. Over the goal the bar is the solid accent. */
+@utility intake-fill {
+  background-color: color-mix(in oklab, var(--primary) 42%, transparent);
+}
+
 /* An unpicked choice chip (ui.ts's chip.off): the glass look, with its
    hairline as an inset ring instead of a border, so a chip keeps its size
    when it's picked (chip.on draws an inset ring too). No backdrop blur: a
