@@ -138,7 +138,7 @@ function WorkoutHome() {
    *  to it and their length is estimated with it (lib/gym/pace.ts). */
   const pace = useMemo(() => learnPace(workouts), [workouts]);
   const [duration, setDuration] = useState(45);
-  const [customInput, setCustomInput] = useState("45");
+  const [customInput, setCustomInput] = useState("");
   const [regions, setRegions] = useState<RegionId[]>([]);
   const [proposal, setProposal] = useState<RegionId | null>(null);
   const [focus, setFocus] = useState<TargetMuscle[]>([]);
@@ -583,7 +583,7 @@ function WorkoutHome() {
           onClick={() => {
             haptic(12);
             setDuration(d);
-            setCustomInput(String(d));
+            setCustomInput("");
           }}
           className={`tap-target min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
             duration === d ? chip.on : chip.off
@@ -602,6 +602,7 @@ function WorkoutHome() {
           inputMode="numeric"
           aria-label={t.generate.minutes}
           value={customInput}
+          placeholder="–"
           onFocus={selectOnFocus}
           onChange={(e) => {
             const raw = e.target.value;
@@ -613,9 +614,11 @@ function WorkoutHome() {
             }
           }}
           onBlur={() => {
+            // Empty stays empty: the field shows a time only for a custom length.
+            if (customInput === "") return;
             const clamped = Math.max(5, Math.min(180, Math.round(parseDecimal(customInput) || 45)));
             setDuration(clamped);
-            setCustomInput(String(clamped));
+            setCustomInput(SHORTCUTS.includes(clamped) ? "" : String(clamped));
           }}
           className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
         />
