@@ -96,12 +96,13 @@ interface ChartSegment {
 }
 
 /**
- * Seven bars, one per day, for any per-day figure. Bars are slim rounded
- * columns on a shared baseline with the day's value printed above (no box
- * behind them), the weekday under. A limit or goal is a short solid tick
- * across its own day's bar, at that day's height, since limits can differ per
- * day; no dashed line. A day with nothing is a small stub so the row reads as
- * seven. Over the limit the bar turns destructive (calories only).
+ * Seven equal-height pill tracks, one per day, for any per-day figure. The
+ * track is always the same height, so the row reads as seven alike columns;
+ * the fill inside shows the day's value (the value is printed above, the
+ * weekday under). With a limit or goal the track is that day's limit and a
+ * full track means "reached it" (limits can differ per day); without one the
+ * track is the week's biggest day. Calories turn destructive over the limit.
+ * No tick or dashed line.
  */
 function DayChart({
   days,
@@ -118,43 +119,36 @@ function DayChart({
 }) {
   const t = useTranslation();
   const total = (d: WeekRecapDay) => segments(d).reduce((s, x) => s + x.value, 0);
-  const max = Math.max(1, ...days.map((d) => Math.max(total(d), limit?.(d) ?? 0)));
+  const max = Math.max(1, ...days.map(total));
   return (
     <ul className="grid grid-cols-7 gap-1">
       {days.map((d) => {
         const sum = total(d);
-        const lim = limit?.(d);
+        const ref = limit?.(d) ?? max;
+        const fill = sum > 0 ? Math.min(100, Math.max(6, (sum / ref) * 100)) : 0;
+        const shown = sum > 0 ? Math.min(1, ref / sum) : 1;
         const text = label(d);
         return (
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
             <span className="tabular h-4 text-[10px] font-medium leading-4 text-muted-foreground">
               {text}
             </span>
-            <div className="relative flex h-28 w-full items-end justify-center border-b border-border">
-              {sum > 0 ? (
+            <div className="flex h-28 w-5 items-end overflow-hidden rounded-full bg-foreground/10">
+              {fill > 0 ? (
                 <div
-                  className="flex w-5 flex-col-reverse overflow-hidden rounded-t-md"
-                  style={{ height: `${Math.max(4, (sum / max) * 100)}%` }}
+                  className="flex w-full flex-col-reverse overflow-hidden rounded-full"
+                  style={{ height: `${fill}%` }}
                 >
                   {segments(d).map((seg, i) =>
                     seg.value > 0 ? (
                       <div
                         key={i}
                         className={seg.className}
-                        style={{ height: `${(seg.value / sum) * 100}%` }}
+                        style={{ height: `${(seg.value / sum) * shown * 100}%`, flexShrink: 0 }}
                       />
                     ) : null,
                   )}
                 </div>
-              ) : (
-                <div className="h-1 w-5 rounded-t-sm bg-foreground/10" />
-              )}
-              {lim != null ? (
-                <div
-                  aria-hidden
-                  className="absolute left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-foreground/70 ring-1 ring-background/70"
-                  style={{ bottom: `${(lim / max) * 100}%` }}
-                />
               ) : null}
             </div>
             <span
@@ -172,16 +166,12 @@ function DayChart({
 }
 
 /** A dot, a name and a figure: the legend that also gives each part's total. */
-function Legend({ items }: { items: { dot?: string; tick?: boolean; label: string }[] }) {
+function Legend({ items }: { items: { dot: string; label: string }[] }) {
   return (
     <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
       {items.map((i) => (
         <li key={i.label} className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          {i.tick ? (
-            <span aria-hidden className="h-0.5 w-3 rounded-full bg-foreground/70" />
-          ) : (
-            <span aria-hidden className={`size-2.5 rounded-full ${i.dot}`} />
-          )}
+          <span aria-hidden className={`size-2.5 rounded-full ${i.dot}`} />
           <span className="tabular">{i.label}</span>
         </li>
       ))}
@@ -395,7 +385,7 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
   );
 }
 
-/** Calories per day, with each day's own limit as a tick across its bar. */
+/** Calories per day; a full bar is that day's own limit. */
 function CalorieBars({ days }: { days: WeekRecapDay[] }) {
   const t = useTranslation();
   const locale = useLocale();
@@ -420,7 +410,7 @@ function CalorieBars({ days }: { days: WeekRecapDay[] }) {
           }`
         }
       />
-      {hasLimit ? <Legend items={[{ tick: true, label: t.weekRecap.limitLegend }]} /> : null}
+      {hasLimit ? <p className={`${text.meta} mt-3`}>{t.weekRecap.limitLegend}</p> : null}
     </div>
   );
 }
@@ -534,7 +524,7 @@ export function WaterCard({ recap }: { recap: WeekRecap }) {
             `${dayName(d.key)}: ${d.waterMl > 0 ? formatWaterAmount(d.waterMl) : t.weekRecap.notLogged}`
           }
         />
-        {water.goalMl ? <Legend items={[{ tick: true, label: t.weekRecap.goalLegend }]} /> : null}
+        {water.goalMl ? <p className={`${text.meta} mt-3`}>{t.weekRecap.goalLegend}</p> : null}
       </div>
       {water.busiest ? (
         <FunFact>
