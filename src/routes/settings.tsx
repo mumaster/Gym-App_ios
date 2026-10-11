@@ -56,6 +56,7 @@ function SettingsScreen() {
     alcoholWeekdays,
     firstName,
     allergies,
+    language,
   } = useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
@@ -199,23 +200,25 @@ function SettingsScreen() {
           fold={{ open: allergiesOpen, onToggle: () => setAllergiesOpen((o) => !o) }}
         >
           <div className="divide-y divide-border border-t border-border">
-            {ALLERGIES.map((id) => (
-              <SwitchRow
-                key={id}
-                label={cap(t.allergy.names[id])}
-                desc={t.allergy.descs[id]}
-                ariaLabel={cap(t.allergy.names[id])}
-                on={allergies.includes(id)}
-                onToggle={() => {
-                  haptic(12);
-                  update({
-                    allergies: allergies.includes(id)
-                      ? allergies.filter((a) => a !== id)
-                      : [...allergies, id],
-                  });
-                }}
-              />
-            ))}
+            {[...ALLERGIES]
+              .sort((a, b) => t.allergy.names[a].localeCompare(t.allergy.names[b], language))
+              .map((id) => (
+                <SwitchRow
+                  key={id}
+                  label={cap(t.allergy.names[id])}
+                  desc={t.allergy.descs[id]}
+                  ariaLabel={cap(t.allergy.names[id])}
+                  on={allergies.includes(id)}
+                  onToggle={() => {
+                    haptic(12);
+                    update({
+                      allergies: allergies.includes(id)
+                        ? allergies.filter((a) => a !== id)
+                        : [...allergies, id],
+                    });
+                  }}
+                />
+              ))}
           </div>
         </ListCard>
 
