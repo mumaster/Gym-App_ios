@@ -148,18 +148,30 @@ function DayBars({
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
                 <span
-                  className={`absolute inset-x-0 bottom-0 bg-foreground/10 ${over && overIsBad ? "rounded-b-full" : "rounded-full"}`}
+                  className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
                   style={{ height: `${(ref / height) * 100}%` }}
                 />
-                {total > 0 && (
+                {total > 0 && over && overIsBad && goal != null && (
+                  <>
+                    <span
+                      className="intake-fill absolute inset-x-0 bottom-0 rounded-full"
+                      style={{ height: `${(goal / total) * 100}%` }}
+                    />
+                    <span
+                      className="absolute inset-x-0 top-0 rounded-full bg-primary"
+                      style={{ height: `calc(${((total - goal) / total) * 100}% + 10px)` }}
+                    />
+                  </>
+                )}
+                {total > 0 && !(over && overIsBad) && (
                   <div
                     className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse overflow-hidden rounded-full"
                     style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
                   >
-                    {parts.map((p, i) => (
+                    {parts.map((p, k) => (
                       <span
-                        key={i}
-                        className={`${p.className} ${i === parts.length - 1 ? "rounded-t-full" : ""} ${i === 0 ? "rounded-b-full" : ""}`}
+                        key={k}
+                        className={`${p.className} ${k === parts.length - 1 ? "rounded-t-full" : ""} ${k === 0 ? "rounded-b-full" : ""}`}
                         style={{ height: `${(p.value / total) * 100}%` }}
                       />
                     ))}
