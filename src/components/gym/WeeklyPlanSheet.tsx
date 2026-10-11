@@ -116,7 +116,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       anchor: anchorFor(preview, cyclePosition),
       ...(templateHasCardio(templateId) ? { cardio: cardioDraft } : {}),
     });
-    setCardioPlan(withSeparateCardioDays(cardioPlan, templateId, dows));
+    setCardioPlan(withSeparateCardioDays(cardioPlan));
     update({ growthFocus: focusDraft });
     onClose();
   };
@@ -350,10 +350,6 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.weeklyPlan.pickOneDay}</p>
           )}
-
-          {template.cardioDays ? (
-            <p className="text-[12.5px] text-muted-foreground">{t.cardio.hybridDaysNote}</p>
-          ) : null}
 
           <HybridCardioSection
             templateId={templateId}
