@@ -8,6 +8,7 @@ import {
   Footprints,
   Scale,
   Sparkles,
+  Target,
   Utensils,
 } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -91,13 +92,19 @@ function highlightFigures(text: string): ReactNode[] {
   return parts;
 }
 
-function FunFact({ children }: { children: ReactNode }) {
+function FunFact({
+  children,
+  icon: Icon = Sparkles,
+}: {
+  children: ReactNode;
+  icon?: typeof Sparkles;
+}) {
   const t = useTranslation();
   return (
     <p className="mt-4 flex items-start gap-2.5 rounded-2xl bg-primary/10 px-3 py-2.5 text-[14px] text-foreground">
-      <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-primary-text" />
+      <Icon aria-hidden className="mt-0.5 size-4 shrink-0 text-primary-text" />
       <span>
-        <span className="sr-only">{t.weekRecap.funFact}: </span>
+        {Icon === Sparkles ? <span className="sr-only">{t.weekRecap.funFact}: </span> : null}
         {typeof children === "string" ? highlightFigures(children) : children}
       </span>
     </p>
@@ -537,9 +544,9 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
         <CalorieBars days={recap.days} />
       </div>
       {calorieGoal != null && finishedLogged > 0 ? (
-        <p className={`${text.meta} mt-3`}>
+        <FunFact icon={Target}>
           {t.weekRecap.withinLimit(nutrition.daysWithinGoal, finishedLogged)}
-        </p>
+        </FunFact>
       ) : null}
       {nutrition.highest ? (
         <FunFact>
