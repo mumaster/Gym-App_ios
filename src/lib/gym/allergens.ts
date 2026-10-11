@@ -543,8 +543,67 @@ const DEFS: Record<AllergyId, AllergenDef> = {
   },
 };
 
-/** E220-E228: the sulphite additives. */
-const SULPHITE_CODE = /\be[\s\-.]?(22[0-8])(?![0-9])/gi;
+/** Additives (E-numbers) per allergen. `contains`: made from the allergen, so
+ *  a hit is a firm "contains". `maybe`: can be made from it or from something
+ *  else, which the label doesn't say, so a hit is only a "maybe".
+ *  Basis: the EU's Annex II allergen list plus the usual sources of each
+ *  additive (Open Food Facts additive pages, Dutch Voedingscentrum, vegan E-number
+ *  lists). Web search was thin, so the lists are deliberately short; only
+ *  codes with a well-known allergen origin are in. */
+const ADDITIVES: Partial<Record<AllergyId, { contains?: string[]; maybe?: string[] }>> = {
+  sulphites: {
+    contains: ["220", "221", "222", "223", "224", "225", "226", "227", "228"],
+    // Caramel made by the sulphite processes.
+    maybe: ["150b", "150d"],
+  },
+  eggs: {
+    // Lysozyme comes from egg white.
+    contains: ["1105"],
+    // Lecithin is mostly soy or sunflower, but can be egg yolk.
+    maybe: ["322"],
+  },
+  soy: {
+    // Soybean hemicellulose; thermally oxidised soya bean oil.
+    contains: ["426", "479b"],
+    // Lecithin, and PGPR (can be made with soy).
+    maybe: ["322", "476"],
+  },
+  milk: {
+    // Lactitol is made from lactose; nisin is grown on a milk-based medium.
+    maybe: ["966", "234"],
+  },
+  gluten: {
+    // Dextrins, modified starches (wheat is a common source) and amylase.
+    maybe: [
+      "1100",
+      "1400",
+      "1401",
+      "1402",
+      "1403",
+      "1404",
+      "1405",
+      "1410",
+      "1412",
+      "1413",
+      "1414",
+      "1420",
+      "1422",
+      "1440",
+      "1442",
+      "1450",
+      "1451",
+    ],
+  },
+  crustaceans: {
+    // Astaxanthin can come from shrimp.
+    maybe: ["161j"],
+  },
+};
+
+/** Matches "E322", "e 322", "E-322", "E322(i)", "E472b" and so on. */
+function codeRegex(codes: string[]): RegExp {
+  return new RegExp(`\\be[\\s\\-.]?(${codes.join("|")})(?![0-9])`, "gi");
+}
 
 /** "May contain" wording: the label's own warning. */
 const MAY_CONTAIN =
@@ -603,11 +662,13 @@ export function checkAllergen(
   const tagged = (list?: string[]) => (list ?? []).some((t) => def.tag.test(t.toLowerCase()));
 
   // Strong: additive codes (sulphites), named forms, the product's own data.
-  if (id === "sulphites") {
-    for (const m of text.matchAll(SULPHITE_CODE)) add("additive", `E${m[1]}`);
+  const codes = ADDITIVES[id];
+  if (codes?.contains) {
+    const re = codeRegex(codes.contains);
+    for (const m of text.matchAll(re)) add("additive", `E${m[1]!.toUpperCase()}`);
     for (const tag of tags.additives ?? []) {
-      const m = /e(22[0-8])(?![0-9])/i.exec(tag);
-      if (m) add("additive", `E${m[1]}`);
+      const m = codeRegex(codes.contains).exec(tag);
+      if (m) add("additive", `E${m[1]!.toUpperCase()}`);
     }
   }
   for (const entry of def.named) {
@@ -635,6 +696,14 @@ export function checkAllergen(
 
   if (strong) return { verdict: "contains", hits: dropContained(hits) };
 
+  if (codes?.maybe) {
+    const re = codeRegex(codes.maybe);
+    for (const m of text.matchAll(re)) add("additive", `E${m[1]!.toUpperCase()}`);
+    for (const tag of tags.additives ?? []) {
+      const m = codeRegex(codes.maybe).exec(tag);
+      if (m) add("additive", `E${m[1]!.toUpperCase()}`);
+    }
+  }
   for (const food of def.source) {
     if (hasTerm(text, food)) add("sourceFood", food);
   }
@@ -660,7 +729,7 @@ function strongOutside(
   return hits.some((h) => {
     if (h.kind === "declared") return true;
     if (h.kind === "additive") {
-      const re = new RegExp(`\\be[\\s\\-.]?${h.term.slice(1)}(?![0-9])`);
+      const re = new RegExp(`\\be[\\s\\-.]?${h.term.slice(1).toLowerCase()}(?![0-9])`);
       // Not in the text at all: it came from the product's additive tags.
       return re.test(rest) || !re.test(text);
     }

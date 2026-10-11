@@ -128,3 +128,33 @@ describe("unclear cases", () => {
     expect(r?.hits.map((h) => h.term)).toEqual(["milk powder"]);
   });
 });
+
+describe("E-numbers for other allergens", () => {
+  it("lysozyme E1105 is egg", () => {
+    expect(checkAllergen("eggs", "wine, preservative E1105")?.verdict).toBe("contains");
+  });
+  it("soy hemicellulose E426 is soy", () => {
+    expect(checkAllergen("soy", "water, thickener (E426)")?.verdict).toBe("contains");
+  });
+  it("lecithin E322 is a maybe for soy and egg, not a firm hit", () => {
+    expect(checkAllergen("soy", "emulsifier: E322(i)")?.verdict).toBe("maybe");
+    expect(checkAllergen("eggs", "emulsifier E 322")?.verdict).toBe("maybe");
+  });
+  it("modified starch codes are a maybe for gluten", () => {
+    expect(checkAllergen("gluten", "sauce, E1422")?.verdict).toBe("maybe");
+  });
+  it("lactitol is a maybe for milk; E9660 is not E966", () => {
+    expect(checkAllergen("milk", "sweetener E966")?.verdict).toBe("maybe");
+    expect(checkAllergen("milk", "sweetener E9660")?.verdict).toBe("none");
+  });
+  it("reads additive tags from Open Food Facts", () => {
+    expect(checkAllergen("eggs", "water", { additives: ["en:e1105"] })?.verdict).toBe("contains");
+  });
+  it("sulphite caramel E150d is a maybe, E224 still contains", () => {
+    expect(checkAllergen("sulphites", "colour E150d")?.verdict).toBe("maybe");
+    expect(checkAllergen("sulphites", "preservative E224")?.verdict).toBe("contains");
+  });
+  it("E-numbers do not leak across allergens", () => {
+    expect(checkAllergen("fish", "E322, E1105, E426")?.verdict).toBe("none");
+  });
+});
