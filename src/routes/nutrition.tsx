@@ -16,6 +16,7 @@ import {
   Cookie,
   Pencil,
   Download,
+  ShieldAlert,
 } from "lucide-react";
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
@@ -28,6 +29,7 @@ import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import { SwipeToDelete } from "../components/gym/SwipeToDelete";
+import { CanIEatSheet } from "../components/gym/CanIEatSheet";
 import { DrinksTab } from "../components/gym/DrinksTab";
 import {
   addDays,
@@ -134,6 +136,7 @@ function NutritionScreen() {
   const [shareMeal, setShareMeal] = useState<SharedMeal | null>(null);
   const [importCode, setImportCode] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [canIEatOpen, setCanIEatOpen] = useState(false);
   useEffect(() => {
     // A shared meal's link lands here as #meal=<code>.
     const code = mealCodeFrom(window.location.hash);
@@ -352,7 +355,17 @@ function NutritionScreen() {
             </div>
           )}
 
-          <button onClick={() => setImportOpen(true)} className={`${button.secondary} mt-4 w-full`}>
+          <button
+            onClick={() => {
+              haptic(12);
+              setCanIEatOpen(true);
+            }}
+            className={`${button.secondary} mt-4 w-full`}
+          >
+            <ShieldAlert className="size-4" /> {t.allergy.canIEat}
+          </button>
+
+          <button onClick={() => setImportOpen(true)} className={`${button.secondary} mt-2 w-full`}>
             <Download className="size-4" /> {t.mealShare.importFrom}
           </button>
 
@@ -462,6 +475,7 @@ function NutritionScreen() {
         }}
       />
       <ShareMealSheet meal={shareMeal} onClose={() => setShareMeal(null)} />
+      <CanIEatSheet open={canIEatOpen} onClose={() => setCanIEatOpen(false)} />
       <ImportMealSheet
         open={importOpen}
         code={importCode}
