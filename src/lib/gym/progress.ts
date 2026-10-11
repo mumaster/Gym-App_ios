@@ -148,15 +148,20 @@ export function latestPr(
  * (see load.ts) with no bodyweight on file plots its best reps instead —
  * an estimate from the external load alone (0 for plain pull-ups) would be
  * meaningless — and with a bodyweight it estimates from bodyweight + load.
+ * An e1rm point also carries `heaviest`, the heaviest weight lifted in a
+ * working set that session, so the chart can show actual vs. estimated.
  */
 export function exerciseTrend(
   exerciseId: string,
   workouts: Workout[],
   bodyweight: boolean,
   bodyKg: number | null,
-): { kind: "e1rm" | "reps"; points: { date: string; value: number }[] } {
+): {
+  kind: "e1rm" | "reps";
+  points: { date: string; value: number; heaviest?: number | undefined }[];
+} {
   const kind = bodyweight && bodyKg == null ? "reps" : "e1rm";
-  const points: { date: string; value: number }[] = [];
+  const points: { date: string; value: number; heaviest?: number | undefined }[] = [];
   const ordered = [...workouts].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
@@ -173,7 +178,12 @@ export function exerciseTrend(
               estimated1RM({ weight: s.weight + (bodyweight ? bodyKg! : 0), reps: s.reps }),
             ),
           );
-    points.push({ date: w.date, value });
+    // The heaviest load actually lifted (bodyweight included), to plot beside the estimate.
+    const heaviest =
+      kind === "reps"
+        ? undefined
+        : Math.max(...sets.map((s) => s.weight + (bodyweight ? bodyKg! : 0)));
+    points.push({ date: w.date, value, heaviest });
   }
   return { kind, points };
 }
