@@ -434,9 +434,21 @@ function CalorieBars({ days }: { days: WeekRecapDay[] }) {
         ariaLabel={(d) =>
           `${d.date.toLocaleDateString(locale, { weekday: "long" })}: ${
             d.logged ? `${d.calories.toLocaleString(locale)} kcal` : t.weekRecap.notLogged
-          }`
+          }${d.calorieGoal != null ? `, ${t.weekRecap.dayLimit(d.calorieGoal.toLocaleString(locale))}` : ""}`
         }
       />
+      {hasLimit ? (
+        <ul className="mt-1 grid grid-cols-7 gap-1" aria-hidden>
+          {days.map((d) => (
+            <li
+              key={d.key}
+              className="tabular text-center text-[10px] leading-4 text-muted-foreground"
+            >
+              {d.calorieGoal != null ? d.calorieGoal.toLocaleString(locale) : "–"}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {hasLimit ? <p className={`${text.meta} mt-3`}>{t.weekRecap.limitLegend}</p> : null}
     </div>
   );

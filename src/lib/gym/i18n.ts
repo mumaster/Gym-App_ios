@@ -726,7 +726,9 @@ const en = {
     weightLatest: "Latest",
     weightChange: "Change this week",
     funFact: "Fun fact",
-    limitLegend: "Grey is that day's limit, the solid colour is the part over it",
+    limitLegend:
+      "Grey is that day's limit, the solid colour is the part over it. The small number under each day is its limit in kcal",
+    dayLimit: (kcal: string) => `limit ${kcal} kcal`,
     goalLegend: "Grey is your daily goal, the solid colour is the part over it",
     perDayWater: "Water per day",
     perDayCoffee: "Cups per day",
@@ -2384,7 +2386,9 @@ const nl: Dict = {
     weightLatest: "Laatste",
     weightChange: "Verschil deze week",
     funFact: "Weetje",
-    limitLegend: "Grijs is de daglimiet, de volle kleur is het deel erboven",
+    limitLegend:
+      "Grijs is de daglimiet, de volle kleur is het deel erboven. Het kleine getal onder elke dag is de limiet in kcal",
+    dayLimit: (kcal: string) => `limiet ${kcal} kcal`,
     goalLegend: "Grijs is je dagdoel, de volle kleur is het deel erboven",
     perDayWater: "Water per dag",
     perDayCoffee: "Koppen per dag",
