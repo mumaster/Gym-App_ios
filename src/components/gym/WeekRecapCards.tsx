@@ -148,7 +148,7 @@ function DayBars({
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
                 <span
-                  className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
+                  className={`absolute inset-x-0 bottom-0 bg-foreground/10 ${over && overIsBad ? "rounded-b-full" : "rounded-full"}`}
                   style={{ height: `${(ref / height) * 100}%` }}
                 />
                 {total > 0 && (
