@@ -1,7 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import {
-  ChevronRight,
   Cloud,
   CloudOff,
   Dumbbell,
@@ -22,6 +21,7 @@ import { MoveDataSheet } from "../components/gym/MoveDataSheet";
 import { NameField } from "../components/gym/NameField";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { ListCard } from "../components/gym/ListCard";
+import { LinkRow, PickerSection } from "../components/gym/SettingsRows";
 import { Screen } from "../components/gym/Screen";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SourcesSheet } from "../components/gym/SourcesSheet";
@@ -29,7 +29,7 @@ import { ThemePicker } from "../components/gym/ThemePicker";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { forceUpdate } from "../pwa";
-import { button, text } from "../components/gym/ui";
+import { button } from "../components/gym/ui";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -294,58 +294,5 @@ function SettingsScreen() {
       <KnownLiftsSheet open={liftsOpen} onClose={() => setLiftsOpen(false)} />
       <MoveDataSheet open={moveOpen} onClose={() => setMoveOpen(false)} />
     </Screen>
-  );
-}
-
-/** A tappable row inside a settings card: title, one or two lines of
- *  description and a chevron (or `trailing`). A link when `to` is given. */
-function LinkRow({
-  to,
-  onClick,
-  title,
-  desc,
-  trailing,
-  disabled,
-}: {
-  to?: "/equipment";
-  onClick?: () => void;
-  title: string;
-  desc: string;
-  trailing?: ReactNode;
-  disabled?: boolean;
-}) {
-  const cls =
-    "flex min-h-[56px] w-full items-center justify-between gap-3 border-t border-border px-4 py-3 text-left active:bg-foreground/5 disabled:opacity-60";
-  const inner = (
-    <>
-      <span className="min-w-0">
-        <span className="block text-[15px] font-semibold">{title}</span>
-        <span className="line-clamp-2 block text-[12.5px] leading-snug text-muted-foreground">
-          {desc}
-        </span>
-      </span>
-      {trailing ?? <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />}
-    </>
-  );
-  if (to) {
-    return (
-      <Link to={to} className={cls}>
-        {inner}
-      </Link>
-    );
-  }
-  return (
-    <button onClick={onClick} disabled={disabled} className={cls}>
-      {inner}
-    </button>
-  );
-}
-
-function PickerSection({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="border-t border-border">
-      <p className={`${text.eyebrow} px-4 pt-3`}>{label}</p>
-      {children}
-    </div>
   );
 }

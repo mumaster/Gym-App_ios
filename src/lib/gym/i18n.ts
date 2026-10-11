@@ -1297,7 +1297,6 @@ const en = {
     lookBody: "Light or dark, your colour and your language.",
     gymTitle: "Your gym",
     gymBody: "Pick where you train. Workouts only use the equipment that gym has.",
-    gymEdit: "Edit equipment",
     liftsTitle: "Lifts you already do",
     liftsBody:
       "Enter a recent set or two and Forge suggests starting weights from them. New to lifting? Skip this step.",
@@ -3125,7 +3124,6 @@ const nl: Dict = {
     lookBody: "Licht of donker, je kleur en je taal.",
     gymTitle: "Je gym",
     gymBody: "Kies waar je traint. Trainingen gebruiken alleen het materiaal van die gym.",
-    gymEdit: "Materiaal aanpassen",
     liftsTitle: "Lifts die je al doet",
     liftsBody:
       "Voer een recente set of twee in en Forge stelt er startgewichten mee voor. Nieuw met krachttraining? Sla deze stap over.",
