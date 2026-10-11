@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ListChecks, Star } from "lucide-react";
+import { Check, ListChecks, Star } from "lucide-react";
 import { MUSCLES } from "../../lib/gym/data";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
@@ -124,7 +124,13 @@ export function WeeklySetsCard() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="tabular w-14 shrink-0 text-right text-[12px] text-muted-foreground">
+              <span
+                className={`tabular flex w-16 shrink-0 items-center justify-end gap-1 text-[12px] ${
+                  r.done >= r.target ? "font-semibold text-primary-text" : "text-muted-foreground"
+                }`}
+                aria-label={r.done >= r.target ? t.volume.reached : undefined}
+              >
+                {r.done >= r.target ? <Check className="size-3.5 shrink-0" /> : null}
                 {t.volume.setsOf(r.done, r.target)}
               </span>
             </div>

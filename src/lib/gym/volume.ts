@@ -116,3 +116,14 @@ export function weeklyVolume(
     }))
     .sort((a, b) => a.done / a.target - b.done / b.target || Number(b.focus) - Number(a.focus));
 }
+
+/** Muscles a plan has filled up to (or within one accessory set of) the
+ *  per-session cap, so the generator had no room left for them. The cap is
+ *  the app's own reading of Pelland et al. 2024 (see above); "within 2 sets"
+ *  is a display choice, not a published number. */
+export function muscularCapReached(plan: { exercise_id: string; target_sets: number }[]): Muscle[] {
+  const sets = planSets(plan);
+  return (Object.keys(sets) as Muscle[]).filter(
+    (m) => (sets[m] ?? 0) >= MAX_SESSION_SETS_PER_MUSCLE - 2,
+  );
+}
