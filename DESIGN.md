@@ -314,3 +314,8 @@ Found in an app-wide audit on 6 October 2026, ordered by how visible they are. F
 6. **First visit in light mode.** A page error (React's warning about the inline script) with the known first-visit hydration mismatch. (Home's cut-off Dutch hero title went with the Home redesign.)
 7. **Type scale.** 22 px text 3 times in the welcome tour (not on the scale); about 100 small grey lines at 12 px where §3 says 12.5; the `text.*` house styles are hardly used.
 8. **English in the Dutch app.** Exercise form tips and muscle names stay English by design (§12), but they stand out on otherwise Dutch screens. Translating them is a separate, larger job.
+
+
+### Home notifications bell
+
+Home's header has a bell (42 pt glass chip) left of the profile button (`Screen`'s `bell` prop widens the title gutter to 7.5rem). It opens a sheet of derived messages (`notifications.ts`): running workout, missed session, weekly target reached, week streak at risk, water under half after 15:00, caffeine limit, weekly weigh-in. A dot marks unopened ones; only seen ids are stored (`notifSeen`).

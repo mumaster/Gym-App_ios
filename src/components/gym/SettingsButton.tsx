@@ -5,6 +5,8 @@ import { ProfileAvatar } from "./ProfileAvatar";
 
 /** Room a header's title needs to leave on the right for the button. */
 export const SETTINGS_BUTTON_GUTTER = "pr-[4.5rem]";
+/** The same with a bell button next to the profile button (Home). */
+export const BELL_GUTTER = "pr-[7.5rem]";
 
 /**
  * The profile button that opens Settings. It's absolutely positioned in the
