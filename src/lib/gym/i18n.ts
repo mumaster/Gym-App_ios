@@ -233,6 +233,9 @@ const en = {
     alsoStrength: "also strength",
     afterStrength: "after lifting",
     hybridInPlan: "Cardio after lifting comes from your Hybrid plan; change it there.",
+    dayPlanTitle: "Cardio on this day",
+    dayInPlan: "cardio day",
+    daysInPlan: "Cardio days come from your plan; change them there.",
     hybridDaysNote:
       "Cardio gets days of its own, between the lifting days. They are added to your cardio plan, where you can change them.",
     hybridTitle: "Cardio after lifting",
@@ -1517,7 +1520,9 @@ const en = {
       `${label} · Week ${week} of ${weeks} · ${days} ${days === 1 ? "day" : "days"} a week`,
     nextUp: "Next up",
     sessionType: "Session type",
-    sessionTypeHint: "Choose what each day trains, for example Upper, Upper, Lower, Upper.",
+    sessionTypeHint:
+      "Choose what each day trains, for example Upper, Upper, Lower, Upper. Any day can also be another type, like Push or Cardio.",
+    otherDayTypes: "Other day types",
     changeDay: (day: string) => `Change day for ${day}`,
     startNewProgram: "Start a new program",
     removeProgram: "Remove program",
@@ -1989,6 +1994,9 @@ const nl: Dict = {
     alsoStrength: "ook kracht",
     afterStrength: "na het krachtwerk",
     hybridInPlan: "Cardio na het krachtwerk komt uit je Hybrid-schema; pas het daar aan.",
+    dayPlanTitle: "Cardio op deze dag",
+    dayInPlan: "cardiodag",
+    daysInPlan: "Cardiodagen komen uit je schema; pas ze daar aan.",
     hybridDaysNote:
       "Cardio krijgt eigen dagen, tussen de krachtdagen. Ze komen in je cardioschema, waar je ze kunt aanpassen.",
     hybridTitle: "Cardio na het krachtwerk",
@@ -3277,7 +3285,9 @@ const nl: Dict = {
       `${label} · Week ${week} van ${weeks} · ${days} ${days === 1 ? "dag" : "dagen"} per week`,
     nextUp: "Hierna",
     sessionType: "Soort training",
-    sessionTypeHint: "Kies wat elke dag traint, bijvoorbeeld Boven, Boven, Onder, Boven.",
+    sessionTypeHint:
+      "Kies wat elke dag traint, bijvoorbeeld Boven, Boven, Onder, Boven. Een dag kan ook een ander soort zijn, zoals Push of Cardio.",
+    otherDayTypes: "Andere trainingen",
     changeDay: (day: string) => `Dag wijzigen voor ${day}`,
     startNewProgram: "Start een nieuw programma",
     removeProgram: "Programma verwijderen",

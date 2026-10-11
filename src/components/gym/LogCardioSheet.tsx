@@ -32,10 +32,14 @@ export function LogCardioSheet({
   open,
   onClose,
   preset,
+  onLogged,
 }: {
   open: boolean;
   onClose: () => void;
   preset?: CardioPreset | null;
+  /** Runs once the session is saved, with the day it was logged on (a cardio
+   *  day of the plan is finished by it). */
+  onLogged?: ((day: Date) => void) | undefined;
 }) {
   const t = useTranslation();
   const { logCardio } = useGym();
@@ -85,6 +89,7 @@ export function LogCardioSheet({
       rpe: rpe ?? null,
     });
     haptic([20, 40, 20]);
+    onLogged?.(day);
     onClose();
   };
 

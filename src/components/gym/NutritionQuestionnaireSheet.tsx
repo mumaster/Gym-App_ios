@@ -15,6 +15,7 @@ import {
   type Sex,
 } from "../../lib/gym/nutrition";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
+import { isLiftingSlot } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Workout } from "../../lib/gym/types";
 import { chip, button } from "./ui";
@@ -202,7 +203,8 @@ export function NutritionQuestionnaireSheet({
     setSessions(
       String(
         nutritionProfile?.sessionsPerWeek ??
-          (program ?? weeklyScheme)?.schedule.length ??
+          // Lifting sessions only: a cardio day is counted by the cardio plan.
+          ((program ?? weeklyScheme)?.schedule.filter(isLiftingSlot).length || undefined) ??
           recentSessionsPerWeek(workouts) ??
           "",
       ),

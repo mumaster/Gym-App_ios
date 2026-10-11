@@ -6,8 +6,8 @@ import {
   DOW_DISPLAY_ORDER,
   SPLIT_TEMPLATES,
   applyDayPicks,
-  distinctDays,
   buildSchedule,
+  cardioDayPlan,
   splitDayLabel,
   splitTemplateById,
   templateCardio,
@@ -16,6 +16,7 @@ import {
   type SplitTemplateId,
 } from "../../lib/gym/splits";
 import { useTranslation } from "../../lib/gym/i18n";
+import { cardioPlanLine } from "./cardioDisplay";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
 import { anchorFor } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
@@ -46,6 +47,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     setProgram,
     updateProgramSlotDow,
     updateProgramSlotDay,
+    updateProgramSlotCardio,
     updateProgramSchedule,
     clearProgram,
     growthFocus,
@@ -74,9 +76,14 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   const focusRef = useRef(growthFocus);
   focusRef.current = growthFocus;
 
+  // Only on opening: a day or cardio change inside a slot's editor changes
+  // the plan, which must not fold the editor away.
+  useEffect(() => {
+    if (open) setEditingSlot(null);
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
-    setEditingSlot(null);
     setDayPicks({});
     setFocusDraft(focusRef.current);
     setEditingExisting(false);
@@ -100,7 +107,13 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     );
   };
 
-  const preview = applyDayPicks(templateId, buildSchedule(templateId, dows), dayPicks);
+  // Re-planning an existing program keeps what its cardio days had planned.
+  const preview = applyDayPicks(
+    templateId,
+    buildSchedule(templateId, dows),
+    dayPicks,
+    editingExisting ? program?.schedule : undefined,
+  );
   const template = splitTemplateById(templateId);
   const preset = programPresetById(presetId);
 
@@ -199,7 +212,10 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                           {t.programBuilder.nextUp}
                         </span>
                       ) : null}
-                      <p className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</p>
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.common.dow[slot.dow]}
+                        {cardioDayPlan(slot) ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}` : ""}
+                      </p>
                     </div>
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
@@ -215,6 +231,8 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                         templateId={program.templateId}
                         value={slot.dayId}
                         onChange={(dayId) => updateProgramSlotDay(i, dayId)}
+                        cardio={slot.cardio}
+                        onCardioChange={(cardio) => updateProgramSlotCardio(i, cardio)}
                       />
                       <div className="flex flex-wrap gap-x-1.5 gap-y-2">
                         {DOW_DISPLAY_ORDER.map((dow) => {
@@ -224,7 +242,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                               key={dow}
                               disabled={taken}
                               onClick={() => setSlotDow(i, dow)}
-                              className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                              className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
                                 dow === slot.dow
                                   ? chip.on
                                   : taken
@@ -342,11 +360,9 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
                 {t.programBuilder.proposedSchedule}
               </p>
-              {distinctDays(templateId).length > 1 ? (
-                <p className="mb-2 text-[12.5px] text-muted-foreground">
-                  {t.programBuilder.sessionTypeHint}
-                </p>
-              ) : null}
+              <p className="mb-2 text-[12.5px] text-muted-foreground">
+                {t.programBuilder.sessionTypeHint}
+              </p>
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
                   <div key={`${slot.dow}-${i}`} className="glass space-y-2 rounded-xl px-3 py-2.5">

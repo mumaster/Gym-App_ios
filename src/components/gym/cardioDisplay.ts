@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Dict } from "../../lib/gym/i18n";
-import type { CardioActivity, CardioSession } from "../../lib/gym/types";
+import type { CardioActivity, CardioFinisher, CardioSession } from "../../lib/gym/types";
 
 /** One icon per activity, for chips, rows and the week strips. */
 export const CARDIO_ICONS: Record<CardioActivity, LucideIcon> = {
@@ -29,4 +29,9 @@ export const CARDIO_ICONS: Record<CardioActivity, LucideIcon> = {
 export function cardioName(c: CardioSession, t: Dict): string {
   if (c.activity && (c.manual || !c.watch.activity)) return t.cardio.activities[c.activity];
   return c.watch.activity || t.watch.cardio;
+}
+
+/** A planned cardio session on one line: "Run · Moderate · 30 min". */
+export function cardioPlanLine(c: CardioFinisher, t: Dict): string {
+  return `${t.cardio.activities[c.activity]} · ${t.cardio.efforts[c.effort]} · ${t.cardio.min(c.minutes)}`;
 }

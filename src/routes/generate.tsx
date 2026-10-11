@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { AdjustWeekSheet } from "../components/gym/AdjustWeekSheet";
 import { CardHead } from "../components/gym/CardHead";
+import { CardioDayBlock } from "../components/gym/CardioDayBlock";
+import { LogCardioSheet } from "../components/gym/LogCardioSheet";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
@@ -60,8 +62,9 @@ import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { crossEstimate, heavierHint, withKnownLifts } from "../lib/gym/startWeight";
 import { todaysCheckIn } from "../lib/gym/readiness";
-import { plannedDate } from "../lib/gym/schedule";
+import { isCardioSlot, plannedDate } from "../lib/gym/schedule";
 import {
+  cardioDayPlan,
   musclesForSlot,
   slotCardio,
   splitDayLabel,
@@ -69,7 +72,7 @@ import {
   type ScheduleSlot,
   type SplitTemplateId,
 } from "../lib/gym/splits";
-import { haptic, useGym } from "../lib/gym/store";
+import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles, weeklySets } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
@@ -128,6 +131,7 @@ function WorkoutHome() {
     avoidedExerciseIds,
     weeklyScheme,
     program,
+    completeCardioSlot,
     workoutTemplates,
     readinessLog,
     avatarId,
@@ -150,6 +154,8 @@ function WorkoutHome() {
   const [planSheetOpen, setPlanSheetOpen] = useState(false);
   const [programSheetOpen, setProgramSheetOpen] = useState(false);
   const [adjustWeekOpen, setAdjustWeekOpen] = useState(false);
+  /** Which plan's cardio day is being logged (its next session is cardio). */
+  const [cardioLogKind, setCardioLogKind] = useState<RotationKind | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
   /**
@@ -445,6 +451,8 @@ function WorkoutHome() {
     slot: ScheduleSlot,
     source: "program" | "weeklyScheme",
   ) => {
+    // A cardio day has nothing to generate: it's logged in the cardio sheet.
+    if (isCardioSlot(slot)) return;
     setCuratedSelection(true);
     setFollowingSchedule(source === "weeklyScheme");
     setFollowingProgram(source === "program");
@@ -458,8 +466,13 @@ function WorkoutHome() {
     generate({ regions: rs, followingProgram: source === "program" });
   };
 
+  const scheduledCardio = cardioDayPlan(scheduledSlot);
   const startScheduledDay = () => {
     if (!weeklyScheme || !scheduledSlot) return;
+    if (scheduledCardio) {
+      setCardioLogKind("weeklyScheme");
+      return;
+    }
     buildSplitDay(weeklyScheme.templateId, scheduledSlot, "weeklyScheme");
   };
 
@@ -470,8 +483,13 @@ function WorkoutHome() {
       ? splitDayLabel(program.templateId, scheduledProgramSlot.dayId)
       : "";
 
+  const programCardio = cardioDayPlan(scheduledProgramSlot);
   const startProgramDay = () => {
     if (!program || !scheduledProgramSlot) return;
+    if (programCardio) {
+      setCardioLogKind("program");
+      return;
+    }
     buildSplitDay(program.templateId, scheduledProgramSlot, "program");
   };
 
@@ -684,13 +702,19 @@ function WorkoutHome() {
               onDoToday={startProgramDay}
             />
 
-            <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.sessionLength}
-            </p>
-            {durationPicker}
-            <button onClick={startProgramDay} className={`${button.primary} mt-3 w-full`}>
-              <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
-            </button>
+            {programCardio ? (
+              <CardioDayBlock plan={programCardio} onLog={startProgramDay} />
+            ) : (
+              <>
+                <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t.generate.sessionLength}
+                </p>
+                {durationPicker}
+                <button onClick={startProgramDay} className={`${button.primary} mt-3 w-full`}>
+                  <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
+                </button>
+              </>
+            )}
             <button
               onClick={() => setAdjustWeekOpen(true)}
               className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
@@ -733,13 +757,19 @@ function WorkoutHome() {
               onDoToday={startScheduledDay}
             />
 
-            <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.sessionLength}
-            </p>
-            {durationPicker}
-            <button onClick={startScheduledDay} className={`${button.primary} mt-3 w-full`}>
-              <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
-            </button>
+            {scheduledCardio ? (
+              <CardioDayBlock plan={scheduledCardio} onLog={startScheduledDay} />
+            ) : (
+              <>
+                <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {t.generate.sessionLength}
+                </p>
+                {durationPicker}
+                <button onClick={startScheduledDay} className={`${button.primary} mt-3 w-full`}>
+                  <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
+                </button>
+              </>
+            )}
             <button
               onClick={() => setAdjustWeekOpen(true)}
               className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-muted text-[13px] font-bold text-muted-foreground active:scale-95"
@@ -1379,6 +1409,14 @@ function WorkoutHome() {
         }}
       />
 
+      <LogCardioSheet
+        open={cardioLogKind !== null}
+        onClose={() => setCardioLogKind(null)}
+        preset={cardioLogKind === "program" ? programCardio : scheduledCardio}
+        onLogged={(day) => {
+          if (cardioLogKind) completeCardioSlot(cardioLogKind, day);
+        }}
+      />
       <WeeklyPlanSheet open={planSheetOpen} onClose={() => setPlanSheetOpen(false)} />
       <ProgramBuilderSheet open={programSheetOpen} onClose={() => setProgramSheetOpen(false)} />
       <AdjustWeekSheet
