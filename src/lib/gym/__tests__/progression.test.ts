@@ -220,6 +220,7 @@ describe("exercise trend", () => {
     );
     expect(r.kind).toBe("e1rm");
     expect(r.points.map((p) => p.value)).toEqual([101.3, 104.5]);
+    expect(r.points.map((p) => p.heaviest)).toEqual([80, 82.5]);
   });
   it("plots best reps for a bodyweight exercise without a bodyweight", () => {
     const r = exerciseTrend(

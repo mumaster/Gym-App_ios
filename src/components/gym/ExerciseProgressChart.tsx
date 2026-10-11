@@ -6,6 +6,9 @@ import { isBodyweightExercise, latestBodyKg } from "../../lib/gym/load";
 import { exerciseTrend } from "../../lib/gym/progress";
 import { useGym } from "../../lib/gym/store";
 
+/** The card header's tint (see `intake-solid` in styles.css) as an opaque stroke. */
+const ACTUAL_STROKE = "color-mix(in oklab, var(--primary) 42%, var(--card))";
+
 /** One exercise's best set per session — an Epley 1RM estimate, or best
  *  reps for a bodyweight exercise with no bodyweight on file (see
  *  progress.ts's exerciseTrend). Used on History and in the exercise
@@ -31,8 +34,10 @@ export function ExerciseProgressChart({
   const data = trend.points.map((p) => ({
     label: new Date(p.date).toLocaleDateString(locale, { day: "numeric", month: "short" }),
     value: p.value,
+    heaviest: p.heaviest,
   }));
 
+  const showActual = trend.kind === "e1rm";
   return (
     <div>
       <p className="mb-2 text-[12px] text-muted-foreground">
@@ -55,9 +60,13 @@ export function ExerciseProgressChart({
               width={32}
             />
             <Tooltip
-              formatter={(value: number) => [
+              formatter={(value: number, name: string) => [
                 `${value}${unit}`,
-                trend.kind === "reps" ? t.history.bestReps : t.history.est1rm,
+                name === "heaviest"
+                  ? t.history.heaviestSet
+                  : trend.kind === "reps"
+                    ? t.history.bestReps
+                    : t.history.est1rm,
               ]}
               contentStyle={{
                 background: "var(--popover)",
@@ -66,6 +75,16 @@ export function ExerciseProgressChart({
                 color: "var(--foreground)",
               }}
             />
+            {showActual ? (
+              <Line
+                type="monotone"
+                dataKey="heaviest"
+                stroke={ACTUAL_STROKE}
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: ACTUAL_STROKE, stroke: ACTUAL_STROKE }}
+                isAnimationActive={false}
+              />
+            ) : null}
             <Line
               type="monotone"
               dataKey="value"
@@ -77,6 +96,18 @@ export function ExerciseProgressChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {showActual ? (
+        <div className="mt-2 flex gap-4 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-0.5 w-3 rounded-full bg-primary" />
+            {t.history.est1rm}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-0.5 w-3 rounded-full" style={{ background: ACTUAL_STROKE }} />
+            {t.history.heaviestSet}
+          </span>
+        </div>
+      ) : null}
       <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
         <span>{data[0]!.label}</span>
         <span>{data[data.length - 1]!.label}</span>
