@@ -1324,6 +1324,7 @@ function WorkoutHome() {
 
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
       <SwapSheet
+        inWorkoutIds={(plan ?? []).map((p) => p.exercise_id)}
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
         pairedExerciseId={(() => {
           const group = swapIndex !== null ? plan?.[swapIndex]?.superset_group : undefined;

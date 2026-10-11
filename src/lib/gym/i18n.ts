@@ -1588,6 +1588,8 @@ const en = {
       `Same primary muscle (${muscle}), only gear available in ${profile}.`,
     noAlternatives: "No alternatives with this equipment profile.",
     sameMuscleAs: (name: string) => `Same muscle as ${name}`,
+    alreadyInWorkoutHeading: "Already in this workout",
+    alreadyInWorkout: "Already in workout",
   },
   bottomSheet: {
     close: "Close",
@@ -3248,6 +3250,8 @@ const nl: Dict = {
       `Zelfde primaire spier (${muscle}), alleen uitrusting beschikbaar in ${profile}.`,
     noAlternatives: "Geen alternatieven met dit uitrustingsprofiel.",
     sameMuscleAs: (name: string) => `Zelfde spier als ${name}`,
+    alreadyInWorkoutHeading: "Al in deze training",
+    alreadyInWorkout: "Al in training",
   },
   bottomSheet: {
     close: "Sluiten",
