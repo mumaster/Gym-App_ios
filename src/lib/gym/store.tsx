@@ -1,3 +1,4 @@
+import { ALLERGIES, type AllergyId } from "./allergens";
 import type { KnownLift } from "./startWeight";
 import {
   createContext,
@@ -141,6 +142,9 @@ interface GymState {
   /** Settings → "Also on weekdays". On: the Alcohol card shows every day, not
    *  only Saturday and Sunday. Only matters while `alcoholEnabled`. */
   alcoholWeekdays: boolean;
+  /** Settings → Allergies: what "Can I eat this?" checks for. Only
+   *  "sulphites" is offered for now (lib/gym/allergens.ts). */
+  allergies: AllergyId[];
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
   growthFocus: FocusGroup[];
@@ -241,6 +245,7 @@ const initialState: GymState = {
   warmupsEnabled: true,
   alcoholEnabled: true,
   alcoholWeekdays: false,
+  allergies: [],
   growthFocus: [],
   glutesFocusSplit: true,
   supersetRounds: 3,
@@ -417,6 +422,7 @@ function migrate(raw: Partial<GymState>): GymState {
     warmupsEnabled: raw.warmupsEnabled ?? true,
     alcoholEnabled: raw.alcoholEnabled ?? true,
     alcoholWeekdays: raw.alcoholWeekdays ?? false,
+    allergies: (raw.allergies ?? []).filter((a): a is AllergyId => ALLERGIES.includes(a)),
     growthFocus: splitLegsFocus(raw.growthFocus ?? [], raw.glutesFocusSplit),
     glutesFocusSplit: true,
     supersetRounds: raw.supersetRounds ?? 3,

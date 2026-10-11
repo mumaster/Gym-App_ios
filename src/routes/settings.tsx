@@ -10,6 +10,7 @@ import {
   Palette,
   RefreshCw,
   UserRound,
+  ShieldAlert,
   Wine,
 } from "lucide-react";
 import { AuthSheet } from "../components/gym/AuthSheet";
@@ -43,8 +44,16 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsScreen() {
-  const { session, syncStatus, signOut, update, alcoholEnabled, alcoholWeekdays, firstName } =
-    useGym();
+  const {
+    session,
+    syncStatus,
+    signOut,
+    update,
+    alcoholEnabled,
+    alcoholWeekdays,
+    firstName,
+    allergies,
+  } = useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -167,6 +176,30 @@ function SettingsScreen() {
               onToggle={() => {
                 haptic(12);
                 update({ alcoholWeekdays: !alcoholWeekdays });
+              }}
+            />
+          </div>
+        </ListCard>
+
+        <ListCard
+          icon={ShieldAlert}
+          title={t.allergy.settingsTitle}
+          subtitle={allergies.length ? t.allergy.sulphites : t.allergy.none}
+          filled={allergies.length > 0}
+        >
+          <div className="divide-y divide-border border-t border-border">
+            <SwitchRow
+              label={t.allergy.sulphites}
+              desc={t.allergy.sulphitesDesc}
+              ariaLabel={t.allergy.sulphites}
+              on={allergies.includes("sulphites")}
+              onToggle={() => {
+                haptic(12);
+                update({
+                  allergies: allergies.includes("sulphites")
+                    ? allergies.filter((a) => a !== "sulphites")
+                    : [...allergies, "sulphites"],
+                });
               }}
             />
           </div>
