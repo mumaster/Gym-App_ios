@@ -3,7 +3,7 @@ import { recommendedMuscles } from "./recommendations";
 import type { Rotation } from "./schedule";
 import { CARDIO_DAY_ID, isCardioSlot, weekIndex } from "./schedule";
 import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
-import type { FocusGroup } from "./volume";
+import { FOCUS_GROUPS, focusMuscles, type FocusGroup } from "./volume";
 
 export type SplitTemplateId =
   | "full_body"
@@ -459,5 +459,20 @@ export function musclesForSlot(
   const day = findDay(templateId, slot.dayId);
   if (!day || isCardioSlot(slot)) return [];
   if (day.muscles.length) return day.muscles;
-  return recommendedMuscles(MUSCLES, workouts, 3, focus).map((r) => r.muscle);
+  const ranked = recommendedMuscles(MUSCLES, workouts, MUSCLES.length, focus).map((r) => r.muscle);
+  // A full-body day still leans on the user's growth focus: two focus muscles
+  // first, then the most-due of the rest (otherwise untrained ties fall to the
+  // first muscles in the list, i.e. chest/back/arms, whatever the focus is).
+  const focused = focusMuscles(focus);
+  const groupOf = (m: Muscle) => FOCUS_GROUPS.find((g) => g.muscles.includes(m))?.id;
+  const focusRanked = ranked.filter((m) => focused.has(m));
+  // spread across focus groups (glutes AND legs) before doubling up in one
+  const spread = focusRanked.filter(
+    (m, i) => focusRanked.findIndex((x) => groupOf(x) === groupOf(m)) === i,
+  );
+  const picks = [
+    ...[...spread, ...focusRanked.filter((m) => !spread.includes(m))].slice(0, 2),
+    ...ranked.filter((m) => !focused.has(m)),
+  ];
+  return picks.slice(0, 3);
 }
