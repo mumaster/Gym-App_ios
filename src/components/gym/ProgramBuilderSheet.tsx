@@ -146,7 +146,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       ...(templateHasCardio(templateId) ? { cardio: cardioDraft } : {}),
     };
     setProgram(next);
-    setCardioPlan(withSeparateCardioDays(cardioPlan, templateId, dows));
+    setCardioPlan(withSeparateCardioDays(cardioPlan));
     update({ growthFocus: focusDraft });
     onClose();
   };
@@ -159,7 +159,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       preview,
       templateHasCardio(templateId) ? cardioDraft : undefined,
     );
-    setCardioPlan(withSeparateCardioDays(cardioPlan, templateId, dows));
+    setCardioPlan(withSeparateCardioDays(cardioPlan));
     update({ growthFocus: focusDraft });
     onClose();
   };
@@ -510,10 +510,6 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.programBuilder.pickOneDay}</p>
           )}
-
-          {template.cardioDays ? (
-            <p className="text-[12.5px] text-muted-foreground">{t.cardio.hybridDaysNote}</p>
-          ) : null}
 
           <HybridCardioSection
             templateId={templateId}
