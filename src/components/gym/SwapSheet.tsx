@@ -37,12 +37,15 @@ function Row({
   e,
   onPick,
   clash,
+  inWorkout,
   variant = "glass",
 }: {
   e: Exercise;
   onPick: (e: Exercise) => void;
   /** Shown when this exercise shares its superset partner's equipment. */
   clash?: string;
+  /** Shown when this exercise is already somewhere in the workout. */
+  inWorkout?: string;
   /** "card" is a row inside a ListCard: no surface of its own, a hairline
    *  above it (like the Exercises tab). */
   variant?: "glass" | "card";
@@ -61,6 +64,9 @@ function Row({
           {subtitleOf(e)}
         </p>
         {clash ? <p className="text-[13px] text-warning-text">{clash}</p> : null}
+        {inWorkout ? (
+          <p className="text-[13px] font-semibold text-primary-text">{inWorkout}</p>
+        ) : null}
       </div>
       <Repeat className="size-5 shrink-0 text-primary-text" />
     </button>
@@ -71,6 +77,7 @@ export function SwapSheet({
   exerciseId,
   partnerExerciseId,
   pairedExerciseId,
+  inWorkoutIds,
   onClose,
   onPick,
 }: {
@@ -81,6 +88,9 @@ export function SwapSheet({
    *  (a generated plan): only used to keep its equipment out of the
    *  suggestions. `partnerExerciseId` does this too. */
   pairedExerciseId?: string | null;
+  /** Every exercise already in the workout. They stay pickable but are listed
+   *  last under their own heading, so a swap doesn't quietly double one up. */
+  inWorkoutIds?: readonly string[];
   onClose: () => void;
   onPick: (e: Exercise) => void;
 }) {
@@ -120,7 +130,8 @@ export function SwapSheet({
       ? sameMuscleSwaps(current, partner, sameMuscle).filter((e) => !clashes(e))
       : [];
   const keepMuscleIds = new Set(keepMuscle.map((e) => e.id));
-  const recommendedShown = recommended.filter((e) => !keepMuscleIds.has(e.id));
+  const recommendedAll = recommended.filter((e) => !keepMuscleIds.has(e.id));
+  const recommendedShown = recommendedAll.filter((e) => !used.has(e.id));
   // Never the partner itself: both halves would be the same exercise.
   const listed = (partner ? pool : sameMuscle).filter(
     (e) => e.id !== current?.id && e.id !== pairWith?.id && !recommendedIds.has(e.id),
@@ -128,13 +139,28 @@ export function SwapSheet({
   const others = [...listed.filter((e) => !clashes(e)), ...listed.filter(clashes)];
   // Without a partner the whole list is the same muscle: the card holds the
   // ones that fit, the clashing ones follow it with their note.
-  const cardRows = partner ? keepMuscle : others.filter((e) => !clashes(e));
-  const afterCard = partner ? others : others.filter(clashes);
+  const used = new Set(inWorkoutIds ?? []);
+  const fresh = (e: Exercise) => !used.has(e.id);
+  const cardRowsAll = partner ? keepMuscle : others.filter((e) => !clashes(e));
+  const afterCardAll = partner ? others : others.filter(clashes);
+  const cardRows = cardRowsAll.filter(fresh);
+  const afterCard = afterCardAll.filter(fresh);
+  // Anything in the lists above that's already in the workout, in the order
+  // it would have appeared.
+  const alreadyIn = [
+    ...new Map(
+      [...cardRowsAll, ...recommendedAll, ...afterCardAll]
+        .filter((e) => !fresh(e))
+        .map((e) => [e.id, e] as const),
+    ).values(),
+  ];
   // Arms is one group in the data; the card names the exercise's own muscle
   // when it's a partner swap (Triceps), the group otherwise (it holds both).
   const cardTitle = current ? (partner ? muscleLabel(current) : current.primary_muscle) : "";
   // What to offer instead of a pick that clashes or breaks the pattern.
-  const better = (partner ? recommended : others.filter((e) => !clashes(e))).slice(0, 3);
+  const better = (partner ? recommended : others.filter((e) => !clashes(e)))
+    .filter(fresh)
+    .slice(0, 3);
 
   const choose = (e: Exercise) => {
     if (clashes(e)) {
@@ -275,6 +301,16 @@ export function SwapSheet({
                 : {})}
             />
           ))}
+          {alreadyIn.length ? (
+            <>
+              <p className="pt-3 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
+                {t.swapSheet.alreadyInWorkoutHeading}
+              </p>
+              {alreadyIn.map((e) => (
+                <Row key={e.id} e={e} onPick={choose} inWorkout={t.swapSheet.alreadyInWorkout} />
+              ))}
+            </>
+          ) : null}
         </div>
       )}
     </BottomSheet>
