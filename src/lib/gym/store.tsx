@@ -93,6 +93,7 @@ import {
 import { deleteRouteMap } from "./routeMapStore";
 import { applyAccentIcon } from "./accentIcon";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
+import { moveExerciseData } from "./moveExercise";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
 import {
@@ -600,6 +601,9 @@ interface Ctx extends GymState {
   forgetFood: (key: string) => void;
   /** Sets an exercise's note; blank removes it. */
   setExerciseNote: (exerciseId: string, note: string) => void;
+  /** Moves logged sets of one exercise to another in the chosen sessions
+   *  (lib/gym/moveExercise.ts); the source keeps nothing of them. */
+  moveExerciseData: (from: string, to: string, workoutIds: ReadonlySet<string>) => void;
   deleteMealTemplate: (id: string) => void;
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
   logMealTemplate: (id: string, meal: MealType) => void;
@@ -1524,6 +1528,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
 
+      moveExerciseData: (from, to, workoutIds) =>
+        setState((s) => moveExerciseData(s, from, to, workoutIds)),
       setExerciseNote: (exerciseId, note) =>
         setState((s) => {
           const exerciseNotes = { ...s.exerciseNotes };
