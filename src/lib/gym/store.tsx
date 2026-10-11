@@ -57,9 +57,11 @@ import {
   type Rotation,
 } from "./schedule";
 import {
-  distinctDays,
   initialCyclePosition,
   rotationCardioPlan,
+  withCardioSlotDone,
+  withSlotCardio,
+  withSlotDay,
   type ScheduleSlot,
   type SplitTemplateId,
   type WeeklyScheme,
@@ -326,19 +328,6 @@ function splitLegsFocus(focus: FocusGroup[], alreadySplit: boolean | undefined):
   return [...focus, "glutes"];
 }
 
-/** Changes which day type one slot of a rotation trains; its weekday and progress stay. */
-function withSlotDay<R extends { templateId: SplitTemplateId; schedule: ScheduleSlot[] }>(
-  r: R,
-  index: number,
-  dayId: string,
-): R {
-  if (!distinctDays(r.templateId).some((d) => d.id === dayId)) return r;
-  return {
-    ...r,
-    schedule: r.schedule.map((slot, i) => (i === index ? { ...slot, dayId } : slot)),
-  };
-}
-
 function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
     plan.map((p) => ({ ...p, warmup_sets: p.warmup_sets ?? 0 }));
@@ -560,10 +549,14 @@ interface Ctx extends GymState {
   setWeeklyScheme: (scheme: WeeklyScheme) => void;
   updateScheduleSlotDow: (index: number, dow: number) => void;
   updateScheduleSlotDay: (index: number, dayId: string) => void;
+  /** What a cardio slot of the weekly plan plans. */
+  updateScheduleSlotCardio: (index: number, cardio: CardioFinisher) => void;
   clearWeeklyScheme: () => void;
   setProgram: (program: Program) => void;
   updateProgramSlotDow: (index: number, dow: number) => void;
   updateProgramSlotDay: (index: number, dayId: string) => void;
+  /** What a cardio slot of the program plans. */
+  updateProgramSlotCardio: (index: number, cardio: CardioFinisher) => void;
   clearProgram: () => void;
   /** Replaces the program's split/days while keeping its wave progress. */
   updateProgramSchedule: (
@@ -575,6 +568,10 @@ interface Ctx extends GymState {
    *  names — see lib/gym/schedule.ts. Skipping advances the rotation (and a
    *  program's week, on wrap) exactly like finishing the session would. */
   skipScheduledSession: (kind: RotationKind) => void;
+  /** Logging the next session's cardio (a cardio slot) finishes it: advances
+   *  the rotation like a finished scheduled workout, with `doneOn` the day
+   *  the cardio was done. Does nothing when the next session isn't cardio. */
+  completeCardioSlot: (kind: RotationKind, doneOn: Date) => void;
   shiftScheduledSessions: (kind: RotationKind, delta: number) => void;
   moveScheduledSession: (kind: RotationKind, index: number, dateKey: string) => void;
   /** Skips what's left of this week and moves next week's session `index`
@@ -1435,6 +1432,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) =>
           s.weeklyScheme ? { ...s, weeklyScheme: withSlotDay(s.weeklyScheme, index, dayId) } : s,
         ),
+      updateScheduleSlotCardio: (index, cardio) =>
+        setState((s) =>
+          s.weeklyScheme
+            ? { ...s, weeklyScheme: withSlotCardio(s.weeklyScheme, index, cardio) }
+            : s,
+        ),
       clearWeeklyScheme: () => setState((s) => ({ ...s, weeklyScheme: null })),
 
       setProgram: (program) => setState((s) => ({ ...s, program })),
@@ -1448,6 +1451,10 @@ export function GymProvider({ children }: { children: ReactNode }) {
         }),
       updateProgramSlotDay: (index, dayId) =>
         setState((s) => (s.program ? { ...s, program: withSlotDay(s.program, index, dayId) } : s)),
+      updateProgramSlotCardio: (index, cardio) =>
+        setState((s) =>
+          s.program ? { ...s, program: withSlotCardio(s.program, index, cardio) } : s,
+        ),
       clearProgram: () => setState((s) => ({ ...s, program: null })),
       updateProgramSchedule: (templateId, schedule, cardio) =>
         setState((s) => {
@@ -1477,6 +1484,32 @@ export function GymProvider({ children }: { children: ReactNode }) {
               ? { ...s, weeklyScheme: advanceRotation(s.weeklyScheme).rotation }
               : s,
         ),
+      completeCardioSlot: (kind, doneOn) =>
+        setState((s) => {
+          const today = new Date();
+          if (kind === "program") {
+            return s.program
+              ? {
+                  ...s,
+                  program: withCardioSlotDone(
+                    s.program,
+                    (p, on) => advanceProgram(p, today, on),
+                    doneOn,
+                  ),
+                }
+              : s;
+          }
+          return s.weeklyScheme
+            ? {
+                ...s,
+                weeklyScheme: withCardioSlotDone(
+                  s.weeklyScheme,
+                  (w, on) => advanceRotation(w, today, on).rotation,
+                  doneOn,
+                ),
+              }
+            : s;
+        }),
       shiftScheduledSessions: (kind, delta) =>
         setState((s) => updateRotation(s, kind, (r) => shiftRemaining(r, delta))),
       moveScheduledSession: (kind, index, dateKey) =>

@@ -3,12 +3,13 @@ import { Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DayTypePicker } from "./DayTypePicker";
 import { useTranslation } from "../../lib/gym/i18n";
+import { cardioPlanLine } from "./cardioDisplay";
 import {
   DOW_DISPLAY_ORDER,
   SPLIT_TEMPLATES,
   applyDayPicks,
-  distinctDays,
   buildSchedule,
+  cardioDayPlan,
   initialCyclePosition,
   splitDayLabel,
   splitTemplateById,
@@ -44,6 +45,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     setWeeklyScheme,
     updateScheduleSlotDow,
     updateScheduleSlotDay,
+    updateScheduleSlotCardio,
     clearWeeklyScheme,
     growthFocus,
     cardioPlan,
@@ -66,9 +68,14 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const focusRef = useRef(growthFocus);
   focusRef.current = growthFocus;
 
+  // Only on opening: a day or cardio change inside a slot's editor changes
+  // the plan, which must not fold the editor away.
+  useEffect(() => {
+    if (open) setEditingSlot(null);
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
-    setEditingSlot(null);
     setDayPicks({});
     setFocusDraft(focusRef.current);
     setMode(weeklyScheme ? "manage" : "template");
@@ -148,7 +155,10 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                           {t.weeklyPlan.nextUp}
                         </span>
                       ) : null}
-                      <p className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</p>
+                      <p className="text-[13px] text-muted-foreground">
+                        {t.common.dow[slot.dow]}
+                        {cardioDayPlan(slot) ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}` : ""}
+                      </p>
                     </div>
                     <button
                       onClick={() => setEditingSlot(editingSlot === i ? null : i)}
@@ -164,6 +174,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                         templateId={weeklyScheme.templateId}
                         value={slot.dayId}
                         onChange={(dayId) => updateScheduleSlotDay(i, dayId)}
+                        cardio={slot.cardio}
+                        onCardioChange={(cardio) => updateScheduleSlotCardio(i, cardio)}
                       />
                       <div className="flex flex-wrap gap-x-1.5 gap-y-2">
                         {DOW_DISPLAY_ORDER.map((dow) => {
@@ -173,7 +185,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                               key={dow}
                               disabled={taken}
                               onClick={() => setSlotDow(i, dow)}
-                              className={`min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                              className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
                                 dow === slot.dow
                                   ? chip.on
                                   : taken
@@ -278,11 +290,9 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
               <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
                 {t.weeklyPlan.proposedSchedule}
               </p>
-              {distinctDays(templateId).length > 1 ? (
-                <p className="mb-2 text-[12.5px] text-muted-foreground">
-                  {t.programBuilder.sessionTypeHint}
-                </p>
-              ) : null}
+              <p className="mb-2 text-[12.5px] text-muted-foreground">
+                {t.programBuilder.sessionTypeHint}
+              </p>
               <div className="space-y-1.5">
                 {preview.map((slot, i) => (
                   <div key={`${slot.dow}-${i}`} className="glass space-y-2 rounded-xl px-3 py-2.5">

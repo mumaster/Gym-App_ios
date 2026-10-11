@@ -43,19 +43,25 @@ import { useDayNutrition, type DayKind } from "../lib/gym/dayNutrition";
 import {
   daysBetween,
   hasPlannedSession,
+  isLiftingSlot,
   mondayOf,
   overdueDays,
   plannedDate,
   type Rotation,
 } from "../lib/gym/schedule";
-import { splitDayLabel, splitTemplateById } from "../lib/gym/splits";
+import {
+  SLOT_CARDIO_PREFIX,
+  cardioDayPlan,
+  splitDayLabel,
+  splitTemplateById,
+} from "../lib/gym/splits";
 import { addDays } from "../lib/gym/date";
 import { cardioSessionsOn, remainingCardioOn } from "../lib/gym/cardio";
 import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
 import { LogCardioSheet } from "../components/gym/LogCardioSheet";
 import type { CardioPlanDay, CardioSession } from "../lib/gym/types";
 import { currentWeekStreak, trainingDaysThisWeek } from "../lib/gym/streak";
-import { haptic, useGym } from "../lib/gym/store";
+import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -97,10 +103,14 @@ function HomeScreen() {
     cardioPlan,
     plannedCardio,
     cardioSessions,
+    completeCardioSlot,
     firstName,
   } = useGym();
   const [readinessEditing, setReadinessEditing] = useState(false);
   const [cardioLogOpen, setCardioLogOpen] = useState(false);
+  // Whether the log sheet is for the plan's next session (a cardio day, which
+  // logging finishes) or for cardio planned on its own.
+  const [cardioLogFor, setCardioLogFor] = useState<"slot" | "plan">("plan");
   const todayCheckIn = todaysCheckIn(readinessLog);
 
   const streak = useMemo(() => currentWeekStreak(workouts), [workouts]);
@@ -170,7 +180,7 @@ function HomeScreen() {
   let heroTitle = t.home.readyToTrain;
   let heroSub: string | null = null;
   let heroCta = t.home.generate;
-  let heroTarget: "/session" | "/generate" | "cardio" = "/generate";
+  let heroTarget: "/session" | "/generate" | "cardio" | "cardioSlot" = "/generate";
 
   if (activeWorkout) {
     heroIcon = Play;
@@ -227,6 +237,17 @@ function HomeScreen() {
     return name.charAt(0).toUpperCase() + name.slice(1);
   })();
   if (whenLabel) heroSub = heroSub ? `${whenLabel} · ${heroSub}` : whenLabel;
+  // The plan's next session is a cardio day: Home shows the cardio itself,
+  // logged right here, which moves the plan on (the slot is the session, so
+  // it's not also a "+ cardio" line below).
+  const slotKind: RotationKind = program ? "program" : "weeklyScheme";
+  const nextCardio = activeWorkout ? null : cardioDayPlan(program ? programSlot : schemeSlot);
+  if (nextCardio) {
+    heroIcon = CARDIO_ICONS[nextCardio.activity];
+    heroTitle = t.cardio.session(t.cardio.activities[nextCardio.activity], nextCardio.minutes);
+    heroCta = t.cardio.heroCta;
+    heroTarget = "cardioSlot";
+  }
 
   // Planned cardio still to do today. On a day with no strength session due
   // (none planned today, none overdue, none running) it takes the hero, with
@@ -238,9 +259,16 @@ function HomeScreen() {
     !!activeWorkout ||
     (rotation != null && overdueDays(rotation) > 0) ||
     whenLabel === t.home.today;
+  // The plan's cardio days are left out: the next one is the hero above,
+  // and the rest aren't due yet.
+  const ownPlannedCardio = plannedCardio.filter((d) => !d.id.startsWith(SLOT_CARDIO_PREFIX));
   const cardioToday =
-    remainingCardioOn(strengthDue ? plannedCardio : cardioPlan, cardioSessions, today, today)[0] ??
-    null;
+    remainingCardioOn(
+      strengthDue ? ownPlannedCardio : cardioPlan,
+      cardioSessions,
+      today,
+      today,
+    )[0] ?? null;
   if (cardioToday && !strengthDue) {
     heroIcon = CARDIO_ICONS[cardioToday.activity];
     heroEyebrow = t.cardio.heroEyebrow;
@@ -320,7 +348,7 @@ function HomeScreen() {
               title={heroTitle}
               // For the plan's next session the day comes first ("Thursday ·
               // Week 1 of 5"), so the title can be the session alone.
-              subtitle={(heroTarget === "/generate" && whenLabel
+              subtitle={((heroTarget === "/generate" || heroTarget === "cardioSlot") && whenLabel
                 ? [heroSub, heroEyebrow]
                 : [heroEyebrow, heroSub]
               )
@@ -330,8 +358,10 @@ function HomeScreen() {
                 <button
                   onClick={() => {
                     haptic(12);
-                    if (heroTarget === "cardio") setCardioLogOpen(true);
-                    else navigate({ to: heroTarget });
+                    if (heroTarget === "cardio" || heroTarget === "cardioSlot") {
+                      setCardioLogFor(heroTarget === "cardio" ? "plan" : "slot");
+                      setCardioLogOpen(true);
+                    } else navigate({ to: heroTarget });
                   }}
                   className="tap-target relative flex h-9 items-center gap-0.5 rounded-full bg-primary pl-3.5 pr-2.5 text-[14px] font-bold text-primary-foreground active:scale-95"
                 >
@@ -394,7 +424,8 @@ function HomeScreen() {
       <LogCardioSheet
         open={cardioLogOpen}
         onClose={() => setCardioLogOpen(false)}
-        preset={cardioToday}
+        preset={cardioLogFor === "slot" ? nextCardio : cardioToday}
+        onLogged={cardioLogFor === "slot" ? (day) => completeCardioSlot(slotKind, day) : undefined}
       />
     </>
   );
@@ -778,7 +809,10 @@ function WeekStrip({
     const trained = trainedKeys.has(key);
     const future = daysBetween(today, date) >= 0;
     const planned =
-      !trained && future && rotation != null && hasPlannedSession(rotation, date, today);
+      !trained &&
+      future &&
+      rotation != null &&
+      hasPlannedSession(rotation, date, today, isLiftingSlot);
     const cardioDone = cardioSessionsOn(cardioSessions, key);
     const cardioLeft = remainingCardioOn(cardioPlan, cardioSessions, date, today);
     return {

@@ -7,7 +7,8 @@ import {
   sortCardioPlan,
 } from "../../lib/gym/cardio";
 import { useTranslation } from "../../lib/gym/i18n";
-import { rotationCardioPlan } from "../../lib/gym/splits";
+import { isLiftingSlot } from "../../lib/gym/schedule";
+import { SLOT_CARDIO_PREFIX, rotationCardioPlan } from "../../lib/gym/splits";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { CardioPlanDay } from "../../lib/gym/types";
@@ -32,8 +33,11 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   const t = useTranslation();
   const { cardioPlan, plannedCardio, setCardioPlan, program, weeklyScheme } = useGym();
   const [editing, setEditing] = useState<string | null>(null);
-  const strengthDows = new Set((program ?? weeklyScheme)?.schedule.map((s) => s.dow) ?? []);
-  // A hybrid plan's own cardio: shown and counted here, changed in the plan.
+  const strengthDows = new Set(
+    (program ?? weeklyScheme)?.schedule.filter(isLiftingSlot).map((s) => s.dow) ?? [],
+  );
+  // The plan's own cardio: shown and counted here, changed in the plan. A
+  // hybrid plan's comes after lifting; a cardio day is a session of its own.
   const hybrid = rotationCardioPlan(program ?? weeklyScheme);
 
   useEffect(() => {
@@ -82,6 +86,7 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
       <div className="mt-4 space-y-2">
         {hybrid.map((d) => {
           const Icon = CARDIO_ICONS[d.activity];
+          const isDay = d.id.startsWith(SLOT_CARDIO_PREFIX);
           return (
             <div
               key={d.id}
@@ -96,14 +101,23 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                 </span>
                 <span className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
                   {t.cardio.min(d.minutes)} · {t.cardio.efforts[d.effort]} ·{" "}
-                  <Dumbbell className="size-3" /> {t.cardio.afterStrength}
+                  {isDay ? (
+                    t.cardio.dayInPlan
+                  ) : (
+                    <>
+                      <Dumbbell className="size-3" /> {t.cardio.afterStrength}
+                    </>
+                  )}
                 </span>
               </span>
             </div>
           );
         })}
-        {hybrid.length ? (
+        {hybrid.some((d) => !d.id.startsWith(SLOT_CARDIO_PREFIX)) ? (
           <p className="px-1 text-[12px] text-muted-foreground">{t.cardio.hybridInPlan}</p>
+        ) : null}
+        {hybrid.some((d) => d.id.startsWith(SLOT_CARDIO_PREFIX)) ? (
+          <p className="px-1 text-[12px] text-muted-foreground">{t.cardio.daysInPlan}</p>
         ) : null}
         {cardioPlan.map((d) => {
           const Icon = CARDIO_ICONS[d.activity];

@@ -1,7 +1,7 @@
 import { MUSCLES } from "./data";
 import { recommendedMuscles } from "./recommendations";
 import type { Rotation } from "./schedule";
-import { weekIndex } from "./schedule";
+import { CARDIO_DAY_ID, isCardioSlot, weekIndex } from "./schedule";
 import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
 import type { FocusGroup } from "./volume";
 
@@ -39,6 +39,7 @@ export interface SplitTemplate {
   cardioDays?: CardioFinisher[];
 }
 
+const FULL_DAY: SplitDay = { id: "full", label: "Full Body", muscles: [] };
 const UPPER_DAY: SplitDay = {
   id: "upper",
   label: "Upper Body",
@@ -49,6 +50,46 @@ const LOWER_DAY: SplitDay = {
   label: "Lower Body",
   muscles: ["Quads", "Hamstrings", "Glutes", "Calves"],
 };
+const PUSH_DAY: SplitDay = { id: "push", label: "Push", muscles: ["Chest", "Shoulders", "Arms"] };
+const PULL_DAY: SplitDay = { id: "pull", label: "Pull", muscles: ["Back", "Arms"] };
+const LEGS_DAY: SplitDay = {
+  id: "legs",
+  label: "Legs",
+  muscles: ["Quads", "Hamstrings", "Glutes", "Calves"],
+};
+const CHEST_DAY: SplitDay = { id: "chest", label: "Chest", muscles: ["Chest"] };
+const BACK_DAY: SplitDay = { id: "back", label: "Back", muscles: ["Back"] };
+const SHOULDERS_DAY: SplitDay = { id: "shoulders", label: "Shoulders", muscles: ["Shoulders"] };
+const ARMS_DAY: SplitDay = { id: "arms", label: "Arms", muscles: ["Arms"] };
+/** A day of cardio only, logged rather than generated: no muscles, and the
+ *  slot carries what's planned (`ScheduleSlot.cardio`). */
+const CARDIO_DAY: SplitDay = { id: CARDIO_DAY_ID, label: "Cardio", muscles: [] };
+
+/** Every kind of day the app can train, whichever split a plan started from:
+ *  a slot can be changed to any of them (`dayTypeOptions`). The ids and
+ *  labels match the templates' own days; a template's version of a day wins
+ *  where it differs (the hybrid split's "Upper + Cardio"). */
+export const DAY_TYPES: readonly SplitDay[] = [
+  FULL_DAY,
+  UPPER_DAY,
+  LOWER_DAY,
+  PUSH_DAY,
+  PULL_DAY,
+  LEGS_DAY,
+  CHEST_DAY,
+  BACK_DAY,
+  SHOULDERS_DAY,
+  ARMS_DAY,
+  CARDIO_DAY,
+];
+
+/** What a new cardio day plans: 30 minutes of moderate running, like the
+ *  hybrid split's cardio days (and for the same reason, see below). */
+export const DEFAULT_CARDIO_DAY: CardioFinisher = {
+  activity: "run",
+  effort: "moderate",
+  minutes: 30,
+};
 
 export const SPLIT_TEMPLATES: SplitTemplate[] = [
   {
@@ -56,17 +97,14 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Full Body",
     description: "Every session trains the whole body, rotating whichever muscles rested longest.",
     suggestedDaysPerWeek: 3,
-    days: [{ id: "full", label: "Full Body", muscles: [] }],
+    days: [FULL_DAY],
   },
   {
     id: "upper_lower",
     label: "Upper / Lower",
     description: "Alternate upper and lower body sessions.",
     suggestedDaysPerWeek: 4,
-    days: [
-      { id: "upper", label: "Upper Body", muscles: ["Chest", "Back", "Shoulders", "Arms"] },
-      { id: "lower", label: "Lower Body", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
-    ],
+    days: [UPPER_DAY, LOWER_DAY],
   },
   {
     id: "upper_focus",
@@ -92,24 +130,14 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Push / Pull / Legs",
     description: "The classic 3-day rotation — repeat it for a 6-day week.",
     suggestedDaysPerWeek: 6,
-    days: [
-      { id: "push", label: "Push", muscles: ["Chest", "Shoulders", "Arms"] },
-      { id: "pull", label: "Pull", muscles: ["Back", "Arms"] },
-      { id: "legs", label: "Legs", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
-    ],
+    days: [PUSH_DAY, PULL_DAY, LEGS_DAY],
   },
   {
     id: "bro_split",
     label: "Bro Split",
     description: "One major muscle group takes center stage each day.",
     suggestedDaysPerWeek: 5,
-    days: [
-      { id: "chest", label: "Chest", muscles: ["Chest"] },
-      { id: "back", label: "Back", muscles: ["Back"] },
-      { id: "shoulders", label: "Shoulders", muscles: ["Shoulders"] },
-      { id: "legs", label: "Legs", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
-      { id: "arms", label: "Arms", muscles: ["Arms"] },
-    ],
+    days: [CHEST_DAY, BACK_DAY, SHOULDERS_DAY, LEGS_DAY, ARMS_DAY],
   },
   {
     id: "hybrid",
@@ -136,10 +164,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Hybrid · cardio days",
     description: "Upper and lower body days, with a cardio day in between.",
     suggestedDaysPerWeek: 3,
-    days: [
-      { id: "upper", label: "Upper Body", muscles: ["Chest", "Back", "Shoulders", "Arms"] },
-      { id: "lower", label: "Lower Body", muscles: ["Quads", "Hamstrings", "Glutes", "Calves"] },
-    ],
+    days: [UPPER_DAY, LOWER_DAY],
     // 30 minutes: the interference with strength grows with the cardio's
     // length and frequency (Wilson et al. 2012, see below), and two such days
     // alongside three lifting days stay near WHO's 150 minutes with the
@@ -214,8 +239,11 @@ export const splitTemplateById = (id: SplitTemplateId): SplitTemplate =>
 export interface ScheduleSlot {
   /** Day of week this slot is suggested for: 0 = Sunday ... 6 = Saturday (matches Date#getDay). */
   dow: number;
-  /** A SplitDay.id within the owning template. */
+  /** A SplitDay.id: one of the owning template's days, or any other day type
+   *  the slot was changed to (`DAY_TYPES`). */
   dayId: string;
+  /** What a cardio day (`dayId` "cardio") plans; absent on every other day. */
+  cardio?: CardioFinisher | undefined;
 }
 
 /** `schedule` is one slot per training day/week, ordered Monday-first;
@@ -230,7 +258,8 @@ export interface WeeklyScheme extends Rotation {
 }
 
 /** The cardio planned after the lifting on a slot, or null: the plan's own
- *  choice for that day, else the template's default. */
+ *  choice for that day, else the template's default. A cardio day's own
+ *  session isn't this (`cardioDayPlan`). */
 export function slotCardio(
   templateId: SplitTemplateId,
   slot: ScheduleSlot | undefined,
@@ -255,9 +284,16 @@ export function templateCardio(
   return out;
 }
 
-/** A hybrid plan's cardio as weekly cardio-plan days, so it counts toward
+/** Id prefix of the cardio-plan days that are a rotation's cardio days (the
+ *  session itself, logged to complete the slot); a hybrid plan's cardio after
+ *  lifting has `plan-` ids. Home leaves the former out of its "+ cardio" line
+ *  and cardio hero, since the slot is the session. */
+export const SLOT_CARDIO_PREFIX = "slot-";
+
+/** A rotation's own cardio as weekly cardio-plan days, so it counts toward
  *  planned cardio minutes and a day's calories the way the cardio plan does
- *  (cardio.ts). On the slot's usual weekday; ids are stable per slot. */
+ *  (cardio.ts): a hybrid plan's cardio after lifting and the cardio days
+ *  (`dayId` "cardio"). On the slot's usual weekday; ids are stable per slot. */
 export function rotationCardioPlan(
   r: {
     templateId: SplitTemplateId;
@@ -268,6 +304,11 @@ export function rotationCardioPlan(
   if (!r) return [];
   const out: CardioPlanDay[] = [];
   r.schedule.forEach((slot, i) => {
+    const day = cardioDayPlan(slot);
+    if (day) {
+      out.push({ id: `${SLOT_CARDIO_PREFIX}${i}`, dow: slot.dow, ...day });
+      return;
+    }
     const c = slotCardio(r.templateId, slot, r.cardio);
     if (c) out.push({ id: `plan-${i}`, dow: slot.dow, ...c });
   });
@@ -287,18 +328,105 @@ export function distinctDays(templateId: SplitTemplateId): SplitDay[] {
   return splitTemplateById(templateId).days.filter((d) => !seen.has(d.id) && !!seen.add(d.id));
 }
 
+/** A day type by id, whichever split it came from. */
+export const dayTypeById = (dayId: string): SplitDay | undefined =>
+  DAY_TYPES.find((d) => d.id === dayId);
+
+/** A slot's day: the template's own version first (the hybrid split's "upper"
+ *  is "Upper + Cardio"), else the catalog's. Undefined for an unknown id. */
+export function findDay(templateId: SplitTemplateId, dayId: string): SplitDay | undefined {
+  return splitTemplateById(templateId).days.find((d) => d.id === dayId) ?? dayTypeById(dayId);
+}
+
+/** The day types a slot of this split can be changed to: the split's own
+ *  first (see `distinctDays`), then every other day type, cardio last. */
+export function dayTypeOptions(templateId: SplitTemplateId): SplitDay[] {
+  const own = distinctDays(templateId);
+  const ids = new Set(own.map((d) => d.id));
+  return [...own, ...DAY_TYPES.filter((d) => !ids.has(d.id))];
+}
+
+/** What a cardio slot plans: its own choice, else the default. Null for any
+ *  other kind of day. */
+export function cardioDayPlan(slot: ScheduleSlot | undefined): CardioFinisher | null {
+  if (!slot || !isCardioSlot(slot)) return null;
+  return slot.cardio ?? DEFAULT_CARDIO_DAY;
+}
+
+/** The slot changed to another day type, if the split or the catalog has it
+ *  (else the slot as it was): same weekday, a cardio day gets its default
+ *  (or keeps the plan it had) and any other day drops cardio. `keep` is a
+ *  cardio plan to carry over when the new day is cardio. */
+export function withDayType(
+  templateId: SplitTemplateId,
+  slot: ScheduleSlot,
+  dayId: string,
+  keep?: CardioFinisher,
+): ScheduleSlot {
+  if (!findDay(templateId, dayId)) return slot;
+  const { cardio: _own, ...rest } = slot;
+  if (dayId !== CARDIO_DAY_ID) return { ...rest, dayId };
+  const prior = slot.dayId === CARDIO_DAY_ID ? slot.cardio : undefined;
+  return { ...rest, dayId, cardio: { ...(prior ?? keep ?? DEFAULT_CARDIO_DAY) } };
+}
+
 /** A schedule with the picked day type applied per weekday (picks keyed by `dow`);
- *  unknown ids are ignored so a stale pick can't produce a slot the template lacks. */
+ *  any day type of the split or the catalog is allowed, and unknown ids are
+ *  ignored so a stale pick can't produce a slot nothing knows. `previous` is
+ *  the schedule being edited: a weekday that stays a cardio day keeps what
+ *  it had planned. */
 export function applyDayPicks(
   templateId: SplitTemplateId,
   schedule: ScheduleSlot[],
   picks: Record<number, string>,
+  previous: ScheduleSlot[] = [],
 ): ScheduleSlot[] {
-  const valid = new Set(distinctDays(templateId).map((d) => d.id));
   return schedule.map((slot) => {
     const pick = picks[slot.dow];
-    return pick && valid.has(pick) ? { ...slot, dayId: pick } : slot;
+    if (!pick) return slot;
+    const before = previous.find((p) => p.dow === slot.dow);
+    return withDayType(templateId, slot, pick, before?.cardio);
   });
+}
+
+/** Changes which day type one slot of a rotation trains, to any day type of
+ *  its split or the catalog (splits.ts). Its weekday and the rotation's
+ *  progress (cursor, week, done days) stay. */
+export function withSlotDay<R extends { templateId: SplitTemplateId; schedule: ScheduleSlot[] }>(
+  r: R,
+  index: number,
+  dayId: string,
+): R {
+  const slot = r.schedule[index];
+  if (!slot) return r;
+  const next = withDayType(r.templateId, slot, dayId);
+  if (next === slot) return r;
+  return { ...r, schedule: r.schedule.map((s, i) => (i === index ? next : s)) };
+}
+
+/** Sets what a cardio slot plans; any other slot is left alone. */
+export function withSlotCardio<R extends { schedule: ScheduleSlot[] }>(
+  r: R,
+  index: number,
+  cardio: CardioFinisher,
+): R {
+  const slot = r.schedule[index];
+  if (!slot || !cardioDayPlan(slot)) return r;
+  return {
+    ...r,
+    schedule: r.schedule.map((s, i) => (i === index ? { ...s, cardio: { ...cardio } } : s)),
+  };
+}
+
+/** Moves a rotation past its cardio slot once it's been logged, the way
+ *  finishing a scheduled session does (`doneOn` is the day it was done). A
+ *  rotation whose next session isn't a cardio day is left as it was. */
+export function withCardioSlotDone<R extends Rotation>(
+  r: R,
+  advance: (r: R, doneOn: Date) => R,
+  doneOn: Date,
+): R {
+  return isCardioSlot(r.schedule[r.cyclePosition]) ? advance(r, doneOn) : r;
 }
 
 /** Best starting slot for a freshly-created schedule: the next slot due today or later. */
@@ -314,11 +442,11 @@ export const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as c
 export const DOW_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
 export function splitDayLabel(templateId: SplitTemplateId, dayId: string): string {
-  return splitTemplateById(templateId).days.find((d) => d.id === dayId)?.label ?? dayId;
+  return findDay(templateId, dayId)?.label ?? dayId;
 }
 
 /** Concrete target muscles for a scheduled slot — full-body days fall back to
- *  least-recently-trained. Takes a plain `templateId` rather than a whole
+ *  least-recently-trained, a cardio day trains none. Takes a plain `templateId` rather than a whole
  *  `WeeklyScheme` so it's reusable for the multi-week Program concept in
  *  lib/gym/programs.ts, which schedules slots the same way but isn't itself
  *  a WeeklyScheme. */
@@ -328,9 +456,8 @@ export function musclesForSlot(
   workouts: Workout[],
   focus: FocusGroup[] = [],
 ): Muscle[] {
-  const template = splitTemplateById(templateId);
-  const day = template.days.find((d) => d.id === slot.dayId);
-  if (!day) return [];
+  const day = findDay(templateId, slot.dayId);
+  if (!day || isCardioSlot(slot)) return [];
   if (day.muscles.length) return day.muscles;
   return recommendedMuscles(MUSCLES, workouts, 3, focus).map((r) => r.muscle);
 }

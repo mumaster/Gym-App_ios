@@ -24,6 +24,16 @@ export interface Rotation {
   doneOn?: Record<number, string> | undefined;
 }
 
+/** The day-type id of a cardio day (splits.ts's day-type catalog): a session
+ *  that is logged as cardio instead of generated as a lifting plan. */
+export const CARDIO_DAY_ID = "cardio";
+
+export const isCardioSlot = (slot: Pick<ScheduleSlot, "dayId"> | undefined): boolean =>
+  slot?.dayId === CARDIO_DAY_ID;
+
+/** Filter for `upcomingSessionDates` and friends: the lifting sessions only. */
+export const isLiftingSlot = (slot: ScheduleSlot): boolean => !isCardioSlot(slot);
+
 /** Monday-first position of a Date#getDay value (Mon = 0 … Sun = 6). */
 export const weekIndex = (dow: number) => (dow + 6) % 7;
 
@@ -243,7 +253,13 @@ export function resortRotation<R extends Rotation>(r: R, today = new Date()): R 
  * a new week (two leftovers on Tuesday and Wednesday, say) the rest of that
  * week looked empty until the cycle wrapped (reported).
  */
-export function upcomingSessionDates(r: Rotation, until: Date, today = new Date()): Date[] {
+export function upcomingSessionDates(
+  r: Rotation,
+  until: Date,
+  today = new Date(),
+  /** Keeps only the sessions it accepts (the rotation still steps through the rest). */
+  only?: (slot: ScheduleSlot) => boolean,
+): Date[] {
   const out: Date[] = [];
   if (!r.schedule.length) return out;
   const overdue = overdueDays(r, today);
@@ -254,7 +270,7 @@ export function upcomingSessionDates(r: Rotation, until: Date, today = new Date(
     let date = plannedDate(cur, cur.cyclePosition);
     if (daysBetween(prev, date) <= 0) date = addDays(prev, 1);
     if (daysBetween(date, until) < 0) break;
-    out.push(date);
+    if (!only || only(cur.schedule[cur.cyclePosition]!)) out.push(date);
     cur = advanceRotation(cur, date, date).rotation;
     prev = date;
   }
@@ -263,16 +279,22 @@ export function upcomingSessionDates(r: Rotation, until: Date, today = new Date(
 
 /** True when a session of `r` is planned on `date` (today or later), in
  *  this cycle or a later one (`upcomingSessionDates`). */
-export function hasPlannedSession(r: Rotation, date: Date, today = new Date()): boolean {
+export function hasPlannedSession(
+  r: Rotation,
+  date: Date,
+  today = new Date(),
+  only?: (slot: ScheduleSlot) => boolean,
+): boolean {
   if (daysBetween(today, date) < 0) return false;
-  return upcomingSessionDates(r, date, today).some((d) => daysBetween(d, date) === 0);
+  return upcomingSessionDates(r, date, today, only).some((d) => daysBetween(d, date) === 0);
 }
 
 export type DayType = "training" | "rest";
 
 /** A day is a training day if a workout was done on it, or — for today and
- *  later only — a remaining session is planned on it. Past days go purely
- *  by what actually happened. */
+ *  later only — a remaining lifting session is planned on it. Past days go
+ *  purely by what actually happened. A planned cardio day isn't one: it's a
+ *  rest day with cardio on it (its energy comes from the cardio plan). */
 export function dayTypeFor(
   date: Date,
   {
@@ -285,7 +307,7 @@ export function dayTypeFor(
   const key = dayKeyFromDate(date);
   if (activeWorkout && dayKey(activeWorkout.date) === key) return "training";
   if (workouts.some((w) => dayKey(w.date) === key)) return "training";
-  if (rotation && hasPlannedSession(rotation, date, today)) {
+  if (rotation && hasPlannedSession(rotation, date, today, isLiftingSlot)) {
     return "training";
   }
   return "rest";

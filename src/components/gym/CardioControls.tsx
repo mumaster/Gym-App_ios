@@ -2,7 +2,7 @@ import { CARDIO_ICONS } from "./cardioDisplay";
 import { CARDIO_ACTIVITIES, CARDIO_EFFORTS } from "../../lib/gym/cardio";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
-import type { CardioActivity, CardioEffort } from "../../lib/gym/types";
+import type { CardioActivity, CardioEffort, CardioFinisher } from "../../lib/gym/types";
 import { chip as chipStyle } from "./ui";
 
 const chip = (on: boolean) =>
@@ -71,6 +71,72 @@ export function EffortPicker({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Lengths offered for a cardio day: longer than the cardio block after
+ *  lifting (HybridCardioSection), since the day is only cardio. */
+const CARDIO_DAY_MINUTES = [20, 30, 45, 60, 90];
+
+/** A row of minute lengths to pick from. */
+export function MinutesPicker({
+  value,
+  options,
+  onChange,
+}: {
+  value: number;
+  options: number[];
+  onChange: (minutes: number) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div>
+      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{t.cardio.minutes}</p>
+      <div className="grid grid-cols-5 gap-1.5">
+        {options.map((m) => (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={value === m}
+            onClick={() => {
+              haptic(10);
+              onChange(m);
+            }}
+            className={`tabular tap-target min-h-[40px] rounded-xl text-[13.5px] font-semibold active:scale-95 ${
+              value === m ? chipStyle.on : chipStyle.off
+            }`}
+          >
+            {m}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** What a cardio day plans: activity, effort and minutes, changed in place. */
+export function CardioDayControls({
+  value,
+  onChange,
+}: {
+  value: CardioFinisher;
+  onChange: (next: CardioFinisher) => void;
+}) {
+  const t = useTranslation();
+  return (
+    <div className="space-y-4 rounded-xl bg-foreground/[0.05] p-3">
+      <p className="text-[13px] font-semibold">{t.cardio.dayPlanTitle}</p>
+      <ActivityPicker
+        value={value.activity}
+        onChange={(activity) => onChange({ ...value, activity })}
+      />
+      <EffortPicker value={value.effort} onChange={(effort) => onChange({ ...value, effort })} />
+      <MinutesPicker
+        value={value.minutes}
+        options={CARDIO_DAY_MINUTES}
+        onChange={(minutes) => onChange({ ...value, minutes })}
+      />
     </div>
   );
 }

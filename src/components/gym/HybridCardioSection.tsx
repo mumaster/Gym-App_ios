@@ -2,11 +2,9 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { splitTemplateById, type SplitTemplateId } from "../../lib/gym/splits";
-import { haptic } from "../../lib/gym/store";
 import type { CardioFinisher } from "../../lib/gym/types";
-import { ActivityPicker, EffortPicker } from "./CardioControls";
+import { ActivityPicker, EffortPicker, MinutesPicker } from "./CardioControls";
 import { CARDIO_ICONS } from "./cardioDisplay";
-import { chip } from "./ui";
 
 /** Lengths offered for the cardio block. Up to 30: longer cardio is where
  *  the interference with strength grows (Wilson et al., see splits.ts). */
@@ -68,29 +66,11 @@ export function HybridCardioSection({
                 <div className="space-y-4 px-3 pb-3 pt-1">
                   <ActivityPicker value={c.activity} onChange={(activity) => set({ activity })} />
                   <EffortPicker value={c.effort} onChange={(effort) => set({ effort })} />
-                  <div>
-                    <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                      {t.cardio.minutes}
-                    </p>
-                    <div className="grid grid-cols-5 gap-1.5">
-                      {MINUTES.map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          aria-pressed={c.minutes === m}
-                          onClick={() => {
-                            haptic(10);
-                            set({ minutes: m });
-                          }}
-                          className={`tabular min-h-[40px] rounded-xl text-[13.5px] font-semibold active:scale-95 ${
-                            c.minutes === m ? chip.on : chip.off
-                          }`}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <MinutesPicker
+                    value={c.minutes}
+                    options={MINUTES}
+                    onChange={(minutes) => set({ minutes })}
+                  />
                 </div>
               ) : null}
             </div>
