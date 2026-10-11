@@ -88,7 +88,7 @@ function SettingsScreen() {
           disabled={updating}
           aria-label={updating ? t.settings.updating : t.settings.forceUpdate}
           title={t.settings.forceUpdateDesc}
-          className="glass flex size-10 items-center justify-center rounded-full active:scale-95 disabled:opacity-60"
+          className="glass flex size-[42px] items-center justify-center self-start rounded-full active:scale-95 disabled:opacity-60"
         >
           <RefreshCw
             className={`size-[18px] text-muted-foreground ${updating ? "animate-spin" : ""}`}
@@ -140,12 +140,12 @@ function SettingsScreen() {
               </>
             )}
           </div>
-          <div className="border-t border-border">
+          <PickerSection label={t.name.title}>
             <NameField />
-          </div>
-          <div className="border-t border-border">
+          </PickerSection>
+          <PickerSection label={t.settings.avatar}>
             <AvatarPicker />
-          </div>
+          </PickerSection>
         </ListCard>
 
         <ListCard

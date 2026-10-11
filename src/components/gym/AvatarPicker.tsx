@@ -6,7 +6,7 @@ export function AvatarPicker() {
   const { avatarId, update } = useGym();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4">
+    <div className="flex items-center justify-between gap-2 p-4">
       {AVATARS.map((a) => {
         const Icon = a.icon;
         const selected = avatarId === a.id;
@@ -19,12 +19,12 @@ export function AvatarPicker() {
             }}
             aria-label={a.label}
             data-solid-ok
-            className={`relative flex size-14 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
+            className={`relative flex size-12 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
               selected ? "border-foreground" : "border-transparent"
             }`}
             style={{ backgroundColor: a.bg }}
           >
-            <Icon className="size-7" style={{ color: a.ink }} />
+            <Icon className="size-6" style={{ color: a.ink }} />
             {selected ? (
               <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-foreground">
                 <Check className="size-3 text-background" strokeWidth={3} />
