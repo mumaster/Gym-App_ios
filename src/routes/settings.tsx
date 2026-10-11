@@ -265,6 +265,14 @@ function SettingsScreen() {
           <LinkRow
             onClick={() => {
               haptic(10);
+              update({ setupSeen: false });
+            }}
+            title={t.setup.row}
+            desc={t.setup.rowDesc}
+          />
+          <LinkRow
+            onClick={() => {
+              haptic(10);
               update({ welcomeSeen: false });
             }}
             title={t.welcome.replay}

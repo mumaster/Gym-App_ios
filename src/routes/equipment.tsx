@@ -28,8 +28,12 @@ import { decodeGym, gymCodeFrom } from "../lib/gym/equipmentShare";
 export const Route = createFileRoute("/equipment")({
   // Opened from Exercises → My gym: a back button returns there (the screen
   // otherwise has no back action, like Settings).
-  validateSearch: (search: Record<string, unknown>): { from?: "exercises" } =>
-    search["from"] === "exercises" ? { from: "exercises" } : {},
+  validateSearch: (search: Record<string, unknown>): { from?: "exercises" | "setup" } =>
+    search["from"] === "exercises"
+      ? { from: "exercises" }
+      : search["from"] === "setup"
+        ? { from: "setup" }
+        : {},
   head: () => ({
     meta: [
       { title: "Equipment Profiles — Forge" },
@@ -132,6 +136,15 @@ function EquipmentScreen() {
           >
             <ChevronLeft className="size-5" />
           </Link>
+        ) : from === "setup" ? (
+          // The setup tour stays mounted and reappears when this screen closes.
+          <button
+            onClick={() => window.history.back()}
+            aria-label={t.equipment.backToSetup}
+            className="glass tap-target flex size-10 items-center justify-center rounded-full"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
         ) : undefined
       }
     >

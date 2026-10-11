@@ -13,6 +13,7 @@ import {
   Dumbbell,
   Flame,
   Heart,
+  ListChecks,
   Image as ImageIcon,
   Plus,
   ScanBarcode,
@@ -68,7 +69,7 @@ export function WelcomeTour() {
   return <Tour language={language} onDone={() => update({ welcomeSeen: true })} />;
 }
 
-type ReadyTarget = "/generate" | "/equipment" | "/nutrition" | "/settings";
+type ReadyTarget = "/generate" | "/nutrition";
 
 function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void }) {
   const t = useTranslation();
@@ -78,8 +79,8 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
   // from, so the tour ends. (Replaying it while signed in must not close it.)
   const startedSignedIn = useRef(Boolean(session));
   useEffect(() => {
-    if (session && !startedSignedIn.current) onDone();
-  }, [session, onDone]);
+    if (session && !startedSignedIn.current) update({ welcomeSeen: true, setupSeen: true });
+  }, [session, update]);
   const navigate = useNavigate();
   const scroller = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
@@ -120,10 +121,13 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
     setIndex(Math.max(0, Math.min(last, Math.round(el.scrollLeft / el.clientWidth))));
   };
 
-  const finish = (to?: ReadyTarget) => {
+  // Ends the tour. The setup tour follows unless `skipSetup` (the other exits
+  // go straight to a screen or to looking around).
+  const finish = (to?: ReadyTarget, skipSetup = false) => {
     haptic(15);
     if (to) navigate({ to });
-    onDone();
+    if (skipSetup) update({ welcomeSeen: true, setupSeen: true });
+    else onDone();
   };
 
   return (
@@ -229,31 +233,26 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
                 {s.key === "ready" ? (
                   <div className="mt-5 space-y-2">
                     <ReadyAction
+                      icon={<ListChecks className="size-5" />}
+                      label={t.setup.welcomeSetup}
+                      primary
+                      onClick={() => finish()}
+                    />
+                    <ReadyAction
                       icon={<Dumbbell className="size-5" />}
                       label={w.readyWorkout}
-                      primary
-                      onClick={() => finish("/generate")}
+                      onClick={() => finish("/generate", true)}
                     />
                     <ReadyAction
                       icon={<Apple className="size-5" />}
                       label={w.readyFood}
-                      onClick={() => finish("/nutrition")}
-                    />
-                    <ReadyAction
-                      icon={<SlidersHorizontal className="size-5" />}
-                      label={w.readyEquipment}
-                      onClick={() => finish("/equipment")}
-                    />
-                    <ReadyAction
-                      icon={<Trophy className="size-5" />}
-                      label={w.readyLifts}
-                      onClick={() => finish("/settings")}
+                      onClick={() => finish("/nutrition", true)}
                     />
                     <button
-                      onClick={() => finish()}
+                      onClick={() => finish(undefined, true)}
                       className="min-h-[44px] w-full rounded-2xl text-[15px] font-semibold text-muted-foreground"
                     >
-                      {w.readyLook}
+                      {t.setup.welcomeLater}
                     </button>
                   </div>
                 ) : null}

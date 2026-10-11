@@ -129,15 +129,16 @@ A tall pill reads as a blob. Anything taller than about 40 px that isn't a circl
 
 z-order:
 
-| z   | Layer                                 |
-| --- | ------------------------------------- |
-| 30  | header                                |
-| 35  | the rest blur                         |
-| 40  | tab bar, session dock, pinned pop-ups |
-| 50  | sheets                                |
-| 60  | camera                                |
-| 80  | welcome tour                          |
-| 100 | splash                                |
+| z   | Layer                                                             |
+| --- | ----------------------------------------------------------------- |
+| 30  | header                                                            |
+| 35  | the rest blur                                                     |
+| 40  | tab bar, session dock, pinned pop-ups                             |
+| 45  | setup tour (under sheets, so its steps open the app's own sheets) |
+| 50  | sheets                                                            |
+| 60  | camera                                                            |
+| 80  | welcome tour                                                      |
+| 100 | splash                                                            |
 
 **Only one sheet at a time.** Close the first before opening the second.
 
