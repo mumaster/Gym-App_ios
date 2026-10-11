@@ -534,11 +534,19 @@ export function generateWorkout({
     // first; the others only when it has none.
     const hitsTarget = free.filter((e) => e.muscle_targets.includes(target));
     const ownGroup = hitsTarget.filter((e) => e.primary_muscle === group);
+    // Another group's lift only comes in when the group has nothing left at
+    // all: a shoulders day should not fill up with push-ups because they
+    // also touch the front delts (a chosen day trains what was chosen).
+    const groupLeft = free.filter((e) => e.primary_muscle === group);
+    const groupFree = pool.some((e) => !used.has(e.id) && e.primary_muscle === group);
+    // capped or out of time for this group: stop rather than spill over
     const forMuscle = ownGroup.length
       ? ownGroup
-      : hitsTarget.length
-        ? hitsTarget
-        : free.filter((e) => e.primary_muscle === group);
+      : groupLeft.length
+        ? groupLeft
+        : groupFree
+          ? []
+          : hitsTarget;
     if (!forMuscle.length) return undefined;
     // Main focus first, then the most popular (exercisePopularity.ts): it
     // used to be alphabetical, so the first plan opened with names like
