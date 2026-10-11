@@ -1575,6 +1575,12 @@ const en = {
     veryActiveDesc:
       "Two hours or more a day — like heavy physical work, or hard training plus daily sport",
   },
+  savedDay: {
+    planLabel: (day: string) => `Saved workout for ${day}`,
+    summary: (n: number, min: number) =>
+      `Saved workout · ${n} ${n === 1 ? "exercise" : "exercises"} · ${min} min`,
+    saveAs: (day: string) => `Save as ${day} workout`,
+  },
   programBuilder: {
     title: "Build a program",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
@@ -1600,6 +1606,34 @@ const en = {
     changeDaysKeepProgress: "Change split or training days",
     keepProgressHint: "Your program keeps its current week — only the days change.",
     saveChanges: "Save changes",
+  },
+  dayWorkout: {
+    savedLine: (exercises: number, minutes: number) =>
+      `Saved workout · ${exercises} ${exercises === 1 ? "exercise" : "exercises"} · ${minutes} min`,
+    generatedOnDay: "Generated on the day",
+    createWorkout: "Create workout",
+    editWorkout: "Edit workout",
+    createAll: "Create workouts for every day",
+    createAllHint: "Days that already have a saved workout stay as they are.",
+    duration: "Length",
+    minutes: (n: number) => `${n} min`,
+    exerciseCount: (n: number) => `${n} ${n === 1 ? "exercise" : "exercises"}`,
+    weekLabel: (week: number) => `Week ${week}`,
+    shuffle: "Shuffle",
+    swap: (name: string) => `Swap ${name}`,
+    removeExercise: (name: string) => `Remove ${name}`,
+    empty: "No exercises left. Shuffle to get a new workout.",
+    save: "Save workout",
+    removeSaved: "Remove saved workout",
+    removeSavedHint: "The day is generated on the day again.",
+    wholeProgram: "Whole program",
+    wholeProgramHint:
+      "Make every workout for every week now, with each week's volume. Each day keeps the same exercises, and you can still edit any of them.",
+    pregenerate: (n: number) => `Pre-generate all ${n} workouts`,
+    pregeneratedNote: (n: number) => `All ${n} workouts are made. Pick a week to see or edit them.`,
+    regenerate: "Regenerate all workouts",
+    clearPregenerated: "Clear pre-generated weeks",
+    deloadWeek: "Deload",
   },
   bodyweight: {
     noWeighIn: "no weigh-in",
@@ -3402,6 +3436,12 @@ const nl: Dict = {
     veryActiveDesc:
       "Twee uur of meer per dag — zoals zwaar lichamelijk werk, of hard trainen plus dagelijks sporten",
   },
+  savedDay: {
+    planLabel: (day: string) => `Opgeslagen training voor ${day}`,
+    summary: (n: number, min: number) =>
+      `Opgeslagen training · ${n} ${n === 1 ? "oefening" : "oefeningen"} · ${min} min`,
+    saveAs: (day: string) => `Opslaan als ${day}-training`,
+  },
   programBuilder: {
     title: "Programma samenstellen",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
@@ -3427,6 +3467,35 @@ const nl: Dict = {
     changeDaysKeepProgress: "Schema of trainingsdagen wijzigen",
     keepProgressHint: "Je programma blijft in de huidige week — alleen de dagen veranderen.",
     saveChanges: "Wijzigingen opslaan",
+  },
+  dayWorkout: {
+    savedLine: (exercises: number, minutes: number) =>
+      `Opgeslagen training · ${exercises} ${exercises === 1 ? "oefening" : "oefeningen"} · ${minutes} min`,
+    generatedOnDay: "Wordt op de dag zelf gemaakt",
+    createWorkout: "Training maken",
+    editWorkout: "Aanpassen",
+    createAll: "Voor elke dag een training maken",
+    createAllHint: "Dagen die al een opgeslagen training hebben, blijven zoals ze zijn.",
+    duration: "Duur",
+    minutes: (n: number) => `${n} min`,
+    exerciseCount: (n: number) => `${n} ${n === 1 ? "oefening" : "oefeningen"}`,
+    weekLabel: (week: number) => `Week ${week}`,
+    shuffle: "Herschudden",
+    swap: (name: string) => `${name} wisselen`,
+    removeExercise: (name: string) => `${name} verwijderen`,
+    empty: "Geen oefeningen meer. Schud om een nieuwe training te krijgen.",
+    save: "Training opslaan",
+    removeSaved: "Opgeslagen training verwijderen",
+    removeSavedHint: "De dag wordt weer op de dag zelf gemaakt.",
+    wholeProgram: "Hele programma",
+    wholeProgramHint:
+      "Maak nu alle trainingen voor elke week, met het volume van die week. Elke dag houdt dezelfde oefeningen en je kunt ze nog steeds aanpassen.",
+    pregenerate: (n: number) => `Hele programma vooraf maken (${n} trainingen)`,
+    pregeneratedNote: (n: number) =>
+      `Alle ${n} trainingen zijn gemaakt. Kies een week om ze te bekijken of aan te passen.`,
+    regenerate: "Alle trainingen opnieuw maken",
+    clearPregenerated: "Vooraf gemaakte weken wissen",
+    deloadWeek: "Herstelweek",
   },
   bodyweight: {
     noWeighIn: "niet gewogen",

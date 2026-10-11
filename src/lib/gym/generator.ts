@@ -231,7 +231,7 @@ function shapeFor(duration: number): Shape {
   };
 }
 
-interface GenerateArgs {
+export interface GenerateArgs {
   duration: number;
   equipment: EquipmentId[];
   /** Specific muscle heads to build the session around (e.g. "Triceps", "Side Delts"). */
@@ -280,6 +280,54 @@ interface GenerateArgs {
    *  it, so a slower lifter gets fewer sets for the same minutes. Omitted
    *  or null = the app's fixed constants. */
   pace?: Pace | null;
+}
+
+/** The progressive-overload fields of one plan entry (`suggested_weight`,
+ *  `suggested_reps`, `suggested_basis`), from the exercise's own history or,
+ *  never done, a starting weight from a related exercise (startWeight.ts).
+ *  Used when generating and again when a saved day's workout is started, so
+ *  a routine saved weeks ago still suggests today's weights. */
+export function suggestionFor(
+  choice: Exercise,
+  target_reps: string,
+  {
+    history = [],
+    knownLifts = [],
+    profile,
+    bodyKg = null,
+    intensityMultiplier = 1,
+  }: Pick<GenerateArgs, "history" | "knownLifts" | "profile" | "bodyKg" | "intensityMultiplier">,
+): Pick<PlannedExercise, "suggested_weight" | "suggested_reps" | "suggested_basis"> {
+  const step = profile ? plateStep(choice, profile) : 0.5;
+  const bw = isBodyweightExercise(choice);
+  const own = history.length
+    ? suggestWeight(choice.id, history, target_reps, step, undefined, bw ? bodyKg : null)
+    : null;
+  // Never done: a starting weight from a related exercise (startWeight.ts).
+  // Lifts entered in Settings count too, after anything logged in the app.
+  const estimate =
+    !own && (history.length || knownLifts.length)
+      ? crossEstimate(choice, withKnownLifts(history, knownLifts), target_reps, step)
+      : null;
+  const suggestion = own ?? estimate;
+  // A deload's intensity applies to what's actually lifted — for a
+  // bodyweight exercise that's bodyweight plus the external load, so
+  // without a known bodyweight it's left as is.
+  const scaled = (w: number) =>
+    !bw
+      ? w * intensityMultiplier
+      : bodyKg == null
+        ? w
+        : (bodyKg + w) * intensityMultiplier - bodyKg;
+  const suggestedWeight =
+    suggestion && intensityMultiplier !== 1
+      ? Number(roundToStep(scaled(suggestion.weight), step).toFixed(2))
+      : suggestion?.weight;
+  return {
+    ...(suggestedWeight !== undefined ? { suggested_weight: suggestedWeight } : {}),
+    ...(suggestion ? { suggested_reps: suggestion.reps } : {}),
+    ...(estimate && estimate.basis !== "personal" ? { suggested_basis: estimate.basis } : {}),
+  };
 }
 
 /* ---------------- superset pairing ---------------- */
@@ -463,40 +511,19 @@ export function generateWorkout({
 
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
     const target_reps = compound ? shape.compoundReps : shape.accessoryReps;
-    const step = profile ? plateStep(choice, profile) : 0.5;
-    const bw = isBodyweightExercise(choice);
-    const own = history.length
-      ? suggestWeight(choice.id, history, target_reps, step, undefined, bw ? bodyKg : null)
-      : null;
-    // Never done: a starting weight from a related exercise (startWeight.ts).
-    // Lifts entered in Settings count too, after anything logged in the app.
-    const estimate =
-      !own && (history.length || knownLifts.length)
-        ? crossEstimate(choice, withKnownLifts(history, knownLifts), target_reps, step)
-        : null;
-    const suggestion = own ?? estimate;
-    // A deload's intensity applies to what's actually lifted — for a
-    // bodyweight exercise that's bodyweight plus the external load, so
-    // without a known bodyweight it's left as is.
-    const scaled = (w: number) =>
-      !bw
-        ? w * intensityMultiplier
-        : bodyKg == null
-          ? w
-          : (bodyKg + w) * intensityMultiplier - bodyKg;
-    const suggestedWeight =
-      suggestion && intensityMultiplier !== 1
-        ? Number(roundToStep(scaled(suggestion.weight), step).toFixed(2))
-        : suggestion?.weight;
     return {
       exercise_id: choice.id,
       target_sets: compound ? shape.compoundSets : shape.accessorySets,
       warmup_sets: compound && warmups ? shape.compoundWarmups : 0,
       target_reps,
       rest_seconds: compound ? shape.compoundRest : shape.accessoryRest,
-      ...(suggestedWeight !== undefined ? { suggested_weight: suggestedWeight } : {}),
-      ...(suggestion ? { suggested_reps: suggestion.reps } : {}),
-      ...(estimate && estimate.basis !== "personal" ? { suggested_basis: estimate.basis } : {}),
+      ...suggestionFor(choice, target_reps, {
+        history,
+        knownLifts,
+        bodyKg,
+        intensityMultiplier,
+        ...(profile ? { profile } : {}),
+      }),
     };
   };
 

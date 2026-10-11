@@ -18,7 +18,9 @@ import {
   withSeparateCardioDays,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
-import { anchorFor } from "../../lib/gym/schedule";
+import { anchorFor, isCardioSlot } from "../../lib/gym/schedule";
+import { savedWorkoutFor } from "../../lib/gym/dayWorkouts";
+import { CreateAllWorkoutsButton, DayWorkoutLine, DayWorkoutSheet } from "./DayWorkoutSheet";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
@@ -50,6 +52,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     growthFocus,
     cardioPlan,
     setCardioPlan,
+    setRotationSlots,
     update,
   } = useGym();
   const t = useTranslation();
@@ -67,6 +70,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   // every change made from its manage view.
   const focusRef = useRef(growthFocus);
   focusRef.current = growthFocus;
+  // The day whose workout is being created or edited.
+  const [workoutDay, setWorkoutDay] = useState<number | undefined>(undefined);
 
   // Only on opening: a day or cardio change inside a slot's editor changes
   // the plan, which must not fold the editor away.
@@ -131,110 +136,138 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   if (mode === "manage" && weeklyScheme) {
     const activeTemplate = splitTemplateById(weeklyScheme.templateId);
     const usedDows = new Set(weeklyScheme.schedule.map((s) => s.dow));
+    const daySlot = weeklyScheme.schedule[workoutDay ?? 0];
     return (
-      <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.title}>
-        <div className="space-y-4">
-          <p className="text-[13px] text-muted-foreground">
-            {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
-          </p>
+      <>
+        <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.title}>
+          <div className="space-y-4">
+            <p className="text-[13px] text-muted-foreground">
+              {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
+            </p>
 
-          <div className="space-y-2">
-            {weeklyScheme.schedule.map((slot, i) => {
-              const isNext = i === weeklyScheme.cyclePosition;
-              const dayLabel = splitDayLabel(weeklyScheme.templateId, slot.dayId);
-              return (
-                <div
-                  key={i}
-                  className={`glass rounded-2xl p-3 ${isNext ? "border border-primary/60" : ""}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <span className="text-[15px] font-semibold">{dayLabel}</span>
-                      {isNext ? (
-                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
-                          {t.weeklyPlan.nextUp}
-                        </span>
-                      ) : null}
-                      <p className="text-[13px] text-muted-foreground">
-                        {t.common.dow[slot.dow]}
-                        {cardioDayPlan(slot) ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setEditingSlot(editingSlot === i ? null : i)}
-                      aria-label={t.weeklyPlan.changeDay(dayLabel)}
-                      className={button.edit}
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                  </div>
-                  {editingSlot === i ? (
-                    <div className="mt-3 space-y-2">
-                      <DayTypePicker
-                        templateId={weeklyScheme.templateId}
-                        value={slot.dayId}
-                        onChange={(dayId) => updateScheduleSlotDay(i, dayId)}
-                        cardio={slot.cardio}
-                        onCardioChange={(cardio) => updateScheduleSlotCardio(i, cardio)}
-                      />
-                      <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                        {DOW_DISPLAY_ORDER.map((dow) => {
-                          const taken = usedDows.has(dow) && dow !== slot.dow;
-                          return (
-                            <button
-                              key={dow}
-                              disabled={taken}
-                              onClick={() => setSlotDow(i, dow)}
-                              className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                                dow === slot.dow
-                                  ? chip.on
-                                  : taken
-                                    ? "bg-secondary text-muted-foreground opacity-40"
-                                    : chip.off
-                              }`}
-                            >
-                              {t.common.dow[dow]}
-                            </button>
-                          );
-                        })}
+            <CreateAllWorkoutsButton
+              schedule={weeklyScheme.schedule}
+              templateId={weeklyScheme.templateId}
+              onChange={(schedule) => setRotationSlots("weeklyScheme", schedule)}
+            />
+
+            <div className="space-y-2">
+              {weeklyScheme.schedule.map((slot, i) => {
+                const isNext = i === weeklyScheme.cyclePosition;
+                const dayLabel = splitDayLabel(weeklyScheme.templateId, slot.dayId);
+                return (
+                  <div
+                    key={i}
+                    className={`glass rounded-2xl p-3 ${isNext ? "border border-primary/60" : ""}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <span className="text-[15px] font-semibold">{dayLabel}</span>
+                        {isNext ? (
+                          <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
+                            {t.weeklyPlan.nextUp}
+                          </span>
+                        ) : null}
+                        <p className="text-[13px] text-muted-foreground">
+                          {t.common.dow[slot.dow]}
+                          {cardioDayPlan(slot)
+                            ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}`
+                            : ""}
+                        </p>
                       </div>
+                      <button
+                        onClick={() => setEditingSlot(editingSlot === i ? null : i)}
+                        aria-label={t.weeklyPlan.changeDay(dayLabel)}
+                        className={button.edit}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
                     </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+                    {isCardioSlot(slot) ? null : (
+                      <DayWorkoutLine
+                        workout={savedWorkoutFor(slot)}
+                        onEdit={() => setWorkoutDay(i)}
+                      />
+                    )}
+                    {editingSlot === i ? (
+                      <div className="mt-3 space-y-2">
+                        <DayTypePicker
+                          templateId={weeklyScheme.templateId}
+                          value={slot.dayId}
+                          onChange={(dayId) => updateScheduleSlotDay(i, dayId)}
+                          cardio={slot.cardio}
+                          onCardioChange={(cardio) => updateScheduleSlotCardio(i, cardio)}
+                        />
+                        <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                          {DOW_DISPLAY_ORDER.map((dow) => {
+                            const taken = usedDows.has(dow) && dow !== slot.dow;
+                            return (
+                              <button
+                                key={dow}
+                                disabled={taken}
+                                onClick={() => setSlotDow(i, dow)}
+                                className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                  dow === slot.dow
+                                    ? chip.on
+                                    : taken
+                                      ? "bg-secondary text-muted-foreground opacity-40"
+                                      : chip.off
+                                }`}
+                              >
+                                {t.common.dow[dow]}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
 
-          {/* Applies at once, like the day edits above. */}
-          <HybridCardioSection
-            templateId={weeklyScheme.templateId}
-            value={templateCardio(weeklyScheme.templateId, weeklyScheme.cardio)}
-            onChange={(cardio) => setWeeklyScheme({ ...weeklyScheme, cardio })}
-          />
+            {/* Applies at once, like the day edits above. */}
+            <HybridCardioSection
+              templateId={weeklyScheme.templateId}
+              value={templateCardio(weeklyScheme.templateId, weeklyScheme.cardio)}
+              onChange={(cardio) => setWeeklyScheme({ ...weeklyScheme, cardio })}
+            />
 
-          {/* Applies at once, like the day edits above: no need to rebuild
+            {/* Applies at once, like the day edits above: no need to rebuild
               the plan just to change what it prioritises. */}
-          <GrowthFocusSection
-            value={growthFocus}
-            onChange={(next) => update({ growthFocus: next })}
-          />
+            <GrowthFocusSection
+              value={growthFocus}
+              onChange={(next) => update({ growthFocus: next })}
+            />
 
-          <div className="flex flex-col gap-2 pt-1">
-            <button
-              onClick={() => setMode("template")}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
-            >
-              {t.weeklyPlan.changeSplit}
-            </button>
-            <button
-              onClick={remove}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
-            >
-              <Trash2 className="size-4" /> {t.weeklyPlan.removeWeeklyPlan}
-            </button>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => setMode("template")}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+              >
+                {t.weeklyPlan.changeSplit}
+              </button>
+              <button
+                onClick={remove}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
+              >
+                <Trash2 className="size-4" /> {t.weeklyPlan.removeWeeklyPlan}
+              </button>
+            </div>
           </div>
-        </div>
-      </BottomSheet>
+        </BottomSheet>
+        <DayWorkoutSheet
+          open={open && workoutDay !== undefined}
+          onClose={() => setWorkoutDay(undefined)}
+          kind="weeklyScheme"
+          slotIndex={workoutDay ?? 0}
+          title={
+            daySlot
+              ? `${splitDayLabel(weeklyScheme.templateId, daySlot.dayId)} · ${t.common.dow[daySlot.dow]}`
+              : ""
+          }
+        />
+      </>
     );
   }
 
