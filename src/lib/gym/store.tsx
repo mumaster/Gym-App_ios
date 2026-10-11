@@ -134,6 +134,9 @@ interface GymState {
   firstName: string;
   /** The welcome tour has been seen (or skipped). Settings can reset it. */
   welcomeSeen: boolean;
+  /** The setup tour (SetupTour.tsx, after the welcome tour) has been
+   *  finished or skipped. Settings → "Set up Forge" sets it back to false. */
+  setupSeen: boolean;
   supersetsEnabled: boolean;
   /** Warm-up sets before compound exercises. Off: none are planned, and a
    *  running workout starts every exercise on a working set. */
@@ -243,6 +246,7 @@ const initialState: GymState = {
   avatarId: DEFAULT_AVATAR_ID,
   firstName: "",
   welcomeSeen: false,
+  setupSeen: false,
   supersetsEnabled: false,
   warmupsEnabled: true,
   alcoholEnabled: true,
@@ -328,6 +332,18 @@ function splitLegsFocus(focus: FocusGroup[], alreadySplit: boolean | undefined):
   return [...focus, "glutes"];
 }
 
+/** Saves from before the tour: someone who already logged something knows
+ *  the app, so only an empty save gets the tour. */
+const welcomeSeenFrom = (raw: Partial<GymState>): boolean =>
+  raw.welcomeSeen ??
+  Boolean(
+    raw.workouts?.length ||
+    raw.foodEntries?.length ||
+    raw.weightLog?.length ||
+    raw.program ||
+    raw.weeklyScheme,
+  );
+
 function migrate(raw: Partial<GymState>): GymState {
   const fixPlan = (plan: PlannedExercise[] = []) =>
     plan.map((p) => ({ ...p, warmup_sets: p.warmup_sets ?? 0 }));
@@ -396,17 +412,10 @@ function migrate(raw: Partial<GymState>): GymState {
     language: raw.language ?? "en",
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     firstName: cleanFirstName(raw.firstName),
-    // Saves from before the tour: someone who already logged something
-    // knows the app, so only an empty save gets the tour.
-    welcomeSeen:
-      raw.welcomeSeen ??
-      Boolean(
-        raw.workouts?.length ||
-        raw.foodEntries?.length ||
-        raw.weightLog?.length ||
-        raw.program ||
-        raw.weeklyScheme,
-      ),
+    welcomeSeen: welcomeSeenFrom(raw),
+    // Saves from before the setup tour: whoever is past the welcome tour
+    // already uses the app, so only someone still in front of it gets it.
+    setupSeen: raw.setupSeen ?? welcomeSeenFrom(raw),
     supersetsEnabled: raw.supersetsEnabled ?? false,
     warmupsEnabled: raw.warmupsEnabled ?? true,
     alcoholEnabled: raw.alcoholEnabled ?? true,
