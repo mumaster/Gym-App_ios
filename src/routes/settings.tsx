@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Wine,
 } from "lucide-react";
+import { ALLERGIES } from "../lib/gym/allergens";
 import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
@@ -42,6 +43,8 @@ export const Route = createFileRoute("/settings")({
   }),
   component: SettingsScreen,
 });
+
+const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 function SettingsScreen() {
   const {
@@ -184,24 +187,33 @@ function SettingsScreen() {
         <ListCard
           icon={ShieldAlert}
           title={t.allergy.settingsTitle}
-          subtitle={allergies.length ? t.allergy.sulphites : t.allergy.none}
+          subtitle={
+            allergies.length === 0
+              ? t.allergy.none
+              : allergies.length === 1
+                ? cap(t.allergy.names[allergies[0]!])
+                : t.allergy.picked(allergies.length)
+          }
           filled={allergies.length > 0}
         >
           <div className="divide-y divide-border border-t border-border">
-            <SwitchRow
-              label={t.allergy.sulphites}
-              desc={t.allergy.sulphitesDesc}
-              ariaLabel={t.allergy.sulphites}
-              on={allergies.includes("sulphites")}
-              onToggle={() => {
-                haptic(12);
-                update({
-                  allergies: allergies.includes("sulphites")
-                    ? allergies.filter((a) => a !== "sulphites")
-                    : [...allergies, "sulphites"],
-                });
-              }}
-            />
+            {ALLERGIES.map((id) => (
+              <SwitchRow
+                key={id}
+                label={cap(t.allergy.names[id])}
+                desc={t.allergy.descs[id]}
+                ariaLabel={cap(t.allergy.names[id])}
+                on={allergies.includes(id)}
+                onToggle={() => {
+                  haptic(12);
+                  update({
+                    allergies: allergies.includes(id)
+                      ? allergies.filter((a) => a !== id)
+                      : [...allergies, id],
+                  });
+                }}
+              />
+            ))}
           </div>
         </ListCard>
 

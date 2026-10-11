@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, HelpCircle, ScanLine, ShieldAlert } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "../../lib/gym/i18n";
-import { checkSulphites, type AllergenResult, type HitKind } from "../../lib/gym/allergens";
+import {
+  checkAllergen,
+  type AllergenResult,
+  type AllergyId,
+  type HitKind,
+} from "../../lib/gym/allergens";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import {
   lookupIngredients,
@@ -38,13 +43,13 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [error, setError] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
   const [product, setProduct] = useState<string | null>(null);
-  const [result, setResult] = useState<AllergenResult | null>(null);
+  const [results, setResults] = useState<{ id: AllergyId; result: AllergenResult }[]>([]);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState<FoodScannerStatus>("scanning");
   const [scanMode, setScanMode] = useState<ScanMode>("barcode");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const a = t.allergy;
-  const active = allergies.includes("sulphites");
+  const active = allergies.length > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -52,21 +57,29 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
     setError(null);
     setPasted("");
     setProduct(null);
-    setResult(null);
+    setResults([]);
     setScannerOpen(false);
   }, [open]);
 
   const show = (found: ScannedIngredients) => {
-    const r = checkSulphites(found.ingredientsText, found.tags);
-    if (!r) {
+    const checked = allergies.map((id) => ({
+      id,
+      result: checkAllergen(id, found.ingredientsText, found.tags),
+    }));
+    if (checked.some((c) => !c.result)) {
       setError(a.noIngredients);
       setStep("start");
       return;
     }
+    // Worst first: contains, then may contain, then none found.
+    const rank = { contains: 0, maybe: 1, none: 2 } as const;
+    const all = checked
+      .map((c) => ({ id: c.id, result: c.result! }))
+      .sort((x, y) => rank[x.result.verdict] - rank[y.result.verdict]);
     setProduct(found.name);
-    setResult(r);
+    setResults(all);
     setStep("result");
-    haptic(r.verdict === "none" ? 10 : 20);
+    haptic(all.every((c) => c.result.verdict === "none") ? 10 : 20);
   };
 
   const fail = (e: unknown) => {
@@ -166,7 +179,7 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
                 {a.check}
               </button>
             </div>
-            <p className={text.note}>{a.disclaimer}</p>
+            <Disclaimer />
           </div>
         ) : null}
 
@@ -178,13 +191,15 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
           </div>
         ) : null}
 
-        {active && step === "result" && result ? (
+        {active && step === "result" && results.length ? (
           <div className="space-y-4">
-            <Verdict result={result} product={product} />
+            {results.map((r) => (
+              <Verdict key={r.id} id={r.id} result={r.result} />
+            ))}
             <button onClick={() => setStep("start")} className={`${button.secondary} w-full`}>
               {a.again}
             </button>
-            <p className={text.note}>{a.disclaimer}</p>
+            <Disclaimer />
           </div>
         ) : null}
       </BottomSheet>
@@ -213,9 +228,22 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-function Verdict({ result, product }: { result: AllergenResult; product: string | null }) {
+/** A guide, not a guarantee; the sulphite line only when it applies. */
+function Disclaimer() {
+  const t = useTranslation();
+  const { allergies } = useGym();
+  return (
+    <p className={text.note}>
+      {t.allergy.disclaimer}
+      {allergies.includes("sulphites") ? ` ${t.allergy.disclaimerSulphites}` : ""}
+    </p>
+  );
+}
+
+function Verdict({ id, result }: { id: AllergyId; result: AllergenResult }) {
   const t = useTranslation();
   const a = t.allergy;
+  const name = a.names[id];
   const v = result.verdict;
   const tone =
     v === "contains"
@@ -226,15 +254,18 @@ function Verdict({ result, product }: { result: AllergenResult; product: string 
   const Icon = v === "contains" ? ShieldAlert : v === "maybe" ? HelpCircle : Check;
   return (
     <div className="space-y-3">
-      {product ? <p className={text.eyebrow}>{product}</p> : null}
       <div className={`flex items-start gap-3 rounded-2xl px-4 py-4 ${tone}`}>
         <Icon aria-hidden className="mt-0.5 size-6 shrink-0" />
         <div className="min-w-0">
           <p className="text-[19px] font-bold leading-tight">
-            {v === "contains" ? a.contains : v === "maybe" ? a.maybe : a.clear}
+            {(v === "contains" ? a.contains : v === "maybe" ? a.maybe : a.clear)(name)}
           </p>
           <p className="mt-1 text-[14px] leading-snug">
-            {v === "contains" ? a.containsDesc : v === "maybe" ? a.maybeDesc : a.clearDesc}
+            {v === "contains"
+              ? a.containsDesc(name)
+              : v === "maybe"
+                ? a.maybeDesc
+                : a.clearDesc(name)}
           </p>
         </div>
       </div>
