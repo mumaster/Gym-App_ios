@@ -2,7 +2,7 @@ import { MUSCLES } from "./data";
 import { recommendedMuscles } from "./recommendations";
 import type { Rotation } from "./schedule";
 import { CARDIO_DAY_ID, isCardioSlot, weekIndex } from "./schedule";
-import type { CardioFinisher, CardioPlanDay, Muscle, Workout } from "./types";
+import type { CardioFinisher, CardioPlanDay, DayWorkout, Muscle, Workout } from "./types";
 import { FOCUS_GROUPS, focusMuscles, type FocusGroup } from "./volume";
 
 export type SplitTemplateId =
@@ -244,6 +244,12 @@ export interface ScheduleSlot {
   dayId: string;
   /** What a cardio day (`dayId` "cardio") plans; absent on every other day. */
   cardio?: CardioFinisher | undefined;
+  /** The workout saved for this day, started as is every week instead of
+   *  generating one (lifting days only; dayWorkouts.ts). */
+  workout?: DayWorkout | undefined;
+  /** Programs only: the workout pre-generated for each program week (index =
+   *  week). Wins over `workout` for its week (dayWorkouts.ts). */
+  weekWorkouts?: (DayWorkout | null)[] | undefined;
 }
 
 /** `schedule` is one slot per training day/week, ordered Monday-first;
@@ -364,8 +370,13 @@ export function withDayType(
   keep?: CardioFinisher,
 ): ScheduleSlot {
   if (!findDay(templateId, dayId)) return slot;
-  const { cardio: _own, ...rest } = slot;
-  if (dayId !== CARDIO_DAY_ID) return { ...rest, dayId };
+  const { cardio: _own, workout, weekWorkouts, ...rest } = slot;
+  // A saved workout belongs to the day type it was made for.
+  const kept =
+    dayId === slot.dayId
+      ? { ...(workout ? { workout } : {}), ...(weekWorkouts ? { weekWorkouts } : {}) }
+      : {};
+  if (dayId !== CARDIO_DAY_ID) return { ...rest, ...kept, dayId };
   const prior = slot.dayId === CARDIO_DAY_ID ? slot.cardio : undefined;
   return { ...rest, dayId, cardio: { ...(prior ?? keep ?? DEFAULT_CARDIO_DAY) } };
 }
@@ -383,9 +394,16 @@ export function applyDayPicks(
 ): ScheduleSlot[] {
   return schedule.map((slot) => {
     const pick = picks[slot.dow];
-    if (!pick) return slot;
     const before = previous.find((p) => p.dow === slot.dow);
-    return withDayType(templateId, slot, pick, before?.cardio);
+    const next = pick ? withDayType(templateId, slot, pick, before?.cardio) : slot;
+    // A weekday that keeps its day type keeps the workout saved for it.
+    return before && before.dayId === next.dayId && (before.workout || before.weekWorkouts)
+      ? {
+          ...next,
+          ...(before.workout ? { workout: before.workout } : {}),
+          ...(before.weekWorkouts ? { weekWorkouts: before.weekWorkouts } : {}),
+        }
+      : next;
   });
 }
 

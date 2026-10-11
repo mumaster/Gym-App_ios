@@ -278,6 +278,17 @@ export interface WorkoutTemplate {
   target_muscles: Muscle[];
 }
 
+/** A workout saved for one day of a weekly plan or program (a schedule
+ *  slot, splits.ts): started as saved, every week, instead of being
+ *  generated on the day — see lib/gym/dayWorkouts.ts. */
+export interface DayWorkout {
+  plan: PlannedExercise[];
+  duration_minutes: number;
+  target_muscles: Muscle[];
+  /** When it was generated or last edited, ISO. */
+  saved_at: string;
+}
+
 export interface EquipmentProfile {
   id: string;
   name: string;

@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   Bookmark,
+  BookmarkCheck,
   CalendarClock,
   CalendarDays,
   ChevronRight,
@@ -58,6 +59,7 @@ import {
 import { moveBlock, planBlocks } from "../lib/gym/planBlocks";
 import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
+import { hasWeekWorkout, readyToStart, savedWorkoutFor } from "../lib/gym/dayWorkouts";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { crossEstimate, heavierHint, withKnownLifts } from "../lib/gym/startWeight";
@@ -132,6 +134,7 @@ function WorkoutHome() {
     weeklyScheme,
     program,
     completeCardioSlot,
+    setSlotWorkout,
     workoutTemplates,
     readinessLog,
     avatarId,
@@ -237,17 +240,20 @@ function WorkoutHome() {
    *  match: change the time, a muscle, the gear or supersets and it goes,
    *  and the button goes back to Generate, so the plan on screen and the
    *  "Start workout" under it always match what's selected above. */
-  const inputKey = (rs: RegionId[], fs: TargetMuscle[]) =>
+  const inputKey = (rs: RegionId[], fs: TargetMuscle[], minutes = duration) =>
     JSON.stringify([
       [...rs].sort(),
       [...fs].sort(),
-      duration,
+      minutes,
       profile.id,
       profile.active_equipment_ids.length,
       supersetsEnabled,
       warmupsEnabled,
     ]);
   const [planKey, setPlanKey] = useState<string | null>(null);
+  /** True while the plan on screen is a day's saved workout (dayWorkouts.ts),
+   *  not a generated one. */
+  const [planIsSaved, setPlanIsSaved] = useState(false);
   const shownPlan = plan && planKey === inputKey(regions, focus) ? plan : null;
   const planRef = useRef<HTMLDivElement>(null);
   const [scrollToPlan, setScrollToPlan] = useState(0);
@@ -273,6 +279,7 @@ function WorkoutHome() {
   ) => {
     haptic(25);
     setVariation(nextVariation);
+    setPlanIsSaved(false);
     const rs = from?.regions ?? regions;
     const fs = from ? (from.focus ?? []) : focus;
     const week =
@@ -463,9 +470,43 @@ function WorkoutHome() {
     setRegions(rs);
     setFocus([]);
     setProposal(null);
+    const saved = savedWorkoutFor(slot, source === "program" ? program?.currentWeek : undefined);
+    if (saved) {
+      // A saved day is shown as is, at once: nothing to generate.
+      haptic(15);
+      clearTimeout(generateTimeoutRef.current ?? undefined);
+      setGenerating(false);
+      const week = source === "program" && program ? currentProgramWeek(program) : null;
+      const savedRegions = regionsForMuscles(saved.target_muscles, slot.dayId);
+      setRegions(savedRegions);
+      setDuration(saved.duration_minutes);
+      setCustomInput(
+        SHORTCUTS.includes(saved.duration_minutes) ? "" : String(saved.duration_minutes),
+      );
+      setVariation(0);
+      setPlanIsSaved(true);
+      setPlanKey(inputKey(savedRegions, [], saved.duration_minutes));
+      setPlan(
+        readyToStart(
+          saved,
+          {
+            history: workouts,
+            knownLifts,
+            profile,
+            bodyKg: latestBodyKg(weightLog, nutritionProfile),
+          },
+          week && program
+            ? { week, preGenerated: hasWeekWorkout(slot, program.currentWeek) }
+            : undefined,
+        ),
+      );
+      setScrollToPlan((n) => n + 1);
+      return;
+    }
     generate({ regions: rs, followingProgram: source === "program" });
   };
 
+  const scheduledSaved = savedWorkoutFor(scheduledSlot);
   const scheduledCardio = cardioDayPlan(scheduledSlot);
   const startScheduledDay = () => {
     if (!weeklyScheme || !scheduledSlot) return;
@@ -483,6 +524,7 @@ function WorkoutHome() {
       ? splitDayLabel(program.templateId, scheduledProgramSlot.dayId)
       : "";
 
+  const programSaved = savedWorkoutFor(scheduledProgramSlot, program?.currentWeek);
   const programCardio = cardioDayPlan(scheduledProgramSlot);
   const startProgramDay = () => {
     if (!program || !scheduledProgramSlot) return;
@@ -501,6 +543,37 @@ function WorkoutHome() {
     : followingSchedule && weeklyScheme
       ? slotCardio(weeklyScheme.templateId, scheduledSlot, weeklyScheme.cardio)
       : null;
+
+  /** "Save as {day} workout": keeps the plan on screen as this day's workout,
+   *  so Start {day} uses it as is from now on. A program week that has its
+   *  own workout (or a deload, whose sets the plan already carries) saves to
+   *  that week, so its volume isn't applied twice. */
+  const followedSlot = followingProgram ? scheduledProgramSlot : scheduledSlot;
+  const followedDayLabel = followingProgram ? programDayLabel : scheduledDayLabel;
+  const canSaveForDay =
+    !!shownPlan &&
+    !planIsSaved &&
+    (followingSchedule || followingProgram) &&
+    !!followedSlot &&
+    !isCardioSlot(followedSlot);
+  const saveForDay = () => {
+    if (!shownPlan || !canSaveForDay) return;
+    haptic([20, 30]);
+    const workout = {
+      plan: shownPlan,
+      duration_minutes: duration,
+      target_muscles: muscles,
+      saved_at: new Date().toISOString(),
+    };
+    if (followingProgram && program) {
+      const week = program.currentWeek;
+      const perWeek = hasWeekWorkout(followedSlot, week) || programWeek?.volume !== 1;
+      setSlotWorkout("program", program.cyclePosition, workout, perWeek ? week : undefined);
+    } else if (weeklyScheme) {
+      setSlotWorkout("weeklyScheme", weeklyScheme.cyclePosition, workout);
+    }
+    setPlanIsSaved(true);
+  };
 
   const start = () => {
     if (!shownPlan) return;
@@ -645,6 +718,14 @@ function WorkoutHome() {
     </div>
   );
 
+  /** "Saved workout · 6 exercises · 45 min" under a card's next day. */
+  const savedSummary = (w: { plan: PlannedExercise[]; duration_minutes: number }) => (
+    <p className="mt-0.5 flex items-center gap-1 text-[13px] font-semibold text-primary-text">
+      <BookmarkCheck className="size-3.5 shrink-0" />
+      <span className="truncate">{t.savedDay.summary(w.plan.length, w.duration_minutes)}</span>
+    </p>
+  );
+
   const planCard = (
     <>
       <Card className="mb-4 overflow-hidden p-4">
@@ -675,6 +756,7 @@ function WorkoutHome() {
               }
             />
             <p className="truncate text-[17px] font-bold">{t.generate.nextDay(programDayLabel)}</p>
+            {programSaved && !programCardio ? savedSummary(programSaved) : null}
             {programWeek.type === "deload" ? (
               <p className="mt-1 text-[12.5px] text-muted-foreground">{t.generate.deloadExplain}</p>
             ) : null}
@@ -706,10 +788,14 @@ function WorkoutHome() {
               <CardioDayBlock plan={programCardio} onLog={startProgramDay} />
             ) : (
               <>
-                <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t.generate.sessionLength}
-                </p>
-                {durationPicker}
+                {programSaved ? null : (
+                  <>
+                    <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      {t.generate.sessionLength}
+                    </p>
+                    {durationPicker}
+                  </>
+                )}
                 <button onClick={startProgramDay} className={`${button.primary} mt-3 w-full`}>
                   <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
                 </button>
@@ -748,6 +834,7 @@ function WorkoutHome() {
                 )}
               </p>
             ) : null}
+            {scheduledSaved && !scheduledCardio ? savedSummary(scheduledSaved) : null}
 
             <RotationWeekStrip rotation={weeklyScheme} templateId={weeklyScheme.templateId} />
             <MissedSessionBanner
@@ -761,10 +848,14 @@ function WorkoutHome() {
               <CardioDayBlock plan={scheduledCardio} onLog={startScheduledDay} />
             ) : (
               <>
-                <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t.generate.sessionLength}
-                </p>
-                {durationPicker}
+                {scheduledSaved ? null : (
+                  <>
+                    <p className="mb-1.5 mt-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      {t.generate.sessionLength}
+                    </p>
+                    {durationPicker}
+                  </>
+                )}
                 <button onClick={startScheduledDay} className={`${button.primary} mt-3 w-full`}>
                   <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
                 </button>
@@ -1201,6 +1292,14 @@ function WorkoutHome() {
               <Bookmark className="size-3.5" /> {t.generate.save}
             </button>
           </div>
+          {planIsSaved ? (
+            <p className="mb-2 flex items-center gap-1.5 px-1 text-[13px] font-semibold text-primary-text">
+              <BookmarkCheck className="size-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                {t.savedDay.planLabel(followingProgram ? programDayLabel : scheduledDayLabel)}
+              </span>
+            </p>
+          ) : null}
           <div className="space-y-2">
             {planBlocks(planHere).map((block, b, blocks) => {
               const moveButtons = (superset: boolean) => (
@@ -1326,18 +1425,29 @@ function WorkoutHome() {
           {/* Last on the page, so as a sticky element it stays pinned just
               above the tab bar from the top of the page to the bottom: Start
               is always one tap away once a plan is ready. */}
-          <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex gap-2">
+          <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex flex-col gap-2">
             <div aria-hidden className="dock-backdrop" />
-            <button
-              onClick={shuffle}
-              className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
-              style={{ backgroundColor: "var(--background)" }}
-            >
-              <RefreshCw className="size-5" /> {t.generate.shuffle}
-            </button>
-            <button onClick={start} className={`${button.primary} flex-[2]`}>
-              <Play className="size-5" /> {t.generate.startWorkout}
-            </button>
+            {canSaveForDay ? (
+              <button
+                onClick={saveForDay}
+                className="glass-strong flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold text-primary-text active:scale-95"
+                style={{ backgroundColor: "var(--background)" }}
+              >
+                <Bookmark className="size-4" /> {t.savedDay.saveAs(followedDayLabel)}
+              </button>
+            ) : null}
+            <div className="flex gap-2">
+              <button
+                onClick={shuffle}
+                className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
+                style={{ backgroundColor: "var(--background)" }}
+              >
+                <RefreshCw className="size-5" /> {t.generate.shuffle}
+              </button>
+              <button onClick={start} className={`${button.primary} flex-[2]`}>
+                <Play className="size-5" /> {t.generate.startWorkout}
+              </button>
+            </div>
           </div>
         </>
       ) : null}

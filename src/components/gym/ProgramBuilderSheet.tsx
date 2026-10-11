@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Flame, Pencil, Snowflake, Trash2 } from "lucide-react";
+import { Check, Flame, Pencil, Snowflake, Trash2, Wand2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DayTypePicker } from "./DayTypePicker";
 import {
@@ -18,7 +18,15 @@ import {
 import { useTranslation } from "../../lib/gym/i18n";
 import { cardioPlanLine } from "./cardioDisplay";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
-import { anchorFor } from "../../lib/gym/schedule";
+import { anchorFor, isCardioSlot } from "../../lib/gym/schedule";
+import {
+  clearPregenerated,
+  isPregenerated,
+  pregenerateProgram,
+  savedWorkoutFor,
+} from "../../lib/gym/dayWorkouts";
+import { CreateAllWorkoutsButton, DayWorkoutLine, DayWorkoutSheet } from "./DayWorkoutSheet";
+import { useDayWorkoutContext } from "./useDayWorkoutContext";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
@@ -53,8 +61,10 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     growthFocus,
     cardioPlan,
     setCardioPlan,
+    setRotationSlots,
     update,
   } = useGym();
+  const dayCtx = useDayWorkoutContext();
   const t = useTranslation();
   const [mode, setMode] = useState<Mode>("template");
   const [name, setName] = useState("Program");
@@ -75,6 +85,10 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   // every change made from its manage view.
   const focusRef = useRef(growthFocus);
   focusRef.current = growthFocus;
+  // The day whose workout is being created or edited, and (for a
+  // pre-generated program) the week whose workouts the list shows.
+  const [workoutDay, setWorkoutDay] = useState<number | undefined>(undefined);
+  const [shownWeek, setShownWeek] = useState<number | undefined>(undefined);
 
   // Only on opening: a day or cardio change inside a slot's editor changes
   // the plan, which must not fold the editor away.
@@ -165,146 +179,256 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   if (mode === "manage" && program) {
     const activeTemplate = splitTemplateById(program.templateId);
     const usedDows = new Set(program.schedule.map((s) => s.dow));
+    const pregenerated = isPregenerated(program);
+    const viewWeek = Math.min(shownWeek ?? program.currentWeek, program.weeks.length - 1);
+    const liftingDays = program.schedule.filter((s) => !isCardioSlot(s)).length;
+    const daySlot = program.schedule[workoutDay ?? 0];
     return (
-      <BottomSheet open={open} onClose={onClose} title={program.name}>
-        <div className="space-y-4">
-          <p className="text-[13px] text-muted-foreground">
-            {t.programBuilder.manageSubtitle(
-              activeTemplate.label,
-              program.currentWeek + 1,
-              program.weeks.length,
-              program.schedule.length,
-            )}
-          </p>
+      <>
+        <BottomSheet open={open} onClose={onClose} title={program.name}>
+          <div className="space-y-4">
+            <p className="text-[13px] text-muted-foreground">
+              {t.programBuilder.manageSubtitle(
+                activeTemplate.label,
+                program.currentWeek + 1,
+                program.weeks.length,
+                program.schedule.length,
+              )}
+            </p>
 
-          <div className="flex gap-1.5">
-            {program.weeks.map((w, i) => (
-              <div
-                key={i}
-                className={`flex min-h-[40px] flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-bold uppercase tracking-wide ${
-                  i === program.currentWeek ? chip.on : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {w.type === "deload" ? (
-                  <Snowflake className="size-3.5" />
+            <div className="flex gap-1.5">
+              {program.weeks.map((w, i) => {
+                const shown = pregenerated ? i === viewWeek : i === program.currentWeek;
+                const cls = `flex min-h-[44px] flex-1 flex-col items-center justify-center rounded-xl text-[10px] font-bold uppercase tracking-wide ${
+                  shown ? chip.on : "bg-muted text-muted-foreground"
+                }`;
+                const inner = (
+                  <>
+                    {w.type === "deload" ? (
+                      <Snowflake className="size-3.5" aria-label={t.dayWorkout.deloadWeek} />
+                    ) : (
+                      <Flame className="size-3.5" />
+                    )}
+                    W{i + 1}
+                  </>
+                );
+                return pregenerated ? (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      haptic(10);
+                      setShownWeek(i);
+                    }}
+                    aria-pressed={shown}
+                    aria-label={t.dayWorkout.weekLabel(i + 1)}
+                    className={cls}
+                  >
+                    {inner}
+                  </button>
                 ) : (
-                  <Flame className="size-3.5" />
-                )}
-                W{i + 1}
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            {program.schedule.map((slot, i) => {
-              const isNext = i === program.cyclePosition;
-              const dayLabel = splitDayLabel(program.templateId, slot.dayId);
-              return (
-                <div
-                  key={i}
-                  className={`glass rounded-2xl p-3 ${isNext ? "border border-primary/60" : ""}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <span className="text-[15px] font-semibold">{dayLabel}</span>
-                      {isNext ? (
-                        <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
-                          {t.programBuilder.nextUp}
-                        </span>
-                      ) : null}
-                      <p className="text-[13px] text-muted-foreground">
-                        {t.common.dow[slot.dow]}
-                        {cardioDayPlan(slot) ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setEditingSlot(editingSlot === i ? null : i)}
-                      aria-label={t.programBuilder.changeDay(dayLabel)}
-                      className={button.edit}
-                    >
-                      <Pencil className="size-4" />
-                    </button>
+                  <div key={i} className={cls}>
+                    {inner}
                   </div>
-                  {editingSlot === i ? (
-                    <div className="mt-3 space-y-2">
-                      <DayTypePicker
-                        templateId={program.templateId}
-                        value={slot.dayId}
-                        onChange={(dayId) => updateProgramSlotDay(i, dayId)}
-                        cardio={slot.cardio}
-                        onCardioChange={(cardio) => updateProgramSlotCardio(i, cardio)}
-                      />
-                      <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                        {DOW_DISPLAY_ORDER.map((dow) => {
-                          const taken = usedDows.has(dow) && dow !== slot.dow;
-                          return (
-                            <button
-                              key={dow}
-                              disabled={taken}
-                              onClick={() => setSlotDow(i, dow)}
-                              className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                                dow === slot.dow
-                                  ? chip.on
-                                  : taken
-                                    ? "bg-secondary text-muted-foreground opacity-40"
-                                    : chip.off
-                              }`}
-                            >
-                              {t.common.dow[dow]}
-                            </button>
-                          );
-                        })}
+                );
+              })}
+            </div>
+
+            <CreateAllWorkoutsButton
+              schedule={program.schedule}
+              templateId={program.templateId}
+              onChange={(schedule) => setRotationSlots("program", schedule)}
+            />
+
+            <div className="space-y-2">
+              {program.schedule.map((slot, i) => {
+                const isNext = i === program.cyclePosition;
+                const dayLabel = splitDayLabel(program.templateId, slot.dayId);
+                return (
+                  <div
+                    key={i}
+                    className={`glass rounded-2xl p-3 ${isNext ? "border border-primary/60" : ""}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <span className="text-[15px] font-semibold">{dayLabel}</span>
+                        {isNext ? (
+                          <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
+                            {t.programBuilder.nextUp}
+                          </span>
+                        ) : null}
+                        <p className="text-[13px] text-muted-foreground">
+                          {t.common.dow[slot.dow]}
+                          {cardioDayPlan(slot)
+                            ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}`
+                            : ""}
+                        </p>
                       </div>
+                      <button
+                        onClick={() => setEditingSlot(editingSlot === i ? null : i)}
+                        aria-label={t.programBuilder.changeDay(dayLabel)}
+                        className={button.edit}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
                     </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+                    {isCardioSlot(slot) ? null : (
+                      <DayWorkoutLine
+                        workout={savedWorkoutFor(slot, pregenerated ? viewWeek : undefined)}
+                        onEdit={() => setWorkoutDay(i)}
+                      />
+                    )}
+                    {editingSlot === i ? (
+                      <div className="mt-3 space-y-2">
+                        <DayTypePicker
+                          templateId={program.templateId}
+                          value={slot.dayId}
+                          onChange={(dayId) => updateProgramSlotDay(i, dayId)}
+                          cardio={slot.cardio}
+                          onCardioChange={(cardio) => updateProgramSlotCardio(i, cardio)}
+                        />
+                        <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                          {DOW_DISPLAY_ORDER.map((dow) => {
+                            const taken = usedDows.has(dow) && dow !== slot.dow;
+                            return (
+                              <button
+                                key={dow}
+                                disabled={taken}
+                                onClick={() => setSlotDow(i, dow)}
+                                className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                  dow === slot.dow
+                                    ? chip.on
+                                    : taken
+                                      ? "bg-secondary text-muted-foreground opacity-40"
+                                      : chip.off
+                                }`}
+                              >
+                                {t.common.dow[dow]}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
 
-          {/* Both apply at once, like the day edits above. */}
-          <HybridCardioSection
-            templateId={program.templateId}
-            value={templateCardio(program.templateId, program.cardio)}
-            onChange={(cardio) => setProgram({ ...program, cardio })}
-          />
-          <GrowthFocusSection
-            value={growthFocus}
-            onChange={(next) => update({ growthFocus: next })}
-          />
+            <div className="space-y-2">
+              <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t.dayWorkout.wholeProgram}
+              </p>
+              {pregenerated ? (
+                <>
+                  <p className="text-[13px] text-muted-foreground">
+                    {t.dayWorkout.pregeneratedNote(liftingDays * program.weeks.length)}
+                  </p>
+                  <button
+                    onClick={() => {
+                      haptic(20);
+                      setProgram(
+                        pregenerateProgram(
+                          {
+                            ...program,
+                            schedule: program.schedule.map(
+                              ({ workout: _w, weekWorkouts: _ww, ...slot }) => slot,
+                            ),
+                          },
+                          dayCtx,
+                          45,
+                        ),
+                      );
+                    }}
+                    className={`${button.secondary} w-full`}
+                  >
+                    {t.dayWorkout.regenerate}
+                  </button>
+                  <button
+                    onClick={() => {
+                      haptic(10);
+                      setProgram(clearPregenerated(program));
+                    }}
+                    className={`${button.secondary} w-full`}
+                  >
+                    {t.dayWorkout.clearPregenerated}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13px] text-muted-foreground">
+                    {t.dayWorkout.wholeProgramHint}
+                  </p>
+                  <button
+                    onClick={() => {
+                      haptic(20);
+                      setProgram(pregenerateProgram(program, dayCtx, 45));
+                    }}
+                    disabled={!liftingDays}
+                    className={`${button.tonal} w-full`}
+                  >
+                    <Wand2 className="size-4" />{" "}
+                    {t.dayWorkout.pregenerate(liftingDays * program.weeks.length)}
+                  </button>
+                </>
+              )}
+            </div>
 
-          <div className="flex flex-col gap-2 pt-1">
-            <button
-              onClick={() => {
-                setTemplateId(program.templateId);
-                setCardioDraft(templateCardio(program.templateId, program.cardio));
-                setDows(program.schedule.map((s) => s.dow));
-                setDayPicks(Object.fromEntries(program.schedule.map((s) => [s.dow, s.dayId])));
-                setEditingExisting(true);
-                setMode("days");
-              }}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
-            >
-              {t.programBuilder.changeDaysKeepProgress}
-            </button>
-            <button
-              onClick={() => {
-                setEditingExisting(false);
-                setMode("template");
-              }}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
-            >
-              {t.programBuilder.startNewProgram}
-            </button>
-            <button
-              onClick={remove}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
-            >
-              <Trash2 className="size-4" /> {t.programBuilder.removeProgram}
-            </button>
+            {/* Both apply at once, like the day edits above. */}
+            <HybridCardioSection
+              templateId={program.templateId}
+              value={templateCardio(program.templateId, program.cardio)}
+              onChange={(cardio) => setProgram({ ...program, cardio })}
+            />
+            <GrowthFocusSection
+              value={growthFocus}
+              onChange={(next) => update({ growthFocus: next })}
+            />
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => {
+                  setTemplateId(program.templateId);
+                  setCardioDraft(templateCardio(program.templateId, program.cardio));
+                  setDows(program.schedule.map((s) => s.dow));
+                  setDayPicks(Object.fromEntries(program.schedule.map((s) => [s.dow, s.dayId])));
+                  setEditingExisting(true);
+                  setMode("days");
+                }}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+              >
+                {t.programBuilder.changeDaysKeepProgress}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingExisting(false);
+                  setMode("template");
+                }}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-[14px] font-bold text-secondary-foreground active:scale-95"
+              >
+                {t.programBuilder.startNewProgram}
+              </button>
+              <button
+                onClick={remove}
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-destructive/10 text-[14px] font-bold text-destructive-text active:scale-95"
+              >
+                <Trash2 className="size-4" /> {t.programBuilder.removeProgram}
+              </button>
+            </div>
           </div>
-        </div>
-      </BottomSheet>
+        </BottomSheet>
+        <DayWorkoutSheet
+          open={open && workoutDay !== undefined}
+          onClose={() => setWorkoutDay(undefined)}
+          kind="program"
+          slotIndex={workoutDay ?? 0}
+          week={pregenerated ? viewWeek : undefined}
+          title={
+            daySlot
+              ? `${splitDayLabel(program.templateId, daySlot.dayId)} · ${t.common.dow[daySlot.dow]}`
+              : ""
+          }
+        />
+      </>
     );
   }
 

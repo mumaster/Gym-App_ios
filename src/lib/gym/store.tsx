@@ -70,6 +70,7 @@ import type {
   AccentId,
   CardioActivity,
   CardioFinisher,
+  DayWorkout,
   CardioEffort,
   CardioPlanDay,
   CardioSession,
@@ -573,6 +574,19 @@ interface Ctx extends GymState {
     schedule: ScheduleSlot[],
     cardio?: Record<string, CardioFinisher>,
   ) => void;
+  /** Saves (or with null, removes) the workout of one slot of the weekly
+   *  plan or program: the day's own workout, or with `week` (programs), the
+   *  one pre-generated for that week. See lib/gym/dayWorkouts.ts. */
+  setSlotWorkout: (
+    kind: RotationKind,
+    index: number,
+    workout: DayWorkout | null,
+    week?: number,
+  ) => void;
+  /** Replaces the slots of the weekly plan or program with the same slots
+   *  carrying new saved workouts (dayWorkouts.ts's bulk helpers). Ignored if
+   *  the number of slots differs, so progress can't be thrown off. */
+  setRotationSlots: (kind: RotationKind, schedule: ScheduleSlot[]) => void;
   /** This-cycle-only calendar adjustments for whichever rotation `kind`
    *  names — see lib/gym/schedule.ts. Skipping advances the rotation (and a
    *  program's week, on wrap) exactly like finishing the session would. */
@@ -1482,6 +1496,34 @@ export function GymProvider({ children }: { children: ReactNode }) {
               doneOn: undefined,
             },
           };
+        }),
+      setSlotWorkout: (kind, index, workout, week) =>
+        setState((s) => {
+          const r = kind === "program" ? s.program : s.weeklyScheme;
+          const slot = r?.schedule[index];
+          if (!r || !slot) return s;
+          let next: ScheduleSlot;
+          if (week !== undefined) {
+            const weeks = [...(slot.weekWorkouts ?? [])];
+            weeks[week] = workout;
+            next = { ...slot, weekWorkouts: weeks };
+          } else if (workout) next = { ...slot, workout };
+          else {
+            const { workout: _w, ...rest } = slot;
+            next = rest;
+          }
+          const schedule = r.schedule.map((x, i) => (i === index ? next : x));
+          return kind === "program"
+            ? { ...s, program: { ...s.program!, schedule } }
+            : { ...s, weeklyScheme: { ...s.weeklyScheme!, schedule } };
+        }),
+      setRotationSlots: (kind, schedule) =>
+        setState((s) => {
+          const r = kind === "program" ? s.program : s.weeklyScheme;
+          if (!r || r.schedule.length !== schedule.length) return s;
+          return kind === "program"
+            ? { ...s, program: { ...s.program!, schedule } }
+            : { ...s, weeklyScheme: { ...s.weeklyScheme!, schedule } };
         }),
       skipScheduledSession: (kind) =>
         setState((s) =>
