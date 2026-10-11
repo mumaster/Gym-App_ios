@@ -16,6 +16,7 @@ import {
   Zap,
   CalendarClock,
 } from "lucide-react";
+import { NotificationBell } from "../components/gym/NotificationBell";
 import { Card, Screen } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
@@ -320,6 +321,7 @@ function HomeScreen() {
         subtitle={dateLabel}
         fitWhenShort
         onSpace={onSpace}
+        bell={<NotificationBell />}
         action={
           // Once answered, the check-in is this chip when there's no room to
           // keep the picker; tapping it brings the picker back.

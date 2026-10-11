@@ -1688,6 +1688,32 @@ const en = {
     years: "yrs",
     kcalDay: "kcal/day",
   },
+  notifications: {
+    title: "Notifications",
+    open: (n: number) => (n ? `Notifications, ${n} new` : "Notifications"),
+    empty: "You're all caught up.",
+    emptyHint: "Reminders about your training, food and drinks show up here.",
+    resume: "Workout in progress",
+    resumeText: "You have a session running. Pick it up where you left off.",
+    missed: (days: number) =>
+      days === 1 ? "Missed yesterday's session" : `Missed ${days} days ago`,
+    missedText: "Do it today and the rest of the week moves with it, or skip it.",
+    targetReached: (n: number) =>
+      n === 1 ? "Weekly target reached" : `${n} weekly targets reached`,
+    targetReachedText: (muscles: string) =>
+      `${muscles}: enough sets this week. More adds little, so give them a rest and spend the time elsewhere.`,
+    streakRisk: "Your streak is at risk",
+    streakRiskText: (n: number) =>
+      n === 1
+        ? "One more training day this week keeps your week streak going."
+        : `${n} more training days this week keep your week streak going.`,
+    water: "Drink some water",
+    waterText: "You're under half of today's water goal.",
+    caffeine: "Caffeine limit reached",
+    caffeineText: "You've had the daily limit of caffeine. Skip the next coffee.",
+    weighIn: "Time to weigh in",
+    weighInText: "It's been a week. A weekly weigh-in keeps your trend reliable.",
+  },
   volume: {
     growTitle: "Muscles to grow",
     growCount: (n: number) => (n ? `${n} picked` : "None picked"),
@@ -3550,6 +3576,31 @@ const nl: Dict = {
     level: "niveau",
     years: "jr",
     kcalDay: "kcal/dag",
+  },
+  notifications: {
+    title: "Meldingen",
+    open: (n: number) => (n ? `Meldingen, ${n} nieuw` : "Meldingen"),
+    empty: "Je bent helemaal bij.",
+    emptyHint: "Herinneringen over je training, eten en drinken verschijnen hier.",
+    resume: "Training bezig",
+    resumeText: "Er loopt een training. Ga verder waar je gebleven was.",
+    missed: (days: number) =>
+      days === 1 ? "Training van gisteren gemist" : `${days} dagen geleden gemist`,
+    missedText: "Doe hem vandaag en de rest van de week schuift mee, of sla hem over.",
+    targetReached: (n: number) => (n === 1 ? "Weekdoel bereikt" : `${n} weekdoelen bereikt`),
+    targetReachedText: (muscles: string) =>
+      `${muscles}: genoeg sets deze week. Meer levert weinig op, dus gun ze rust en besteed de tijd aan iets anders.`,
+    streakRisk: "Je reeks loopt gevaar",
+    streakRiskText: (n: number) =>
+      n === 1
+        ? "Nog één trainingsdag deze week houdt je weekreeks in leven."
+        : `Nog ${n} trainingsdagen deze week houden je weekreeks in leven.`,
+    water: "Drink wat water",
+    waterText: "Je zit onder de helft van je waterdoel van vandaag.",
+    caffeine: "Cafeïnelimiet bereikt",
+    caffeineText: "Je hebt de daglimiet cafeïne gehad. Sla de volgende koffie over.",
+    weighIn: "Tijd om te wegen",
+    weighInText: "Het is een week geleden. Wekelijks wegen houdt je trend betrouwbaar.",
   },
   volume: {
     growTitle: "Spieren om te laten groeien",

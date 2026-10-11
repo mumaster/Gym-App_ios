@@ -135,6 +135,8 @@ interface GymState {
   firstName: string;
   /** The welcome tour has been seen (or skipped). Settings can reset it. */
   welcomeSeen: boolean;
+  /** Ids of Home-bell notifications already opened (notifications.ts). */
+  notifSeen: string[];
   /** The setup tour (SetupTour.tsx, after the welcome tour) has been
    *  finished or skipped. Settings → "Set up Forge" sets it back to false. */
   setupSeen: boolean;
@@ -247,6 +249,7 @@ const initialState: GymState = {
   avatarId: DEFAULT_AVATAR_ID,
   firstName: "",
   welcomeSeen: false,
+  notifSeen: [],
   setupSeen: false,
   supersetsEnabled: false,
   warmupsEnabled: true,
@@ -414,6 +417,7 @@ function migrate(raw: Partial<GymState>): GymState {
     avatarId: raw.avatarId ?? DEFAULT_AVATAR_ID,
     firstName: cleanFirstName(raw.firstName),
     welcomeSeen: welcomeSeenFrom(raw),
+    notifSeen: raw.notifSeen ?? [],
     // Saves from before the setup tour: whoever is past the welcome tour
     // already uses the app, so only someone still in front of it gets it.
     setupSeen: raw.setupSeen ?? welcomeSeenFrom(raw),

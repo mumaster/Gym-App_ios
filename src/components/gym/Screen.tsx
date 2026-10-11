@@ -7,12 +7,13 @@ import {
   type RefObject,
 } from "react";
 import { fitFontSize } from "../../lib/gym/name";
-import { SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
+import { BELL_GUTTER, SETTINGS_BUTTON_GUTTER, SettingsButton } from "./SettingsButton";
 
 export function Screen({
   title,
   subtitle,
   action,
+  bell,
   toolbar,
   children,
   padBottom = true,
@@ -22,6 +23,8 @@ export function Screen({
   title: string;
   subtitle?: string | undefined;
   action?: ReactNode;
+  /** A button placed next to the profile button (Home's notifications). */
+  bell?: ReactNode;
   /** Pinned in the sticky header under the title (a search field), so it
    *  stays at the top of the screen however far the page scrolls. */
   toolbar?: ReactNode;
@@ -64,7 +67,7 @@ export function Screen({
             showed behind the field. */}
         <div className={`absolute inset-0 ${toolbar ? "bg-background" : "glass-header"}`} />
         <div
-          className={`relative mx-auto grid min-h-[42px] w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 ${SETTINGS_BUTTON_GUTTER}`}
+          className={`relative mx-auto grid min-h-[42px] w-full max-w-xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 ${bell ? BELL_GUTTER : SETTINGS_BUTTON_GUTTER}`}
         >
           {/* Top-anchored at the offset a lone title gets when centered in the
               42px row, so a subtitle (Home) can't pull the title upward. */}
@@ -75,6 +78,7 @@ export function Screen({
             ) : null}
           </div>
           {action}
+          {bell ? <div className="absolute right-[4.5rem] top-0 flex">{bell}</div> : null}
           <SettingsButton />
         </div>
         {toolbar ? (
