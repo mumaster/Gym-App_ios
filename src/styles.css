@@ -373,12 +373,6 @@
   background-color: color-mix(in oklab, var(--primary) 42%, transparent);
 }
 
-/* The same tint, opaque, for a level bar drawn over the solid accent excess:
-   a translucent one would show the accent through where the two overlap. */
-@utility intake-solid {
-  background-color: color-mix(in oklab, var(--primary) 42%, var(--card));
-}
-
 /* An unpicked choice chip (ui.ts's chip.off): the glass look, with its
    hairline as an inset ring instead of a border, so a chip keeps its size
    when it's picked (chip.on draws an inset ring too). No backdrop blur: a
