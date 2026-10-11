@@ -63,6 +63,7 @@ function SettingsScreen() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [liftsOpen, setLiftsOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [allergiesOpen, setAllergiesOpen] = useState(false);
 
   const handleForceUpdate = () => {
     haptic(15);
@@ -195,6 +196,7 @@ function SettingsScreen() {
                 : t.allergy.picked(allergies.length)
           }
           filled={allergies.length > 0}
+          fold={{ open: allergiesOpen, onToggle: () => setAllergiesOpen((o) => !o) }}
         >
           <div className="divide-y divide-border border-t border-border">
             {ALLERGIES.map((id) => (
