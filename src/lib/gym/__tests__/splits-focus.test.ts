@@ -34,3 +34,21 @@ describe("choosing the day type per session", () => {
     expect(picked.map((s) => s.dayId)).toEqual(["upper", "lower", "lower", "upper"]);
   });
 });
+
+describe("full-body day with a glutes + legs focus", () => {
+  it("trains the focus muscles instead of defaulting to upper body", async () => {
+    const { musclesForSlot } = await import("../splits");
+    const slot = buildSchedule("full_body", [1])[0]!;
+    const picked = musclesForSlot("full_body", slot, [], ["glutes", "legs"]);
+    expect(picked).toHaveLength(3);
+    expect(
+      picked.filter((m) => ["Glutes", "Quads", "Hamstrings", "Calves"].includes(m)),
+    ).toHaveLength(2);
+    expect(picked).toContain("Glutes");
+  });
+  it("without a focus still returns three muscles", async () => {
+    const { musclesForSlot } = await import("../splits");
+    const slot = buildSchedule("full_body", [1])[0]!;
+    expect(musclesForSlot("full_body", slot, [], [])).toHaveLength(3);
+  });
+});
