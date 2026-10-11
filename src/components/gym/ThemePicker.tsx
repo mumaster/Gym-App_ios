@@ -18,7 +18,7 @@ export function ThemePicker() {
   const t = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4">
+    <div className="flex items-center justify-between gap-2 p-4">
       {ACCENTS.map((a) => (
         <button
           key={a.id}
@@ -27,13 +27,13 @@ export function ThemePicker() {
             update({ accent: a.id });
           }}
           aria-label={a.label}
-          className={`accent-${a.id} flex size-12 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
+          className={`accent-${a.id} flex size-9 items-center justify-center rounded-full border-2 transition-transform active:scale-95 ${
             accent === a.id ? "border-foreground" : "border-transparent"
           }`}
           style={{ backgroundColor: a.swatch }}
         >
           {accent === a.id ? (
-            <Check className="size-5 text-primary-foreground" strokeWidth={3} />
+            <Check className="size-4 text-primary-foreground" strokeWidth={3} />
           ) : null}
         </button>
       ))}
@@ -45,10 +45,10 @@ export function ThemePicker() {
           simply had no effect when tapped). The input itself is now the
           real interactive element, absolutely positioned over the swatch
           and invisible but still hit-testable. */}
-      <div className="group relative size-12">
+      <div className="group relative size-9">
         <div
           aria-hidden
-          className={`flex size-12 items-center justify-center overflow-hidden rounded-full border-2 transition-transform group-active:scale-95 ${
+          className={`flex size-9 items-center justify-center overflow-hidden rounded-full border-2 transition-transform group-active:scale-95 ${
             accent === "custom" ? "border-foreground" : "border-border"
           }`}
           style={{
@@ -62,7 +62,7 @@ export function ThemePicker() {
             // The swatch is the raw picked colour, not the per-theme fill
             // --primary-foreground is paired with, so it gets its own ink.
             <Check
-              className="size-5"
+              className="size-4"
               style={{ color: readableInk(customAccent) }}
               strokeWidth={3}
             />

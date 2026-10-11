@@ -79,7 +79,23 @@ function SettingsScreen() {
   const accountSub = session ? (session.user.email ?? "") : t.settings.localOnly;
 
   return (
-    <Screen title={t.settings.title} subtitle={t.settings.subtitle}>
+    <Screen
+      title={t.settings.title}
+      subtitle={t.settings.subtitle}
+      action={
+        <button
+          onClick={handleForceUpdate}
+          disabled={updating}
+          aria-label={updating ? t.settings.updating : t.settings.forceUpdate}
+          title={t.settings.forceUpdateDesc}
+          className="glass flex size-10 items-center justify-center rounded-full active:scale-95 disabled:opacity-60"
+        >
+          <RefreshCw
+            className={`size-[18px] text-muted-foreground ${updating ? "animate-spin" : ""}`}
+          />
+        </button>
+      }
+    >
       <div className="space-y-3">
         <ListCard
           icon={session ? Cloud : CloudOff}
@@ -124,6 +140,29 @@ function SettingsScreen() {
               </>
             )}
           </div>
+          <div className="border-t border-border">
+            <NameField />
+          </div>
+          <div className="border-t border-border">
+            <AvatarPicker />
+          </div>
+        </ListCard>
+
+        <ListCard
+          icon={Palette}
+          title={t.settings.appearance}
+          subtitle={t.settings.appearanceSub}
+          filled
+        >
+          <PickerSection label={t.settings.colorScheme}>
+            <ColorSchemePicker />
+          </PickerSection>
+          <PickerSection label={t.settings.accentColor}>
+            <ThemePicker />
+          </PickerSection>
+          <PickerSection label={t.settings.language}>
+            <LanguagePicker />
+          </PickerSection>
         </ListCard>
 
         <ListCard
@@ -222,40 +261,6 @@ function SettingsScreen() {
           </div>
         </ListCard>
 
-        <ListCard
-          icon={UserRound}
-          title={t.name.title}
-          subtitle={t.name.sub}
-          filled={Boolean(firstName)}
-        >
-          <div className="border-t border-border">
-            <NameField />
-          </div>
-        </ListCard>
-
-        <ListCard icon={UserRound} title={t.settings.avatar} subtitle={t.settings.avatarSub} filled>
-          <div className="border-t border-border">
-            <AvatarPicker />
-          </div>
-        </ListCard>
-
-        <ListCard
-          icon={Palette}
-          title={t.settings.appearance}
-          subtitle={t.settings.appearanceSub}
-          filled
-        >
-          <PickerSection label={t.settings.colorScheme}>
-            <ColorSchemePicker />
-          </PickerSection>
-          <PickerSection label={t.settings.accentColor}>
-            <ThemePicker />
-          </PickerSection>
-          <PickerSection label={t.settings.language}>
-            <LanguagePicker />
-          </PickerSection>
-        </ListCard>
-
         <ListCard icon={Info} title={t.settings.about} subtitle={t.settings.aboutSub} filled>
           <LinkRow
             onClick={() => {
@@ -272,17 +277,6 @@ function SettingsScreen() {
             }}
             title={t.sources.row}
             desc={t.sources.rowDesc}
-          />
-          <LinkRow
-            onClick={handleForceUpdate}
-            disabled={updating}
-            title={updating ? t.settings.updating : t.settings.forceUpdate}
-            desc={t.settings.forceUpdateDesc}
-            trailing={
-              <RefreshCw
-                className={`size-5 shrink-0 text-muted-foreground ${updating ? "animate-spin" : ""}`}
-              />
-            }
           />
         </ListCard>
       </div>
