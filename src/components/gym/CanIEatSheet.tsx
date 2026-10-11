@@ -42,6 +42,7 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [step, setStep] = useState<Step>("start");
   const [error, setError] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
+  const [readText, setReadText] = useState<string | null>(null);
   const [product, setProduct] = useState<string | null>(null);
   const [results, setResults] = useState<{ id: AllergyId; result: AllergenResult }[]>([]);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -61,7 +62,7 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
     setScannerOpen(false);
   }, [open]);
 
-  const show = (found: ScannedIngredients) => {
+  const show = (found: ScannedIngredients, fromPhoto = false) => {
     const checked = allergies.map((id) => ({
       id,
       result: checkAllergen(id, found.ingredientsText, found.tags),
@@ -77,6 +78,7 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
       .map((c) => ({ id: c.id, result: c.result! }))
       .sort((x, y) => rank[x.result.verdict] - rank[y.result.verdict]);
     setProduct(found.name);
+    setReadText(fromPhoto ? (found.ingredientsText ?? null) : null);
     setResults(all);
     setStep("result");
     haptic(all.every((c) => c.result.verdict === "none") ? 10 : 20);
@@ -92,7 +94,7 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
     setStep("reading");
     try {
       const { base64: imageBase64, mimeType } = await fileToBase64(file);
-      show(await scanIngredients({ data: { imageBase64, mimeType } }));
+      show(await scanIngredients({ data: { imageBase64, mimeType } }), true);
     } catch (e) {
       fail(e);
     }
@@ -196,6 +198,14 @@ export function CanIEatSheet({ open, onClose }: { open: boolean; onClose: () => 
             {results.map((r) => (
               <Verdict key={r.id} id={r.id} result={r.result} />
             ))}
+            {readText ? (
+              <div>
+                <p className={`${text.eyebrow} mb-2`}>{a.readText}</p>
+                <p className="break-words rounded-2xl glass px-4 py-3 text-[13px] leading-snug text-muted-foreground">
+                  {readText}
+                </p>
+              </div>
+            ) : null}
             <button onClick={() => setStep("start")} className={`${button.secondary} w-full`}>
               {a.again}
             </button>
