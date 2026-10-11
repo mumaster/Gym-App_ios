@@ -76,7 +76,7 @@ import {
 } from "../lib/gym/splits";
 import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
-import { focusMuscles, weeklySets } from "../lib/gym/volume";
+import { focusMuscles, muscularCapReached, weeklySets } from "../lib/gym/volume";
 import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { badge, button, chip } from "../components/gym/ui";
@@ -1292,6 +1292,12 @@ function WorkoutHome() {
               <Bookmark className="size-3.5" /> {t.generate.save}
             </button>
           </div>
+          {estimateMinutes(planHere, pace) < duration * 0.9 &&
+          muscularCapReached(planHere).length ? (
+            <p className="mb-2 px-1 text-[12.5px] text-muted-foreground" data-session-limit>
+              {t.volume.sessionLimit(muscularCapReached(planHere).join(", "))}
+            </p>
+          ) : null}
           {planIsSaved ? (
             <p className="mb-2 flex items-center gap-1.5 px-1 text-[13px] font-semibold text-primary-text">
               <BookmarkCheck className="size-4 shrink-0" />

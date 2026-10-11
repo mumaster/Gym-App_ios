@@ -1709,6 +1709,9 @@ const en = {
     } as Record<"chest" | "back" | "shoulders" | "arms" | "glutes" | "legs" | "core", string>,
     thisWeek: "Sets this week",
     setsOf: (done: number, target: number) => `${done}/${target}`,
+    reached: "Weekly target reached",
+    sessionLimit: (muscles: string) =>
+      `${muscles}: session limit reached (about 11 sets). More sets in one session add little, so this session is a bit shorter.`,
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `You missed ${day} on ${weekday}`,
@@ -3571,6 +3574,9 @@ const nl: Dict = {
     },
     thisWeek: "Sets deze week",
     setsOf: (done: number, target: number) => `${String(done).replace(".", ",")}/${target}`,
+    reached: "Weekdoel bereikt",
+    sessionLimit: (muscles: string) =>
+      `${muscles}: sessielimiet bereikt (ongeveer 11 sets). Meer sets in één training leveren weinig extra op, daarom is deze training iets korter.`,
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `Je hebt ${day} gemist op ${weekday}`,

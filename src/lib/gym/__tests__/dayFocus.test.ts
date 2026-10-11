@@ -61,3 +61,16 @@ describe("a chosen day type drives the session", () => {
     expect(sets((m) => lower.includes(m))).toBeGreaterThan(sets((m) => !lower.includes(m)));
   });
 });
+
+describe("session limit note", () => {
+  it("flags a muscle filled to the per-session cap, and nothing for a light plan", async () => {
+    const { muscularCapReached } = await import("../volume");
+    expect(muscularCapReached([])).toEqual([]);
+    expect(muscularCapReached([{ exercise_id: "pushup", target_sets: 2 }])).toEqual([]);
+    const heavy = muscularCapReached([
+      { exercise_id: "pushup", target_sets: 5 },
+      { exercise_id: "pushup", target_sets: 5 },
+    ]);
+    expect(heavy).toContain("Chest");
+  });
+});
