@@ -21,6 +21,7 @@ import { installAppWideHaptics } from "../lib/gym/tapFeedback";
 import { registerServiceWorker } from "../pwa";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
+import { SetupTour } from "../components/gym/SetupTour";
 import { WelcomeTour } from "../components/gym/WelcomeTour";
 import { UpdateBanner } from "../components/gym/UpdateBanner";
 
@@ -544,6 +545,7 @@ function RootComponent() {
         <TabBar />
         <SplashScreen />
         <UpdateBanner />
+        <SetupTour />
         <WelcomeTour />
       </GymProvider>
     </QueryClientProvider>

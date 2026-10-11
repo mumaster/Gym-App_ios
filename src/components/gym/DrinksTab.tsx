@@ -663,7 +663,7 @@ function AlcoholSheet({
  *  the four quick-add amounts, shared with Home's Water tile. Done saves,
  *  like every sheet with a filled-in form; quick-add amounts only when all
  *  four are valid. */
-function WaterSettingsSheet({
+export function WaterSettingsSheet({
   open,
   onClose,
   onNeedProfile,
