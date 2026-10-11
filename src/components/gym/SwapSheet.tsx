@@ -122,6 +122,8 @@ export function SwapSheet({
     ? antagonistAlternatives(partner, pool).filter((e) => !clashes(e))
     : [];
   const recommendedIds = new Set(recommended.map((e) => e.id));
+  const used = new Set(inWorkoutIds ?? []);
+  const fresh = (e: Exercise) => !used.has(e.id);
   // Shown first in a superset: the swaps that keep the muscle and still pair
   // with the partner. They're taken out of the lists below, so nothing shows
   // twice.
@@ -139,8 +141,6 @@ export function SwapSheet({
   const others = [...listed.filter((e) => !clashes(e)), ...listed.filter(clashes)];
   // Without a partner the whole list is the same muscle: the card holds the
   // ones that fit, the clashing ones follow it with their note.
-  const used = new Set(inWorkoutIds ?? []);
-  const fresh = (e: Exercise) => !used.has(e.id);
   const cardRowsAll = partner ? keepMuscle : others.filter((e) => !clashes(e));
   const afterCardAll = partner ? others : others.filter(clashes);
   const cardRows = cardRowsAll.filter(fresh);
