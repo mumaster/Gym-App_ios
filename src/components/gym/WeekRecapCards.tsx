@@ -152,10 +152,13 @@ function DayBars({
                   style={{ height: `${(ref / height) * 100}%` }}
                 />
                 {total > 0 && over && overIsBad && goal != null && (
-                  <div className="absolute inset-0 isolate flex flex-col overflow-hidden rounded-full">
-                    <span className="bg-primary" style={{ flexGrow: total - goal }} />
-                    <span className="intake-fill" style={{ flexGrow: goal }} />
-                  </div>
+                  <>
+                    <span className="absolute inset-0 rounded-full bg-primary" />
+                    <span
+                      className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
+                      style={{ height: `${(goal / total) * 100}%` }}
+                    />
+                  </>
                 )}
                 {total > 0 && !(over && overIsBad) && (
                   <div
