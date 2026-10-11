@@ -1,19 +1,38 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowLeft, Check, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Droplet,
+  Dumbbell,
+  Flame,
+  HeartPulse,
+  ListChecks,
+  Palette,
+  Pencil,
+  ShieldAlert,
+  SlidersHorizontal,
+  Trophy,
+  UserRound,
+  Wine,
+} from "lucide-react";
 import { AvatarPicker } from "./AvatarPicker";
 import { BodyweightCard } from "./BodyweightCard";
 import { CardioPlanSheet } from "./CardioPlanSheet";
 import { ColorSchemePicker } from "./ColorSchemePicker";
 import { WaterSettingsSheet } from "./DrinksTab";
+import { ListCard } from "./ListCard";
 import { KnownLiftsSheet } from "./KnownLiftsSheet";
 import { LanguagePicker } from "./LanguagePicker";
 import { NameField } from "./NameField";
 import { NutritionGoalsSheet } from "./NutritionGoalsSheet";
 import { ProgramBuilderSheet } from "./ProgramBuilderSheet";
+import { LinkRow, PickerSection } from "./SettingsRows";
 import { SwitchRow } from "./SwitchRow";
 import { ThemePicker } from "./ThemePicker";
-import { GrowthFocusPicker } from "./WeeklyVolume";
+import { GrowthFocusCard } from "./WeeklyVolume";
 import { WeeklyPlanSheet } from "./WeeklyPlanSheet";
 import { button, chip, text } from "./ui";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -137,91 +156,87 @@ export function SetupFlow({
     done: t.setup.doneBody,
   };
 
-  const tonal = (label: string, sheet: Exclude<OpenSheet, null>) => (
-    <button
+  const row = (title: string, desc: string, sheet: Exclude<OpenSheet, null>) => (
+    <LinkRow
+      key={sheet}
+      title={title}
+      desc={desc}
       onClick={() => {
         haptic(10);
         setOpen(sheet);
       }}
-      className={`${button.tonal} w-full`}
-    >
-      {label}
-    </button>
+    />
   );
 
   const body: Record<StepId, ReactNode> = {
-    you: (
-      <Group>
-        <Section label={t.name.title} first>
-          <NameField />
-        </Section>
-        <Section label={t.settings.avatar}>
-          <AvatarPicker />
-        </Section>
-      </Group>
-    ),
+    you: <YouStep subtitle={s.you.text} filled={s.you.set} />,
     look: (
-      <Group>
-        <Section label={t.settings.colorScheme} first>
+      <ListCard
+        icon={Palette}
+        title={t.settings.appearance}
+        subtitle={t.settings.appearanceSub}
+        filled
+      >
+        <PickerSection label={t.settings.colorScheme}>
           <ColorSchemePicker />
-        </Section>
-        <Section label={t.settings.accentColor}>
+        </PickerSection>
+        <PickerSection label={t.settings.accentColor}>
           <ThemePicker />
-        </Section>
-        <Section label={t.settings.language}>
+        </PickerSection>
+        <PickerSection label={t.settings.language}>
           <LanguagePicker />
-        </Section>
-      </Group>
+        </PickerSection>
+      </ListCard>
     ),
     gym: <GymStep onEdit={() => navigate({ to: "/equipment", search: { from: "setup" } })} />,
     lifts: (
-      <div className="space-y-3">
-        {tonal(t.setup.liftsOpen, "lifts")}
-        <Status set={s.lifts.set}>{s.lifts.text}</Status>
-      </div>
+      <ListCard
+        icon={Trophy}
+        title={t.setup.liftsTitle}
+        subtitle={s.lifts.text}
+        filled={s.lifts.set}
+      >
+        {row(t.knownLifts.row, t.knownLifts.rowDesc, "lifts")}
+      </ListCard>
     ),
     plan: (
-      <div className="space-y-3">
-        <PlanRow
-          title={t.setup.planWeekly}
-          desc={t.setup.planWeeklyDesc}
-          status={s.weekly}
-          onClick={() => {
-            haptic(10);
-            setOpen("weekly");
-          }}
-        />
-        <PlanRow
-          title={t.setup.planProgram}
-          desc={t.setup.planProgramDesc}
-          status={s.program}
-          onClick={() => {
-            haptic(10);
-            setOpen("program");
-          }}
-        />
-      </div>
+      <ListCard
+        icon={CalendarDays}
+        title={t.setup.planTitle}
+        subtitle={s.plan.text}
+        filled={s.plan.set}
+      >
+        {row(t.setup.planWeekly, s.weekly.set ? s.weekly.text : t.setup.planWeeklyDesc, "weekly")}
+        {row(
+          t.setup.planProgram,
+          s.program.set ? s.program.text : t.setup.planProgramDesc,
+          "program",
+        )}
+      </ListCard>
     ),
     cardio: (
-      <div className="space-y-3">
-        {tonal(t.setup.cardioOpen, "cardio")}
-        <Status set={s.cardio.set}>{s.cardio.text}</Status>
-      </div>
+      <ListCard
+        icon={HeartPulse}
+        title={t.setup.cardioTitle}
+        subtitle={s.cardio.text}
+        filled={s.cardio.set}
+      >
+        {row(t.setup.cardioOpen, s.cardio.text, "cardio")}
+      </ListCard>
     ),
-    focus: <FocusStep />,
-    workout: <WorkoutStep />,
+    focus: <GrowthFocusCard />,
+    workout: <WorkoutStep status={s.workout} />,
     weight: <WeightStep />,
     food: (
-      <div className="space-y-3">
-        {tonal(t.setup.foodOpen, "goals")}
-        <Status set={s.food.set}>{s.food.text}</Status>
-      </div>
+      <ListCard icon={Flame} title={t.setup.foodTitle} subtitle={s.food.text} filled={s.food.set}>
+        {row(t.setup.foodOpen, s.food.text, "goals")}
+      </ListCard>
     ),
     drinks: <DrinksStep status={s.drinks} onOpen={() => setOpen("water")} />,
     allergies: <AllergiesStep />,
     done: (
       <div className="space-y-4">
-        <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+        <ListCard icon={ListChecks} title={t.setup.doneTitle} subtitle={t.setup.dialogLabel} filled>
           {(
             [
               ["gym", s.gym],
@@ -239,7 +254,7 @@ export function SetupFlow({
             <button
               key={stepId}
               onClick={() => go(STEPS.indexOf(stepId))}
-              className="flex min-h-[52px] w-full items-center gap-3 px-4 py-3 text-left active:bg-foreground/5"
+              className="flex min-h-[56px] w-full items-center gap-3 border-t border-border px-4 py-3 text-left active:bg-foreground/5"
             >
               <Mark set={st.set} />
               <span className="min-w-0 flex-1">
@@ -249,7 +264,7 @@ export function SetupFlow({
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </button>
           ))}
-        </div>
+        </ListCard>
         <button
           onClick={() => leave("/nutrition")}
           className="glass flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left active:scale-[0.985]"
@@ -365,6 +380,9 @@ function useSetupStatus() {
   const locale = useLocale();
   const g = useGym();
   const notSet = t.setup.notSet;
+  const you: StatusInfo = g.firstName
+    ? { set: true, text: g.firstName }
+    : { set: false, text: notSet };
   const lifts: StatusInfo = g.knownLifts.length
     ? { set: true, text: t.setup.liftsCount(g.knownLifts.length) }
     : { set: false, text: notSet };
@@ -417,6 +435,7 @@ function useSetupStatus() {
     text: g.profiles.find((p) => p.id === g.activeProfileId)?.name ?? notSet,
   };
   return {
+    you,
     lifts,
     weekly,
     program,
@@ -437,21 +456,33 @@ function latestWeighIn(log: { kg: number }[], locale: string) {
   return last ? `${last.kg.toLocaleString(locale, { maximumFractionDigits: 1 })} kg` : null;
 }
 
-function FocusStep() {
-  const { growthFocus, update } = useGym();
+function YouStep({ subtitle, filled }: { subtitle: string; filled: boolean }) {
+  const t = useTranslation();
   return (
-    <div className="glass rounded-2xl p-4">
-      <GrowthFocusPicker value={growthFocus} onChange={(next) => update({ growthFocus: next })} />
-    </div>
+    <ListCard icon={UserRound} title={t.setup.youTitle} subtitle={subtitle} filled={filled}>
+      <PickerSection label={t.name.title}>
+        <NameField />
+      </PickerSection>
+      <PickerSection label={t.settings.avatar}>
+        <AvatarPicker />
+      </PickerSection>
+    </ListCard>
   );
 }
 
-function WorkoutStep() {
+function WorkoutStep({ status }: { status: StatusInfo }) {
   const t = useTranslation();
   const { supersetsEnabled, warmupsEnabled, soundEnabled, update } = useGym();
+  const rowCls = "border-t border-border px-4 py-3";
   return (
-    <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+    <ListCard
+      icon={SlidersHorizontal}
+      title={t.setup.workoutTitle}
+      subtitle={status.text}
+      filled={status.set}
+    >
       <SwitchRow
+        className={rowCls}
         label={t.generate.supersets}
         desc={t.generate.supersetsDesc}
         ariaLabel={t.generate.enableSupersets}
@@ -462,6 +493,7 @@ function WorkoutStep() {
         }}
       />
       <SwitchRow
+        className={rowCls}
         label={t.generate.warmups}
         desc={t.generate.warmupsDesc}
         ariaLabel={t.generate.warmups}
@@ -472,6 +504,7 @@ function WorkoutStep() {
         }}
       />
       <SwitchRow
+        className={rowCls}
         label={t.session.restEndBeep}
         ariaLabel={t.session.restEndBeep}
         on={soundEnabled}
@@ -480,7 +513,7 @@ function WorkoutStep() {
           update({ soundEnabled: !soundEnabled });
         }}
       />
-    </div>
+    </ListCard>
   );
 }
 
@@ -490,60 +523,87 @@ function AllergiesStep() {
   const t = useTranslation();
   const { allergies, language, update } = useGym();
   return (
-    <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
-      {[...ALLERGIES]
-        .sort((a, b) => t.allergy.names[a].localeCompare(t.allergy.names[b], language))
-        .map((id) => (
-          <SwitchRow
-            key={id}
-            label={cap(t.allergy.names[id])}
-            desc={t.allergy.descs[id]}
-            ariaLabel={cap(t.allergy.names[id])}
-            on={allergies.includes(id)}
-            onToggle={() => {
-              haptic(12);
-              update({
-                allergies: allergies.includes(id)
-                  ? allergies.filter((a) => a !== id)
-                  : [...allergies, id],
-              });
-            }}
-          />
-        ))}
-    </div>
+    <ListCard
+      icon={ShieldAlert}
+      title={t.allergy.settingsTitle}
+      subtitle={
+        allergies.length === 0
+          ? t.allergy.none
+          : allergies.length === 1
+            ? cap(t.allergy.names[allergies[0]!])
+            : t.allergy.picked(allergies.length)
+      }
+      filled={allergies.length > 0}
+    >
+      <div className="divide-y divide-border border-t border-border">
+        {[...ALLERGIES]
+          .sort((a, b) => t.allergy.names[a].localeCompare(t.allergy.names[b], language))
+          .map((id) => (
+            <SwitchRow
+              key={id}
+              label={cap(t.allergy.names[id])}
+              desc={t.allergy.descs[id]}
+              ariaLabel={cap(t.allergy.names[id])}
+              on={allergies.includes(id)}
+              onToggle={() => {
+                haptic(12);
+                update({
+                  allergies: allergies.includes(id)
+                    ? allergies.filter((a) => a !== id)
+                    : [...allergies, id],
+                });
+              }}
+            />
+          ))}
+      </div>
+    </ListCard>
   );
 }
 
 function GymStep({ onEdit }: { onEdit: () => void }) {
   const t = useTranslation();
   const { profiles, activeProfileId, update } = useGym();
+  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
+  if (!profile) return null;
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-x-2 gap-y-2">
-        {profiles.map((p) => (
-          <button
-            key={p.id}
-            aria-pressed={p.id === activeProfileId}
-            onClick={() => {
-              haptic(10);
-              update({ activeProfileId: p.id });
-            }}
-            className={`${chip.base} ${p.id === activeProfileId ? chip.on : chip.off}`}
-          >
-            {p.name}
-          </button>
-        ))}
-      </div>
-      <button
-        onClick={() => {
-          haptic(10);
-          onEdit();
-        }}
-        className={`${button.tonal} w-full`}
-      >
-        {t.setup.gymEdit}
-      </button>
-    </div>
+    <ListCard
+      icon={Dumbbell}
+      title={profiles.length > 1 ? t.equipment.title : profile.name}
+      subtitle={t.generate.equipmentSummary(profile.active_equipment_ids.length)}
+      filled
+      actions={
+        <button
+          onClick={() => {
+            haptic(10);
+            onEdit();
+          }}
+          aria-label={t.exercises.editGym(profile.name)}
+          className={button.edit}
+        >
+          <Pencil className="size-4" />
+        </button>
+      }
+    >
+      {profiles.length > 1 ? (
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-border px-4 py-2.5">
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => {
+                haptic(12);
+                update({ activeProfileId: p.id });
+              }}
+              aria-pressed={p.id === profile.id}
+              className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                p.id === profile.id ? chip.on : chip.off
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </ListCard>
   );
 }
 
@@ -567,74 +627,53 @@ function DrinksStep({ status, onOpen }: { status: StatusInfo; onOpen: () => void
   const t = useTranslation();
   const { alcoholEnabled, alcoholWeekdays, update } = useGym();
   return (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        <button
+    <div className="space-y-3">
+      <ListCard
+        icon={Droplet}
+        title={t.setup.drinksTitle}
+        subtitle={status.text}
+        filled={status.set}
+      >
+        <LinkRow
+          title={t.setup.waterOpen}
+          desc={status.text}
           onClick={() => {
             haptic(10);
             onOpen();
           }}
-          className={`${button.tonal} w-full`}
-        >
-          {t.setup.waterOpen}
-        </button>
-        <Status set={status.set}>{status.text}</Status>
-      </div>
-      <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
-        <SwitchRow
-          label={t.settings.alcoholTrack}
-          desc={t.settings.alcoholTrackDesc}
-          ariaLabel={t.settings.alcoholTrack}
-          on={alcoholEnabled}
-          onToggle={() => {
-            haptic(12);
-            update({ alcoholEnabled: !alcoholEnabled });
-          }}
         />
-        <SwitchRow
-          label={t.settings.alcoholWeekdays}
-          desc={t.settings.alcoholWeekdaysDesc}
-          ariaLabel={t.settings.alcoholWeekdays}
-          on={alcoholWeekdays}
-          disabled={!alcoholEnabled}
-          onToggle={() => {
-            haptic(12);
-            update({ alcoholWeekdays: !alcoholWeekdays });
-          }}
-        />
-      </div>
+      </ListCard>
+      <ListCard
+        icon={Wine}
+        title={t.settings.alcohol}
+        subtitle={alcoholEnabled ? t.settings.on : t.settings.off}
+        filled={alcoholEnabled}
+      >
+        <div className="divide-y divide-border border-t border-border">
+          <SwitchRow
+            label={t.settings.alcoholTrack}
+            desc={t.settings.alcoholTrackDesc}
+            ariaLabel={t.settings.alcoholTrack}
+            on={alcoholEnabled}
+            onToggle={() => {
+              haptic(12);
+              update({ alcoholEnabled: !alcoholEnabled });
+            }}
+          />
+          <SwitchRow
+            label={t.settings.alcoholWeekdays}
+            desc={t.settings.alcoholWeekdaysDesc}
+            ariaLabel={t.settings.alcoholWeekdays}
+            on={alcoholWeekdays}
+            disabled={!alcoholEnabled}
+            onToggle={() => {
+              haptic(12);
+              update({ alcoholWeekdays: !alcoholWeekdays });
+            }}
+          />
+        </div>
+      </ListCard>
     </div>
-  );
-}
-
-function PlanRow({
-  title,
-  desc,
-  status,
-  onClick,
-}: {
-  title: string;
-  desc: string;
-  status: StatusInfo;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="glass flex min-h-[64px] w-full items-center gap-3 rounded-2xl px-4 py-3 text-left active:scale-[0.985]"
-    >
-      <span className="min-w-0 flex-1">
-        <span className={`${text.rowTitle} block`}>{title}</span>
-        <span className="block text-[12.5px] text-muted-foreground">{desc}</span>
-        <span
-          className={`mt-1 flex items-center gap-1.5 text-[13px] font-semibold ${status.set ? "text-primary-text" : "text-muted-foreground"}`}
-        >
-          {status.set ? <Check className="size-3.5" aria-hidden /> : null}
-          {status.text}
-        </span>
-      </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-    </button>
   );
 }
 
@@ -648,38 +687,5 @@ function Mark({ set }: { set: boolean }) {
     <span className="flex size-6 shrink-0 items-center justify-center" aria-hidden>
       <span className="size-2 rounded-full bg-muted-foreground/50" />
     </span>
-  );
-}
-
-function Status({ set, children }: { set: boolean; children: ReactNode }) {
-  return (
-    <p
-      className={`flex items-center gap-1.5 px-1 text-[13px] font-semibold ${set ? "text-primary-text" : "text-muted-foreground"}`}
-    >
-      {set ? <Check className="size-3.5" aria-hidden /> : null}
-      {children}
-    </p>
-  );
-}
-
-function Group({ children }: { children: ReactNode }) {
-  return <div className="glass overflow-hidden rounded-2xl">{children}</div>;
-}
-
-/** Same look as Settings' PickerSection: a small-caps label over a control. */
-function Section({
-  label,
-  first = false,
-  children,
-}: {
-  label: string;
-  first?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className={first ? "" : "border-t border-border"}>
-      <p className={`${text.eyebrow} px-4 pt-3`}>{label}</p>
-      {children}
-    </div>
   );
 }
