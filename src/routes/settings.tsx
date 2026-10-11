@@ -16,6 +16,7 @@ import { AuthSheet } from "../components/gym/AuthSheet";
 import { AvatarPicker } from "../components/gym/AvatarPicker";
 import { ColorSchemePicker } from "../components/gym/ColorSchemePicker";
 import { KnownLiftsSheet } from "../components/gym/KnownLiftsSheet";
+import { MoveDataSheet } from "../components/gym/MoveDataSheet";
 import { NameField } from "../components/gym/NameField";
 import { LanguagePicker } from "../components/gym/LanguagePicker";
 import { ListCard } from "../components/gym/ListCard";
@@ -49,6 +50,7 @@ function SettingsScreen() {
   const [updating, setUpdating] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [liftsOpen, setLiftsOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   const handleForceUpdate = () => {
     haptic(15);
@@ -128,6 +130,14 @@ function SettingsScreen() {
             }}
             title={t.knownLifts.row}
             desc={t.knownLifts.rowDesc}
+          />
+          <LinkRow
+            onClick={() => {
+              haptic(10);
+              setMoveOpen(true);
+            }}
+            title={t.moveData.row}
+            desc={t.moveData.rowDesc}
           />
         </ListCard>
 
@@ -230,6 +240,7 @@ function SettingsScreen() {
       <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
       <SourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
       <KnownLiftsSheet open={liftsOpen} onClose={() => setLiftsOpen(false)} />
+      <MoveDataSheet open={moveOpen} onClose={() => setMoveOpen(false)} />
     </Screen>
   );
 }
