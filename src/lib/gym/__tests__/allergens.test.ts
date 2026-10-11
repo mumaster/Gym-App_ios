@@ -89,3 +89,23 @@ describe("checkSulphites", () => {
     expect(terms(checkSulphites("red wine vinegar"))).toEqual(["wine vinegar"]);
   });
 });
+
+describe("sulphites on a photographed Dutch label", () => {
+  const label = "Water, suiker, conserveermiddel (natriumdisulfiet [E223]), zout";
+  it("flags the AH label text", () => {
+    const r = checkSulphites(label);
+    expect(r?.verdict).toBe("contains");
+    expect(r?.hits.map((h) => h.term)).toContain("E223");
+  });
+  it.each([
+    "conserveermiddel (natriumdisul-\nfiet)",
+    "conserveermiddel (natrium disulfiet)",
+    "conserveermiddel: sulfiet",
+    "kaliummetabisulfiet",
+    "zwaveldioxide",
+    "preservative [E 220]",
+    "conserveermiddel [E228]",
+  ])("flags %s", (t) => {
+    expect(checkSulphites(t)?.verdict).toBe("contains");
+  });
+});

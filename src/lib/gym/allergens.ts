@@ -646,6 +646,8 @@ export function checkAllergen(
   if (!raw && !hasTags) return null;
 
   let text = fold(raw);
+  // Label photos wrap long words ("natriumdisul-\nfiet"): glue them back.
+  text = text.replace(/(\p{L})-\s+(\p{L})/gu, "$1$2");
   for (const phrase of def.ignore ?? []) text = text.split(fold(phrase)).join(" ");
 
   const hits: Hit[] = [];
@@ -671,8 +673,17 @@ export function checkAllergen(
       if (m) add("additive", `E${m[1]!.toUpperCase()}`);
     }
   }
+  // Sulphite names are also looked up with every space and bracket removed,
+  // so a word split by a line break or a stray space in a photo still counts.
+  const squashed = id === "sulphites" ? text.replace(/[^a-z0-9]+/g, "") : "";
   for (const entry of def.named) {
     if (hasTerm(text, entry)) add("named", entry.replace(/^~/, ""), entry);
+    else if (
+      squashed &&
+      entry.startsWith("~") &&
+      squashed.includes(entry.slice(1).replace(/\s/g, ""))
+    )
+      add("named", entry.replace(/^~/, ""), entry);
   }
   if (tagged(tags.allergens)) add("declared", id);
 

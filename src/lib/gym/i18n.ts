@@ -1027,6 +1027,7 @@ const en = {
     noIngredients:
       "No ingredient list found. Try a clearer photo of the ingredients, or paste them.",
     readError: (detail: string) => `Couldn't read that: ${detail}`,
+    readText: "Text read from the photo",
     again: "Check another",
     contains: (n: string) => `Contains ${n}`,
     maybe: (n: string) => `May contain ${n}`,
@@ -2796,6 +2797,7 @@ const nl: Dict = {
     noIngredients:
       "Geen ingrediëntenlijst gevonden. Probeer een scherpere foto van de ingrediënten, of plak ze.",
     readError: (detail: string) => `Kon dat niet lezen: ${detail}`,
+    readText: "Tekst gelezen van de foto",
     again: "Nog een check",
     contains: (n: string) => `Bevat ${n}`,
     maybe: (n: string) => `Kan ${n} bevatten`,

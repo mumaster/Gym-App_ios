@@ -7,8 +7,9 @@ const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const PROMPT = `You are reading a photo of a food package. Find the INGREDIENTS list and copy
 it out exactly as printed, in the language it is printed in, including every E-number, additive
 code and any allergen line (e.g. "Contains: ...", "Bevat: ...", "May contain traces of ...",
-"Kan sporen bevatten van ..."). Keep brackets and percentages. Do not translate, summarise or
-guess. If there is no ingredients list visible or legible, return null. Also read the product name
+"Kan sporen bevatten van ..."). Keep brackets, square brackets and percentages: "conserveermiddel (natriumdisulfiet [E223])"
+must come out exactly like that. Read the small print too, copy the whole list to its end, and
+join words that are split over two lines. Do not translate, summarise, shorten or guess. If there is no ingredients list visible or legible, return null. Also read the product name
 if one is printed; otherwise null.`;
 
 const RESPONSE_SCHEMA = {
