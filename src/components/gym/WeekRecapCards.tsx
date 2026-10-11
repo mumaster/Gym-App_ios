@@ -154,12 +154,12 @@ function DayBars({
                 {total > 0 && over && overIsBad && goal != null && (
                   <>
                     <span
-                      className="intake-fill absolute inset-x-0 bottom-0 rounded-full"
-                      style={{ height: `${(goal / total) * 100}%` }}
-                    />
-                    <span
                       className="absolute inset-x-0 top-0 rounded-full bg-primary"
                       style={{ height: `calc(${((total - goal) / total) * 100}% + 10px)` }}
+                    />
+                    <span
+                      className="intake-solid absolute inset-x-0 bottom-0 z-10 rounded-full"
+                      style={{ height: `${(goal / total) * 100}%` }}
                     />
                   </>
                 )}
