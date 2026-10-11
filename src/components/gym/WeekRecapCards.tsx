@@ -70,14 +70,35 @@ const formatMinutes = (m: number, locale: string) => {
 };
 
 /** One quiet line about the week, under a card's figures. */
+/** A figure in a fun fact (1,760 kg, 2,100 kcal, 4 cups) gets the accent so it draws the eye. */
+const FACT_FIGURE =
+  /\d[\d.,]*(?:\s?(?:kg|kcal|km|min|ml|L|cups?|kopjes?|drinks?|drankjes|glasses|glazen|beers?|bieren|wines?|wijnen)\b)?/g;
+
+function highlightFigures(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(FACT_FIGURE)) {
+    const at = m.index ?? 0;
+    if (at > last) parts.push(text.slice(last, at));
+    parts.push(
+      <strong key={at} className="font-semibold text-primary-text">
+        {m[0]}
+      </strong>,
+    );
+    last = at + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 function FunFact({ children }: { children: ReactNode }) {
   const t = useTranslation();
   return (
-    <p className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-[13px] text-muted-foreground">
+    <p className="mt-4 flex items-start gap-2.5 rounded-2xl bg-primary/10 px-3 py-2.5 text-[14px] text-foreground">
       <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-primary-text" />
       <span>
         <span className="sr-only">{t.weekRecap.funFact}: </span>
-        {children}
+        {typeof children === "string" ? highlightFigures(children) : children}
       </span>
     </p>
   );
