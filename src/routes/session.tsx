@@ -37,6 +37,7 @@ import { finisherCardioLog } from "../lib/gym/cardio";
 import type { CardioFinisher } from "../lib/gym/types";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
+import { nearDuplicateIn } from "../lib/gym/similar";
 import { AddToWorkoutSheet } from "../components/gym/AddToWorkoutSheet";
 import { PlateHint } from "../components/gym/PlateHint";
 import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
@@ -731,7 +732,15 @@ function SessionScreen() {
     const onTarget = bonusOptions.filter((e) =>
       activeWorkout.target_muscles.includes(e.primary_muscle),
     );
-    const pool = onTarget.length ? onTarget : bonusOptions;
+    // Automatic picks skip near-duplicates of what's already in the workout.
+    const fresh = (list: Exercise[]) => list.filter((e) => !nearDuplicateIn(e.id, [...planIds]));
+    const pool = fresh(onTarget).length
+      ? fresh(onTarget)
+      : fresh(bonusOptions).length
+        ? fresh(bonusOptions)
+        : onTarget.length
+          ? onTarget
+          : bonusOptions;
     if (!pool.length) return;
     addBonusExercise(pool[Math.floor(Math.random() * pool.length)]!.id);
   };
@@ -1260,6 +1269,7 @@ function SessionScreen() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         options={bonusOptions}
+        inWorkoutIds={[...planIds]}
         targetMuscles={activeWorkout.target_muscles}
         onAuto={addBonus}
         onPick={(e) => addBonusExercise(e.id)}

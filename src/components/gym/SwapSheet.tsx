@@ -13,6 +13,7 @@ import {
   sameMuscleSwaps,
 } from "../../lib/gym/antagonist";
 import { muscleIcon } from "../../lib/gym/muscleIcons";
+import { nearDuplicateIn } from "../../lib/gym/similar";
 import { sharesLoadStation } from "../../lib/gym/stations";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
@@ -38,6 +39,7 @@ function Row({
   onPick,
   clash,
   inWorkout,
+  similar,
   variant = "glass",
 }: {
   e: Exercise;
@@ -46,6 +48,8 @@ function Row({
   clash?: string;
   /** Shown when this exercise is already somewhere in the workout. */
   inWorkout?: string;
+  /** Shown when a nearly identical exercise is already in the workout. */
+  similar?: string;
   /** "card" is a row inside a ListCard: no surface of its own, a hairline
    *  above it (like the Exercises tab). */
   variant?: "glass" | "card";
@@ -64,6 +68,7 @@ function Row({
           {subtitleOf(e)}
         </p>
         {clash ? <p className="text-[13px] text-warning-text">{clash}</p> : null}
+        {similar ? <p className="text-[13px] text-warning-text">{similar}</p> : null}
         {inWorkout ? (
           <p className="text-[13px] font-semibold text-primary-text">{inWorkout}</p>
         ) : null}
@@ -108,9 +113,11 @@ export function SwapSheet({
   const pairWith = partner ?? (pairedExerciseId ? exerciseById(pairedExerciseId) : undefined);
   const clashes = (e: Exercise) => !!pairWith && sharesLoadStation(pairWith, e);
 
-  const [pending, setPending] = useState<{ e: Exercise; reason: "station" | "antagonist" } | null>(
-    null,
-  );
+  const [pending, setPending] = useState<{
+    e: Exercise;
+    reason: "station" | "antagonist" | "similar";
+    other?: string;
+  } | null>(null);
   useEffect(() => {
     if (!exerciseId) setPending(null);
   }, [exerciseId]);
@@ -162,6 +169,14 @@ export function SwapSheet({
     .filter(fresh)
     .slice(0, 3);
 
+  // A pick that's nearly the same movement as something else in the workout
+  // (the exercise being swapped out doesn't count).
+  const similarOf = (e: Exercise) => nearDuplicateIn(e.id, inWorkoutIds ?? [], current?.id);
+  const similarName = (e: Exercise) => {
+    const id = similarOf(e);
+    return id ? exerciseById(id)?.name : undefined;
+  };
+
   const choose = (e: Exercise) => {
     if (clashes(e)) {
       setPending({ e, reason: "station" });
@@ -171,32 +186,43 @@ export function SwapSheet({
       setPending({ e, reason: "antagonist" });
       return;
     }
+    const other = similarName(e);
+    if (other) {
+      setPending({ e, reason: "similar", other });
+      return;
+    }
     onPick(e);
   };
 
   return (
     <BottomSheet open={!!exerciseId} onClose={onClose} title={t.swapSheet.title}>
-      {pending && pairWith ? (
+      {pending ? (
         <div className="space-y-3">
           <div className="rounded-2xl border border-warning/50 bg-warning/10 p-4">
             <p className="flex items-center gap-2 text-[15px] font-bold text-warning-text">
               <AlertTriangle className="size-5" />{" "}
-              {pending.reason === "station"
-                ? t.swapSheet.sameEquipment
-                : t.swapSheet.antagonistMismatch}
+              {pending.reason === "similar"
+                ? t.swapSheet.similarTitle
+                : pending.reason === "station"
+                  ? t.swapSheet.sameEquipment
+                  : t.swapSheet.antagonistMismatch}
             </p>
             <p className="mt-2 text-[14px] text-muted-foreground">
-              {pending.reason === "station"
-                ? t.swapSheet.sameEquipmentBody(pending.e.name, pairWith.name)
-                : t.swapSheet.antagonistMismatchBody(
-                    pending.e.name,
-                    pairWith.primary_muscle,
-                    opposingLabel(pairWith).toLowerCase(),
-                  )}
+              {pending.reason === "similar"
+                ? t.swapSheet.similarBody(pending.e.name, pending.other ?? "")
+                : pairWith && pending.reason === "station"
+                  ? t.swapSheet.sameEquipmentBody(pending.e.name, pairWith.name)
+                  : pairWith
+                    ? t.swapSheet.antagonistMismatchBody(
+                        pending.e.name,
+                        pairWith.primary_muscle,
+                        opposingLabel(pairWith).toLowerCase(),
+                      )
+                    : ""}
             </p>
           </div>
 
-          {better.length ? (
+          {better.length && pending.reason !== "similar" ? (
             <div className="space-y-2">
               <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
                 {partner ? t.swapSheet.recommendedSwaps : t.swapSheet.otherEquipment}
@@ -235,9 +261,11 @@ export function SwapSheet({
               onClick={() => onPick(pending.e)}
               className="glass min-h-[52px] w-full rounded-2xl text-[16px] font-semibold active:scale-95"
             >
-              {pending.reason === "station"
-                ? t.swapSheet.keepSameEquipment
-                : t.swapSheet.keepAnyway}
+              {pending.reason === "similar"
+                ? t.swapSheet.keepSimilar
+                : pending.reason === "station"
+                  ? t.swapSheet.keepSameEquipment
+                  : t.swapSheet.keepAnyway}
             </button>
             <button
               onClick={() => setPending(null)}
@@ -266,7 +294,13 @@ export function SwapSheet({
               filled
             >
               {cardRows.map((e) => (
-                <Row key={e.id} e={e} onPick={choose} variant="card" />
+                <Row
+                  key={e.id}
+                  e={e}
+                  onPick={choose}
+                  variant="card"
+                  {...(similarName(e) ? { similar: t.swapSheet.similarTo(similarName(e)!) } : {})}
+                />
               ))}
             </ListCard>
           ) : null}
@@ -299,6 +333,7 @@ export function SwapSheet({
               {...(clashes(e) && pairWith
                 ? { clash: t.swapSheet.sameEquipmentAs(pairWith.name) }
                 : {})}
+              {...(similarName(e) ? { similar: t.swapSheet.similarTo(similarName(e)!) } : {})}
             />
           ))}
           {alreadyIn.length ? (

@@ -1886,6 +1886,11 @@ const en = {
     sameMuscleAs: (name: string) => `Same muscle as ${name}`,
     alreadyInWorkoutHeading: "Already in this workout",
     alreadyInWorkout: "Already in workout",
+    similarTitle: "Almost the same exercise",
+    similarBody: (name: string, other: string) =>
+      `${name} is more or less the same movement as ${other}, which is already in this workout. You can still use it.`,
+    similarTo: (other: string) => `Similar to ${other}`,
+    keepSimilar: "Use it anyway",
   },
   bottomSheet: {
     close: "Close",
@@ -3854,6 +3859,11 @@ const nl: Dict = {
     sameMuscleAs: (name: string) => `Zelfde spier als ${name}`,
     alreadyInWorkoutHeading: "Al in deze training",
     alreadyInWorkout: "Al in training",
+    similarTitle: "Bijna dezelfde oefening",
+    similarBody: (name: string, other: string) =>
+      `${name} is ongeveer dezelfde beweging als ${other}, die al in deze training zit. Je kunt hem nog steeds kiezen.`,
+    similarTo: (other: string) => `Lijkt op ${other}`,
+    keepSimilar: "Toch gebruiken",
   },
   bottomSheet: {
     close: "Sluiten",
