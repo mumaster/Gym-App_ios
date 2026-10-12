@@ -1301,13 +1301,31 @@ const en = {
     liftsOpen: "Enter my lifts",
     liftsCount: (n: number) => (n === 1 ? "1 lift entered" : `${n} lifts entered`),
     planTitle: "Your training week",
-    planBody:
-      "Choose how your lifting week is planned. Both use a split such as Upper / Lower; they differ in how long they run.",
+    planBody: "Choose how your lifting week is planned. You need one of the two, not both.",
     planWeeklySetup: "Set up a weekly plan",
     planWeeklyEdit: "Open weekly plan",
     planProgramSetup: "Build a program",
     planProgramEdit: "Open program",
     planProgramWins: "A program is running, so it is used instead of the weekly plan.",
+    recommended: "Recommended",
+    planPickOne:
+      "You only need one. Pick the weekly plan unless you want a built-in build-up over several weeks. You can switch later.",
+    planSetupTitle: "Set up your plan",
+    planSetupBody:
+      "Follow these steps in order. The plan opens in a window that walks you through them.",
+    planWeeklySteps: [
+      "Pick a split, for example Upper / Lower.",
+      "Pick the days you train.",
+      "Pick the muscles you most want to grow.",
+      "Tap Start this plan.",
+    ],
+    planProgramSteps: [
+      "Pick a split, for example Upper / Lower.",
+      "Pick the days you train.",
+      "Pick the muscles you most want to grow.",
+      "Choose how many weeks it runs.",
+      "Tap Start this program.",
+    ],
     planDaysTitle: "Your training days",
     planDaysBody: "Which days you train and what each day covers. Change them any time.",
     planDaysEmpty: "No plan yet. Go back one step to pick a weekly plan or a program.",
@@ -1592,6 +1610,7 @@ const en = {
   },
   programBuilder: {
     title: "Build a program",
+    kindBadge: "Program · builds up over weeks",
     backToFocus: "← Muscles to grow",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} of ${weeks} · ${days} ${days === 1 ? "day" : "days"} a week`,
@@ -1782,6 +1801,7 @@ const en = {
   },
   weeklyPlan: {
     title: "Your weekly plan",
+    kindBadge: "Weekly plan · same every week",
     minDaysNotice: (label: string, n: number) =>
       `Tip: ${label} works best with at least ${n} training days a week.`,
     nextFocus: "Next: muscles to grow",
@@ -3212,13 +3232,31 @@ const nl: Dict = {
     liftsOpen: "Mijn lifts invoeren",
     liftsCount: (n: number) => (n === 1 ? "1 lift ingevoerd" : `${n} lifts ingevoerd`),
     planTitle: "Je trainingsweek",
-    planBody:
-      "Kies hoe je krachtweek wordt gepland. Beide gebruiken een split zoals Boven / Onder; ze verschillen in hoe lang ze lopen.",
+    planBody: "Kies hoe je krachtweek wordt gepland. Je hebt één van de twee nodig, niet beide.",
     planWeeklySetup: "Weekschema instellen",
     planWeeklyEdit: "Weekschema openen",
     planProgramSetup: "Programma samenstellen",
     planProgramEdit: "Programma openen",
     planProgramWins: "Er loopt een programma, dus dat wordt gebruikt in plaats van het weekschema.",
+    recommended: "Aanbevolen",
+    planPickOne:
+      "Je hebt er maar één nodig. Kies het weekschema, tenzij je een ingebouwde opbouw over meerdere weken wilt. Je kunt later wisselen.",
+    planSetupTitle: "Stel je plan in",
+    planSetupBody:
+      "Volg deze stappen op volgorde. Het plan opent in een venster dat je er doorheen leidt.",
+    planWeeklySteps: [
+      "Kies een split, bijvoorbeeld Boven / Onder.",
+      "Kies de dagen waarop je traint.",
+      "Kies de spieren die je het liefst wilt laten groeien.",
+      "Tik op Start dit plan.",
+    ],
+    planProgramSteps: [
+      "Kies een split, bijvoorbeeld Boven / Onder.",
+      "Kies de dagen waarop je traint.",
+      "Kies de spieren die je het liefst wilt laten groeien.",
+      "Kies hoeveel weken het loopt.",
+      "Tik op Start dit programma.",
+    ],
     planDaysTitle: "Je trainingsdagen",
     planDaysBody: "Op welke dagen je traint en wat elke dag omvat. Je kunt ze altijd wijzigen.",
     planDaysEmpty: "Nog geen plan. Ga een stap terug om een weekschema of programma te kiezen.",
@@ -3503,6 +3541,7 @@ const nl: Dict = {
   },
   programBuilder: {
     title: "Programma samenstellen",
+    kindBadge: "Programma · bouwt op over weken",
     backToFocus: "← Spieren om te laten groeien",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} van ${weeks} · ${days} ${days === 1 ? "dag" : "dagen"} per week`,
@@ -3695,6 +3734,7 @@ const nl: Dict = {
   },
   weeklyPlan: {
     title: "Jouw weekplan",
+    kindBadge: "Weekschema · elke week hetzelfde",
     minDaysNotice: (label: string, n: number) =>
       `Tip: ${label} werkt het best met minstens ${n} trainingsdagen per week.`,
     nextFocus: "Volgende: spieren om te laten groeien",
