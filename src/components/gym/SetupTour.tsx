@@ -61,6 +61,7 @@ const STEPS = [
   "gym",
   "lifts",
   "plan",
+  "planSetup",
   "planDays",
   "focus",
   "workout",
@@ -112,8 +113,11 @@ export function SetupFlow({
   const id: StepId = STEPS[idx]!;
   const s = useSetupStatus();
   const { program, weeklyScheme } = useGym();
-  // The plan that is running: a program wins over a weekly plan.
-  const activeRotation = program ?? weeklyScheme;
+  // Which kind of plan the user is setting up: what already exists, else the
+  // recommended weekly plan.
+  const [pickedKind, setPickedKind] = useState<"weekly" | "program" | null>(null);
+  const kind: "weekly" | "program" = pickedKind ?? (program ? "program" : "weekly");
+  const activeRotation = kind === "program" ? program : weeklyScheme;
   const activeSlots = (activeRotation?.schedule ?? []).map((slot) => ({
     dow: slot.dow,
     label: splitDayLabel(activeRotation!.templateId, slot.dayId),
@@ -127,6 +131,19 @@ export function SetupFlow({
     haptic(10);
     onStep(n);
   };
+  // A plan that was just saved moves the guided steps on; closing without
+  // one stays on the step. The save and the close land in the same tick, so
+  // the check waits for the render that has the saved plan.
+  const [afterPlanSheet, setAfterPlanSheet] = useState(false);
+  const closePlanSheet = () => {
+    setOpen(null);
+    setAfterPlanSheet(true);
+  };
+  useEffect(() => {
+    if (!afterPlanSheet) return;
+    setAfterPlanSheet(false);
+    if (id === "planSetup" && (kind === "program" ? program : weeklyScheme)) onStep(idx + 1);
+  }, [afterPlanSheet, id, kind, program, weeklyScheme, idx, onStep]);
   const leave = (to: "/generate" | "/nutrition" | "/") => {
     haptic(12);
     onClose();
@@ -139,6 +156,7 @@ export function SetupFlow({
     gym: t.setup.gymTitle,
     lifts: t.setup.liftsTitle,
     plan: t.setup.planTitle,
+    planSetup: t.setup.planSetupTitle,
     planDays: t.setup.planDaysTitle,
     focus: t.setup.focusTitle,
     workout: t.setup.workoutTitle,
@@ -155,6 +173,7 @@ export function SetupFlow({
     gym: t.setup.gymBody,
     lifts: t.setup.liftsBody,
     plan: t.setup.planBody,
+    planSetup: t.setup.planSetupBody,
     planDays: t.setup.planDaysBody,
     focus: t.setup.focusBody,
     workout: t.setup.workoutBody,
@@ -210,30 +229,84 @@ export function SetupFlow({
       </ListCard>
     ),
     plan: (
+      <div className="space-y-3" role="radiogroup" aria-label={t.setup.planTitle}>
+        {(
+          [
+            ["weekly", t.setup.planWeekly, t.setup.planWeeklyDesc, CalendarDays, s.weekly],
+            ["program", t.setup.planProgram, t.setup.planProgramDesc, Flame, s.program],
+          ] as const
+        ).map(([k, title, desc, Icon, st]) => (
+          <button
+            key={k}
+            role="radio"
+            aria-checked={kind === k}
+            onClick={() => {
+              haptic(10);
+              setPickedKind(k);
+            }}
+            className={`glass flex w-full items-start gap-3 rounded-2xl border p-4 text-left active:scale-[0.985] ${
+              kind === k ? "border-primary/70" : "border-transparent"
+            }`}
+          >
+            <Icon className="mt-0.5 size-5 shrink-0 text-primary-text" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className={text.rowTitle}>{title}</span>
+                {k === "weekly" ? (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
+                    {t.setup.recommended}
+                  </span>
+                ) : null}
+              </span>
+              <span className="mt-0.5 block text-[12.5px] text-muted-foreground">{desc}</span>
+              <span className="mt-1 block text-[12.5px] font-semibold text-muted-foreground">
+                {st.set ? st.text : t.setup.notSet}
+              </span>
+            </span>
+            <span
+              className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
+                kind === k ? "border-primary bg-primary text-primary-foreground" : "border-border"
+              }`}
+              aria-hidden
+            >
+              {kind === k ? <Check className="size-3" /> : null}
+            </span>
+          </button>
+        ))}
+        <p className="px-1 text-[12.5px] text-muted-foreground">{t.setup.planPickOne}</p>
+      </div>
+    ),
+    planSetup: (
       <div className="space-y-3">
-        <ListCard
-          icon={CalendarDays}
-          title={t.setup.planWeekly}
-          subtitle={s.weekly.set ? s.weekly.text : t.setup.notSet}
-          filled={s.weekly.set}
-        >
-          {row(
-            s.weekly.set ? t.setup.planWeeklyEdit : t.setup.planWeeklySetup,
-            t.setup.planWeeklyDesc,
-            "weekly",
+        <ol className="space-y-2 px-1 text-[14px]">
+          {(kind === "program" ? t.setup.planProgramSteps : t.setup.planWeeklySteps).map(
+            (line, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[12px] font-bold text-primary-text">
+                  {i + 1}
+                </span>
+                <span className="pt-0.5">{line}</span>
+              </li>
+            ),
           )}
-        </ListCard>
+        </ol>
         <ListCard
-          icon={Flame}
-          title={t.setup.planProgram}
-          subtitle={s.program.set ? s.program.text : t.setup.notSet}
-          filled={s.program.set}
+          icon={kind === "program" ? Flame : CalendarDays}
+          title={kind === "program" ? t.setup.planProgram : t.setup.planWeekly}
+          subtitle={kind === "program" ? s.program.text : s.weekly.text}
+          filled={kind === "program" ? s.program.set : s.weekly.set}
         >
-          {row(
-            s.program.set ? t.setup.planProgramEdit : t.setup.planProgramSetup,
-            t.setup.planProgramDesc,
-            "program",
-          )}
+          {kind === "program"
+            ? row(
+                s.program.set ? t.setup.planProgramEdit : t.setup.planProgramSetup,
+                t.setup.planProgramDesc,
+                "program",
+              )
+            : row(
+                s.weekly.set ? t.setup.planWeeklyEdit : t.setup.planWeeklySetup,
+                t.setup.planWeeklyDesc,
+                "weekly",
+              )}
         </ListCard>
         {s.program.set && s.weekly.set ? (
           <p className="px-1 text-[12.5px] text-muted-foreground">{t.setup.planProgramWins}</p>
@@ -244,8 +317,8 @@ export function SetupFlow({
       <ListCard
         icon={CalendarDays}
         title={t.setup.planDaysTitle}
-        subtitle={s.plan.text}
-        filled={s.plan.set}
+        subtitle={kind === "program" ? s.program.text : s.weekly.text}
+        filled={kind === "program" ? s.program.set : s.weekly.set}
       >
         {activeSlots.length ? (
           activeSlots.map((slot, i) => (
@@ -264,8 +337,8 @@ export function SetupFlow({
         )}
         {row(
           t.setup.planDaysEdit,
-          s.program.set ? t.setup.planDaysEditProgram : t.setup.planDaysEditWeekly,
-          s.program.set ? "program" : "weekly",
+          kind === "program" ? t.setup.planDaysEditProgram : t.setup.planDaysEditWeekly,
+          kind,
         )}
       </ListCard>
     ),
@@ -414,8 +487,8 @@ export function SetupFlow({
       </div>
 
       <KnownLiftsSheet open={open === "lifts"} onClose={() => setOpen(null)} />
-      <WeeklyPlanSheet open={open === "weekly"} onClose={() => setOpen(null)} />
-      <ProgramBuilderSheet open={open === "program"} onClose={() => setOpen(null)} />
+      <WeeklyPlanSheet open={open === "weekly"} onClose={() => closePlanSheet()} />
+      <ProgramBuilderSheet open={open === "program"} onClose={() => closePlanSheet()} />
       <CardioPlanSheet open={open === "cardio"} onClose={() => setOpen(null)} />
       <NutritionGoalsSheet open={open === "goals"} onClose={() => setOpen(null)} />
       <WaterSettingsSheet

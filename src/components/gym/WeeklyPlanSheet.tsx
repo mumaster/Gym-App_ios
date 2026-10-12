@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DayTypePicker } from "./DayTypePicker";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -283,6 +283,9 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.setupTitle} scrollKey={mode}>
       {mode === "template" ? (
         <div className="space-y-2">
+          <p className="mb-1 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest text-primary-text">
+            <CalendarDays className="size-3.5" aria-hidden /> {t.weeklyPlan.kindBadge}
+          </p>
           <p className="mb-1 text-[13px] text-muted-foreground">{t.weeklyPlan.pickSplitDesc}</p>
           {SPLIT_TEMPLATES.map((tpl) => (
             <button

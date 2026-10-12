@@ -444,6 +444,9 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     <BottomSheet open={open} onClose={onClose} title={t.programBuilder.title} scrollKey={mode}>
       {mode === "template" ? (
         <div className="space-y-2">
+          <p className="mb-1 flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest text-primary-text">
+            <Flame className="size-3.5" aria-hidden /> {t.programBuilder.kindBadge}
+          </p>
           <p className="mb-1 text-[13px] text-muted-foreground">{t.programBuilder.pickSplitDesc}</p>
           {SPLIT_TEMPLATES.map((tpl) => (
             <button
