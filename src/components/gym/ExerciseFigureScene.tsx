@@ -57,9 +57,7 @@ export function FigureFront({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {(model.furniture === "upright-bench" ||
-        model.furniture === "leg-curl" ||
-        model.furniture === "leg-extension") && (
+      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
         <g>
           <rect
             x={p([-17, 0, 0])[0]}
@@ -467,9 +465,7 @@ export function FigureSide({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {(model.furniture === "upright-bench" ||
-        model.furniture === "leg-curl" ||
-        model.furniture === "leg-extension") && (
+      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
         <g>
           {/* seat, back pad tilted 10 degrees and its base */}
           <rect
@@ -652,27 +648,6 @@ export function FigureSide({ model, pose }: Props) {
         />
       )}
       {arms(near, s(8))}
-      {model.furniture === "leg-extension" && (
-        <g>
-          {/* the ankle pad sits on the front of the lower shin */}
-          {(() => {
-            const kn = pose.knees[near];
-            const an = pose.ankles[near];
-            const th = Math.atan2(kn[1] - an[1], an[2] - kn[2]);
-            const c: [number, number] = [
-              kn[1] + (an[1] - kn[1]) * 0.9 + Math.cos(th) * 6.5,
-              kn[2] + (an[2] - kn[2]) * 0.9 + Math.sin(th) * 6.5,
-            ];
-            const pc = p([0, c[0], c[1]]);
-            return (
-              <g>
-                <circle cx={pc[0]} cy={pc[1]} r={s(5)} className="fill-foreground/60 stroke-none" />
-                <path d={line(pc, p([0, 38, -12]))} className={furnLine} strokeWidth={s(3)} />
-              </g>
-            );
-          })()}
-        </g>
-      )}
       {model.furniture === "leg-curl" && (
         <g>
           {/* thigh pad on the thighs and the ankle roller behind the lower shin */}
