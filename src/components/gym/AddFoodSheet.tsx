@@ -79,8 +79,7 @@ export interface ListPhoto {
 
 /** What Add food hands the list reader (FoodListSheet). */
 export type ReadListRequest = { meal: MealType } & (
-  | { start: "text" }
-  | ({ start: "photo" } & ListPhoto)
+  { start: "text" } | ({ start: "photo" } & ListPhoto)
 );
 type MacroKey = NutrientKey;
 
