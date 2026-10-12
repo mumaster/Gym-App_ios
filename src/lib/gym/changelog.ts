@@ -70,11 +70,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De barcodescanner leest codes onder elke hoek: zijwaarts, scheef of ondersteboven, niet alleen perfect recht.",
     },
   },
+  {
+    version: 9,
+    text: {
+      en: "Spices and salt: search for salt, pepper, paprika, cinnamon, oregano and about 25 more common European spices and herbs when you add food.",
+      nl: "Kruiden en zout: zoek bij het toevoegen van eten naar zout, peper, paprika, kaneel, oregano en zo'n 25 andere veelgebruikte Europese kruiden.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 8;
+export const CURRENT_VERSION = 9;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

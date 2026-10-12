@@ -1097,6 +1097,9 @@ const en = {
     clearSearch: "Clear search",
     yourFoods: "Your foods",
     foods: "Foods",
+    spices: "Spices & salt",
+    spicesNote:
+      "Spice and salt values are typical figures for the dried product (USDA), an addition to NEVO.",
     per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,
     noFoodMatch: "No match. Check the spelling, or enter it yourself.",
     enterAsNew: (q: string) => `Enter “${q}” manually`,
@@ -3118,6 +3121,9 @@ const nl: Dict = {
     clearSearch: "Zoekopdracht wissen",
     yourFoods: "Jouw voedsel",
     foods: "Voedingsmiddelen",
+    spices: "Kruiden & zout",
+    spicesNote:
+      "Waarden van kruiden en zout zijn gangbare cijfers voor het gedroogde product (USDA), een aanvulling op NEVO.",
     per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,
     noFoodMatch: "Geen resultaat. Controleer de spelling, of vul het zelf in.",
     enterAsNew: (q: string) => `“${q}” zelf invullen`,

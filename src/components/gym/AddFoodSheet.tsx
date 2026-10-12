@@ -39,6 +39,7 @@ import {
   searchNevoFoods,
   type NevoFood,
 } from "../../lib/gym/nevoFoods";
+import { searchSpices, spiceName, type Spice } from "../../lib/gym/spices";
 import {
   MEAL_ORDER,
   dailyTotals,
@@ -332,6 +333,7 @@ export function AddFoodSheet({
     return [...favorites, ...mine, ...recent].sort((a, b) => here(a) - here(b));
   }, [q, favoriteFoods, myFoods, favoriteKeys, recentAll, inMeal]);
   const libraryKeys = useMemo(() => new Set(myFoods.map(myFoodKey)), [myFoods]);
+  const spiceMatches = useMemo(() => (q ? searchSpices(q, language) : []), [q, language]);
   const nevoMatches = useMemo(
     () => (q && nevoFoods ? searchNevoFoods(nevoFoods, q, language) : []),
     [q, nevoFoods, language],
@@ -402,6 +404,21 @@ export function AddFoodSheet({
     setUnmatched(food.saltKnown ? new Set() : new Set<MacroKey>(["salt"]));
     setSuggestedGrams(null);
     setNevoSource({ codes: [food.code], per100: food.per100 });
+    setBarcode(null);
+    setQuery("");
+    setStep("review");
+  };
+
+  /** A spice or salt: the app's own values, so no NEVO mark. */
+  const startFromSpice = (spice: Spice) => {
+    haptic(15);
+    setName(spiceName(spice, language));
+    setGrams(swapGrams != null ? String(swapGrams) : "");
+    setGramsTouched(swapGrams != null);
+    setPer100(per100ToDraft(spice.per100));
+    setUnmatched(new Set());
+    setSuggestedGrams(null);
+    setNevoSource(null);
     setBarcode(null);
     setQuery("");
     setStep("review");
@@ -741,7 +758,32 @@ export function AddFoodSheet({
                     </div>
                   </ListCard>
                 ) : null}
-                {!savedMatches.length && !nevoMatches.length ? (
+                {spiceMatches.length ? (
+                  <ListCard
+                    icon={Leaf}
+                    title={t.addFood.spices}
+                    subtitle={t.mealOverview.foods(spiceMatches.length)}
+                    filled
+                  >
+                    <div className="divide-y divide-border border-t border-border">
+                      {spiceMatches.map((spice) => (
+                        <button
+                          key={spice.id}
+                          onClick={() => startFromSpice(spice)}
+                          className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
+                        >
+                          <p className="text-[15px] font-semibold leading-snug">
+                            {spiceName(spice, language)}
+                          </p>
+                          <p className="tabular text-[12px] text-muted-foreground">
+                            {t.addFood.per100kcal(spice.per100.calories)}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </ListCard>
+                ) : null}
+                {!savedMatches.length && !nevoMatches.length && !spiceMatches.length ? (
                   <p className="px-1 text-[14px] text-muted-foreground">{t.addFood.noFoodMatch}</p>
                 ) : null}
                 <button
@@ -760,6 +802,11 @@ export function AddFoodSheet({
                 {nevoMatches.length ? (
                   <p className="px-1 text-[11px] leading-snug text-muted-foreground">
                     {t.nutrition.nevoReference}
+                  </p>
+                ) : null}
+                {spiceMatches.length ? (
+                  <p className="px-1 text-[11px] leading-snug text-muted-foreground">
+                    {t.addFood.spicesNote}
                   </p>
                 ) : null}
               </div>
