@@ -306,22 +306,15 @@ export function FigureFront({ model, pose }: Props) {
           <g key={i}>
             {model.neutralGrip ? (
               <>
-                <path
-                  d={line([w[0], w[1] - s(12)], [w[0], w[1] + s(12)])}
-                  className="stroke-foreground"
-                  strokeWidth={3}
+                {/* Palms facing each other: the dumbbell points at the viewer, seen end-on. */}
+                <circle
+                  cx={w[0]}
+                  cy={w[1]}
+                  r={s(7)}
+                  className="fill-primary/40 stroke-primary"
+                  strokeWidth={2}
                 />
-                {[-1, 1].map((sg) => (
-                  <rect
-                    key={sg}
-                    x={w[0] - s(6)}
-                    y={w[1] + sg * s(11) - s(3)}
-                    width={s(12)}
-                    height={s(6)}
-                    rx={2}
-                    className="fill-primary stroke-none"
-                  />
-                ))}
+                <circle cx={w[0]} cy={w[1]} r={2.5} className="fill-foreground stroke-none" />
               </>
             ) : (
               <>
