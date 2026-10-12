@@ -154,6 +154,8 @@ export function elbowFlare(pose: Pose, side: 0 | 1 = 1): number {
 export interface Foot {
   floor: number;
   dir: 1 | -1;
+  /** Degrees the toes tip down from flat (a leg held in the air). */
+  pitch?: number;
 }
 
 export interface FigurePose extends Pose {
@@ -161,9 +163,9 @@ export interface FigurePose extends Pose {
   feet: [Foot, Foot];
 }
 
-export type Implement = "barbell" | "dumbbells" | "goblet" | "latbar" | "none";
+export type Implement = "barbell" | "dumbbells" | "goblet" | "kettlebell" | "latbar" | "none";
 export type Furniture =
-  "none" | "upright-bench" | "pulldown" | "incline-bench" | "flat-bench" | "box";
+  "none" | "upright-bench" | "pulldown" | "incline-bench" | "flat-bench" | "box" | "thrust-bench";
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -642,6 +644,145 @@ export function dbRowPose(depth: number): FigurePose {
     bar: [0, w[1], w[2]],
     kneePole: (s) => (s < 0 ? [0, -1, 1] : [0, 0, 1]),
     elbowPole: (s) => (s < 0 ? [-0.3, 0, -1] : [0, 1, -0.7]),
+  });
+}
+
+/** Lateral raise: arms stay almost straight (a soft elbow) and rise out to the
+ *  sides until the hands reach shoulder height. */
+export function lateralRaisePose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shoulder = { y: STAND_SHOULDER_Y, z: 0 };
+  const phi = 6 + 79 * e; // degrees from hanging
+  const reach = 54;
+  const wrist = (s: -1 | 1): V3 => [
+    s * BODY.shoulderHalf + s * reach * sin(phi),
+    shoulder.y - reach * cos(phi),
+    4 * e,
+  ];
+  return assemble({
+    hip: { y: STAND_HIP_Y, z: 0 },
+    shoulder,
+    head: headFrom(shoulder, 0),
+    ankleZ: 0,
+    footHalf: 11,
+    wrist,
+    bar: [0, shoulder.y - reach * cos(phi), 4 * e],
+    kneePole: forwardKnees,
+    elbowPole: (s) => [s * 0.6, -1, -0.2],
+  });
+}
+
+/** Kettlebell swing: a hip hinge with soft knees; the bell swings back between
+ *  the legs and the hips snap it up to chest height with straight arms. */
+export function kettlebellSwingPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hipZ = lerp(-2, -34, e);
+  const reach = lerp(87, 77, e);
+  const dz = hipZ - ANKLE_Z;
+  const dx = 14 - BODY.hipHalf;
+  const hip = { z: hipZ, y: ANKLE_Y + Math.sqrt(reach * reach - dz * dz - dx * dx) };
+  const lean = lerp(0, 58, e);
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  const alpha = lerp(75, -35, e); // arm angle from hanging, + is forward
+  const hang = Math.sqrt((ARM - 0.3) ** 2 - (BODY.shoulderHalf - 4) ** 2);
+  const w: V3 = [0, shoulder.y - hang * cos(alpha), shoulder.z + hang * sin(alpha)];
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.5),
+    ankleZ: ANKLE_Z,
+    footHalf: 14,
+    wrist: (s) => [s * 4, w[1], w[2]],
+    bar: w,
+    kneePole: forwardKnees,
+    elbowPole: (s) => [s * 0.3, -0.4, 0.2],
+  });
+}
+
+/** Single-leg Romanian deadlift: the near leg stays planted with a soft knee,
+ *  the torso and the free leg tip like a seesaw, dumbbells hang straight down. */
+export function singleLegRdlPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hipZ = lerp(-2, -10, e);
+  const reach = lerp(87, 84, e);
+  const dz = hipZ - 0;
+  const dx = 11 - BODY.hipHalf;
+  const hip = { z: hipZ, y: ANKLE_Y + Math.sqrt(reach * reach - dz * dz - dx * dx) };
+  const lean = lerp(0, 72, e);
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  // The free leg trails a little below the torso line, like a seesaw that is
+  // not quite level.
+  const legAngle = Math.max(0, lean - 6);
+  const free: V3 = [-11, hip.y - 87.95 * cos(legAngle), hip.z - 87.95 * sin(legAngle)];
+  const lift = clamp01((free[1] - ANKLE_Y) / 25);
+  const wy = shoulder.y - Math.sqrt((ARM - 0.3) ** 2 - 1);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.45),
+    ankleZ: 0,
+    footHalf: 11,
+    ankle: (s) => (s < 0 ? free : [11, ANKLE_Y, 0]),
+    foot: (s) => (s < 0 ? { floor: 0, dir: 1, pitch: 75 * smooth(lift) } : { floor: 0, dir: 1 }),
+    wrist: (s) => [s * 20, wy, shoulder.z],
+    bar: [0, wy, shoulder.z],
+    kneePole: (s) => (s < 0 ? [0, 1, 0] : forwardKnees(s)),
+    elbowPole: straightArms,
+  });
+}
+
+/** Glute bridge: lying on the back, heels under the knees; the hips rise until
+ *  shoulders, hips and knees make one line. */
+export function gluteBridgePose(depth: number): FigurePose {
+  const e = smooth(1 - depth); // depth 0 = hips up (start of the loop)
+  const shoulder = { y: 12, z: -97 };
+  const hipY = lerp(10, 34, e);
+  const hip = {
+    y: hipY,
+    z: shoulder.z + Math.sqrt(BODY.torso * BODY.torso - (hipY - shoulder.y) ** 2),
+  };
+  return assemble({
+    hip,
+    shoulder,
+    head: [0, 12, shoulder.z - 22],
+    ankleZ: 0,
+    footHalf: 14,
+    wrist: (s) => [s * 28, 4, shoulder.z + 53],
+    bar: [0, 4, shoulder.z + 53],
+    kneePole: () => [0, 1, 0],
+    elbowPole: (s) => [s * 0.5, 0.3, 0],
+  });
+}
+
+/** Barbell hip thrust: upper back on a bench, shins vertical and thighs level
+ *  at the top, the bar rolling on the hip crease. */
+export const THRUST_BENCH_Y = 43;
+export const THRUST_BENCH_Z = { from: -118, to: -88 };
+export function hipThrustPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shoulder = { y: THRUST_BENCH_Y + 8, z: -95 };
+  const hipY = lerp(shoulder.y, 18, e);
+  const hip = {
+    y: hipY,
+    z: shoulder.z + Math.sqrt(BODY.torso * BODY.torso - (shoulder.y - hipY) ** 2),
+  };
+  const bar: V3 = [0, hip.y + 7, hip.z + 2];
+  return assemble({
+    hip,
+    shoulder,
+    head: [0, shoulder.y + 4, shoulder.z - 20],
+    ankleZ: 0,
+    footHalf: 14,
+    wrist: (s) => [s * 28, bar[1], bar[2]],
+    bar,
+    kneePole: () => [0, 1, 0],
+    elbowPole: (s) => [s, -1, 0],
   });
 }
 
@@ -1197,6 +1338,206 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Trek de dumbbell naar je heup en leid met je elleboog.",
         "Draai je romp niet mee. Knijp je schouderblad richting je wervelkolom.",
         "Laat langzaam zakken tot een volledige rek onderin.",
+      ],
+    },
+  },
+  "lateral-raise": {
+    figure: {
+      pose: lateralRaisePose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: 0,
+    },
+    labels: label("Dumbbell lateral raise", "Zijwaartse dumbbell raise"),
+    phases: {
+      en: {
+        lower: "Raise out to the sides, elbows slightly bent",
+        touch: "Hands at shoulder height",
+        press: "Lower slowly under control",
+        lockout: "Arms by your sides, shoulders relaxed",
+      },
+      nl: {
+        lower: "Heffen naar de zijkant, ellebogen licht gebogen",
+        touch: "Handen op schouderhoogte",
+        press: "Laat langzaam gecontroleerd zakken",
+        lockout: "Armen langs je lichaam, schouders ontspannen",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall, feet hip-width apart, a dumbbell in each hand at your sides.",
+        "Keep a soft bend in your elbows and lift your arms out to the sides.",
+        "Stop when your hands reach shoulder height. Don't swing or shrug.",
+        "Lead with your elbows and keep your wrists in line with your forearms.",
+        "Lower for about two seconds back to your sides.",
+      ],
+      nl: [
+        "Sta rechtop, voeten heupbreed, een dumbbell in elke hand langs je lichaam.",
+        "Houd je ellebogen zacht gebogen en til je armen naar de zijkant.",
+        "Stop als je handen op schouderhoogte zijn. Zwaai niet en trek je schouders niet op.",
+        "Leid met je ellebogen en houd je polsen in lijn met je onderarmen.",
+        "Laat ongeveer twee seconden zakken naar je zij.",
+      ],
+    },
+  },
+  "kb-swing": {
+    figure: {
+      pose: kettlebellSwingPose,
+      implement: "kettlebell",
+      furniture: "none",
+      scale: 0.95,
+      centerZ: -8,
+    },
+    labels: label("Kettlebell swing", "Kettlebell swing"),
+    phases: {
+      en: {
+        lower: "Hinge back, let the bell swing between your legs",
+        touch: "Hips back, flat back",
+        press: "Snap your hips forward, the bell floats up",
+        lockout: "Tall at the top, bell at chest height",
+      },
+      nl: {
+        lower: "Heup naar achteren, laat de bel tussen je benen zwaaien",
+        touch: "Heupen achter, rug vlak",
+        press: "Schiet je heupen naar voren, de bel zweeft omhoog",
+        lockout: "Rechtop bovenin, bel op borsthoogte",
+      },
+    },
+    cues: {
+      en: [
+        "Feet shoulder-width apart, the bell on the floor a little in front of you.",
+        "Hinge at your hips with a flat back and let the bell swing back between your legs.",
+        "Drive your hips forward hard. Your arms are just a rope, the power comes from the hips.",
+        "At the top stand tall, glutes squeezed, the bell at chest height.",
+        "Let the bell fall back and hinge again, don't squat it.",
+      ],
+      nl: [
+        "Voeten schouderbreed, de bel een stukje voor je op de grond.",
+        "Hinge vanuit je heupen met een vlakke rug en laat de bel tussen je benen zwaaien.",
+        "Duw je heupen hard naar voren. Je armen zijn slechts een touw, de kracht komt uit je heupen.",
+        "Sta bovenin rechtop, bilspieren aangespannen, de bel op borsthoogte.",
+        "Laat de bel terugvallen en hinge opnieuw, niet squatten.",
+      ],
+    },
+  },
+  "db-single-leg-rdl": {
+    figure: {
+      pose: singleLegRdlPose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.0,
+      centerZ: -30,
+    },
+    labels: label("Single-leg Romanian deadlift", "Romeinse deadlift op één been"),
+    phases: {
+      en: {
+        lower: "Hinge forward, free leg reaches back",
+        touch: "Torso and free leg in one line",
+        press: "Drive the hips forward to stand up",
+        lockout: "Tall on one leg, hips level",
+      },
+      nl: {
+        lower: "Hinge naar voren, het vrije been reikt naar achteren",
+        touch: "Romp en vrij been op één lijn",
+        press: "Duw je heup naar voren om op te staan",
+        lockout: "Rechtop op één been, heupen waterpas",
+      },
+    },
+    cues: {
+      en: [
+        "Stand on one leg with a soft knee, a dumbbell in each hand.",
+        "Hinge at the hip and send your free leg straight back as your chest goes forward.",
+        "Keep your back flat and your hips square to the floor.",
+        "Lower until your torso is close to level, then drive the hip forward to stand.",
+        "Keep the dumbbells close to your standing leg.",
+      ],
+      nl: [
+        "Sta op één been met een zachte knie, een dumbbell in elke hand.",
+        "Hinge vanuit de heup en stuur je vrije been recht naar achteren terwijl je borst naar voren gaat.",
+        "Houd je rug vlak en je heupen recht naar de grond.",
+        "Zak tot je romp bijna horizontaal is en duw dan je heup naar voren om op te staan.",
+        "Houd de dumbbells dicht bij je standbeen.",
+      ],
+    },
+  },
+  "glute-bridge": {
+    figure: {
+      pose: gluteBridgePose,
+      implement: "none",
+      furniture: "none",
+      scale: 1.2,
+      centerZ: -48,
+    },
+    labels: label("Glute bridge", "Glute bridge"),
+    phases: {
+      en: {
+        lower: "Lower your hips under control",
+        touch: "Hips just above the floor",
+        press: "Drive through your heels and lift",
+        lockout: "Hips up, shoulders to knees in one line",
+      },
+      nl: {
+        lower: "Laat je heupen gecontroleerd zakken",
+        touch: "Heupen vlak boven de grond",
+        press: "Duw door je hielen en til op",
+        lockout: "Heupen omhoog, schouders tot knieën op één lijn",
+      },
+    },
+    cues: {
+      en: [
+        "Lie on your back, knees bent, feet flat about hip-width apart, arms by your sides.",
+        "Drive through your heels and lift your hips until your shoulders, hips and knees form one line.",
+        "Squeeze your glutes at the top, ribs down so your lower back doesn't arch.",
+        "Lower slowly until your hips almost touch the floor.",
+        "Keep your feet flat and your knees pointing forward.",
+      ],
+      nl: [
+        "Lig op je rug, knieën gebogen, voeten plat ongeveer heupbreed, armen langs je lichaam.",
+        "Duw door je hielen en til je heupen tot schouders, heupen en knieën op één lijn staan.",
+        "Knijp bovenin je bilspieren aan, ribben omlaag zodat je onderrug niet holt.",
+        "Zak langzaam tot je heupen bijna de grond raken.",
+        "Houd je voeten plat en je knieën naar voren.",
+      ],
+    },
+  },
+  "hip-thrust": {
+    figure: {
+      pose: hipThrustPose,
+      implement: "barbell",
+      furniture: "thrust-bench",
+      scale: 1.2,
+      centerZ: -52,
+    },
+    labels: label("Barbell hip thrust", "Barbell hip thrust"),
+    phases: {
+      en: {
+        lower: "Lower your hips, chin tucked",
+        touch: "Hips low, shins vertical",
+        press: "Drive through your heels and thrust",
+        lockout: "Hips up, torso level, shins vertical",
+      },
+      nl: {
+        lower: "Laat je heupen zakken, kin ingetrokken",
+        touch: "Heupen laag, onderbenen verticaal",
+        press: "Duw door je hielen en duw omhoog",
+        lockout: "Heupen omhoog, romp horizontaal, onderbenen verticaal",
+      },
+    },
+    cues: {
+      en: [
+        "Sit with your upper back against a bench and the bar over your hips, feet flat.",
+        "Tuck your chin and drive through your heels until your torso is level.",
+        "At the top your shins are vertical and your glutes are squeezed. Don't arch your lower back.",
+        "Lower your hips until they are just above the floor, under control.",
+        "Keep your ribs down and the bar rolling on your hip crease.",
+      ],
+      nl: [
+        "Zit met je bovenrug tegen een bank en de stang over je heupen, voeten plat.",
+        "Trek je kin in en duw door je hielen tot je romp horizontaal is.",
+        "Bovenin zijn je onderbenen verticaal en je bilspieren aangespannen. Hol je onderrug niet.",
+        "Laat je heupen gecontroleerd zakken tot vlak boven de grond.",
+        "Houd je ribben omlaag en de stang rollend op je heupplooi.",
       ],
     },
   },

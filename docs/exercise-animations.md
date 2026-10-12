@@ -40,9 +40,14 @@ Four stills can look right while the motion between them is wrong. For every new
 - Step-up: box foot stays put and is drawn on the box (`feet[].floor`), the free foot must clear the box edge before it drops below the box top (tested).
 - Sumo deadlift: wide stance, knees out over the toes (front view), dumbbell hangs vertically between the legs, torso lean 30 to 45 degrees at the bottom.
 - One-arm row: torso nearly parallel to the floor and fixed, free hand and same-side knee on the bench, working elbow goes back past the torso.
+- Lateral raise: arms almost straight (a soft elbow), hands stop at shoulder height and never above the shoulders, no swing.
+- Kettlebell swing: a hip hinge, not a squat; arms stay straight like a rope, the bell goes between the legs at the bottom and to chest height at the top.
+- Single-leg RDL: standing leg soft, free leg and torso form one line (a seesaw), hips stay level, dumbbells hang straight down. A free foot in the air gets `feet[].floor` = its ankle height so the sole is flat at that height.
+- Glute bridge: shoulders stay on the floor (torso length constant), at the top shoulders, hips and knees are one line (hip about 34 cm up), feet flat.
+- Hip thrust: upper back stays on the bench, at the top torso and thighs are level and the shins vertical, the bar rolls on the hip crease.
 
 ## Feet and furniture
 
 **Feet lie flat in the side view** (Max, 2026-10-12: sloped feet read as standing on tiptoe). The sole is a horizontal line on whatever the foot stands on, heel behind the ankle, toes ahead of it, with a short vertical piece from the ankle down. Only a genuinely lifted heel (rear foot of a lunge) may slope. Never draw a line from a raised ankle down to the toe tip.
 
-`FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`) is drawn in `ExerciseFigureScene.tsx`.
+`FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`, `thrust-bench`) and the `kettlebell` implement is drawn in `ExerciseFigureScene.tsx`.

@@ -2,6 +2,8 @@ import {
   BOX_TOP,
   BOX_Z,
   ROW_BENCH_Y,
+  THRUST_BENCH_Y,
+  THRUST_BENCH_Z,
   type FigureModel,
   type FigurePose,
   type V3,
@@ -141,6 +143,23 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {model.furniture === "thrust-bench" && (
+        <g>
+          <rect
+            x={p([-15, 0, 0])[0]}
+            y={p([0, THRUST_BENCH_Y, 0])[1]}
+            width={s(30)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          <path
+            d={line(p([0, THRUST_BENCH_Y - 9, 0]), p([0, 0, 0]))}
+            className={furnLine}
+            strokeWidth={s(8)}
+          />
+        </g>
+      )}
       {model.furniture === "box" && (
         <rect
           x={p([-26, 0, 0])[0]}
@@ -266,6 +285,27 @@ export function FigureFront({ model, pose }: Props) {
           ))}
         </g>
       )}
+      {model.implement === "kettlebell" && (
+        <g>
+          <circle
+            cx={bar[0]}
+            cy={bar[1] + s(5)}
+            r={s(8)}
+            className="fill-primary/60 stroke-primary"
+            strokeWidth={2}
+          />
+          <path
+            d={poly(
+              [bar[0] - s(4), bar[1] - s(1)],
+              [bar[0] - s(4), bar[1] - s(7)],
+              [bar[0] + s(4), bar[1] - s(7)],
+              [bar[0] + s(4), bar[1] - s(1)],
+            )}
+            className="stroke-foreground"
+            strokeWidth={3}
+          />
+        </g>
+      )}
       {model.implement === "latbar" && (
         <g>
           <path
@@ -305,9 +345,20 @@ export function FigureSide({ model, pose }: Props) {
     const soleY = FLOOR - s(pose.feet[i].floor) - 2;
     // Flat sole, heel down; only a genuinely lifted heel (rear foot of a lunge) slopes.
     const raised = soleY - a[1] > s(14);
-    const foot = raised
-      ? `L${pt([a[0] + dir * s(15), soleY])}`
-      : `L${pt([a[0], soleY])}M${pt([a[0] - dir * s(5), soleY])}L${pt([a[0] + dir * s(15), soleY])}`;
+    const pitch = pose.feet[i].pitch ?? 0;
+    let foot: string;
+    if (pitch > 0) {
+      // A foot in the air: the sole rotates about the ankle, toes tipping down.
+      const k = Math.min(1, pitch / 75);
+      const oy = soleY + (a[1] - soleY) * k;
+      const c = Math.cos((pitch * Math.PI) / 180);
+      const sn = Math.sin((pitch * Math.PI) / 180);
+      foot = `L${pt([a[0], oy])}M${pt([a[0] - dir * s(5) * c, oy - s(5) * sn])}L${pt([a[0] + dir * s(15) * c, oy + s(15) * sn])}`;
+    } else {
+      foot = raised
+        ? `L${pt([a[0] + dir * s(15), soleY])}`
+        : `L${pt([a[0], soleY])}M${pt([a[0] - dir * s(5), soleY])}L${pt([a[0] + dir * s(15), soleY])}`;
+    }
     return (
       <path
         opacity={op}
@@ -422,6 +473,26 @@ export function FigureSide({ model, pose }: Props) {
           />
         </g>
       )}
+      {model.furniture === "thrust-bench" && (
+        <g>
+          <rect
+            x={p([0, 0, THRUST_BENCH_Z.from])[0]}
+            y={p([0, THRUST_BENCH_Y, 0])[1]}
+            width={s(THRUST_BENCH_Z.to - THRUST_BENCH_Z.from)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          {[THRUST_BENCH_Z.from + 4, THRUST_BENCH_Z.to - 4].map((z) => (
+            <path
+              key={z}
+              d={line(p([0, THRUST_BENCH_Y - 9, z]), p([0, 0, z]))}
+              className={furnLine}
+              strokeWidth={s(7)}
+            />
+          ))}
+        </g>
+      )}
       {model.furniture === "box" && (
         <rect
           x={p([0, 0, BOX_Z.from])[0]}
@@ -492,6 +563,27 @@ export function FigureSide({ model, pose }: Props) {
               className="fill-primary stroke-none"
             />
           ))}
+        </g>
+      )}
+      {model.implement === "kettlebell" && (
+        <g>
+          <circle
+            cx={bar[0]}
+            cy={bar[1] + s(5)}
+            r={s(8)}
+            className="fill-primary/60 stroke-primary"
+            strokeWidth={2}
+          />
+          <path
+            d={poly(
+              [bar[0] - s(4), bar[1] - s(1)],
+              [bar[0] - s(4), bar[1] - s(7)],
+              [bar[0] + s(4), bar[1] - s(7)],
+              [bar[0] + s(4), bar[1] - s(1)],
+            )}
+            className="stroke-foreground"
+            strokeWidth={3}
+          />
         </g>
       )}
       {model.implement === "latbar" && (
