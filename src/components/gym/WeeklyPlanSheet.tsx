@@ -20,7 +20,12 @@ import {
 } from "../../lib/gym/splits";
 import { anchorFor, isCardioSlot } from "../../lib/gym/schedule";
 import { savedWorkoutFor } from "../../lib/gym/dayWorkouts";
-import { CreateAllWorkoutsButton, DayWorkoutLine, DayWorkoutSheet } from "./DayWorkoutSheet";
+import {
+  CreateAllWorkoutsButton,
+  DayWorkoutLine,
+  DayWorkoutSettings,
+  DayWorkoutSheet,
+} from "./DayWorkoutSheet";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
@@ -144,6 +149,8 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             <p className="text-[13px] text-muted-foreground">
               {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
             </p>
+
+            <DayWorkoutSettings kind="weeklyScheme" />
 
             <CreateAllWorkoutsButton
               schedule={weeklyScheme.schedule}

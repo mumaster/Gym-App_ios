@@ -35,6 +35,7 @@ import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
+import { DayWorkoutSheet } from "../components/gym/DayWorkoutSheet";
 import { ListCard } from "../components/gym/ListCard";
 import { Card, Screen } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
@@ -59,12 +60,18 @@ import {
 import { moveBlock, planBlocks } from "../lib/gym/planBlocks";
 import { plateStep } from "../lib/gym/plates";
 import { currentProgramWeek } from "../lib/gym/programs";
-import { hasWeekWorkout, readyToStart, savedWorkoutFor } from "../lib/gym/dayWorkouts";
+import {
+  hasWeekWorkout,
+  isPregenerated,
+  loggedForSlot,
+  readyToStart,
+  savedWorkoutFor,
+} from "../lib/gym/dayWorkouts";
 import { recommendedMuscles } from "../lib/gym/recommendations";
 import { suggestWeight } from "../lib/gym/progression";
 import { crossEstimate, heavierHint, withKnownLifts } from "../lib/gym/startWeight";
 import { todaysCheckIn } from "../lib/gym/readiness";
-import { isCardioSlot, plannedDate } from "../lib/gym/schedule";
+import { doneDate, isCardioSlot, plannedDate } from "../lib/gym/schedule";
 import {
   cardioDayPlan,
   musclesForSlot,
@@ -133,6 +140,7 @@ function WorkoutHome() {
     avoidedExerciseIds,
     weeklyScheme,
     program,
+    cardioSessions,
     completeCardioSlot,
     setSlotWorkout,
     workoutTemplates,
@@ -146,6 +154,13 @@ function WorkoutHome() {
   const pace = useMemo(() => learnPace(workouts), [workouts]);
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("");
+  /** The week-strip day whose planned workout is open (DayWorkoutSheet). */
+  const [dayView, setDayView] = useState<{
+    kind: RotationKind;
+    index: number;
+    week: number | undefined;
+    title: string;
+  } | null>(null);
   const [regions, setRegions] = useState<RegionId[]>([]);
   const [proposal, setProposal] = useState<RegionId | null>(null);
   const [focus, setFocus] = useState<TargetMuscle[]>([]);
@@ -159,6 +174,33 @@ function WorkoutHome() {
   const [adjustWeekOpen, setAdjustWeekOpen] = useState(false);
   /** Which plan's cardio day is being logged (its next session is cardio). */
   const [cardioLogKind, setCardioLogKind] = useState<RotationKind | null>(null);
+  /** A tap on a week-strip day: a finished one opens what was logged
+   *  (the session's page), any other lifting day its planned workout (the
+   *  saved one, or a fresh one to save). Upcoming cardio days have nothing
+   *  to open. */
+  const openDay = (kind: RotationKind) => (index: number) => {
+    const rotation = kind === "program" ? program : weeklyScheme;
+    const slot = rotation?.schedule[index];
+    if (!rotation || !slot) return null;
+    const logged = loggedForSlot(rotation, index, kind, workouts, cardioSessions);
+    if (logged && "workout" in logged) {
+      const workoutId = logged.workout.id;
+      return () => navigate({ to: "/history/$workoutId", params: { workoutId } });
+    }
+    if (logged) {
+      const cardioId = logged.cardio.id;
+      return () => navigate({ to: "/history/cardio/$cardioId", params: { cardioId } });
+    }
+    if (isCardioSlot(slot)) return null;
+    const label = splitDayLabel(rotation.templateId, slot.dayId);
+    const dow = (doneDate(rotation, index) ?? plannedDate(rotation, index)).getDay();
+    const week =
+      kind === "program" && program && isPregenerated(program) ? program.currentWeek : undefined;
+    return () => {
+      haptic(10);
+      setDayView({ kind, index, week, title: `${label} · ${t.common.dow[dow] ?? ""}` });
+    };
+  };
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
   /**
@@ -776,7 +818,11 @@ function WorkoutHome() {
               ))}
             </div>
 
-            <RotationWeekStrip rotation={program} templateId={program.templateId} />
+            <RotationWeekStrip
+              rotation={program}
+              templateId={program.templateId}
+              onDay={openDay("program")}
+            />
             <MissedSessionBanner
               kind="program"
               rotation={program}
@@ -836,7 +882,11 @@ function WorkoutHome() {
             ) : null}
             {scheduledSaved && !scheduledCardio ? savedSummary(scheduledSaved) : null}
 
-            <RotationWeekStrip rotation={weeklyScheme} templateId={weeklyScheme.templateId} />
+            <RotationWeekStrip
+              rotation={weeklyScheme}
+              templateId={weeklyScheme.templateId}
+              onDay={openDay("weeklyScheme")}
+            />
             <MissedSessionBanner
               kind="weeklyScheme"
               rotation={weeklyScheme}
@@ -902,573 +952,590 @@ function WorkoutHome() {
   );
 
   return (
-    <Screen
-      title={t.generate.title}
-      fitWhenShort={tabbed && tab === "plan" && !planHere}
-      toolbar={
-        tabbed ? (
-          <SegmentedTabs
-            tabs={WORKOUT_TABS}
-            value={tab}
-            onChange={setTab}
-            labels={t.generate.tabs}
-          />
-        ) : undefined
-      }
-    >
-      {hydrated && activeWorkout ? (
-        <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
-                {t.generate.sessionInProgress}
-              </p>
-              <p className="mt-1 text-[17px] font-bold">
-                {t.generate.sessionTitle(
-                  activeWorkout.plan.length,
-                  activeWorkout.completed_sets.length,
-                )}
-              </p>
+    <>
+      <Screen
+        title={t.generate.title}
+        fitWhenShort={tabbed && tab === "plan" && !planHere}
+        toolbar={
+          tabbed ? (
+            <SegmentedTabs
+              tabs={WORKOUT_TABS}
+              value={tab}
+              onChange={setTab}
+              labels={t.generate.tabs}
+            />
+          ) : undefined
+        }
+      >
+        {hydrated && activeWorkout ? (
+          <Card className="mb-4 p-4 glow" onClick={() => navigate({ to: "/session" })}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[13px] font-semibold uppercase tracking-widest text-primary-text">
+                  {t.generate.sessionInProgress}
+                </p>
+                <p className="mt-1 text-[17px] font-bold">
+                  {t.generate.sessionTitle(
+                    activeWorkout.plan.length,
+                    activeWorkout.completed_sets.length,
+                  )}
+                </p>
+              </div>
+              <ChevronRight className="size-6 text-primary-text" />
             </div>
-            <ChevronRight className="size-6 text-primary-text" />
-          </div>
-        </Card>
-      ) : null}
+          </Card>
+        ) : null}
 
-      {/* My plan: the program or weekly plan, then this week's cardio (hidden
+        {/* My plan: the program or weekly plan, then this week's cardio (hidden
           while a split day's plan shows under the card, so its Start bar
           stays last on the page). */}
-      {tabbed && tab === "plan" ? (
-        <>
-          {planCard}
-          {planHere ? null : <CardioWeekCard compact />}
-        </>
-      ) : null}
+        {tabbed && tab === "plan" ? (
+          <>
+            {planCard}
+            {planHere ? null : <CardioWeekCard compact />}
+          </>
+        ) : null}
 
-      {/* Build your own: one-tap starts, then the builder, each a card with
+        {/* Build your own: one-tap starts, then the builder, each a card with
           its own band (they were small-caps labels over loose blocks). */}
-      {showBuilder ? (
-        <>
-          <div className="space-y-3">
-            {hydrated && !activeWorkout && quickStarts.length > 0 ? (
-              // A list card like the rest of the app (it was a sideways row of
-              // pill cards, clipped by the screen edge, the first one's ring
-              // cut off by the scroller). Each row starts a session in one tap.
-              <ListCard
-                icon={Zap}
-                title={t.generate.quickStart}
-                subtitle={t.generate.quickStartDesc}
-                filled
-                actions={
-                  workoutTemplates.length ? (
-                    <button
-                      onClick={() => setTemplatesOpen(true)}
-                      aria-label={t.generate.manageTemplates}
-                      className={button.edit}
-                    >
-                      <Pencil className="size-4" />
-                    </button>
-                  ) : undefined
-                }
-              >
-                {quickStarts.map((q, i) => {
-                  const Icon = q.icon === "template" ? Bookmark : Repeat;
-                  return (
-                    <button
-                      key={q.key}
-                      onClick={q.start}
-                      className="flex min-h-[60px] w-full items-center gap-3 border-t border-border px-4 py-2.5 text-left active:bg-foreground/5"
-                    >
-                      <span aria-hidden className={`${i === 0 ? badge.tonal : badge.off} size-9`}>
-                        <Icon className="size-4" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-semibold">{q.title}</span>
-                        <span className="block truncate text-[12.5px] text-muted-foreground">
-                          <span
-                            className={
-                              i === 0 ? "font-semibold text-primary-text" : "font-semibold"
-                            }
-                          >
-                            {q.eyebrow}
-                          </span>
-                          {` · ${q.detail}`}
-                        </span>
-                      </span>
-                      <Play aria-hidden className="size-4 shrink-0 text-primary-text" />
-                    </button>
-                  );
-                })}
-              </ListCard>
-            ) : null}
-
-            {/* Time, equipment and the two switches as one grouped list, like an
-          iOS settings card, under a band that sums them up. */}
-            <ListCard
-              icon={SlidersHorizontal}
-              title={t.generate.sessionSettings}
-              subtitle={`${duration} min · ${profile.name}`}
-              filled
-            >
-              <div className="border-t border-border px-4 py-3">{durationPicker}</div>
-              <div className="flex items-center gap-2 border-t border-border py-2.5 pl-4 pr-2">
-                {profiles.length > 1 ? (
-                  <div className="no-scrollbar -my-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-1">
-                    {profiles.map((p) => (
+        {showBuilder ? (
+          <>
+            <div className="space-y-3">
+              {hydrated && !activeWorkout && quickStarts.length > 0 ? (
+                // A list card like the rest of the app (it was a sideways row of
+                // pill cards, clipped by the screen edge, the first one's ring
+                // cut off by the scroller). Each row starts a session in one tap.
+                <ListCard
+                  icon={Zap}
+                  title={t.generate.quickStart}
+                  subtitle={t.generate.quickStartDesc}
+                  filled
+                  actions={
+                    workoutTemplates.length ? (
                       <button
-                        key={p.id}
-                        onClick={() => {
-                          haptic(12);
-                          update({ activeProfileId: p.id });
-                        }}
-                        className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
-                          p.id === profile.id ? chip.on : chip.off
-                        }`}
+                        onClick={() => setTemplatesOpen(true)}
+                        aria-label={t.generate.manageTemplates}
+                        className={button.edit}
                       >
-                        {p.name}
+                        <Pencil className="size-4" />
                       </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">
-                    {profile.name}
-                    <span className="font-normal text-muted-foreground">
-                      {` · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-                    </span>
-                  </p>
-                )}
-                {/* The profile's own screen lists and edits the gear. */}
-                <Link
-                  to="/equipment"
-                  aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
-                  className={button.edit}
+                    ) : undefined
+                  }
                 >
-                  <Pencil className="size-4" />
-                </Link>
-              </div>
-              <SwitchRow
-                className="border-t border-border px-4 py-3"
-                label={t.generate.supersets}
-                desc={t.generate.supersetsDesc}
-                ariaLabel={t.generate.enableSupersets}
-                on={supersetsEnabled}
-                onToggle={() => {
-                  haptic(12);
-                  update({ supersetsEnabled: !supersetsEnabled });
-                }}
-              />
-              <SwitchRow
-                className="border-t border-border px-4 py-3"
-                label={t.generate.warmups}
-                desc={t.generate.warmupsDesc}
-                ariaLabel={t.generate.warmups}
-                on={warmupsEnabled}
-                onToggle={() => {
-                  haptic(12);
-                  update({ warmupsEnabled: !warmupsEnabled });
-                }}
-              />
-            </ListCard>
+                  {quickStarts.map((q, i) => {
+                    const Icon = q.icon === "template" ? Bookmark : Repeat;
+                    return (
+                      <button
+                        key={q.key}
+                        onClick={q.start}
+                        className="flex min-h-[60px] w-full items-center gap-3 border-t border-border px-4 py-2.5 text-left active:bg-foreground/5"
+                      >
+                        <span aria-hidden className={`${i === 0 ? badge.tonal : badge.off} size-9`}>
+                          <Icon className="size-4" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold">
+                            {q.title}
+                          </span>
+                          <span className="block truncate text-[12.5px] text-muted-foreground">
+                            <span
+                              className={
+                                i === 0 ? "font-semibold text-primary-text" : "font-semibold"
+                              }
+                            >
+                              {q.eyebrow}
+                            </span>
+                            {` · ${q.detail}`}
+                          </span>
+                        </span>
+                        <Play aria-hidden className="size-4 shrink-0 text-primary-text" />
+                      </button>
+                    );
+                  })}
+                </ListCard>
+              ) : null}
 
-            {hydrated &&
-            !weeklyScheme &&
-            !program &&
-            workouts.length > 0 &&
-            regions.length === 0 ? (
-              <Card className="overflow-hidden p-4">
-                <CardHead icon={Sparkles} title={t.generate.recommendedToday} />
-                {/* Use sits in the body: as a tonal pill on the tinted band
-                    its text measured 4.44:1 in the light theme. */}
-                <div className="flex items-center gap-3">
-                  <p className="min-w-0 flex-1 text-[15px] leading-snug">
-                    {recommended
-                      .map((r) => t.generate.setsThisWeek(r.muscle, r.done, r.target))
-                      .join(" · ")}
-                  </p>
-                  <button
-                    onClick={applyRecommendation}
-                    className={`${chip.base} ${chip.on} px-3.5 font-bold`}
+              {/* Time, equipment and the two switches as one grouped list, like an
+          iOS settings card, under a band that sums them up. */}
+              <ListCard
+                icon={SlidersHorizontal}
+                title={t.generate.sessionSettings}
+                subtitle={`${duration} min · ${profile.name}`}
+                filled
+              >
+                <div className="border-t border-border px-4 py-3">{durationPicker}</div>
+                <div className="flex items-center gap-2 border-t border-border py-2.5 pl-4 pr-2">
+                  {profiles.length > 1 ? (
+                    <div className="no-scrollbar -my-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto py-1">
+                      {profiles.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            haptic(12);
+                            update({ activeProfileId: p.id });
+                          }}
+                          className={`tap-target min-h-[36px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold ${
+                            p.id === profile.id ? chip.on : chip.off
+                          }`}
+                        >
+                          {p.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                      {profile.name}
+                      <span className="font-normal text-muted-foreground">
+                        {` · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
+                      </span>
+                    </p>
+                  )}
+                  {/* The profile's own screen lists and edits the gear. */}
+                  <Link
+                    to="/equipment"
+                    aria-label={`${t.generate.editEquipment} · ${t.generate.equipmentSummary(profile.active_equipment_ids.length)}`}
+                    className={button.edit}
                   >
-                    {t.generate.use}
-                  </button>
+                    <Pencil className="size-4" />
+                  </Link>
                 </div>
-              </Card>
-            ) : null}
+                <SwitchRow
+                  className="border-t border-border px-4 py-3"
+                  label={t.generate.supersets}
+                  desc={t.generate.supersetsDesc}
+                  ariaLabel={t.generate.enableSupersets}
+                  on={supersetsEnabled}
+                  onToggle={() => {
+                    haptic(12);
+                    update({ supersetsEnabled: !supersetsEnabled });
+                  }}
+                />
+                <SwitchRow
+                  className="border-t border-border px-4 py-3"
+                  label={t.generate.warmups}
+                  desc={t.generate.warmupsDesc}
+                  ariaLabel={t.generate.warmups}
+                  on={warmupsEnabled}
+                  onToggle={() => {
+                    haptic(12);
+                    update({ warmupsEnabled: !warmupsEnabled });
+                  }}
+                />
+              </ListCard>
 
-            {/* A pop-up pinned to the top of the screen, not a card in the page:
+              {hydrated &&
+              !weeklyScheme &&
+              !program &&
+              workouts.length > 0 &&
+              regions.length === 0 ? (
+                <Card className="overflow-hidden p-4">
+                  <CardHead icon={Sparkles} title={t.generate.recommendedToday} />
+                  {/* Use sits in the body: as a tonal pill on the tinted band
+                    its text measured 4.44:1 in the light theme. */}
+                  <div className="flex items-center gap-3">
+                    <p className="min-w-0 flex-1 text-[15px] leading-snug">
+                      {recommended
+                        .map((r) => t.generate.setsThisWeek(r.muscle, r.done, r.target))
+                        .join(" · ")}
+                    </p>
+                    <button
+                      onClick={applyRecommendation}
+                      className={`${chip.base} ${chip.on} px-3.5 font-bold`}
+                    >
+                      {t.generate.use}
+                    </button>
+                  </div>
+                </Card>
+              ) : null}
+
+              {/* A pop-up pinned to the top of the screen, not a card in the page:
           in the page it pushed the map (and everything under it) down when it
           appeared and back up when dismissed. Above the sticky header (z-30),
           below sheets (z-50); only the banner itself takes taps. */}
-            {proposalPair ? (
-              <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4">
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="pointer-events-auto flex w-full max-w-xl animate-[banner-down_0.25s_ease-out] flex-col gap-2 rounded-2xl border p-3 motion-reduce:animate-none"
-                  style={{
-                    // Solid: any translucency let the page title and cards
-                    // underneath read through the sentence.
-                    backgroundColor: "var(--background)",
-                    borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
-                    boxShadow: `0 8px 28px oklch(0 0 0 / 30%), 0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
-                  }}
-                >
-                  {/* Sentence and ✕ on one row, Add on its own: side by side, the
+              {proposalPair ? (
+                <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4">
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="pointer-events-auto flex w-full max-w-xl animate-[banner-down_0.25s_ease-out] flex-col gap-2 rounded-2xl border p-3 motion-reduce:animate-none"
+                    style={{
+                      // Solid: any translucency let the page title and cards
+                      // underneath read through the sentence.
+                      backgroundColor: "var(--background)",
+                      borderColor: `color-mix(in oklch, ${SUGGESTED_COLOR} 55%, transparent)`,
+                      boxShadow: `0 8px 28px oklch(0 0 0 / 30%), 0 0 24px color-mix(in oklch, ${SUGGESTED_COLOR} 25%, transparent)`,
+                    }}
+                  >
+                    {/* Sentence and ✕ on one row, Add on its own: side by side, the
                 Dutch "+ Triceps toevoegen" squeezed the sentence to a word a line. */}
-                  <div className="flex items-start gap-2.5">
-                    <Sparkles
-                      className="mt-0.5 size-5 shrink-0"
-                      style={{ color: SUGGESTED_COLOR }}
-                    />
-                    <p className="min-w-0 flex-1 pt-0.5 text-[13.5px] leading-snug">
-                      {t.generate.pairSuggestion(
-                        regionById(proposal!).label,
-                        regionById(proposalPair.with).label,
-                        proposalPair.relation.includes("·")
-                          ? t.generate.pairSuggestionFor(
-                              proposalPair.relation.split("·")[1]!.trim(),
-                            )
-                          : "",
-                      )}
-                    </p>
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles
+                        className="mt-0.5 size-5 shrink-0"
+                        style={{ color: SUGGESTED_COLOR }}
+                      />
+                      <p className="min-w-0 flex-1 pt-0.5 text-[13.5px] leading-snug">
+                        {t.generate.pairSuggestion(
+                          regionById(proposal!).label,
+                          regionById(proposalPair.with).label,
+                          proposalPair.relation.includes("·")
+                            ? t.generate.pairSuggestionFor(
+                                proposalPair.relation.split("·")[1]!.trim(),
+                              )
+                            : "",
+                        )}
+                      </p>
+                      <button
+                        onClick={() => setProposal(null)}
+                        aria-label={t.generate.dismissSuggestion}
+                        className="tap-target grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
                     <button
-                      onClick={() => setProposal(null)}
-                      aria-label={t.generate.dismissSuggestion}
-                      className="tap-target grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+                      onClick={acceptProposal}
+                      className="tap-target flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
+                      style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
                     >
-                      <X className="size-4" />
+                      <Plus className="size-3.5" strokeWidth={3} />
+                      {t.generate.addMuscle(regionById(proposalPair.with).label)}
                     </button>
                   </div>
-                  <button
-                    onClick={acceptProposal}
-                    className="tap-target flex min-h-[36px] items-center gap-1 self-end rounded-full px-3.5 text-[13px] font-bold"
-                    style={{ backgroundColor: SUGGESTED_COLOR, color: "oklch(0.2 0.05 90)" }}
-                  >
-                    <Plus className="size-3.5" strokeWidth={3} />
-                    {t.generate.addMuscle(regionById(proposalPair.with).label)}
-                  </button>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {/* The map, then what narrows it (focus heads, loved exercises) in
+              {/* The map, then what narrows it (focus heads, loved exercises) in
           the same card under hairlines, instead of loose blocks after it. */}
-            <Card className="overflow-hidden p-4">
-              <CardHead
-                icon={PersonStanding}
-                title={t.generate.muscleMap}
-                subtitle={t.generate.musclesPicked(regions.length)}
-                filled={regions.length > 0}
-              />
-              <AnatomyMap
-                selected={regions}
-                suggested={proposalPair?.with ?? null}
-                onToggle={toggleRegion}
-              />
+              <Card className="overflow-hidden p-4">
+                <CardHead
+                  icon={PersonStanding}
+                  title={t.generate.muscleMap}
+                  subtitle={t.generate.musclesPicked(regions.length)}
+                  filled={regions.length > 0}
+                />
+                <AnatomyMap
+                  selected={regions}
+                  suggested={proposalPair?.with ?? null}
+                  onToggle={toggleRegion}
+                />
 
-              {focusGroups.length ? (
-                <div className="-mx-4 mt-4 border-t border-border px-4 pt-3">
-                  <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                    {t.generate.focusOptional}
-                  </p>
-                  <div className="space-y-2">
-                    {focusGroups.map(({ group, heads }) => (
-                      <div key={group} className="flex flex-wrap items-center gap-2">
-                        <span className="w-20 shrink-0 truncate text-[13px] font-semibold text-muted-foreground">
-                          {group}
-                        </span>
-                        {heads.map((t) => {
-                          const on = focus.includes(t);
-                          return (
-                            <button
-                              key={t}
-                              onClick={() => toggleFocus(t)}
-                              className={`tap-target min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
-                                on ? chip.on : chip.off
-                              }`}
-                            >
-                              {t}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))}
+                {focusGroups.length ? (
+                  <div className="-mx-4 mt-4 border-t border-border px-4 pt-3">
+                    <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                      {t.generate.focusOptional}
+                    </p>
+                    <div className="space-y-2">
+                      {focusGroups.map(({ group, heads }) => (
+                        <div key={group} className="flex flex-wrap items-center gap-2">
+                          <span className="w-20 shrink-0 truncate text-[13px] font-semibold text-muted-foreground">
+                            {group}
+                          </span>
+                          {heads.map((t) => {
+                            const on = focus.includes(t);
+                            return (
+                              <button
+                                key={t}
+                                onClick={() => toggleFocus(t)}
+                                className={`tap-target min-h-[36px] rounded-full px-3.5 text-[13px] font-semibold transition-colors ${
+                                  on ? chip.on : chip.off
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                ) : null}
+
+                {lovedExerciseIds.length ? (
+                  <div className="-mx-4 mt-4 border-t border-border px-4 pt-3">
+                    <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
+                      <Heart className="size-3.5 fill-current text-primary-text" />
+                      {t.generate.alwaysIncluded}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {lovedExerciseIds.map((id) => {
+                        const ex = exerciseById(id);
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => {
+                              haptic(12);
+                              toggleLovedExercise(id);
+                            }}
+                            className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/10 px-3 text-[14px] font-semibold text-primary-text"
+                          >
+                            {ex?.name ?? id}
+                            <X className="size-3.5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </Card>
+
+              {muscles.length > 2 && !curatedSelection ? (
+                <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
+                  <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive-text" />
+                  <p className="text-[14px] leading-snug text-foreground">
+                    {t.generate.warningTooManyGroups}
+                  </p>
                 </div>
               ) : null}
+            </div>
 
-              {lovedExerciseIds.length ? (
-                <div className="-mx-4 mt-4 border-t border-border px-4 pt-3">
-                  <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
-                    <Heart className="size-3.5 fill-current text-primary-text" />
-                    {t.generate.alwaysIncluded}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {lovedExerciseIds.map((id) => {
-                      const ex = exerciseById(id);
-                      return (
-                        <button
-                          key={id}
-                          onClick={() => {
-                            haptic(12);
-                            toggleLovedExercise(id);
-                          }}
-                          className="tap-target flex min-h-[36px] items-center gap-1.5 rounded-full bg-primary/10 px-3 text-[14px] font-semibold text-primary-text"
-                        >
-                          {ex?.name ?? id}
-                          <X className="size-3.5" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-            </Card>
-
-            {muscles.length > 2 && !curatedSelection ? (
-              <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3">
-                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive-text" />
-                <p className="text-[14px] leading-snug text-foreground">
-                  {t.generate.warningTooManyGroups}
-                </p>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Sticky: the form above is about three screens tall, so the button
+            {/* Sticky: the form above is about three screens tall, so the button
           stays in reach just above the tab bar (whose pill top sits
           --tab-bar-clearance + 4rem up) until you scroll down to its place.
           Once a plan matches the selection, the Start bar below takes over. */}
-          {/* Floats only once there's a selection to build from: before that,
+            {/* Floats only once there's a selection to build from: before that,
           on a program user's first screen it was a second big green button
           under "Build Push day", covering the card it sat over. */}
-          {planHere ? null : (
-            <div
-              className={`${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3`}
-            >
-              {regions.length || generating ? <div aria-hidden className="dock-backdrop" /> : null}
-              <button
-                onClick={generateOwn}
-                disabled={generating}
-                className={`${button.primary} w-full`}
+            {planHere ? null : (
+              <div
+                className={`${regions.length || generating ? "sticky" : "static"} bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-3`}
               >
-                {generating ? (
-                  <>
-                    <DumbbellLoader size={26} className="text-primary-foreground" />
-                    {t.generate.buildingSession}
-                  </>
-                ) : (
-                  <>
-                    <Zap className="size-5" />
-                    {t.generate.generateWorkout}
-                  </>
+                {regions.length || generating ? (
+                  <div aria-hidden className="dock-backdrop" />
+                ) : null}
+                <button
+                  onClick={generateOwn}
+                  disabled={generating}
+                  className={`${button.primary} w-full`}
+                >
+                  {generating ? (
+                    <>
+                      <DumbbellLoader size={26} className="text-primary-foreground" />
+                      {t.generate.buildingSession}
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="size-5" />
+                      {t.generate.generateWorkout}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        ) : null}
+
+        {planHere ? (
+          <>
+            <div
+              ref={planRef}
+              className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1"
+              data-plan-header
+            >
+              <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t.generate.yourPlan(
+                  estimateMinutes(planHere, pace) + (planCardio?.minutes ?? 0),
+                  planHere.length + (planCardio ? 1 : 0),
                 )}
+              </p>
+              <button
+                onClick={() => {
+                  haptic(12);
+                  setSavingTemplate(true);
+                }}
+                className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary-text"
+              >
+                <Bookmark className="size-3.5" /> {t.generate.save}
               </button>
             </div>
-          )}
-        </>
-      ) : null}
-
-      {planHere ? (
-        <>
-          <div
-            ref={planRef}
-            className="mb-1.5 mt-4 flex items-center justify-between gap-3 px-1"
-            data-plan-header
-          >
-            <p className="min-w-0 truncate text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {t.generate.yourPlan(
-                estimateMinutes(planHere, pace) + (planCardio?.minutes ?? 0),
-                planHere.length + (planCardio ? 1 : 0),
-              )}
-            </p>
-            <button
-              onClick={() => {
-                haptic(12);
-                setSavingTemplate(true);
-              }}
-              className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary-text"
-            >
-              <Bookmark className="size-3.5" /> {t.generate.save}
-            </button>
-          </div>
-          {estimateMinutes(planHere, pace) < duration * 0.9 &&
-          muscularCapReached(planHere).length ? (
-            <p className="mb-2 px-1 text-[12.5px] text-muted-foreground" data-session-limit>
-              {t.volume.sessionLimit(muscularCapReached(planHere).join(", "))}
-            </p>
-          ) : null}
-          {planIsSaved ? (
-            <p className="mb-2 flex items-center gap-1.5 px-1 text-[13px] font-semibold text-primary-text">
-              <BookmarkCheck className="size-4 shrink-0" />
-              <span className="min-w-0 truncate">
-                {t.savedDay.planLabel(followingProgram ? programDayLabel : scheduledDayLabel)}
-              </span>
-            </p>
-          ) : null}
-          <div className="space-y-2">
-            {planBlocks(planHere).map((block, b, blocks) => {
-              const moveButtons = (superset: boolean) => (
-                <>
+            {estimateMinutes(planHere, pace) < duration * 0.9 &&
+            muscularCapReached(planHere).length ? (
+              <p className="mb-2 px-1 text-[12.5px] text-muted-foreground" data-session-limit>
+                {t.volume.sessionLimit(muscularCapReached(planHere).join(", "))}
+              </p>
+            ) : null}
+            {planIsSaved ? (
+              <p className="mb-2 flex items-center gap-1.5 px-1 text-[13px] font-semibold text-primary-text">
+                <BookmarkCheck className="size-4 shrink-0" />
+                <span className="min-w-0 truncate">
+                  {t.savedDay.planLabel(followingProgram ? programDayLabel : scheduledDayLabel)}
+                </span>
+              </p>
+            ) : null}
+            <div className="space-y-2">
+              {planBlocks(planHere).map((block, b, blocks) => {
+                const moveButtons = (superset: boolean) => (
+                  <>
+                    <button
+                      onClick={() => moveBlockBy(b, -1)}
+                      disabled={b === 0}
+                      aria-label={superset ? t.generate.moveSupersetUp : t.generate.moveUp}
+                      className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                    >
+                      <ArrowUp className="size-4" />
+                    </button>
+                    <button
+                      onClick={() => moveBlockBy(b, 1)}
+                      disabled={b === blocks.length - 1}
+                      aria-label={superset ? t.generate.moveSupersetDown : t.generate.moveDown}
+                      className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                    >
+                      <ArrowDown className="size-4" />
+                    </button>
+                  </>
+                );
+                const swapButton = (i: number) => (
                   <button
-                    onClick={() => moveBlockBy(b, -1)}
-                    disabled={b === 0}
-                    aria-label={superset ? t.generate.moveSupersetUp : t.generate.moveUp}
-                    className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
+                    onClick={() => setSwapIndex(i)}
+                    aria-label={t.generate.swapExercise}
+                    className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
                   >
-                    <ArrowUp className="size-4" />
+                    <Repeat className="size-4" />
                   </button>
-                  <button
-                    onClick={() => moveBlockBy(b, 1)}
-                    disabled={b === blocks.length - 1}
-                    aria-label={superset ? t.generate.moveSupersetDown : t.generate.moveDown}
-                    className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
-                  >
-                    <ArrowDown className="size-4" />
-                  </button>
-                </>
-              );
-              const swapButton = (i: number) => (
-                <button
-                  onClick={() => setSwapIndex(i)}
-                  aria-label={t.generate.swapExercise}
-                  className="tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-                >
-                  <Repeat className="size-4" />
-                </button>
-              );
-              if (block.length === 2) {
-                // A superset is one card: a band with its rounds and rest
-                // and the arrows that move the pair, the two halves under it.
-                const [ia, ib] = block as [number, number];
-                const a = planHere[ia]!;
-                const restB = planHere[ib]!.rest_seconds;
+                );
+                if (block.length === 2) {
+                  // A superset is one card: a band with its rounds and rest
+                  // and the arrows that move the pair, the two halves under it.
+                  const [ia, ib] = block as [number, number];
+                  const a = planHere[ia]!;
+                  const restB = planHere[ib]!.rest_seconds;
+                  return (
+                    <section
+                      key={`ss-${planHere[ia]!.exercise_id}-${planHere[ib]!.exercise_id}`}
+                      className="glass overflow-hidden rounded-2xl"
+                      data-plan-superset
+                    >
+                      <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
+                        <span className="tabular w-6 shrink-0 text-[17px] font-bold text-primary-text">
+                          {b + 1}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[17px] font-bold leading-tight">
+                            {t.generate.supersetTitle}
+                          </span>
+                          <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
+                            {t.generate.supersetRounds(a.target_sets, restB)}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 gap-1">{moveButtons(true)}</span>
+                      </div>
+                      {block.map((i, k) => {
+                        const p = planHere[i]!;
+                        const ex = exerciseById(p.exercise_id);
+                        if (!ex) return null;
+                        return (
+                          <div
+                            key={`${p.exercise_id}-${i}`}
+                            className={`flex items-center gap-3 px-4 py-3 ${k ? "border-t border-border" : ""}`}
+                          >
+                            <span className="w-6 shrink-0 text-[15px] font-bold text-primary-text">
+                              {p.superset_slot ?? (k ? "B" : "A")}
+                            </span>
+                            {exerciseBody(p, ex, true)}
+                            {swapButton(i)}
+                          </div>
+                        );
+                      })}
+                    </section>
+                  );
+                }
+                const i = block[0]!;
+                const p = planHere[i]!;
+                const ex = exerciseById(p.exercise_id);
+                if (!ex) return null;
                 return (
-                  <section
-                    key={`ss-${planHere[ia]!.exercise_id}-${planHere[ib]!.exercise_id}`}
-                    className="glass overflow-hidden rounded-2xl"
-                    data-plan-superset
-                  >
-                    <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
+                  <Card key={`${p.exercise_id}-${i}`} className="p-4">
+                    <div className="flex items-center gap-3">
                       <span className="tabular w-6 shrink-0 text-[17px] font-bold text-primary-text">
                         {b + 1}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[17px] font-bold leading-tight">
-                          {t.generate.supersetTitle}
-                        </span>
-                        <span className="tabular mt-0.5 block truncate text-[12.5px] text-foreground/75">
-                          {t.generate.supersetRounds(a.target_sets, restB)}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 gap-1">{moveButtons(true)}</span>
-                    </div>
-                    {block.map((i, k) => {
-                      const p = planHere[i]!;
-                      const ex = exerciseById(p.exercise_id);
-                      if (!ex) return null;
-                      return (
-                        <div
-                          key={`${p.exercise_id}-${i}`}
-                          className={`flex items-center gap-3 px-4 py-3 ${k ? "border-t border-border" : ""}`}
-                        >
-                          <span className="w-6 shrink-0 text-[15px] font-bold text-primary-text">
-                            {p.superset_slot ?? (k ? "B" : "A")}
-                          </span>
-                          {exerciseBody(p, ex, true)}
-                          {swapButton(i)}
-                        </div>
-                      );
-                    })}
-                  </section>
-                );
-              }
-              const i = block[0]!;
-              const p = planHere[i]!;
-              const ex = exerciseById(p.exercise_id);
-              if (!ex) return null;
-              return (
-                <Card key={`${p.exercise_id}-${i}`} className="p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="tabular w-6 shrink-0 text-[17px] font-bold text-primary-text">
-                      {b + 1}
-                    </span>
-                    {exerciseBody(p, ex, false)}
-                    <div className="flex gap-1">
-                      {moveButtons(false)}
-                      {swapButton(i)}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-            {planCardio
-              ? (() => {
-                  const Icon = CARDIO_ICONS[planCardio.activity];
-                  return (
-                    <Card className="p-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex w-6 shrink-0 justify-center text-primary-text">
-                          <Icon className="size-5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[17px] font-semibold leading-tight">
-                            {t.cardio.session(
-                              t.cardio.activities[planCardio.activity],
-                              planCardio.minutes,
-                            )}
-                          </p>
-                          <p className="mt-0.5 text-[13px] text-muted-foreground">
-                            {t.cardio.efforts[planCardio.effort]} · {t.cardio.lastAfterLifting}
-                          </p>
-                        </div>
+                      {exerciseBody(p, ex, false)}
+                      <div className="flex gap-1">
+                        {moveButtons(false)}
+                        {swapButton(i)}
                       </div>
-                    </Card>
-                  );
-                })()
-              : null}
-          </div>
-          {/* Last on the page, so as a sticky element it stays pinned just
+                    </div>
+                  </Card>
+                );
+              })}
+              {planCardio
+                ? (() => {
+                    const Icon = CARDIO_ICONS[planCardio.activity];
+                    return (
+                      <Card className="p-4">
+                        <div className="flex items-center gap-3">
+                          <span className="flex w-6 shrink-0 justify-center text-primary-text">
+                            <Icon className="size-5" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[17px] font-semibold leading-tight">
+                              {t.cardio.session(
+                                t.cardio.activities[planCardio.activity],
+                                planCardio.minutes,
+                              )}
+                            </p>
+                            <p className="mt-0.5 text-[13px] text-muted-foreground">
+                              {t.cardio.efforts[planCardio.effort]} · {t.cardio.lastAfterLifting}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })()
+                : null}
+            </div>
+            {/* Last on the page, so as a sticky element it stays pinned just
               above the tab bar from the top of the page to the bottom: Start
               is always one tap away once a plan is ready. */}
-          <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex flex-col gap-2">
-            <div aria-hidden className="dock-backdrop" />
-            {canSaveForDay ? (
-              <button
-                onClick={saveForDay}
-                className="glass-strong flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold text-primary-text active:scale-95"
-                style={{ backgroundColor: "var(--background)" }}
-              >
-                <Bookmark className="size-4" /> {t.savedDay.saveAs(followedDayLabel)}
-              </button>
-            ) : null}
-            <div className="flex gap-2">
-              <button
-                onClick={shuffle}
-                className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
-                style={{ backgroundColor: "var(--background)" }}
-              >
-                <RefreshCw className="size-5" /> {t.generate.shuffle}
-              </button>
-              <button onClick={start} className={`${button.primary} flex-[2]`}>
-                <Play className="size-5" /> {t.generate.startWorkout}
-              </button>
+            <div className="sticky bottom-[calc(var(--tab-bar-clearance)+4.625rem)] z-20 mt-4 flex flex-col gap-2">
+              <div aria-hidden className="dock-backdrop" />
+              {canSaveForDay ? (
+                <button
+                  onClick={saveForDay}
+                  className="glass-strong flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold text-primary-text active:scale-95"
+                  style={{ backgroundColor: "var(--background)" }}
+                >
+                  <Bookmark className="size-4" /> {t.savedDay.saveAs(followedDayLabel)}
+                </button>
+              ) : null}
+              <div className="flex gap-2">
+                <button
+                  onClick={shuffle}
+                  className="glass-strong flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl text-[16px] font-semibold"
+                  style={{ backgroundColor: "var(--background)" }}
+                >
+                  <RefreshCw className="size-5" /> {t.generate.shuffle}
+                </button>
+                <button onClick={start} className={`${button.primary} flex-[2]`}>
+                  <Play className="size-5" /> {t.generate.startWorkout}
+                </button>
+              </div>
             </div>
-          </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
 
-      {/* Without a plan, the offer to set one up and this week's cardio
+        {/* Without a plan, the offer to set one up and this week's cardio
           come after the builder, and not while a generated plan is showing
           above its Start bar. */}
-      {hydrated && !hasPlan && !shownPlan ? (
-        <div className="mt-3">
-          {planCard}
-          <CardioWeekCard compact />
-        </div>
-      ) : null}
-
+        {hydrated && !hasPlan && !shownPlan ? (
+          <div className="mt-3">
+            {planCard}
+            <CardioWeekCard compact />
+          </div>
+        ) : null}
+      </Screen>
+      {/* Sheets sit outside the page: when it fits on one screen it's pinned
+          (a fixed layer), and a sheet inside it would sit under the tab bar. */}
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
+      {dayView ? (
+        <DayWorkoutSheet
+          open
+          onClose={() => setDayView(null)}
+          kind={dayView.kind}
+          slotIndex={dayView.index}
+          week={dayView.week}
+          title={dayView.title}
+        />
+      ) : null}
       <SwapSheet
         inWorkoutIds={(plan ?? []).map((p) => p.exercise_id)}
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
@@ -1558,6 +1625,6 @@ function WorkoutHome() {
         }
         onStart={startTemplate}
       />
-    </Screen>
+    </>
   );
 }
