@@ -14,3 +14,12 @@ export function addDays(d: Date, delta: number): Date {
   next.setDate(next.getDate() + delta);
   return next;
 }
+
+/** The `logged_at` for food added to the day `key`: right now for today (or
+ *  no day), else noon local time of that day, so it lands on that day in
+ *  every time zone. This is how meals are logged ahead for future days. */
+export function loggedAtForDay(key?: string): string {
+  if (!key || key === dayKeyFromDate(new Date())) return new Date().toISOString();
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12).toISOString();
+}

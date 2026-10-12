@@ -31,6 +31,7 @@ import { decodeMeal, mealCodeFrom } from "../../lib/gym/mealShare";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
 import { track } from "../../lib/gym/analytics";
+import { loggedAtForDay } from "../../lib/gym/date";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
   loadNevoFoods,
@@ -106,6 +107,7 @@ export function AddFoodSheet({
   editEntry = null,
   onIngredientCaptured,
   initialMeal,
+  day,
   onCreateMeal,
   onCreateRecipe,
   swap,
@@ -125,6 +127,8 @@ export function AddFoodSheet({
   onIngredientCaptured?: (ingredient: MealIngredient) => void;
   /** Meal to add to, e.g. from a meal's "+" in the log; else by time of day. */
   initialMeal?: MealType | undefined;
+  /** Day key the food is logged on (a future day for meal prep); today when omitted. */
+  day?: string | undefined;
   /** Open the meal/recipe builders. The parent closes this sheet first, so
    *  two overlays are never stacked. Without them the sections are hidden
    *  (the meal builder's own ingredient picker). */
@@ -356,7 +360,7 @@ export function AddFoodSheet({
       addFoodEntry({
         id: crypto.randomUUID(),
         name: food.name,
-        logged_at: new Date().toISOString(),
+        logged_at: loggedAtForDay(day),
         meal,
         grams: food.grams,
         per100: food.per100,
@@ -594,7 +598,7 @@ export function AddFoodSheet({
       addFoodEntry({
         id: crypto.randomUUID(),
         name: name.trim(),
-        logged_at: new Date().toISOString(),
+        logged_at: loggedAtForDay(day),
         meal,
         grams: gramsNum,
         per100: per100Value,
@@ -912,7 +916,7 @@ export function AddFoodSheet({
                     }))}
                     onLog={(id) => {
                       haptic([20, 30]);
-                      logMealTemplate(id, meal);
+                      logMealTemplate(id, meal, day);
                       close();
                     }}
                     onDelete={(id) => {
@@ -939,7 +943,7 @@ export function AddFoodSheet({
                     }))}
                     onLog={(id) => {
                       haptic([20, 30]);
-                      logRecipe(id, 1, meal);
+                      logRecipe(id, 1, meal, day);
                       close();
                     }}
                     onDelete={(id) => {
