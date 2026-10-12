@@ -32,13 +32,12 @@ import { ProgramBuilderSheet } from "./ProgramBuilderSheet";
 import { LinkRow, PickerSection } from "./SettingsRows";
 import { SwitchRow } from "./SwitchRow";
 import { ThemePicker } from "./ThemePicker";
-import { GrowthFocusCard } from "./WeeklyVolume";
 import { WeeklyPlanSheet } from "./WeeklyPlanSheet";
 import { button, chip, text } from "./ui";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate, formatWaterAmount } from "../../lib/gym/nutrition";
 import { ALLERGIES } from "../../lib/gym/allergens";
-import { splitDayLabel, splitTemplateById } from "../../lib/gym/splits";
+import { splitTemplateById } from "../../lib/gym/splits";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /**
@@ -62,8 +61,6 @@ const STEPS = [
   "lifts",
   "plan",
   "planSetup",
-  "planDays",
-  "focus",
   "workout",
   "cardio",
   "weight",
@@ -117,11 +114,6 @@ export function SetupFlow({
   // recommended weekly plan.
   const [pickedKind, setPickedKind] = useState<"weekly" | "program" | null>(null);
   const kind: "weekly" | "program" = pickedKind ?? (program ? "program" : "weekly");
-  const activeRotation = kind === "program" ? program : weeklyScheme;
-  const activeSlots = (activeRotation?.schedule ?? []).map((slot) => ({
-    dow: slot.dow,
-    label: splitDayLabel(activeRotation!.templateId, slot.dayId),
-  }));
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
@@ -149,8 +141,6 @@ export function SetupFlow({
     lifts: t.setup.liftsTitle,
     plan: t.setup.planTitle,
     planSetup: t.setup.planSetupTitle,
-    planDays: t.setup.planDaysTitle,
-    focus: t.setup.focusTitle,
     workout: t.setup.workoutTitle,
     cardio: t.setup.cardioTitle,
     weight: t.setup.weightTitle,
@@ -166,8 +156,6 @@ export function SetupFlow({
     lifts: t.setup.liftsBody,
     plan: t.setup.planBody,
     planSetup: t.setup.planSetupBody,
-    planDays: t.setup.planDaysBody,
-    focus: t.setup.focusBody,
     workout: t.setup.workoutBody,
     cardio: t.setup.cardioBody,
     weight: t.setup.weightBody,
@@ -305,35 +293,6 @@ export function SetupFlow({
         ) : null}
       </div>
     ),
-    planDays: (
-      <ListCard
-        icon={CalendarDays}
-        title={t.setup.planDaysTitle}
-        subtitle={kind === "program" ? s.program.text : s.weekly.text}
-        filled={kind === "program" ? s.program.set : s.weekly.set}
-      >
-        {activeSlots.length ? (
-          activeSlots.map((slot, i) => (
-            <div
-              key={i}
-              className="flex min-h-[48px] items-center justify-between gap-3 border-t border-border px-4 py-2.5"
-            >
-              <span className={text.rowTitle}>{slot.label}</span>
-              <span className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</span>
-            </div>
-          ))
-        ) : (
-          <p className="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
-            {t.setup.planDaysEmpty}
-          </p>
-        )}
-        {row(
-          t.setup.planDaysEdit,
-          kind === "program" ? t.setup.planDaysEditProgram : t.setup.planDaysEditWeekly,
-          kind,
-        )}
-      </ListCard>
-    ),
     cardio: (
       <ListCard
         icon={HeartPulse}
@@ -344,7 +303,6 @@ export function SetupFlow({
         {row(t.setup.cardioOpen, s.cardio.text, "cardio")}
       </ListCard>
     ),
-    focus: <GrowthFocusCard />,
     workout: <WorkoutStep status={s.workout} />,
     weight: <WeightStep />,
     food: (
@@ -362,7 +320,6 @@ export function SetupFlow({
               ["gym", s.gym],
               ["lifts", s.lifts],
               ["plan", s.plan],
-              ["focus", s.focus],
               ["workout", s.workout],
               ["cardio", s.cardio],
               ["weight", s.weight],
