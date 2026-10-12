@@ -42,7 +42,7 @@ Four stills can look right while the motion between them is wrong. For every new
 - One-arm row: torso nearly parallel to the floor and fixed, free hand and same-side knee on the bench, working elbow goes back past the torso.
 - Lateral raise: arms almost straight (a soft elbow), hands stop at shoulder height and never above the shoulders, no swing.
 - Kettlebell swing: a hip hinge, not a squat; arms stay straight like a rope, the bell goes between the legs at the bottom and to chest height at the top.
-- Single-leg RDL: standing leg soft, free leg and torso form one line (a seesaw), hips stay level, dumbbells hang straight down. A free foot in the air gets `feet[].floor` = its ankle height so the sole is flat at that height.
+- Single-leg RDL: standing leg soft, free leg and torso form one line (a seesaw), hips stay level, dumbbells hang straight down. A free foot in the air follows the foot rules below.
 - Glute bridge: shoulders stay on the floor (torso length constant), at the top shoulders, hips and knees are one line (hip about 34 cm up), feet flat.
 - Hip thrust: upper back stays on the bench, at the top torso and thighs are level and the shins vertical, the bar rolls on the hip crease.
 - Pull-up: start from a dead hang with straight arms (reach ARM-0.3 so the forearm never stretches), grip just wider than the shoulders, elbows drive down and back, chin ends over the bar, legs hang slightly behind the hips with no swing.
@@ -57,8 +57,15 @@ Four stills can look right while the motion between them is wrong. For every new
 
 `FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`, `thrust-bench`) and the `kettlebell` implement is drawn in `ExerciseFigureScene.tsx`.
 
-**A foot hanging off the shin** (hanging leg raise, seated leg curl) uses `feet[].angle` (toes above horizontal, pivoting about the ankle): hanging raise `a - 45`, leg curl `75 - shinAngle`, so the foot keeps a fixed angle to the shin with toes up and forward at the top. Max drew this on 2026-10-12.
+**A foot that is not on anything hangs off the shin** (Max, 2026-10-12: a foot drawn on the floor or as a sloped line under a raised ankle "looks broken"). Whenever the ankle is in the air, the foot pivots about the ankle (`Foot.angle`, degrees of the toes above horizontal) and keeps a fixed angle to the shin, never a sole on the floor under a floating ankle:
 
-**A foot in the air** (pull-up, hanging leg raise) gets `foot: { floor: ankleY - ANKLE_Y, dir: 1, pitch: 55 }`, so the sole follows the ankle with the toes tipped down. The front view then draws a short connector from the ankle to the foot bar. A foot that is only touching the floor keeps `floor: 0` and no pitch.
+- Hanging leg raise: `angle = a - 45` (`a` = the leg's angle from hanging), so the toes tip down while hanging and point up and forward at the top.
+- Seated leg curl: `angle = 75 - shinAngle`, so the foot follows the shin, toes up and forward.
+- Step-up free foot: `angle = -35 * t` with `drop = ANKLE_Y * (1 - t)` (`t` = how far the ankle is above standing height, 0 to 1), so it hangs while airborne and blends into a flat sole as it lands.
+- Pull-up (legs behind the hips): `pitch: 55`, the sole following the ankle with the toes tipped down.
+- Reverse lunge back foot: genuinely on the toes, so `pitch` on the floor with a lifted heel.
+- Single-leg RDL free foot: `pitch` about 75, toes pointing at the floor.
+
+Set `floor` to the sole height under the ankle (`ankleY - ANKLE_Y`, or `ankleY - 2` for an `angle` foot) so the front view puts the foot bar at the right height; the front view adds a short connector from the ankle only for `pitch` feet. Check every new lift at the frames where a foot is highest.
 
 Furniture added with batch 3: `pullup-bar` (bar at `PULLUP_BAR_Y`), `cable-tower` (pulley at `FigureModel.pulley {y, z}`, used by the `cable` implement for the pushdown and crunch) and `leg-curl` (seat, thigh pad and ankle roller).
