@@ -1301,15 +1301,12 @@ const en = {
     liftsOpen: "Enter my lifts",
     liftsCount: (n: number) => (n === 1 ? "1 lift entered" : `${n} lifts entered`),
     planTitle: "Your training week",
-    planBody: "Choose how your lifting week is planned. You need one of the two, not both.",
+    planBody: "Choose how your lifting week is planned.",
     planWeeklySetup: "Set up a weekly plan",
     planWeeklyEdit: "Open weekly plan",
     planProgramSetup: "Build a program",
     planProgramEdit: "Open program",
     planProgramWins: "A program is running, so it is used instead of the weekly plan.",
-    recommended: "Recommended",
-    planPickOne:
-      "You only need one. Pick the weekly plan unless you want a built-in build-up over several weeks. You can switch later.",
     planSetupTitle: "Set up your plan",
     planSetupBody:
       "Follow these steps in order. The plan opens in a window that walks you through them.",
@@ -1333,9 +1330,11 @@ const en = {
     planDaysEditWeekly: "Opens your weekly plan",
     planDaysEditProgram: "Opens your program",
     planWeekly: "Weekly plan",
-    planWeeklyDesc: "The same split on fixed days, every week. Simple and flexible.",
+    planWeeklyDesc:
+      "The same split on fixed days, every week. Perfect if you want a steady routine that is simple to follow.",
     planProgram: "Program",
-    planProgramDesc: "A few weeks that build up, with a lighter week at the end.",
+    planProgramDesc:
+      "A few weeks that build up, with a lighter week at the end. Perfect if you want planned progression and a built-in recovery week.",
     cardioTitle: "Cardio",
     cardioBody:
       "Plan walks, runs or rides on fixed days. They count towards your weekly cardio minutes.",
@@ -3232,15 +3231,12 @@ const nl: Dict = {
     liftsOpen: "Mijn lifts invoeren",
     liftsCount: (n: number) => (n === 1 ? "1 lift ingevoerd" : `${n} lifts ingevoerd`),
     planTitle: "Je trainingsweek",
-    planBody: "Kies hoe je krachtweek wordt gepland. Je hebt één van de twee nodig, niet beide.",
+    planBody: "Kies hoe je krachtweek wordt gepland.",
     planWeeklySetup: "Weekschema instellen",
     planWeeklyEdit: "Weekschema openen",
     planProgramSetup: "Programma samenstellen",
     planProgramEdit: "Programma openen",
     planProgramWins: "Er loopt een programma, dus dat wordt gebruikt in plaats van het weekschema.",
-    recommended: "Aanbevolen",
-    planPickOne:
-      "Je hebt er maar één nodig. Kies het weekschema, tenzij je een ingebouwde opbouw over meerdere weken wilt. Je kunt later wisselen.",
     planSetupTitle: "Stel je plan in",
     planSetupBody:
       "Volg deze stappen op volgorde. Het plan opent in een venster dat je er doorheen leidt.",
@@ -3264,9 +3260,11 @@ const nl: Dict = {
     planDaysEditWeekly: "Opent je weekschema",
     planDaysEditProgram: "Opent je programma",
     planWeekly: "Weekschema",
-    planWeeklyDesc: "Elke week dezelfde split op vaste dagen. Simpel en flexibel.",
+    planWeeklyDesc:
+      "Elke week dezelfde split op vaste dagen. Perfect als je een vaste routine wilt die simpel te volgen is.",
     planProgram: "Programma",
-    planProgramDesc: "Een paar weken die opbouwen, met een lichtere week aan het eind.",
+    planProgramDesc:
+      "Een paar weken die opbouwen, met een lichtere week aan het eind. Perfect als je geplande progressie en een ingebouwde herstelweek wilt.",
     cardioTitle: "Cardio",
     cardioBody:
       "Plan wandelingen, hardlooprondjes of fietstochten op vaste dagen. Ze tellen mee voor je cardiominuten per week.",
