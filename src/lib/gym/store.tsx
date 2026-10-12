@@ -5,6 +5,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -109,6 +110,7 @@ import {
 } from "./syncState";
 import { manualCardioWatch, sortCardioPlan } from "./cardio";
 import { CURRENT_VERSION } from "./changelog";
+import { configureAnalytics, track, type AnalyticsLevel } from "./analytics";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
 interface GymState {
@@ -144,6 +146,9 @@ interface GymState {
   /** Last changelog version (changelog.ts) the person has seen; the update
    *  screen lists everything newer. */
   lastSeenVersion: number;
+  /** Anonymous usage statistics (analytics.ts): "basic" is on by default,
+   *  "detailed" is opt-in, "off" sends nothing. */
+  analyticsLevel: AnalyticsLevel;
   supersetsEnabled: boolean;
   /** Warm-up sets before compound exercises. Off: none are planned, and a
    *  running workout starts every exercise on a working set. */
@@ -256,6 +261,7 @@ const initialState: GymState = {
   notifSeen: [],
   setupSeen: false,
   lastSeenVersion: CURRENT_VERSION,
+  analyticsLevel: "basic",
   supersetsEnabled: false,
   warmupsEnabled: true,
   alcoholEnabled: true,
@@ -429,6 +435,10 @@ function migrate(raw: Partial<GymState>): GymState {
     // Saves from before the update screen: someone who already uses the app
     // sees everything; a brand-new install starts on the current version.
     lastSeenVersion: raw.lastSeenVersion ?? (welcomeSeenFrom(raw) ? 0 : CURRENT_VERSION),
+    analyticsLevel:
+      raw.analyticsLevel === "off" || raw.analyticsLevel === "detailed"
+        ? raw.analyticsLevel
+        : "basic",
     supersetsEnabled: raw.supersetsEnabled ?? false,
     warmupsEnabled: raw.warmupsEnabled ?? true,
     alcoholEnabled: raw.alcoholEnabled ?? true,
@@ -738,6 +748,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
       state.recipes.reduce((n, r) => n + r.ingredients.filter(one).length, 0)
     );
   }, [state.foodEntries, state.favoriteFoods, state.mealTemplates, state.recipes]);
+  // Usage statistics follow the saved setting (and language), once the
+  // saved state is loaded so nothing is sent before the choice is known.
+  useLayoutEffect(() => {
+    if (!hydrated) return;
+    configureAnalytics({ level: state.analyticsLevel, lang: state.language });
+  }, [hydrated, state.analyticsLevel, state.language]);
+
   useEffect(() => {
     if (!hydrated || nevoItemCount === 0) return;
     let alive = true;
@@ -1173,7 +1190,16 @@ export function GymProvider({ children }: { children: ReactNode }) {
       signUp: authSignUp,
       signOut: authSignOut,
       update: (patch) => setState((s) => ({ ...s, ...patch })),
-      startWorkout: (input) =>
+      startWorkout: (input) => {
+        track(
+          "workout.started",
+          {
+            source: input.fromProgramDay ? "program" : input.fromScheduledDay ? "plan" : "own",
+            exercises: input.plan.length,
+            duration_min: input.duration_minutes,
+          },
+          { cardio: !!input.cardio },
+        );
         setState((s) => ({
           ...s,
           restOverride: null,
@@ -1190,7 +1216,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
             fromProgramDay: input.fromProgramDay ?? false,
             ...(input.cardio ? { cardio: input.cardio } : {}),
           },
-        })),
+        }));
+      },
       setActiveCardio: (cardio) =>
         setState((s) =>
           s.activeWorkout
@@ -1246,7 +1273,28 @@ export function GymProvider({ children }: { children: ReactNode }) {
             activeWorkout: { ...s.activeWorkout, completed_sets: renumber(sets) },
           };
         }),
-      finishWorkout: () =>
+      finishWorkout: () => {
+        const running = stateRef.current.activeWorkout;
+        if (running) {
+          const working = running.completed_sets.filter((x) => x.set_type !== "warmup");
+          track(
+            "workout.finished",
+            {
+              planned_exercises: running.plan.length,
+              exercises_done: new Set(working.map((x) => x.exercise_id)).size,
+              sets_logged: working.length,
+              duration_bucket: Math.min(
+                120,
+                Math.round((Date.now() - new Date(running.date).getTime()) / 60000 / 15) * 15,
+              ),
+            },
+            {
+              exercise_ids: working.length
+                ? [...new Set(working.map((x) => x.exercise_id))].join(",")
+                : "",
+            },
+          );
+        }
         setState((s) =>
           s.activeWorkout
             ? {
@@ -1272,8 +1320,18 @@ export function GymProvider({ children }: { children: ReactNode }) {
                     : s.program,
               }
             : s,
-        ),
-      cancelWorkout: () => setState((s) => ({ ...s, restOverride: null, activeWorkout: null })),
+        );
+      },
+      cancelWorkout: () => {
+        const running = stateRef.current.activeWorkout;
+        if (running) {
+          track("workout.cancelled", {
+            planned_exercises: running.plan.length,
+            sets_logged: running.completed_sets.filter((x) => x.set_type !== "warmup").length,
+          });
+        }
+        setState((s) => ({ ...s, restOverride: null, activeWorkout: null }));
+      },
       reorderActivePlan: (from, to) =>
         setState((s) => {
           if (!s.activeWorkout) return s;
@@ -1386,7 +1444,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ...plan.filter((_, i) => picked.has(i)),
           ]);
         }),
-      swapActiveExercise: (index, nextExerciseId) =>
+      swapActiveExercise: (index, nextExerciseId) => {
+        track("exercise.swapped", {
+          source: "session",
+          from_id: stateRef.current.activeWorkout?.plan[index]?.exercise_id ?? "",
+          to_id: nextExerciseId,
+        });
         setState((s) => {
           if (!s.activeWorkout) return s;
           const plan = s.activeWorkout.plan.map((p, i) => {
@@ -1395,7 +1458,8 @@ export function GymProvider({ children }: { children: ReactNode }) {
             return { ...rest, exercise_id: nextExerciseId };
           });
           return withPlan(s, plan);
-        }),
+        });
+      },
       appendBonusExercise: (exerciseId) =>
         setState((s) => {
           if (!s.activeWorkout) return s;

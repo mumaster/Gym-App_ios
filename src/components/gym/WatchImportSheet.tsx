@@ -16,6 +16,7 @@ import type { CardioActivity, CardioEffort, WatchData } from "../../lib/gym/type
 import { cardioTargetId, formatDuration, looksLikeCardio, matchWorkout } from "../../lib/gym/watch";
 import { guessCardioActivity } from "../../lib/gym/cardio";
 import { ActivityPicker, EffortPicker } from "./CardioControls";
+import { track } from "../../lib/gym/analytics";
 import { scanWatchWorkout } from "../../lib/gym/watchScan";
 
 type Step = "pick" | "reading" | "review" | "error";
@@ -135,6 +136,7 @@ export function WatchImportSheet({
       const perFile = await Promise.all(files.map(screenshotToBase64Parts));
       const parts = perFile.flatMap((ps, fileIndex) => ps.map((p) => ({ ...p, fileIndex })));
       const images = parts.map(({ base64, mimeType }) => ({ imageBase64: base64, mimeType }));
+      track("feature.used", { feature: "watch_import" });
       const { routeMap: mapAt, ...result } = await scanWatchWorkout({ data: { images } });
       const empty =
         result.durationSeconds == null &&

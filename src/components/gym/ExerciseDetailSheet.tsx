@@ -1,6 +1,7 @@
 import { limbOf } from "../../lib/gym/unilateral";
 import { Heart, Pencil, ShieldOff, Youtube } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { track } from "../../lib/gym/analytics";
 import { ExerciseAnimation } from "./ExerciseAnimation";
 import { ExerciseProgressChart } from "./ExerciseProgressChart";
 import { exerciseVideoUrl } from "../../lib/gym/exerciseVideo";
@@ -87,6 +88,9 @@ export function ExerciseDetailSheet({
           <ExerciseAnimation exerciseId={exercise.id} />
           <a
             href={exerciseVideoUrl(exercise)}
+            onClick={() =>
+              track("feature.used", { feature: "exercise_video", exercise_id: exercise.id })
+            }
             target="_blank"
             rel="noreferrer noopener"
             className="glass flex min-h-[48px] items-center gap-3 rounded-2xl px-4 active:scale-[0.985]"

@@ -30,6 +30,7 @@ import { AuthSheet } from "./AuthSheet";
 import { CARDIO_ICONS } from "./cardioDisplay";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { CAFFEINE_DAILY_LIMIT_MG, COFFEE_CAFFEINE_MG } from "../../lib/gym/nutrition";
+import { track } from "../../lib/gym/analytics";
 import { haptic, useGym } from "../../lib/gym/store";
 import { chip } from "./ui";
 
@@ -108,6 +109,10 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
     dialog.current?.focus();
   }, []);
 
+  useEffect(() => {
+    track("tour.step_viewed", { tour: "welcome", step: index + 1 });
+  }, [index]);
+
   const goTo = (i: number) => {
     const el = scroller.current;
     if (!el) return;
@@ -125,6 +130,7 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
   // go straight to a screen or to looking around).
   const finish = (to?: ReadyTarget, skipSetup = false) => {
     haptic(15);
+    track(index === last ? "tour.completed" : "tour.skipped", { tour: "welcome", step: index + 1 });
     if (to) navigate({ to });
     if (skipSetup) update({ welcomeSeen: true, setupSeen: true });
     else onDone();

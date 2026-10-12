@@ -38,6 +38,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate, formatWaterAmount } from "../../lib/gym/nutrition";
 import { ALLERGIES } from "../../lib/gym/allergens";
 import { splitTemplateById } from "../../lib/gym/splits";
+import { track } from "../../lib/gym/analytics";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /**
@@ -84,6 +85,10 @@ export function SetupTour() {
   if (pathname === "/equipment") return null;
 
   const close = () => {
+    track(step >= STEPS.length - 1 ? "tour.completed" : "tour.skipped", {
+      tour: "setup",
+      step: step + 1,
+    });
     update({ setupSeen: true });
     setStep(0);
   };
@@ -117,6 +122,7 @@ export function SetupFlow({
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
+    track("tour.step_viewed", { tour: "setup", step: idx + 1, step_id: STEPS[idx] ?? "" });
   }, [idx]);
 
   const go = (n: number) => {

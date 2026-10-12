@@ -81,6 +81,7 @@ import {
   type ScheduleSlot,
   type SplitTemplateId,
 } from "../lib/gym/splits";
+import { track } from "../lib/gym/analytics";
 import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles, muscularCapReached, weeklySets } from "../lib/gym/volume";
@@ -328,27 +329,33 @@ function WorkoutHome() {
     const week =
       (from?.followingProgram ?? followingProgram) && program ? currentProgramWeek(program) : null;
     setPlanKey(inputKey(rs, fs));
-    setPlan(
-      generateWorkout({
-        duration,
-        equipment: profile.active_equipment_ids,
-        targets: targetsFor(rs, fs),
-        variation: nextVariation,
-        supersets: supersetsEnabled,
-        warmups: warmupsEnabled,
-        focusMuscles: [...focusMuscles(growthFocus)],
-        // What this week already did, so a session tops up what's behind.
-        weekDone: weeklySets(workouts, null),
-        loved: lovedExerciseIds,
-        avoided: avoidedExerciseIds,
-        history: workouts,
-        pace,
-        knownLifts,
-        profile,
-        bodyKg: latestBodyKg(weightLog, nutritionProfile),
-        ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
-      }),
-    );
+    const generated = generateWorkout({
+      duration,
+      equipment: profile.active_equipment_ids,
+      targets: targetsFor(rs, fs),
+      variation: nextVariation,
+      supersets: supersetsEnabled,
+      warmups: warmupsEnabled,
+      focusMuscles: [...focusMuscles(growthFocus)],
+      // What this week already did, so a session tops up what's behind.
+      weekDone: weeklySets(workouts, null),
+      loved: lovedExerciseIds,
+      avoided: avoidedExerciseIds,
+      history: workouts,
+      pace,
+      knownLifts,
+      profile,
+      bodyKg: latestBodyKg(weightLog, nutritionProfile),
+      ...(week ? { intensityMultiplier: week.intensity, volumeMultiplier: week.volume } : {}),
+    });
+    setPlan(generated);
+    track("workout.generated", {
+      exercises: generated.length,
+      duration_min: duration,
+      muscle_groups: rs.length,
+      shuffle: nextVariation > 0,
+      following_plan: !!week || (from?.followingProgram ?? followingProgram),
+    });
   };
 
   // Generation itself is instant — the delay here is purely to make the
@@ -1551,6 +1558,11 @@ function WorkoutHome() {
         })()}
         onClose={() => setSwapIndex(null)}
         onPick={(ex) => {
+          track("exercise.swapped", {
+            source: "plan",
+            from_id: swapIndex != null ? (plan?.[swapIndex]?.exercise_id ?? "") : "",
+            to_id: ex.id,
+          });
           setPlan((cur) =>
             cur
               ? cur.map((p, i) => {

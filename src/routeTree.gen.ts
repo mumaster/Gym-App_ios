@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as EquipmentRouteImport } from './routes/equipment'
 import { Route as ExercisesRouteImport } from './routes/exercises'
 import { Route as GenerateRouteImport } from './routes/generate'
@@ -25,6 +26,11 @@ import { Route as HistoryWeekWeekStartRouteImport } from './routes/history.week.
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EquipmentRoute = EquipmentRouteImport.update({
@@ -85,6 +91,7 @@ const HistoryWeekWeekStartRoute = HistoryWeekWeekStartRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
   '/generate': typeof GenerateRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
   '/generate': typeof GenerateRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/equipment': typeof EquipmentRoute
   '/exercises': typeof ExercisesRoute
   '/generate': typeof GenerateRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analytics'
     | '/equipment'
     | '/exercises'
     | '/generate'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analytics'
     | '/equipment'
     | '/exercises'
     | '/generate'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/analytics'
     | '/equipment'
     | '/exercises'
     | '/generate'
@@ -171,6 +183,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   EquipmentRoute: typeof EquipmentRoute
   ExercisesRoute: typeof ExercisesRoute
   GenerateRoute: typeof GenerateRoute
@@ -187,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/equipment': {
@@ -288,6 +308,7 @@ const HistoryRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
   EquipmentRoute: EquipmentRoute,
   ExercisesRoute: ExercisesRoute,
   GenerateRoute: GenerateRoute,

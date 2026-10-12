@@ -855,3 +855,7 @@ The app shipped English-only until a Settings toggle (`LanguagePicker.tsx`, in "
 ## Versions and "What's new"
 
 Every deploy-worthy change (every PR that reaches the live branch) must bump `CURRENT_VERSION` in `src/lib/gym/changelog.ts` by one and add a matching `CHANGELOG` entry at the end with a short plain-language text in **both** English and Dutch. Alpha numbering: version `5` shows as `0.005`. The app shows people everything newer than the last version they saw (`WhatsNew.tsx`) and the version in Settings → About. `src/lib/gym/__tests__/changelog.test.ts` fails when the current version has no entry or a text is missing in a language.
+
+## Usage statistics
+
+Anonymous event log in Supabase (`src/lib/gym/analytics.ts`, `docs/analytics.md`). Record events with `track(name, props, detail?)`; never put weights, reps, food, calories, names, notes, email or user ids in them, and add new events to the list in `docs/analytics.md`. Settings → Usage statistics has the off / basic / detailed (opt-in) choice; the admin page is `/analytics`. Going public needs a privacy/consent review (see the TODO in the doc).

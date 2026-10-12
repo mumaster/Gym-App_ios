@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   Cloud,
   CloudOff,
@@ -11,6 +11,7 @@ import {
   UserRound,
   ShieldAlert,
   Wine,
+  BarChart3,
 } from "lucide-react";
 import { ALLERGIES } from "../lib/gym/allergens";
 import { AuthSheet } from "../components/gym/AuthSheet";
@@ -31,6 +32,7 @@ import { CURRENT_VERSION, formatVersion } from "../lib/gym/changelog";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { forceUpdate } from "../pwa";
+import { fetchIsAnalyticsAdmin } from "../lib/gym/analyticsAdmin";
 import { button } from "../components/gym/ui";
 
 export const Route = createFileRoute("/settings")({
@@ -59,6 +61,7 @@ function SettingsScreen() {
     firstName,
     allergies,
     language,
+    analyticsLevel,
   } = useGym();
   const t = useTranslation();
   const [authOpen, setAuthOpen] = useState(false);
@@ -68,6 +71,20 @@ function SettingsScreen() {
   const [moveOpen, setMoveOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [allergiesOpen, setAllergiesOpen] = useState(false);
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const signedIn = !!session;
+  useEffect(() => {
+    let alive = true;
+    if (!signedIn) {
+      setIsAdmin(false);
+      return;
+    }
+    void fetchIsAnalyticsAdmin().then((ok) => alive && setIsAdmin(ok));
+    return () => {
+      alive = false;
+    };
+  }, [signedIn]);
 
   const handleForceUpdate = () => {
     haptic(15);
@@ -261,6 +278,47 @@ function SettingsScreen() {
                   }}
                 />
               ))}
+          </div>
+        </ListCard>
+
+        <ListCard
+          icon={BarChart3}
+          title={t.analytics.title}
+          subtitle={t.analytics[analyticsLevel === "detailed" ? "detailed" : analyticsLevel]}
+          filled={analyticsLevel !== "off"}
+        >
+          <div className="divide-y divide-border border-t border-border">
+            <SwitchRow
+              label={t.analytics.basicLabel}
+              desc={t.analytics.basicDesc}
+              ariaLabel={t.analytics.basicLabel}
+              on={analyticsLevel !== "off"}
+              onToggle={() => {
+                haptic(12);
+                update({ analyticsLevel: analyticsLevel === "off" ? "basic" : "off" });
+              }}
+            />
+            <SwitchRow
+              label={t.analytics.detailedLabel}
+              desc={t.analytics.detailedDesc}
+              ariaLabel={t.analytics.detailedLabel}
+              on={analyticsLevel === "detailed"}
+              disabled={analyticsLevel === "off"}
+              onToggle={() => {
+                haptic(12);
+                update({ analyticsLevel: analyticsLevel === "detailed" ? "basic" : "detailed" });
+              }}
+            />
+            {isAdmin ? (
+              <LinkRow
+                onClick={() => {
+                  haptic(10);
+                  void navigate({ to: "/analytics" });
+                }}
+                title={t.analytics.adminRow}
+                desc={t.analytics.adminRowDesc}
+              />
+            ) : null}
           </div>
         </ListCard>
 

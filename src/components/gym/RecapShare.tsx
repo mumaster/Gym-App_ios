@@ -1,3 +1,4 @@
+import { track } from "../../lib/gym/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Share2 } from "lucide-react";
 import { button } from "./ui";
@@ -69,6 +70,7 @@ export function RecapShare({ workout }: { workout: Workout }) {
       const file = new File([blob], `forge-${workout.date.slice(0, 10)}.png`, {
         type: "image/png",
       });
+      track("feature.used", { feature: "recap_share" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {

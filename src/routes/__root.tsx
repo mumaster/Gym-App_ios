@@ -21,6 +21,7 @@ import { installAppWideHaptics } from "../lib/gym/tapFeedback";
 import { registerServiceWorker } from "../pwa";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
+import { AnalyticsTracker } from "../components/gym/AnalyticsTracker";
 import { SetupTour } from "../components/gym/SetupTour";
 import { WhatsNew } from "../components/gym/WhatsNew";
 import { WelcomeTour } from "../components/gym/WelcomeTour";
@@ -544,6 +545,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
         <TabBar />
+        <AnalyticsTracker />
         <SplashScreen />
         <UpdateBanner />
         <SetupTour />
