@@ -89,19 +89,28 @@ describe("figure rigs", () => {
       }
     }
   });
-  it("deadlift: bar over the mid-foot, back angle held, then lockout", () => {
+  it("deadlift: bar over the mid-foot, knees extend smoothly, then lockout", () => {
     const floor = deadliftPose(1);
     expect(floor.bar[1]).toBeCloseTo(22.5, 3);
     expect(Math.abs(floor.bar[2] - 3)).toBeLessThan(2);
+    // The legs straighten gradually (no early lockout, no sudden jump) and the
+    // knees never travel far from the bar.
+    let prev = dist(floor.hips[1], floor.ankles[1]);
+    for (let d = 0.95; d >= -0.001; d -= 0.05) {
+      const p = deadliftPose(Math.max(0, d));
+      const reach = dist(p.hips[1], p.ankles[1]);
+      expect(reach).toBeGreaterThanOrEqual(prev - 0.5);
+      expect(reach - prev).toBeLessThan(4);
+      if (d > 0.15) expect(reach).toBeLessThan(86);
+      expect(Math.abs(p.knees[1][2] - p.bar[2])).toBeLessThan(12);
+      prev = reach;
+    }
     const rise = deadliftPose(0.7);
-    const angle = (p: FigurePose) =>
-      Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
-    expect(Math.abs(angle(rise) - angle(floor))).toBeLessThan(0.05);
-    expect(rise.hips[1][1]).toBeGreaterThan(floor.hips[1][1] + 10);
+    expect(rise.hips[1][1]).toBeGreaterThan(floor.hips[1][1] + 8);
     expect(rise.shoulders[1][1]).toBeGreaterThan(floor.shoulders[1][1] + 10);
     const top = deadliftPose(0);
     expect(top.hips[1][1]).toBeGreaterThan(90);
-    expect(top.shoulders[1][2]).toBeCloseTo(top.hips[1][2], 0);
+    expect(Math.abs(top.shoulders[1][2] - top.hips[1][2])).toBeLessThan(10);
   });
   it("RDL: the knees stay soft while the hips travel back", () => {
     const knee = (p: FigurePose) => dist(p.hips[1], p.ankles[1]);

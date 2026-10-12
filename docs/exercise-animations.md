@@ -3,17 +3,30 @@
 Read this before adding an entry to `EXERCISE_ANIMATIONS`. Born from the first batch (deadlift, RDL, goblet squat, shoulder press, lat pulldown), where Max found clipping and wrong postures.
 
 ## Check before shipping
+
 1. Render every exercise in both views at phases 0, 450, 700 and 900 (slider "Move through the rep") at 390 wide and look at them at full size, not thumbnails. Compare with a photo or video of the real lift.
 2. Nothing may touch or cross the SVG edge (viewBox is 320 x 206; floor at y 196). Furniture tops need headroom for pulleys and circles: keep tops under about 172 cm at scale 1.05.
 3. Tests for geometry (`exerciseAnimation.test.ts`): constant limb lengths, targets within reach (an unreachable wrist silently stretches the forearm), feet planted.
 
+## Check the whole rep, not just the key frames (added after the deadlift legs snapped straight mid-lift)
+
+Four stills can look right while the motion between them is wrong. For every new or changed lift:
+
+1. Sample the pose in small steps (every 0.05 of depth) from the bottom to the top and print the hip-to-ankle distance, knee position and torso angle, or render a strip of 10+ frames.
+2. Joint distances must change smoothly and in one direction: no early lockout (legs fully straight while the hips are still back), no sudden jump between neighbouring samples, no knee kicking far forward and coming back.
+3. Add a test that walks the whole rep and asserts this (see the deadlift test in `exerciseAnimation.test.ts`).
+4. Prefer building the pose from the constraint that matters (for the deadlift: fixed torso length plus a steadily growing hip-to-ankle reach) instead of animating an angle and hoping the legs follow.
+5. Then view the frames at 390 wide in both views, post them, and only merge after Max says yes.
+
 ## Clipping rules
+
 - A prop must not hide the joint that shows the posture. Plates are drawn as an outline with a very light fill (12%) so knees and shins stay visible in the side view.
 - Keep the head clear of arms and bars: put wrists a bit forward of the face (about +20 cm in z for overhead pulls) instead of through it.
 - Pads and seats sit on the body part they support (thigh pad on the thigh, seat under the hips), not floating above it.
 - Standing figures start straight: ankle z equals hip z at lockout, otherwise the legs show a kink.
 
 ## Posture rules per lift
+
 - Deadlift: bar over mid-foot, shoulders just ahead of the bar, back angle held while the bar leaves the floor, hips higher than or level with the knees, arms straight, neutral neck (head follows the back, about 0.7 of its lean).
 - Romanian deadlift: soft knees, hips travel back, bar stays against the legs, flat back.
 - Goblet squat: upright chest, dumbbell at the chest with elbows inside the knees, knees over the toes, heels down, depth about parallel (do not drop the hips far below the knees or the torso collapses).
