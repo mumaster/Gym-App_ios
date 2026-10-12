@@ -301,13 +301,17 @@ export function FigureSide({ model, pose }: Props) {
   const bar = p(pose.bar);
   const leg = (i: 0 | 1, cls: string, w: number, op?: number) => {
     const a = p(pose.ankles[i]);
+    const dir = pose.feet[i].dir;
+    const soleY = FLOOR - s(pose.feet[i].floor) - 2;
+    // Flat sole, heel down; only a genuinely lifted heel (rear foot of a lunge) slopes.
+    const raised = soleY - a[1] > s(14);
+    const foot = raised
+      ? `L${pt([a[0] + dir * s(15), soleY])}`
+      : `L${pt([a[0], soleY])}M${pt([a[0] - dir * s(5), soleY])}L${pt([a[0] + dir * s(15), soleY])}`;
     return (
       <path
         opacity={op}
-        d={`${poly(p(pose.hips[i]), p(pose.knees[i]), a)}L${pt([
-          a[0] + pose.feet[i].dir * s(15),
-          FLOOR - s(pose.feet[i].floor) - 2,
-        ])}`}
+        d={`${poly(p(pose.hips[i]), p(pose.knees[i]), a)}${foot}`}
         className={cls}
         strokeWidth={w}
       />
