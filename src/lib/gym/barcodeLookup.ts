@@ -40,7 +40,24 @@ interface OpenFoodFactsResponse {
  *  barcode simply isn't in the database — a normal outcome for a lot of
  *  products, not a failure to surface as one. Throws only on an actual
  *  network/request failure, for the caller to catch and fall back from. */
-export async function lookupBarcode(barcode: string): Promise<ScannedLabel | null> {
+export function lookupBarcode(barcode: string): Promise<ScannedLabel | null> {
+  const hit = cache.get(barcode);
+  if (hit) return hit;
+  const request = fetchBarcode(barcode);
+  cache.set(barcode, request);
+  // A failure isn't cached: the next scan should try again.
+  request.catch(() => cache.delete(barcode));
+  // Keep the cache small; Map keeps insertion order, so drop the oldest.
+  if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value as string);
+  return request;
+}
+
+/** Recent lookups (and ones in flight), so scanning the same product again,
+ *  or two reads of one code, cost one request. Cleared on reload. */
+const cache = new Map<string, Promise<ScannedLabel | null>>();
+const CACHE_SIZE = 30;
+
+async function fetchBarcode(barcode: string): Promise<ScannedLabel | null> {
   const res = await fetch(
     `${OFF_ENDPOINT}${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`,
   );

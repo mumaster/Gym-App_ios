@@ -3,6 +3,17 @@ import { AlertTriangle, Camera, ImageIcon, X } from "lucide-react";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
+import { createVideoDecoder, SCAN_INTERVAL_MS } from "../../lib/gym/barcodeDecode";
+
+/** Opens the connection to a host ahead of the first request. */
+function preconnect(href: string) {
+  if (document.head.querySelector(`link[rel=preconnect][href="${href}"]`)) return;
+  const link = document.createElement("link");
+  link.rel = "preconnect";
+  link.href = href;
+  link.crossOrigin = "anonymous";
+  document.head.appendChild(link);
+}
 
 export type FoodScannerStatus = "scanning" | "lookingUp" | "notFound";
 
@@ -28,13 +39,11 @@ const LABEL_HINT_MS = 3000;
  * Note and plate mode send the shutter's photo to the list reader. Barcodes
  * are only decoded in barcode mode, so a package in view can't take over.
  * Full-screen `fixed inset-0 z-[60]`, above AddFoodSheet's own z-50 sheet.
- * `@zxing/browser` (~200KB gzipped) is imported inside the effect, so it's
- * only fetched the first time the scanner opens.
- *
- * zxing's `controls.stop()` also stops the camera, so after a detection the
- * stream is kept running and further barcodes are simply ignored while the
- * parent looks one up (`status !== "scanning"`) — the shutter must stay
- * usable if the lookup comes back empty.
+ * zxing is imported inside the effect, so it's only fetched when the scanner
+ * opens (and not at all where BarcodeDetector exists). After a detection the
+ * stream keeps running and barcodes are ignored while the parent looks one
+ * up (`status !== "scanning"`) — the shutter must stay usable if the lookup
+ * comes back empty.
  */
 export function FoodScanner({
   open,
@@ -95,48 +104,59 @@ export function FoodScanner({
     reported.current.clear();
 
     let cancelled = false;
-    let controls: { stop: () => void } | undefined;
+    let stream: MediaStream | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    import("@zxing/browser")
-      .then(({ BrowserMultiFormatReader }) => {
-        if (cancelled) return undefined;
-        const reader = new BrowserMultiFormatReader();
+    // Camera and decoder start together (they used to run one after the
+    // other), and the product database connection is opened early.
+    preconnect("https://world.openfoodfacts.org");
+    const video = videoRef.current;
+    const cameraReady = navigator.mediaDevices
+      .getUserMedia({
         // Ask for a high-resolution stream: the same frames feed the label
         // reader, which needs legible print.
-        return reader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: "environment",
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-            },
-          },
-          videoRef.current ?? undefined,
-          (result) => {
-            // NotFoundException fires on nearly every frame without a
-            // barcode — the normal state, nothing to do.
-            if (cancelled || !result || statusRef.current !== "scanning") return;
-            // Only in Barcode mode: in the others you're photographing
-            // something, and a package in view isn't the point.
-            if (
-              (modeRef.current !== "barcode" && modeRef.current !== "qr") ||
-              !onBarcodeRef.current
-            )
-              return;
-            const code = result.getText();
-            if (reported.current.has(code)) return;
-            reported.current.add(code);
-            haptic([20, 30]);
-            onBarcodeRef.current(code);
-          },
-        );
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
       })
-      .then((c) => {
-        // The scanner can close before getUserMedia resolves (a fast tap);
-        // stop the stream here instead of leaking it.
-        if (!c) return;
-        controls = c;
-        if (cancelled) c.stop();
+      .then(async (s) => {
+        stream = s;
+        if (cancelled) {
+          s.getTracks().forEach((track) => track.stop());
+          return null;
+        }
+        if (video) {
+          video.srcObject = s;
+          await video.play().catch(() => undefined);
+        }
+        return video;
+      });
+    const decoderReady = video ? createVideoDecoder(video) : Promise.resolve(null);
+
+    Promise.all([cameraReady, decoderReady])
+      .then(([v, decode]) => {
+        if (cancelled || !v || !decode) return;
+        const tick = async () => {
+          if (cancelled) return;
+          // Nothing to decode while a lookup runs or in photo modes.
+          const scanning =
+            statusRef.current === "scanning" &&
+            (modeRef.current === "barcode" || modeRef.current === "qr") &&
+            !!onBarcodeRef.current &&
+            v.readyState >= 2;
+          if (scanning) {
+            const code = await decode().catch(() => null);
+            if (code && !cancelled && !reported.current.has(code)) {
+              reported.current.add(code);
+              haptic([20, 30]);
+              onBarcodeRef.current?.(code);
+            }
+          }
+          if (!cancelled) timer = setTimeout(() => void tick(), SCAN_INTERVAL_MS);
+        };
+        void tick();
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -149,7 +169,9 @@ export function FoodScanner({
 
     return () => {
       cancelled = true;
-      controls?.stop();
+      clearTimeout(timer);
+      stream?.getTracks().forEach((track) => track.stop());
+      if (video) video.srcObject = null;
     };
   }, [open, t]);
 

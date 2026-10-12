@@ -56,11 +56,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Gebruiksstatistieken: de app deelt nu anoniem welke functies gebruikt worden, om hem te verbeteren. In Instellingen zet je dit uit, of kies je voor meer detail.",
     },
   },
+  {
+    version: 7,
+    text: {
+      en: "Faster barcode scanner: the camera starts sooner, codes are read several times faster, and a product you scanned before loads instantly.",
+      nl: "Snellere barcodescanner: de camera start sneller, codes worden vele malen sneller gelezen en een eerder gescand product laadt direct.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
