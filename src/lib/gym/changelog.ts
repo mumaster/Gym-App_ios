@@ -98,11 +98,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Producten zoeken op naam: bij het toevoegen van eten zie je nu ook verpakte producten uit Open Food Facts (de database van de scanner), zodat je ze kunt loggen zonder de barcode te scannen.",
     },
   },
+  {
+    version: 13,
+    text: {
+      en: "Food search results now show a small tag with where each one comes from: My foods, NEVO or Open Food Facts.",
+      nl: "Zoekresultaten bij eten tonen nu een klein label waar ze vandaan komen: Mijn eten, NEVO of Open Food Facts.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 12;
+export const CURRENT_VERSION = 13;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -753,6 +753,9 @@ export function AddFoodSheet({
                     icon={UserRound}
                     title={t.addFood.yourFoods}
                     foods={savedMatches}
+                    sourceLabel={(food) =>
+                      food.nevo?.length ? t.addFood.sourceNevo : t.addFood.sourceMine
+                    }
                     favoriteKeys={favoriteKeys}
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
@@ -782,8 +785,9 @@ export function AddFoodSheet({
                           onClick={() => startFromNevo(food)}
                           className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
                         >
-                          <p className="text-[15px] font-semibold leading-snug">
-                            {nevoName(food, language)}
+                          <p className="flex items-center gap-2 text-[15px] font-semibold leading-snug">
+                            <span className="min-w-0 truncate">{nevoName(food, language)}</span>
+                            <SourceBadge label={t.addFood.sourceNevo} />
                           </p>
                           <p className="tabular text-[12px] text-muted-foreground">
                             {synonym ? `${synonym} · ` : ""}
@@ -821,7 +825,10 @@ export function AddFoodSheet({
                             onClick={() => startFromProduct(hit)}
                             className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
                           >
-                            <p className="text-[15px] font-semibold leading-snug">{hit.name}</p>
+                            <p className="flex items-center gap-2 text-[15px] font-semibold leading-snug">
+                              <span className="min-w-0 truncate">{hit.name}</span>
+                              <SourceBadge label={t.addFood.sourceOff} />
+                            </p>
                             <p className="tabular text-[12px] text-muted-foreground">
                               {hit.brand ? `${hit.brand} · ` : ""}
                               {t.addFood.per100kcal(Math.round(hit.label.calories ?? 0))}
@@ -1274,6 +1281,14 @@ export function AddFoodSheet({
 /** Edit/Done in a list card's header band: a round icon button, like the
  *  meal card's save button, so a long title ("Maaltijden") keeps its room
  *  next to "New". */
+function SourceBadge({ label }: { label: string }) {
+  return (
+    <span className="shrink-0 rounded-md bg-foreground/10 px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-muted-foreground">
+      {label}
+    </span>
+  );
+}
+
 function EditToggle({
   editing,
   onToggle,
@@ -1310,6 +1325,7 @@ function FoodList({
   onToggleEdit,
   onRemove,
   favorites = false,
+  sourceLabel,
 }: {
   icon: LucideIcon;
   title: string;
@@ -1328,6 +1344,8 @@ function FoodList({
    *  star column (the name gets the room); a favourite is removed in edit
    *  mode instead, where its "+" becomes an unfavourite button. */
   favorites?: boolean;
+  /** Search results: a small tag for where each row came from. */
+  sourceLabel?: (food: ListFood) => string;
 }) {
   const t = useTranslation();
   const canEdit = favorites ? foods.length > 0 : !!onRemove && !!removable && foods.some(removable);
@@ -1352,7 +1370,10 @@ function FoodList({
               onClick={() => onOpen(food)}
               className="min-w-0 flex-1 py-1.5 text-left active:opacity-70"
             >
-              <span className="block truncate text-[15px] font-semibold">{food.name}</span>
+              <span className="flex items-center gap-2">
+                <span className="min-w-0 truncate text-[15px] font-semibold">{food.name}</span>
+                {sourceLabel ? <SourceBadge label={sourceLabel(food)} /> : null}
+              </span>
               <PortionLine
                 grams={food.grams}
                 macros={m}
