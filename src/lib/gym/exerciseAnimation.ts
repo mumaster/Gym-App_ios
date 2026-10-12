@@ -180,7 +180,8 @@ export type Furniture =
   | "thrust-bench"
   | "pullup-bar"
   | "cable-tower"
-  | "leg-curl";
+  | "leg-curl"
+  | "leg-extension";
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -193,6 +194,8 @@ export interface FigureModel {
   centerZ: number;
   /** Only the near hand holds a dumbbell (the other one is on the bench). */
   oneDumbbell?: boolean;
+  /** Dumbbells held with the palms facing each other (hammer grip). */
+  neutralGrip?: boolean;
   /** Where a cable runs from the hands to (cm: height and z in the side view). */
   pulley?: { y: number; z: number };
 }
@@ -299,7 +302,7 @@ export function deadliftPose(depth: number): FigurePose {
 
 /** Romanian deadlift: knees stay softly bent, the hips travel back, the bar
  *  slides down the legs with a flat back. */
-export function rdlPose(depth: number): FigurePose {
+export function rdlPose(depth: number, gripHalf = 22): FigurePose {
   const e = smooth(depth);
   const hipZ = lerp(-2, -30, e);
   const reach = lerp(87, 82, e);
@@ -322,11 +325,17 @@ export function rdlPose(depth: number): FigurePose {
     head: headFrom(shoulder, lean * 0.6),
     ankleZ: ANKLE_Z,
     footHalf: 14,
-    wrist: (s) => [s * 22, wy, wz],
+    wrist: (s) => [s * gripHalf, wy, wz],
     bar: [0, wy, wz],
     kneePole: forwardKnees,
     elbowPole: straightArms,
   });
+}
+
+/** Dumbbell Romanian deadlift: the same hinge, with a dumbbell in each hand
+ *  hanging just outside the thighs. */
+export function dbRdlPose(depth: number): FigurePose {
+  return rdlPose(depth, 19);
 }
 
 /** Goblet squat: dumbbell at the chest, torso upright, knees forward over
@@ -530,7 +539,10 @@ export function inclinePressPose(depth: number): FigurePose {
 }
 
 /** Standing dumbbell curl: elbows pinned at the sides, only the forearms move. */
-export function curlPose(depth: number): FigurePose {
+export function curlPose(
+  depth: number,
+  grip: (e: number) => number = (e) => 21 - 4 * e,
+): FigurePose {
   const e = smooth(depth);
   const shoulder = { y: STAND_SHOULDER_Y, z: 0 };
   const elbowY = shoulder.y - 28.5;
@@ -542,10 +554,68 @@ export function curlPose(depth: number): FigurePose {
     head: headFrom(shoulder, 0),
     ankleZ: 0,
     footHalf: 11,
-    wrist: (s) => [s * (21 - 4 * e), elbowY - 26 * cos(theta), elbowZ + 26 * sin(theta)],
+    wrist: (s) => [s * grip(e), elbowY - 26 * cos(theta), elbowZ + 26 * sin(theta)],
     bar: [0, elbowY - 26 * cos(theta), elbowZ + 26 * sin(theta)],
     kneePole: forwardKnees,
     elbowPole: (s) => [s * 0.2, -1, 0],
+  });
+}
+
+/** Barbell curl: the same curl with a shoulder-width underhand grip that stays put. */
+export function barbellCurlPose(depth: number): FigurePose {
+  return curlPose(depth, () => 17);
+}
+
+/** Hammer curl: palms face each other, so the hands stay close to the thighs. */
+export function hammerCurlPose(depth: number): FigurePose {
+  return curlPose(depth, (e) => 21 - 2 * e);
+}
+
+/** Standing calf raise: legs straight, the heels rise until the body is
+ *  about 10 cm taller, the toes stay on the floor. */
+export function calfRaisePose(depth: number): FigurePose {
+  const h = 10 * smooth(depth);
+  const phi = (Math.asin(h / 15) * 180) / Math.PI;
+  const shoulder = { y: STAND_SHOULDER_Y + h, z: 0 };
+  const hip = { y: STAND_HIP_Y + h, z: 0 };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, 0),
+    ankleZ: 0,
+    footHalf: 11,
+    ankle: (s) => [s * 11, ANKLE_Y + h, 0],
+    // The toes pin the floor, the heel lifts (the foot pivots about its ball).
+    foot: () => ({ floor: 0, dir: 1, angle: -phi, drop: 6, pitch: phi }),
+    // Dumbbells hang at the sides.
+    wrist: (s) => [s * 24, shoulder.y - 53, 0],
+    bar: [0, shoulder.y - 53, 0],
+    kneePole: forwardKnees,
+    elbowPole: straightArms,
+  });
+}
+
+/** Seated leg extension: the thigh stays on the seat, the shin swings from
+ *  hanging down to straight out in front. */
+export function legExtensionPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: 53, z: -3 };
+  const knee = { y: hip.y - 45 * sin(4), z: hip.z + 45 * cos(4) };
+  const theta = lerp(95, 5, e); // shin angle below level
+  const ankle: V3 = [0, knee.y - 43 * sin(theta), knee.z + 43 * cos(theta)];
+  const shoulder = { y: hip.y + BODY.torso * cos(7), z: hip.z - BODY.torso * sin(7) };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, -4),
+    ankleZ: ankle[2],
+    footHalf: 10,
+    ankle: (sd) => [sd * 10, ankle[1], ankle[2]],
+    foot: () => ({ floor: Math.max(0, ankle[1] - 2), dir: 1, angle: 75 - theta }),
+    wrist: (sd) => [sd * 24, 64, 14],
+    bar: [0, 64, 14],
+    kneePole: () => [0, 1, 0.5],
+    elbowPole: (sd) => [sd * 0.5, -1, -0.3],
   });
 }
 
@@ -1908,6 +1978,207 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Trek je hielen zo ver mogelijk omlaag en naar achteren.",
         "Houd je dijen omlaag gedrukt en je heupen op de zitting.",
         "Laat je benen langzaam omhoog komen tot ze bijna gestrekt zijn.",
+      ],
+    },
+  },
+  "bb-curl": {
+    figure: {
+      pose: barbellCurlPose,
+      implement: "barbell",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: 14,
+    },
+    labels: label("Barbell curl", "Barbell curl"),
+    phases: {
+      en: {
+        lower: "Curl up, elbows pinned to your sides",
+        touch: "Squeeze at the top",
+        press: "Lower slowly under control",
+        lockout: "Arms straight, biceps stretched",
+      },
+      nl: {
+        lower: "Curl omhoog, ellebogen tegen je zij",
+        touch: "Knijp bovenin",
+        press: "Laat langzaam gecontroleerd zakken",
+        lockout: "Armen gestrekt, biceps gerekt",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall, feet hip-width apart, knees soft, core braced.",
+        "Grip the bar underhand, about shoulder width.",
+        "Pin your elbows to your sides. Only your forearms move.",
+        "Curl the bar to shoulder height without swinging or leaning back.",
+        "Lower for about two seconds until your arms are straight again.",
+      ],
+      nl: [
+        "Sta rechtop, voeten heupbreed, knieën zacht, core aangespannen.",
+        "Pak de stang onderhands vast, ongeveer schouderbreed.",
+        "Houd je ellebogen tegen je zij. Alleen je onderarmen bewegen.",
+        "Curl de stang tot schouderhoogte zonder te zwaaien of achterover te leunen.",
+        "Laat ongeveer twee seconden zakken tot je armen weer gestrekt zijn.",
+      ],
+    },
+  },
+  "db-hammer-curl": {
+    figure: {
+      pose: hammerCurlPose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: 14,
+      neutralGrip: true,
+    },
+    labels: label("Hammer curl", "Hammer curl"),
+    phases: {
+      en: {
+        lower: "Curl up with your palms facing each other",
+        touch: "Squeeze at the top",
+        press: "Lower slowly under control",
+        lockout: "Arms straight, dumbbells beside your thighs",
+      },
+      nl: {
+        lower: "Curl omhoog met je handpalmen naar elkaar toe",
+        touch: "Knijp bovenin",
+        press: "Laat langzaam gecontroleerd zakken",
+        lockout: "Armen gestrekt, dumbbells naast je dijen",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall, feet hip-width apart, knees soft, core braced.",
+        "Hold the dumbbells like hammers, palms facing each other.",
+        "Pin your elbows to your sides. Only your forearms move.",
+        "Curl to shoulder height, keeping your wrists straight.",
+        "Lower for about two seconds until your arms are straight again.",
+      ],
+      nl: [
+        "Sta rechtop, voeten heupbreed, knieën zacht, core aangespannen.",
+        "Houd de dumbbells als hamers vast, handpalmen naar elkaar toe.",
+        "Houd je ellebogen tegen je zij. Alleen je onderarmen bewegen.",
+        "Curl tot schouderhoogte en houd je polsen recht.",
+        "Laat ongeveer twee seconden zakken tot je armen weer gestrekt zijn.",
+      ],
+    },
+  },
+  "db-rdl": {
+    figure: {
+      pose: dbRdlPose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: -4,
+    },
+    labels: label("Dumbbell Romanian deadlift", "Roemeense deadlift met dumbbells"),
+    phases: {
+      en: {
+        lower: "Hips back, soft knees, dumbbells along the legs",
+        touch: "Stretch in the hamstrings, back flat",
+        press: "Drive the hips forward",
+        lockout: "Stand tall, squeeze the glutes",
+      },
+      nl: {
+        lower: "Heupen naar achteren, zachte knieën, dumbbells langs je benen",
+        touch: "Rek in de hamstrings, rug recht",
+        press: "Duw de heupen naar voren",
+        lockout: "Sta rechtop, span de billen aan",
+      },
+    },
+    cues: {
+      en: [
+        "Soft knees: a slight bend that stays the same all rep.",
+        "Push your hips back as if closing a car door with your butt, don't squat down.",
+        "Keep the dumbbells close to your legs, brushing your thighs and shins.",
+        "Flat back and neutral neck throughout. Stop when your hamstrings are stretched, around knee height.",
+        "Drive your hips forward to stand tall and squeeze your glutes.",
+      ],
+      nl: [
+        "Zachte knieën: een lichte buiging die de hele herhaling gelijk blijft.",
+        "Duw je heupen naar achteren, alsof je met je billen een autodeur dichtduwt. Zak niet door je knieën.",
+        "Houd de dumbbells dicht langs je benen, langs je bovenbenen en scheenbenen.",
+        "Rechte rug en neutrale nek de hele herhaling. Stop als je hamstrings gestrekt zijn, rond kniehoogte.",
+        "Duw je heupen naar voren om rechtop te komen en span je billen aan.",
+      ],
+    },
+  },
+  "standing-calf": {
+    figure: {
+      pose: calfRaisePose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: 0,
+    },
+    labels: label("Standing calf raise", "Staande kuitheffing"),
+    phases: {
+      en: {
+        lower: "Rise onto your toes",
+        touch: "Squeeze your calves at the top",
+        press: "Lower your heels slowly",
+        lockout: "Heels down, calves stretched",
+      },
+      nl: {
+        lower: "Kom omhoog op je tenen",
+        touch: "Span je kuiten aan bovenin",
+        press: "Laat je hielen langzaam zakken",
+        lockout: "Hielen omlaag, kuiten gerekt",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall with the balls of your feet on the floor or a step.",
+        "Keep your knees straight but not locked.",
+        "Rise as high as you can onto your toes.",
+        "Pause and squeeze your calves at the top.",
+        "Lower your heels slowly until you feel a stretch.",
+      ],
+      nl: [
+        "Sta rechtop met de bal van je voeten op de vloer of een verhoging.",
+        "Houd je knieën gestrekt maar niet op slot.",
+        "Kom zo hoog mogelijk omhoog op je tenen.",
+        "Pauzeer en span je kuiten aan bovenin.",
+        "Laat je hielen langzaam zakken tot je een rek voelt.",
+      ],
+    },
+  },
+  "leg-extension": {
+    figure: {
+      pose: legExtensionPose,
+      implement: "none",
+      furniture: "leg-extension",
+      scale: 1.2,
+      centerZ: 20,
+    },
+    labels: label("Leg extension", "Leg extension"),
+    phases: {
+      en: {
+        lower: "Swing your legs up and out",
+        touch: "Legs straight, quads squeezed",
+        press: "Lower slowly under control",
+        lockout: "Knees bent, thighs on the seat",
+      },
+      nl: {
+        lower: "Zwaai je benen omhoog en naar voren",
+        touch: "Benen gestrekt, quadriceps aangespannen",
+        press: "Laat langzaam gecontroleerd zakken",
+        lockout: "Knieën gebogen, dijen op de zitting",
+      },
+    },
+    cues: {
+      en: [
+        "Sit back with your knees at the edge of the seat and the pad on your lower shins.",
+        "Straighten your legs by squeezing your quads.",
+        "Pause at the top without locking your knees hard.",
+        "Lower slowly until your knees are bent about 90 degrees.",
+        "Keep your hips on the seat and your back against the pad.",
+      ],
+      nl: [
+        "Zit achterover met je knieën aan de rand van de zitting en het kussen op je onderbenen.",
+        "Strek je benen door je quadriceps aan te spannen.",
+        "Pauzeer bovenin zonder je knieën hard te locken.",
+        "Laat langzaam zakken tot je knieën ongeveer 90 graden gebogen zijn.",
+        "Houd je heupen op de zitting en je rug tegen het kussen.",
       ],
     },
   },

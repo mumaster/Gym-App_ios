@@ -6,6 +6,11 @@ import { ExerciseDetailSheet } from "../../../components/gym/ExerciseDetailSheet
 import { EXERCISES } from "../data";
 import {
   backSquatPose,
+  barbellCurlPose,
+  calfRaisePose,
+  dbRdlPose,
+  hammerCurlPose,
+  legExtensionPose,
   BENCH_PRESS_RIG,
   cableCrunchPose,
   cablePushdownPose,
@@ -79,12 +84,15 @@ describe("bench press rig", () => {
 
 const ANIMATED = [
   "bb-bench",
+  "bb-curl",
   "bb-deadlift",
   "bb-row",
   "bb-squat",
   "cable-crunch",
   "cable-pushdown",
   "db-curl",
+  "db-hammer-curl",
+  "db-rdl",
   "db-row",
   "db-shoulder-press",
   "db-single-leg-rdl",
@@ -99,9 +107,11 @@ const ANIMATED = [
   "lat-pulldown",
   "lateral-raise",
   "leg-curl",
+  "leg-extension",
   "pullup",
   "rdl",
   "reverse-lunge",
+  "standing-calf",
 ];
 
 const POSES: Record<string, (d: number) => FigurePose> = {
@@ -459,6 +469,11 @@ describe("batch 3 lifts", () => {
     "cable-pushdown": cablePushdownPose,
     "cable-crunch": cableCrunchPose,
     "leg-curl": seatedLegCurlPose,
+    "bb-curl": barbellCurlPose,
+    "db-hammer-curl": hammerCurlPose,
+    "db-rdl": dbRdlPose,
+    "standing-calf": calfRaisePose,
+    "leg-extension": legExtensionPose,
   };
   it("keeps limb lengths constant and moves smoothly through the whole rep", () => {
     for (const [id, pose] of Object.entries(B3)) {
@@ -505,6 +520,20 @@ describe("batch 3 lifts", () => {
     const bottom = cableCrunchPose(1);
     expect(Math.abs(top.hips[1][1] - bottom.hips[1][1])).toBeLessThan(1);
     expect(bottom.shoulders[1][1]).toBeLessThan(top.shoulders[1][1] - 15);
+  });
+  it("calf raise: toes stay planted while the body rises and the legs stay straight", () => {
+    const down = calfRaisePose(0);
+    const up = calfRaisePose(1);
+    expect(up.hips[1][1]).toBeGreaterThan(down.hips[1][1] + 9);
+    expect(up.ankles[1][2]).toBeCloseTo(down.ankles[1][2], 3);
+    expect(dist(up.hips[1], up.ankles[1])).toBeGreaterThan(87.5);
+  });
+  it("leg extension: the thigh stays put while the shin swings up to straight", () => {
+    const start = legExtensionPose(0);
+    const end = legExtensionPose(1);
+    expect(dist(end.knees[1], start.knees[1])).toBeLessThan(0.5);
+    expect(end.ankles[1][2]).toBeGreaterThan(start.ankles[1][2] + 25);
+    expect(Math.abs(end.ankles[1][1] - end.knees[1][1])).toBeLessThan(5);
   });
   it("seated leg curl: the thigh stays on the pad while the shin swings back", () => {
     const start = seatedLegCurlPose(0);

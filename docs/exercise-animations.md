@@ -50,6 +50,11 @@ Four stills can look right while the motion between them is wrong. For every new
 - Cable pushdown: upper arm pinned to the side, only the forearms move, hands finish straight at the thighs, slight forward lean, wrists on the cable line.
 - Cable crunch: kneeling, hips stay still above the knees, the torso curls down toward the thighs (it shortens as the spine rounds), hands stay at the head.
 - Seated leg curl: thigh stays on the pad, only the shin swings back and down under the seat, back on the pad.
+- Barbell curl: shoulder-width underhand grip that stays put, elbows pinned, bar finishes at shoulder height.
+- Hammer curl: palms face each other (`neutralGrip`: dumbbells drawn lengthways in the side view and upright in the front view), hands stay close to the thighs.
+- Dumbbell RDL: the RDL hinge with the dumbbells hanging just outside the thighs.
+- Standing calf raise: legs straight, toes stay planted and the heel lifts (`angle: -phi`, `drop: 6`, `h = 15 sin(phi)`), body rises about 10 cm.
+- Leg extension: thigh stays on the seat, the shin swings from hanging to straight, the pad sits on the front of the lower shin (`leg-extension` furniture).
 
 ## Feet and furniture
 
