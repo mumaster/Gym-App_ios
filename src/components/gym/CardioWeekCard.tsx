@@ -27,9 +27,13 @@ import { button, chip } from "./ui";
 export function CardioWeekCard({
   className = "",
   compact = false,
+  weekOf,
 }: {
-  className?: string;
+  className?: string | undefined;
   compact?: boolean;
+  /** Show this (past) week instead of the current one: no logging or plan
+   *  actions, since those are for today. */
+  weekOf?: Date | undefined;
 }) {
   const t = useTranslation();
   const locale = useLocale();
@@ -37,16 +41,19 @@ export function CardioWeekCard({
   const [logOpen, setLogOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const today = new Date();
-  const monday = mondayOf(today);
-  const minutes = hydrated ? weekWhoMinutes(cardioSessions, today) : 0;
+  const past =
+    !!weekOf && daysBetween(today, mondayOf(weekOf)) !== daysBetween(today, mondayOf(today));
+  const monday = mondayOf(weekOf ?? today);
+  const minutes = hydrated ? weekWhoMinutes(cardioSessions, weekOf ?? today) : 0;
   const pct = Math.min(1, minutes / WHO_WEEKLY_MINUTES);
-  const todayPlan = hydrated ? remainingCardioOn(plannedCardio, cardioSessions, today, today) : [];
+  const todayPlan =
+    hydrated && !past ? remainingCardioOn(plannedCardio, cardioSessions, today, today) : [];
   const next = todayPlan[0] ?? null;
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
     const done = cardioSessionsOn(cardioSessions, dayKeyFromDate(date));
-    const planned = remainingCardioOn(plannedCardio, cardioSessions, date, today);
+    const planned = past ? [] : remainingCardioOn(plannedCardio, cardioSessions, date, today);
     const activity = done[0]?.activity ?? planned[0]?.activity ?? null;
     return {
       date,
@@ -61,24 +68,26 @@ export function CardioWeekCard({
       <Card className={`overflow-hidden p-4 ${className}`}>
         <CardHead
           icon={HeartPulse}
-          title={t.cardio.thisWeek}
+          title={past ? t.cardio.title : t.cardio.thisWeek}
           subtitle={t.cardio.progress(minutes, WHO_WEEKLY_MINUTES)}
           filled={minutes > 0}
           actions={
-            <button
-              type="button"
-              onClick={() => setPlanOpen(true)}
-              aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
-              className={button.edit}
-            >
-              <Pencil className="size-4" />
-            </button>
+            past ? undefined : (
+              <button
+                type="button"
+                onClick={() => setPlanOpen(true)}
+                aria-label={cardioPlan.length ? t.cardio.editPlan : t.cardio.plan}
+                className={button.edit}
+              >
+                <Pencil className="size-4" />
+              </button>
+            )
           }
         />
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
         </div>
-        {compact ? null : (
+        {compact || past ? null : (
           <p className="mt-1.5 text-[12px] text-muted-foreground">
             {minutes >= WHO_WEEKLY_MINUTES ? t.cardio.reached : t.cardio.explain}
           </p>
@@ -122,7 +131,7 @@ export function CardioWeekCard({
           })}
         </div>
 
-        {!compact && !plannedCardio.length && !cardioSessions.length ? (
+        {!compact && !past && !plannedCardio.length && !cardioSessions.length ? (
           <p className="mt-3 text-[13px] text-muted-foreground">{t.cardio.noPlan}</p>
         ) : null}
 
@@ -136,26 +145,28 @@ export function CardioWeekCard({
           </p>
         ) : null}
 
-        <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setLogOpen(true)}
-            className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold active:scale-95 ${
-              next ? chip.on : "bg-muted text-secondary-foreground"
-            }`}
-          >
-            <Plus className="size-4" /> {t.cardio.log}
-          </button>
-          {!cardioPlan.length ? (
+        {past ? null : (
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
-              onClick={() => setPlanOpen(true)}
-              className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-muted text-[14px] font-bold text-secondary-foreground active:scale-95"
+              onClick={() => setLogOpen(true)}
+              className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl text-[14px] font-bold active:scale-95 ${
+                next ? chip.on : "bg-muted text-secondary-foreground"
+              }`}
             >
-              {t.cardio.plan}
+              <Plus className="size-4" /> {t.cardio.log}
             </button>
-          ) : null}
-        </div>
+            {!cardioPlan.length ? (
+              <button
+                type="button"
+                onClick={() => setPlanOpen(true)}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-muted text-[14px] font-bold text-secondary-foreground active:scale-95"
+              >
+                {t.cardio.plan}
+              </button>
+            ) : null}
+          </div>
+        )}
       </Card>
       <LogCardioSheet open={logOpen} onClose={() => setLogOpen(false)} preset={next} />
       <CardioPlanSheet open={planOpen} onClose={() => setPlanOpen(false)} />

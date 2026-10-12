@@ -20,6 +20,7 @@ import { CardHead } from "../components/gym/CardHead";
 import { ListCard } from "../components/gym/ListCard";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
+import { WeekPicker } from "../components/gym/WeekPicker";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { CARDIO_ICONS, cardioName } from "../components/gym/cardioDisplay";
 import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
@@ -29,6 +30,7 @@ import { exerciseById } from "../lib/gym/data";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { formatLoad, isBodyweightExercise } from "../lib/gym/load";
 import { personalRecords } from "../lib/gym/progress";
+import { addDays } from "../lib/gym/date";
 import { mondayOf } from "../lib/gym/schedule";
 import { sessionLoad, sessionMinutes } from "../lib/gym/trainingLoad";
 import { useRouteMap } from "../lib/gym/routeMapStore";
@@ -99,6 +101,17 @@ function HistoryScreen() {
     void navigate({ search: next === "sessions" ? {} : { tab: next }, replace: true });
     window.scrollTo({ top: 0 });
   };
+
+  // Activity's week cards follow the picked week: 0 is this one, -1 last week…
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekMonday = useMemo(() => addDays(mondayOf(new Date()), weekOffset * 7), [weekOffset]);
+  const earliestMonday = useMemo(() => {
+    const times = [...workouts, ...cardioSessions].map((x) => Date.parse(x.date));
+    const first = times.length ? Math.min(...times) : Date.now();
+    return mondayOf(new Date(first));
+  }, [workouts, cardioSessions]);
+  const short = (d: Date) => d.toLocaleDateString(locale, { day: "numeric", month: "short" });
+  const weekLabel = `${short(weekMonday)} – ${short(addDays(weekMonday, 6))}`;
 
   const volumeByMuscle = useMemo(() => {
     const map = new Map<Muscle, number>();
@@ -509,10 +522,22 @@ function HistoryScreen() {
             </>
           ) : null}
 
+          <WeekPicker
+            monday={weekMonday}
+            canPrev={weekMonday.getTime() > earliestMonday.getTime()}
+            canNext={weekOffset < 0}
+            onPrev={() => setWeekOffset((o) => o - 1)}
+            onNext={() => setWeekOffset((o) => Math.min(0, o + 1))}
+            className={workouts.length > 0 ? "mt-4" : undefined}
+          />
+
           {workouts.length ? (
             <>
               <div className="mt-4">
-                <TrainingLoadCard />
+                <TrainingLoadCard
+                  weekOf={weekOffset < 0 ? weekMonday : undefined}
+                  subtitle={weekOffset < 0 ? weekLabel : undefined}
+                />
               </div>
             </>
           ) : null}
@@ -521,14 +546,14 @@ function HistoryScreen() {
           someone who only does cardio logs it from here too. First on the
           tab without workouts, so no top margin then: every tab starts the
           same distance under its sub-tabs. */}
-          <div className={workouts.length > 0 ? "mt-4" : undefined}>
-            <CardioWeekCard />
+          <div className="mt-4">
+            <CardioWeekCard weekOf={weekOffset < 0 ? weekMonday : undefined} />
           </div>
 
           {workouts.length ? (
             <>
               <div className="mt-4">
-                <WeeklySetsCard />
+                <WeeklySetsCard weekOf={weekOffset < 0 ? weekMonday : undefined} />
               </div>
               {/* Picking which muscles to grow lives next to the weekly sets it
               sets the targets for; on the Workout tab it sat in the middle

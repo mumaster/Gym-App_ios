@@ -3,18 +3,37 @@ import { Activity } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
 import { LOAD_SPIKE_RATIO, loadEntries, loadRatio, weeklyLoads } from "../../lib/gym/trainingLoad";
+import { mondayOf } from "../../lib/gym/schedule";
 import { CardHead } from "./CardHead";
 import { Card } from "./Screen";
 
 /** Weekly session-RPE load for the last 6 weeks, and this week against the
  *  4-week average once there's enough rated history. See trainingLoad.ts. */
-export function TrainingLoadCard() {
+export function TrainingLoadCard({
+  weekOf,
+  subtitle,
+}: {
+  weekOf?: Date | undefined;
+  subtitle?: string | undefined;
+}) {
   const { workouts, cardioSessions } = useGym();
   const t = useTranslation();
   const locale = useLocale();
   const entries = useMemo(() => loadEntries(workouts, cardioSessions), [workouts, cardioSessions]);
-  const weeks = useMemo(() => weeklyLoads(entries, 6), [entries]);
-  const ratio = useMemo(() => loadRatio(entries), [entries]);
+  // The 6 weeks ending with the picked one; its ratio looks back from the end of it.
+  const anchor = weekOf ? mondayOf(weekOf) : undefined;
+  const key = anchor?.getTime();
+  const weeks = useMemo(() => weeklyLoads(entries, 6, anchor), [entries, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ratio = useMemo(
+    () =>
+      loadRatio(
+        entries,
+        anchor && anchor < mondayOf(new Date())
+          ? new Date(anchor.getTime() + 7 * 86_400_000 - 1)
+          : undefined,
+      ),
+    [entries, key], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const rated = weeks.reduce((n, w) => n + w.rated, 0);
   const max = Math.max(1, ...weeks.map((w) => w.load));
   const current = weeks[weeks.length - 1]!;
@@ -24,7 +43,7 @@ export function TrainingLoadCard() {
       <CardHead
         icon={Activity}
         title={t.trainingLoad.title}
-        subtitle={t.trainingLoad.thisWeek}
+        subtitle={subtitle ?? t.trainingLoad.thisWeek}
         filled={rated > 0}
       />
       <div className="space-y-3">
