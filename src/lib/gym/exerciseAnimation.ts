@@ -210,6 +210,23 @@ const hipFrom = (sh: { y: number; z: number }, lean: number) => ({
   z: sh.z - BODY.torso * sin(lean),
 });
 
+/** The hip: BODY.torso from the shoulder and `reach` from the ankle, on the
+ *  side behind the feet. */
+function hipAt(
+  sh: { y: number; z: number },
+  an: { y: number; z: number },
+  reach: number,
+): { y: number; z: number } {
+  const dy = sh.y - an.y;
+  const dz = sh.z - an.z;
+  const d = Math.hypot(dy, dz);
+  const a = (reach * reach - BODY.torso * BODY.torso + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, reach * reach - a * a));
+  const my = an.y + (a * dy) / d;
+  const mz = an.z + (a * dz) / d;
+  return { y: my + (h * dz) / d, z: mz - (h * dy) / d };
+}
+
 const headFrom = (sh: { y: number; z: number }, angle: number): V3 => [
   0,
   sh.y + 22 * cos(angle),
@@ -227,9 +244,14 @@ export function deadliftPose(depth: number): FigurePose {
   const barZ = lerp(7, 3, depth);
   const off = lerp(-6, 4, depth);
   const shoulder = { z: barZ + off, y: barY + Math.sqrt(ARM * ARM - off * off) };
-  const lean = 66 * smooth(clamp01(depth / 0.62));
+  // The hips sit where the torso (fixed length) meets the leg's reach: the
+  // hip-to-ankle distance grows steadily, so the knees extend smoothly and
+  // never lock out early or kick forward mid-lift.
+  const reach = lerp(BODY.thigh + BODY.shin - 0.1, 63, smooth(depth));
+  const hip = hipAt(shoulder, { y: ANKLE_Y, z: 1 }, reach);
+  const lean = (Math.atan2(shoulder.z - hip.z, shoulder.y - hip.y) * 180) / Math.PI;
   return assemble({
-    hip: hipFrom(shoulder, lean),
+    hip,
     shoulder,
     head: headFrom(shoulder, lean * 0.7),
     ankleZ: 1,
