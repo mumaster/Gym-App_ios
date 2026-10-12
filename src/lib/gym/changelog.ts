@@ -105,11 +105,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Zoekresultaten bij eten tonen nu een klein label waar ze vandaan komen: Mijn eten, NEVO of Open Food Facts.",
     },
   },
+  {
+    version: 14,
+    text: {
+      en: "A product you saved with your own values no longer shows up a second time under Products in the food search.",
+      nl: "Een product dat je met je eigen waarden hebt opgeslagen, staat in de zoekresultaten niet meer dubbel onder Producten.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 13;
+export const CURRENT_VERSION = 14;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
