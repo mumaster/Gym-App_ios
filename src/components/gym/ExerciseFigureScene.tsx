@@ -403,7 +403,8 @@ export function FigureSide({ model, pose }: Props) {
       // A foot hanging off the shin: it pivots about the ankle, toes at `angle` above horizontal.
       const c = Math.cos((angle * Math.PI) / 180);
       const sn = Math.sin((angle * Math.PI) / 180);
-      foot = `M${pt([a[0] - dir * s(5) * c, a[1] + s(5) * sn])}L${pt([a[0] + dir * s(15) * c, a[1] - s(15) * sn])}`;
+      const py = a[1] + s(pose.feet[i].drop ?? 0);
+      foot = `${(pose.feet[i].drop ?? 0) > 0 ? `L${pt([a[0], py])}` : ""}M${pt([a[0] - dir * s(5) * c, py + s(5) * sn])}L${pt([a[0] + dir * s(15) * c, py - s(15) * sn])}`;
     } else if (pitch > 0) {
       // A foot in the air: the sole rotates about the ankle, toes tipping down.
       const k = Math.min(1, pitch / 75);
