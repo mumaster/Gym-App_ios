@@ -51,3 +51,42 @@ describe("TILT_ANGLES", () => {
     expect(Math.max(...TILT_ANGLES)).toBeGreaterThan(0);
   });
 });
+
+describe("searchProducts", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("maps products like a scan and drops ones without a name or kcal", async () => {
+    const { searchProducts } = await import("../barcodeLookup");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              products: [
+                {
+                  code: "1",
+                  product_name: " Pindakaas ",
+                  brands: "Calvé, Unilever",
+                  serving_size: "15 g",
+                  nutriments: { "energy-kcal_100g": 600, proteins_100g: 25 },
+                },
+                { code: "2", product_name: "No data", nutriments: {} },
+                { code: "3", nutriments: { "energy-kcal_100g": 10 } },
+              ],
+            }),
+        }),
+      ),
+    );
+    const hits = await searchProducts("pindakaas");
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatchObject({ barcode: "1", name: "Pindakaas", brand: "Calvé" });
+    expect(hits[0]?.label).toMatchObject({
+      calories: 600,
+      protein: 25,
+      carbs: null,
+      servingSizeGrams: 15,
+    });
+  });
+});

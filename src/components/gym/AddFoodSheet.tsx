@@ -26,7 +26,7 @@ import { DumbbellLoader } from "./DumbbellLoader";
 import { HapticSwitch } from "./HapticSwitch";
 import { ListCard } from "./ListCard";
 import { PortionLine } from "./MealOverviewSheet";
-import { lookupBarcode } from "../../lib/gym/barcodeLookup";
+import { lookupBarcode, searchProducts, type ProductHit } from "../../lib/gym/barcodeLookup";
 import { decodeMeal, mealCodeFrom } from "../../lib/gym/mealShare";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -318,6 +318,31 @@ export function AddFoodSheet({
 
   const q = query.trim();
   const searching = q.length > 0;
+
+  // Open Food Facts text search, debounced, for packaged products. A newer
+  // query makes an older response stale, so late answers are ignored.
+  const [products, setProducts] = useState<{
+    query: string;
+    hits: ProductHit[] | "error";
+  } | null>(null);
+  useEffect(() => {
+    if (!open || step !== "start" || q.length < 3) {
+      setProducts(null);
+      return;
+    }
+    let stale = false;
+    const timer = setTimeout(() => {
+      searchProducts(q).then(
+        (hits) => !stale && setProducts({ query: q, hits }),
+        () => !stale && setProducts({ query: q, hits: "error" }),
+      );
+    }, 450);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [q, open, step]);
+  const productsLoading = q.length >= 3 && products?.query !== q;
   /** Your own foods matching the search come first: they carry your usual
    *  portion, so they're a one-tap "+". */
   const savedMatches = useMemo((): ListFood[] => {
@@ -411,6 +436,13 @@ export function AddFoodSheet({
     setBarcode(null);
     setQuery("");
     setStep("review");
+  };
+
+  /** A searched product: logs like a scanned one (per 100 g, its barcode). */
+  const startFromProduct = (hit: ProductHit) => {
+    haptic(15);
+    setQuery("");
+    applyScanResult(hit.label, hit.barcode);
   };
 
   /** A spice or salt: the app's own values, so no NEVO mark. */
@@ -762,6 +794,48 @@ export function AddFoodSheet({
                     </div>
                   </ListCard>
                 ) : null}
+                {q.length >= 3 ? (
+                  <ListCard
+                    icon={ScanBarcode}
+                    title={t.addFood.products}
+                    subtitle={
+                      !productsLoading && Array.isArray(products?.hits)
+                        ? t.mealOverview.foods(products.hits.length)
+                        : ""
+                    }
+                    filled
+                  >
+                    {productsLoading ? (
+                      <p className="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
+                        {t.addFood.searchingProducts}
+                      </p>
+                    ) : products?.hits === "error" ? (
+                      <p className="border-t border-border px-4 py-3 text-[13px] text-destructive-text">
+                        {t.addFood.productsError}
+                      </p>
+                    ) : products && products.hits.length ? (
+                      <div className="divide-y divide-border border-t border-border">
+                        {products.hits.map((hit) => (
+                          <button
+                            key={hit.barcode}
+                            onClick={() => startFromProduct(hit)}
+                            className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
+                          >
+                            <p className="text-[15px] font-semibold leading-snug">{hit.name}</p>
+                            <p className="tabular text-[12px] text-muted-foreground">
+                              {hit.brand ? `${hit.brand} · ` : ""}
+                              {t.addFood.per100kcal(Math.round(hit.label.calories ?? 0))}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
+                        {t.addFood.noProducts}
+                      </p>
+                    )}
+                  </ListCard>
+                ) : null}
                 {spiceMatches.length ? (
                   <ListCard
                     icon={Leaf}
@@ -811,6 +885,11 @@ export function AddFoodSheet({
                 {spiceMatches.length ? (
                   <p className="px-1 text-[11px] leading-snug text-muted-foreground">
                     {t.addFood.spicesNote}
+                  </p>
+                ) : null}
+                {q.length >= 3 && products && products.hits !== "error" && products.hits.length ? (
+                  <p className="px-1 text-[11px] leading-snug text-muted-foreground">
+                    {t.addFood.productsNote}
                   </p>
                 ) : null}
               </div>
