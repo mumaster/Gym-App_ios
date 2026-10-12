@@ -154,6 +154,8 @@ export function elbowFlare(pose: Pose, side: 0 | 1 = 1): number {
 export interface Foot {
   floor: number;
   dir: 1 | -1;
+  /** Degrees the toes tip down from flat (a leg held in the air). */
+  pitch?: number;
 }
 
 export interface FigurePose extends Pose {
@@ -714,7 +716,11 @@ export function singleLegRdlPose(depth: number): FigurePose {
     y: hip.y + BODY.torso * cos(lean),
     z: hip.z + BODY.torso * sin(lean),
   };
-  const free: V3 = [-11, hip.y - 87.4 * cos(lean), hip.z - 87.4 * sin(lean)];
+  // The free leg trails a little below the torso line, like a seesaw that is
+  // not quite level.
+  const legAngle = Math.max(0, lean - 6);
+  const free: V3 = [-11, hip.y - 87.4 * cos(legAngle), hip.z - 87.4 * sin(legAngle)];
+  const lift = clamp01((free[1] - ANKLE_Y) / 25);
   const wy = shoulder.y - Math.sqrt((ARM - 0.3) ** 2 - 1);
   return assemble({
     hip,
@@ -723,8 +729,7 @@ export function singleLegRdlPose(depth: number): FigurePose {
     ankleZ: 0,
     footHalf: 11,
     ankle: (s) => (s < 0 ? free : [11, ANKLE_Y, 0]),
-    foot: (s) =>
-      s < 0 ? { floor: Math.max(0, free[1] - ANKLE_Y), dir: -1 } : { floor: 0, dir: 1 },
+    foot: (s) => (s < 0 ? { floor: 0, dir: 1, pitch: 75 * smooth(lift) } : { floor: 0, dir: 1 }),
     wrist: (s) => [s * 20, wy, shoulder.z],
     bar: [0, wy, shoulder.z],
     kneePole: (s) => (s < 0 ? [0, 1, 0] : forwardKnees(s)),

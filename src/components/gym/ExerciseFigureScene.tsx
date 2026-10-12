@@ -345,9 +345,20 @@ export function FigureSide({ model, pose }: Props) {
     const soleY = FLOOR - s(pose.feet[i].floor) - 2;
     // Flat sole, heel down; only a genuinely lifted heel (rear foot of a lunge) slopes.
     const raised = soleY - a[1] > s(14);
-    const foot = raised
-      ? `L${pt([a[0] + dir * s(15), soleY])}`
-      : `L${pt([a[0], soleY])}M${pt([a[0] - dir * s(5), soleY])}L${pt([a[0] + dir * s(15), soleY])}`;
+    const pitch = pose.feet[i].pitch ?? 0;
+    let foot: string;
+    if (pitch > 0) {
+      // A foot in the air: the sole rotates about the ankle, toes tipping down.
+      const k = Math.min(1, pitch / 75);
+      const oy = soleY + (a[1] - soleY) * k;
+      const c = Math.cos((pitch * Math.PI) / 180);
+      const sn = Math.sin((pitch * Math.PI) / 180);
+      foot = `L${pt([a[0], oy])}M${pt([a[0] - dir * s(5) * c, oy - s(5) * sn])}L${pt([a[0] + dir * s(15) * c, oy + s(15) * sn])}`;
+    } else {
+      foot = raised
+        ? `L${pt([a[0] + dir * s(15), soleY])}`
+        : `L${pt([a[0], soleY])}M${pt([a[0] - dir * s(5), soleY])}L${pt([a[0] + dir * s(15), soleY])}`;
+    }
     return (
       <path
         opacity={op}

@@ -403,10 +403,10 @@ describe("batch 2 lifts", () => {
       bottom.ankles[0][2] - bottom.hips[0][2],
     ];
     const cross = torso[0] * leg[1] - torso[1] * leg[0];
-    expect(Math.abs(cross) / (Math.hypot(...torso) * Math.hypot(...leg))).toBeLessThan(0.08);
+    expect(Math.abs(cross) / (Math.hypot(...torso) * Math.hypot(...leg))).toBeLessThan(0.15);
     expect(Math.abs(bottom.hips[1][1] - bottom.hips[0][1])).toBeLessThan(0.01);
     expect(dist(bottom.hips[1], bottom.ankles[1])).toBeLessThan(87.5);
-    expect(bottom.feet[0].floor).toBeGreaterThan(30);
+    expect(bottom.feet[0].pitch).toBeGreaterThan(60);
   });
   it("glute bridge: shoulders stay on the floor and shoulders, hips and knees line up at the top", () => {
     const top = gluteBridgePose(0);
