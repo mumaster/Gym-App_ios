@@ -163,9 +163,19 @@ export interface FigurePose extends Pose {
   feet: [Foot, Foot];
 }
 
-export type Implement = "barbell" | "dumbbells" | "goblet" | "kettlebell" | "latbar" | "none";
+export type Implement =
+  "barbell" | "dumbbells" | "goblet" | "kettlebell" | "latbar" | "cable" | "none";
 export type Furniture =
-  "none" | "upright-bench" | "pulldown" | "incline-bench" | "flat-bench" | "box" | "thrust-bench";
+  | "none"
+  | "upright-bench"
+  | "pulldown"
+  | "incline-bench"
+  | "flat-bench"
+  | "box"
+  | "thrust-bench"
+  | "pullup-bar"
+  | "cable-tower"
+  | "leg-curl";
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -178,6 +188,8 @@ export interface FigureModel {
   centerZ: number;
   /** Only the near hand holds a dumbbell (the other one is on the bench). */
   oneDumbbell?: boolean;
+  /** Where a cable runs from the hands to (cm: height and z in the side view). */
+  pulley?: { y: number; z: number };
 }
 
 const BODY = { shoulderHalf: 19, hipHalf: 10, thigh: 45, shin: 43, torso: 50 };
@@ -800,6 +812,150 @@ export interface ExerciseAnimationSpec {
    *  uses the shared strings in i18n. */
   phases?: Record<Language, PhaseLabels>;
   labels?: Record<Language, { front: string; side: string }>;
+}
+
+/** Height of the pull-up bar (cm), a little more than a hand's reach above a
+ *  tall person so the feet hang clear of the floor. */
+export const PULLUP_BAR_Y = 212;
+const hangShoulderY = (gripHalf: number) =>
+  PULLUP_BAR_Y - Math.sqrt((ARM - 0.3) ** 2 - (gripHalf - BODY.shoulderHalf) ** 2);
+
+/** Pull-up: start in a dead hang, pull until the chin is over the bar with the
+ *  elbows driving down, then lower back to straight arms. */
+export function pullUpPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const grip = 30;
+  const shoulder = {
+    y: lerp(hangShoulderY(grip), PULLUP_BAR_Y - 17, e),
+    z: lerp(0, -9, e),
+  };
+  const lean = lerp(0, -14, e);
+  const hip = hipFrom(shoulder, lean);
+  // Knees a little bent, feet behind the body.
+  const back = hip.z - 14;
+  const ankleY = hip.y - Math.sqrt(86 * 86 - 14 * 14);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lerp(0, -16, e)),
+    ankleZ: back,
+    footHalf: 10,
+    ankle: (s) => [s * 10, ankleY, back],
+    foot: () => ({ floor: ankleY - ANKLE_Y, dir: 1, pitch: 55 }),
+    wrist: (s) => [s * grip, PULLUP_BAR_Y, 0],
+    bar: [0, PULLUP_BAR_Y, 0],
+    kneePole: () => [0, 0, 1],
+    elbowPole: (s) => [s * 0.3, -1, lerp(0.6, -0.3, e)],
+  });
+}
+
+/** Hanging leg raise: arms straight on the bar, the legs stay straight and swing
+ *  up to level with the hips while the pelvis curls up. */
+export function hangingLegRaisePose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const grip = 26;
+  const shoulder = { y: hangShoulderY(grip), z: 0 };
+  const hip = hipFrom(shoulder, lerp(2, -12, e));
+  const a = lerp(4, 86, e); // degrees from hanging straight down
+  const leg = BODY.thigh + BODY.shin - 0.1;
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, 0),
+    ankleZ: hip.z,
+    footHalf: 10,
+    ankle: (sd) => [sd * 10, hip.y - leg * cos(a), hip.z + leg * sin(a)],
+    foot: () => ({ floor: Math.max(0, hip.y - leg * cos(a) - ANKLE_Y), dir: 1, pitch: 55 }),
+    wrist: (sd) => [sd * grip, PULLUP_BAR_Y, 0],
+    bar: [0, PULLUP_BAR_Y, 0],
+    kneePole: () => [0, 1, 1],
+    elbowPole: straightArms,
+  });
+}
+
+/** The cable tower of the pushdown (cm). */
+export const PUSHDOWN_PULLEY = { y: 176, z: 46 };
+
+/** Cable triceps pushdown: elbows pinned at the sides, only the forearms move,
+ *  from hands at chest height to arms (almost) straight. */
+export function cablePushdownPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const lean = 10;
+  const hip = { y: STAND_HIP_Y, z: 0 };
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  const elbow = { y: shoulder.y - 29 * cos(4), z: shoulder.z + 29 * sin(4) };
+  const phi = lerp(18, -72, e); // forearm angle above horizontal, forward
+  const w = { y: elbow.y + 26 * sin(phi), z: elbow.z + 26 * cos(phi) };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.5),
+    ankleZ: 0,
+    footHalf: 11,
+    wrist: (sd) => [sd * 13, w.y, w.z],
+    bar: [0, w.y, w.z],
+    kneePole: forwardKnees,
+    elbowPole: (sd) => [sd * 0.2, -1, -0.5],
+  });
+}
+
+/** The rope's pulley above the kneeling cable crunch (cm). */
+export const CRUNCH_PULLEY = { y: 165, z: 14 };
+
+/** Kneeling cable crunch: the hips stay over the knees and the spine rounds,
+ *  ribs toward the pelvis, the rope held at the head. */
+export function cableCrunchPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: 51, z: 0 };
+  const lean = lerp(8, 68, e);
+  // The rounded spine shortens the shoulder-to-hip distance.
+  const torso = lerp(BODY.torso, 43, e);
+  const shoulder = {
+    y: hip.y + torso * cos(lean),
+    z: hip.z + torso * sin(lean),
+  };
+  const head = headFrom(shoulder, lean + lerp(0, 18, e));
+  return assemble({
+    hip,
+    shoulder,
+    head,
+    ankleZ: -43,
+    footHalf: 10,
+    ankle: (sd) => [sd * 10, ANKLE_Y, -43],
+    foot: () => ({ floor: 0, dir: -1 }),
+    wrist: (sd) => [sd * 13, head[1] + 1, head[2] + 7],
+    bar: [0, head[1] + 1, head[2] + 7],
+    kneePole: () => [0, -1, 0.5],
+    elbowPole: (sd) => [sd * 0.5, -1, 0.2],
+  });
+}
+
+/** Seated leg curl: thighs stay on the seat, the shins swing from level down to
+ *  past vertical, heels pulling toward the seat. */
+export const LEG_CURL_SEAT_Y = 45;
+export function seatedLegCurlPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: 53, z: -3 };
+  const knee = { y: hip.y - 45 * sin(4), z: hip.z + 45 * cos(4) };
+  const theta = lerp(4, 100, e); // shin angle below level
+  const ankle: V3 = [0, knee.y - 43 * sin(theta), knee.z + 43 * cos(theta)];
+  const shoulder = { y: hip.y + BODY.torso * cos(7), z: hip.z - BODY.torso * sin(7) };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, -4),
+    ankleZ: ankle[2],
+    footHalf: 10,
+    ankle: (sd) => [sd * 10, ankle[1], ankle[2]],
+    foot: () => ({ floor: Math.max(0, ankle[1] - ANKLE_Y), dir: 1 }),
+    wrist: (sd) => [sd * 24, 64, 14],
+    bar: [0, 64, 14],
+    kneePole: () => [0, 1, 0.5],
+    elbowPole: (sd) => [sd * 0.5, -1, -0.3],
+  });
 }
 
 const label = (en: string, nl: string) => ({
@@ -1541,6 +1697,198 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Bovenin zijn je onderbenen verticaal en je bilspieren aangespannen. Hol je onderrug niet.",
         "Laat je heupen gecontroleerd zakken tot vlak boven de grond.",
         "Houd je ribben omlaag en de stang rollend op je heupplooi.",
+      ],
+    },
+  },
+  pullup: {
+    figure: {
+      pose: pullUpPose,
+      implement: "none",
+      furniture: "pullup-bar",
+      scale: 0.8,
+      centerZ: 0,
+    },
+    labels: label("Pull-up", "Optrekken"),
+    phases: {
+      en: {
+        lower: "Pull your chest toward the bar",
+        touch: "Chin over the bar",
+        press: "Lower slowly with control",
+        lockout: "Dead hang, arms straight",
+      },
+      nl: {
+        lower: "Trek je borst naar de stang",
+        touch: "Kin boven de stang",
+        press: "Zak langzaam gecontroleerd",
+        lockout: "Dode hang, armen gestrekt",
+      },
+    },
+    cues: {
+      en: [
+        "Hang from the bar with an overhand grip a bit wider than your shoulders.",
+        "Pull your elbows down toward your ribs until your chin clears the bar.",
+        "Keep your legs still and your chest up. Don't kick or swing.",
+        "Lower for about two seconds until your arms are straight again.",
+      ],
+      nl: [
+        "Hang aan de stang met een bovengreep iets breder dan je schouders.",
+        "Trek je ellebogen naar je ribben tot je kin boven de stang komt.",
+        "Houd je benen stil en je borst omhoog. Schop of zwaai niet.",
+        "Zak ongeveer twee seconden tot je armen weer gestrekt zijn.",
+      ],
+    },
+  },
+  "hanging-leg-raise": {
+    figure: {
+      pose: hangingLegRaisePose,
+      implement: "none",
+      furniture: "pullup-bar",
+      scale: 0.8,
+      centerZ: 25,
+    },
+    labels: label("Hanging leg raise", "Hangende beenheffing"),
+    phases: {
+      en: {
+        lower: "Raise your straight legs, curling the pelvis up",
+        touch: "Legs level with your hips",
+        press: "Lower slowly, no swinging",
+        lockout: "Hang still with straight arms",
+      },
+      nl: {
+        lower: "Til je gestrekte benen op en kantel je bekken omhoog",
+        touch: "Benen op heuphoogte",
+        press: "Zak langzaam, zonder te zwaaien",
+        lockout: "Hang stil met gestrekte armen",
+      },
+    },
+    cues: {
+      en: [
+        "Hang from the bar with straight arms and your legs together.",
+        "Lift your legs, keeping them as straight as you can, until they are level with your hips.",
+        "Curl your pelvis up at the top instead of only swinging the legs.",
+        "Lower slowly and stop the swing before the next rep.",
+      ],
+      nl: [
+        "Hang aan de stang met gestrekte armen en je benen tegen elkaar.",
+        "Til je benen zo gestrekt mogelijk op tot heuphoogte.",
+        "Kantel bovenin je bekken omhoog in plaats van alleen met je benen te zwaaien.",
+        "Zak langzaam en stop de zwaai voor de volgende herhaling.",
+      ],
+    },
+  },
+  "cable-pushdown": {
+    figure: {
+      pose: cablePushdownPose,
+      implement: "cable",
+      furniture: "cable-tower",
+      scale: 1.0,
+      centerZ: 25,
+      pulley: PUSHDOWN_PULLEY,
+    },
+    labels: label("Cable triceps pushdown", "Triceps pushdown aan de kabel"),
+    phases: {
+      en: {
+        lower: "Press the handle down until your arms are straight",
+        touch: "Elbows pinned, arms straight",
+        press: "Let the handle rise slowly",
+        lockout: "Hands at chest height, elbows at your sides",
+      },
+      nl: {
+        lower: "Duw het handvat omlaag tot je armen gestrekt zijn",
+        touch: "Ellebogen vast, armen gestrekt",
+        press: "Laat het handvat langzaam omhoog komen",
+        lockout: "Handen op borsthoogte, ellebogen langs je zij",
+      },
+    },
+    cues: {
+      en: [
+        "Stand close to the high pulley, a slight lean forward, elbows at your sides.",
+        "Press the handle down until your arms are straight.",
+        "Keep your elbows still. Only your forearms move.",
+        "Let the handle rise until your forearms are level, then repeat.",
+      ],
+      nl: [
+        "Sta dicht bij de hoge katrol, licht voorovergebogen, ellebogen langs je zij.",
+        "Duw het handvat omlaag tot je armen gestrekt zijn.",
+        "Houd je ellebogen stil. Alleen je onderarmen bewegen.",
+        "Laat het handvat omhoog komen tot je onderarmen horizontaal zijn en herhaal.",
+      ],
+    },
+  },
+  "cable-crunch": {
+    figure: {
+      pose: cableCrunchPose,
+      implement: "cable",
+      furniture: "cable-tower",
+      scale: 1.1,
+      centerZ: 10,
+      pulley: CRUNCH_PULLEY,
+    },
+    labels: label("Cable crunch", "Kabel crunch"),
+    phases: {
+      en: {
+        lower: "Round your spine, ribs toward your pelvis",
+        touch: "Rounded all the way down, hips still",
+        press: "Come back up slowly",
+        lockout: "Kneeling tall, rope at your head",
+      },
+      nl: {
+        lower: "Rond je rug, ribben naar je bekken",
+        touch: "Helemaal afgerond, heupen stil",
+        press: "Kom langzaam weer omhoog",
+        lockout: "Rechtop geknield, touw bij je hoofd",
+      },
+    },
+    cues: {
+      en: [
+        "Kneel under the high pulley and hold the rope at the sides of your head.",
+        "Round your spine and bring your ribs toward your pelvis.",
+        "Keep your hips still over your knees. Don't sit back or hinge at the hips.",
+        "Breathe out at the bottom, then come up slowly.",
+      ],
+      nl: [
+        "Kniel onder de hoge katrol en houd het touw naast je hoofd.",
+        "Rond je rug en breng je ribben naar je bekken.",
+        "Houd je heupen stil boven je knie\u00ebn. Ga niet achterover zitten en hinge niet in je heupen.",
+        "Adem onderin uit en kom daarna langzaam omhoog.",
+      ],
+    },
+  },
+  "leg-curl": {
+    figure: {
+      pose: seatedLegCurlPose,
+      implement: "none",
+      furniture: "leg-curl",
+      scale: 1.2,
+      centerZ: 20,
+    },
+    labels: label("Seated leg curl", "Seated leg curl"),
+    phases: {
+      en: {
+        lower: "Curl your heels down and back",
+        touch: "Heels pulled under, hamstrings squeezed",
+        press: "Let your legs rise slowly",
+        lockout: "Legs almost straight, thighs on the pad",
+      },
+      nl: {
+        lower: "Trek je hielen omlaag en naar achteren",
+        touch: "Hielen onder je getrokken, hamstrings aangespannen",
+        press: "Laat je benen langzaam omhoog komen",
+        lockout: "Benen bijna gestrekt, dijen op het kussen",
+      },
+    },
+    cues: {
+      en: [
+        "Sit back with the thigh pad snug on your thighs and the roller behind your ankles.",
+        "Curl your heels down and back as far as you can.",
+        "Keep your thighs pressed down and your hips on the seat.",
+        "Let your legs rise slowly until they are almost straight.",
+      ],
+      nl: [
+        "Zit achterover met het dijkussen strak op je dijen en de roller achter je enkels.",
+        "Trek je hielen zo ver mogelijk omlaag en naar achteren.",
+        "Houd je dijen omlaag gedrukt en je heupen op de zitting.",
+        "Laat je benen langzaam omhoog komen tot ze bijna gestrekt zijn.",
       ],
     },
   },

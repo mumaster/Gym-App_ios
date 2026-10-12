@@ -45,9 +45,18 @@ Four stills can look right while the motion between them is wrong. For every new
 - Single-leg RDL: standing leg soft, free leg and torso form one line (a seesaw), hips stay level, dumbbells hang straight down. A free foot in the air gets `feet[].floor` = its ankle height so the sole is flat at that height.
 - Glute bridge: shoulders stay on the floor (torso length constant), at the top shoulders, hips and knees are one line (hip about 34 cm up), feet flat.
 - Hip thrust: upper back stays on the bench, at the top torso and thighs are level and the shins vertical, the bar rolls on the hip crease.
+- Pull-up: start from a dead hang with straight arms (reach ARM-0.3 so the forearm never stretches), grip just wider than the shoulders, elbows drive down and back, chin ends over the bar, legs hang slightly behind the hips with no swing.
+- Hanging leg raise: shoulders fixed under the bar, legs stay straight and rise to hip height while the pelvis curls up a little, then lower under control.
+- Cable pushdown: upper arm pinned to the side, only the forearms move, hands finish straight at the thighs, slight forward lean, wrists on the cable line.
+- Cable crunch: kneeling, hips stay still above the knees, the torso curls down toward the thighs (it shortens as the spine rounds), hands stay at the head.
+- Seated leg curl: thigh stays on the pad, only the shin swings back and down under the seat, back on the pad.
 
 ## Feet and furniture
 
 **Feet lie flat in the side view** (Max, 2026-10-12: sloped feet read as standing on tiptoe). The sole is a horizontal line on whatever the foot stands on, heel behind the ankle, toes ahead of it, with a short vertical piece from the ankle down. Only a genuinely lifted heel (rear foot of a lunge) may slope. Never draw a line from a raised ankle down to the toe tip.
 
 `FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`, `thrust-bench`) and the `kettlebell` implement is drawn in `ExerciseFigureScene.tsx`.
+
+**A foot in the air** (pull-up, hanging leg raise) gets `foot: { floor: ankleY - ANKLE_Y, dir: 1, pitch: 55 }`, so the sole follows the ankle with the toes tipped down. The front view then draws a short connector from the ankle to the foot bar. A foot that is only touching the floor keeps `floor: 0` and no pitch.
+
+Furniture added with batch 3: `pullup-bar` (bar at `PULLUP_BAR_Y`), `cable-tower` (pulley at `FigureModel.pulley {y, z}`, used by the `cable` implement for the pushdown and crunch) and `leg-curl` (seat, thigh pad and ankle roller).

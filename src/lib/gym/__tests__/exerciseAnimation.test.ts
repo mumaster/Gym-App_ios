@@ -7,6 +7,12 @@ import { EXERCISES } from "../data";
 import {
   backSquatPose,
   BENCH_PRESS_RIG,
+  cableCrunchPose,
+  cablePushdownPose,
+  hangingLegRaisePose,
+  pullUpPose,
+  PULLUP_BAR_Y,
+  seatedLegCurlPose,
   bentRowPose,
   BOX_TOP,
   BOX_Z,
@@ -76,6 +82,8 @@ const ANIMATED = [
   "bb-deadlift",
   "bb-row",
   "bb-squat",
+  "cable-crunch",
+  "cable-pushdown",
   "db-curl",
   "db-row",
   "db-shoulder-press",
@@ -84,11 +92,14 @@ const ANIMATED = [
   "db-sumo-deadlift",
   "glute-bridge",
   "goblet-squat",
+  "hanging-leg-raise",
   "hip-thrust",
   "incline-db-press",
   "kb-swing",
   "lat-pulldown",
   "lateral-raise",
+  "leg-curl",
+  "pullup",
   "rdl",
   "reverse-lunge",
 ];
@@ -438,5 +449,67 @@ describe("batch 2 lifts", () => {
     expect(Math.abs(top.knees[1][1] - top.hips[1][1])).toBeLessThan(4);
     expect(Math.abs(top.knees[1][2] - top.ankles[1][2])).toBeLessThan(4);
     expect(hipThrustPose(1).hips[1][1]).toBeLessThan(top.hips[1][1] - 25);
+  });
+});
+
+describe("batch 3 lifts", () => {
+  const B3: Record<string, (d: number) => FigurePose> = {
+    pullup: pullUpPose,
+    "hanging-leg-raise": hangingLegRaisePose,
+    "cable-pushdown": cablePushdownPose,
+    "cable-crunch": cableCrunchPose,
+    "leg-curl": seatedLegCurlPose,
+  };
+  it("keeps limb lengths constant and moves smoothly through the whole rep", () => {
+    for (const [id, pose] of Object.entries(B3)) {
+      let prev = pose(0);
+      for (const d of WALK) {
+        const p = pose(d);
+        for (const i of [0, 1] as const) {
+          expect(dist(p.shoulders[i], p.elbows[i]), id).toBeCloseTo(29, 3);
+          expect(dist(p.elbows[i], p.wrists[i]), id).toBeCloseTo(26, 0);
+          expect(dist(p.hips[i], p.knees[i]), id).toBeCloseTo(45, 3);
+          expect(Math.abs(dist(p.knees[i], p.ankles[i]) - 43), id).toBeLessThan(1.2);
+          for (const j of JOINTS)
+            expect(dist(p[j][i], prev[j][i]), `${id} ${j} at ${d}`).toBeLessThan(14);
+        }
+        prev = p;
+      }
+    }
+  });
+  it("pull-up: hangs with straight arms and ends with the chin over the bar", () => {
+    const hang = pullUpPose(0);
+    const top = pullUpPose(1);
+    expect(dist(hang.shoulders[1], hang.wrists[1])).toBeGreaterThan(54);
+    expect(hang.wrists[1][1]).toBeCloseTo(PULLUP_BAR_Y, 0);
+    expect(top.wrists[1][1]).toBeCloseTo(PULLUP_BAR_Y, 0);
+    expect(top.shoulders[1][1]).toBeGreaterThan(hang.shoulders[1][1] + 25);
+    expect(top.ankles[1][1]).toBeGreaterThan(40);
+  });
+  it("hanging leg raise: the shoulders stay put and the legs rise to hip height", () => {
+    const hang = hangingLegRaisePose(0);
+    const top = hangingLegRaisePose(1);
+    expect(top.shoulders[1][1]).toBeCloseTo(hang.shoulders[1][1], 3);
+    expect(top.ankles[1][1]).toBeGreaterThan(hang.ankles[1][1] + 40);
+    expect(Math.abs(top.ankles[1][1] - top.hips[1][1])).toBeLessThan(8);
+  });
+  it("cable pushdown: the upper arm stays pinned and the hands finish by the thighs", () => {
+    const top = cablePushdownPose(0);
+    const bottom = cablePushdownPose(1);
+    expect(Math.abs(top.elbows[1][1] - bottom.elbows[1][1])).toBeLessThan(2);
+    expect(bottom.wrists[1][1]).toBeLessThan(top.wrists[1][1] - 30);
+    expect(dist(bottom.shoulders[1], bottom.wrists[1])).toBeGreaterThan(50);
+  });
+  it("cable crunch: the hips stay back and the torso curls down toward the knees", () => {
+    const top = cableCrunchPose(0);
+    const bottom = cableCrunchPose(1);
+    expect(Math.abs(top.hips[1][1] - bottom.hips[1][1])).toBeLessThan(1);
+    expect(bottom.shoulders[1][1]).toBeLessThan(top.shoulders[1][1] - 15);
+  });
+  it("seated leg curl: the thigh stays on the pad while the shin swings back", () => {
+    const start = seatedLegCurlPose(0);
+    const end = seatedLegCurlPose(1);
+    expect(dist(end.knees[1], start.knees[1])).toBeLessThan(0.5);
+    expect(end.ankles[1][2]).toBeLessThan(start.ankles[1][2] - 25);
   });
 });
