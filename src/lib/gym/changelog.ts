@@ -84,11 +84,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Eten vooruit plannen: kies op de weekbalk bij Voeding een dag in de toekomst en voeg eten of opgeslagen maaltijden toe, handig voor meal prep.",
     },
   },
+  {
+    version: 11,
+    text: {
+      en: "New exercise animations: barbell curl, hammer curl, dumbbell RDL, skullcrusher, overhead triceps extension and dips. The dumbbell in a hammer curl now turns with your hand.",
+      nl: "Nieuwe oefeninganimaties: barbell curl, hammer curl, dumbbell RDL, skullcrusher, triceps-extensie boven het hoofd en dips. De dumbbell bij een hammer curl draait nu mee met je hand.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 10;
+export const CURRENT_VERSION = 11;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
