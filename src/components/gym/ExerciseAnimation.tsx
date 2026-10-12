@@ -266,6 +266,9 @@ function SideScene({ rig, pose }: { rig: PressRig; pose: Pose }) {
     <g opacity={op}>
       <path
         d={`M${pt(side(pose.hips[i]))}L${pt(side(pose.knees[i]))}L${pt(side(pose.ankles[i]))}L${pt([
+          side(pose.ankles[i])[0],
+          FLOOR - 3,
+        ])}M${pt([side(pose.ankles[i])[0] - 5, FLOOR - 3])}L${pt([
           side(pose.ankles[i])[0] + 15,
           FLOOR - 3,
         ])}`}

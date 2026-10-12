@@ -32,3 +32,17 @@ Four stills can look right while the motion between them is wrong. For every new
 - Goblet squat: upright chest, dumbbell at the chest with elbows inside the knees, knees over the toes, heels down, depth about parallel (do not drop the hips far below the knees or the torso collapses).
 - Seated press: wrists stacked over elbows, forearms vertical at the bottom, back against the pad.
 - Lat pulldown: slight lean back (12 to 18 degrees), bar to the upper chest, elbows down and back, thigh pad on the thighs.
+- Back squat: bar on the traps over the mid-foot (bar z stays within a hand span of mid-foot all rep), hips back and down to just below parallel, knees over the toes, torso lean under 45 degrees, heels down.
+- Bent-over row: torso held at about 50 degrees from vertical the whole rep, soft knees, arms straight at the bottom, elbows travel back and up, bar ends at the lower ribs.
+- Incline dumbbell press: pad at 45 degrees, hips on the seat, head on the pad, wrists over elbows at the bottom, lockout over the upper chest.
+- Dumbbell curl: elbows stay within a few cm of the sides, only the forearms move, dumbbells finish at shoulder height, no swing.
+- Reverse lunge: front foot never moves, front shin vertical and thigh level at the bottom, back knee hovers above the floor on the ball of the foot, torso upright.
+- Step-up: box foot stays put and is drawn on the box (`feet[].floor`), the free foot must clear the box edge before it drops below the box top (tested).
+- Sumo deadlift: wide stance, knees out over the toes (front view), dumbbell hangs vertically between the legs, torso lean 30 to 45 degrees at the bottom.
+- One-arm row: torso nearly parallel to the floor and fixed, free hand and same-side knee on the bench, working elbow goes back past the torso.
+
+## Feet and furniture
+
+**Feet lie flat in the side view** (Max, 2026-10-12: sloped feet read as standing on tiptoe). The sole is a horizontal line on whatever the foot stands on, heel behind the ankle, toes ahead of it, with a short vertical piece from the ankle down. Only a genuinely lifted heel (rear foot of a lunge) may slope. Never draw a line from a raised ankle down to the toe tip.
+
+`FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`) is drawn in `ExerciseFigureScene.tsx`.
