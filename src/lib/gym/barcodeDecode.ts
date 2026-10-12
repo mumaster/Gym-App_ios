@@ -24,6 +24,12 @@ export function decodeSize(videoWidth: number, videoHeight: number): { w: number
 
 /** Product barcodes, Code 128/39 and QR (shared meals, equipment). Fewer
  *  formats than zxing's default of all of them means less work per frame. */
+/** Tilts (degrees) the JS decoder tries, one per attempt in turn. zxing reads
+ *  1D codes only roughly upright, plus a 90° turn with TRY_HARDER, so the
+ *  frame is drawn rotated to catch a code held at an angle. With the 90° turn
+ *  these cover every direction to within ~12°. */
+export const TILT_ANGLES = [0, 25, -25, 50, -50];
+
 export const NATIVE_FORMATS = [
   "ean_13",
   "ean_8",
@@ -66,7 +72,8 @@ export async function createVideoDecoder(
   } = await import("@zxing/library");
   const reader = new MultiFormatReader();
   reader.setHints(
-    new Map([
+    new Map<number, unknown>([
+      [DecodeHintType.TRY_HARDER, true],
       [
         DecodeHintType.POSSIBLE_FORMATS,
         [
@@ -84,12 +91,23 @@ export async function createVideoDecoder(
   );
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  let attempt = 0;
   return async () => {
     const { w, h } = decodeSize(video.videoWidth, video.videoHeight);
     if (!ctx || !w) return null;
+    const tilt = TILT_ANGLES[attempt++ % TILT_ANGLES.length] ?? 0;
     canvas.width = w;
     canvas.height = h;
-    ctx.drawImage(video, 0, 0, w, h);
+    if (tilt) {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate((tilt * Math.PI) / 180);
+      ctx.drawImage(video, -w / 2, -h / 2, w, h);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    } else {
+      ctx.drawImage(video, 0, 0, w, h);
+    }
     try {
       const bitmap = new BinaryBitmap(
         new HybridBinarizer(new HTMLCanvasElementLuminanceSource(canvas)),

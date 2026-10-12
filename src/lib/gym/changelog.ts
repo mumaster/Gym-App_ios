@@ -63,11 +63,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Snellere barcodescanner: de camera start sneller, codes worden vele malen sneller gelezen en een eerder gescand product laadt direct.",
     },
   },
+  {
+    version: 8,
+    text: {
+      en: "Barcode scanner reads codes at any angle: sideways, tilted or upside down, not just held perfectly straight.",
+      nl: "De barcodescanner leest codes onder elke hoek: zijwaarts, scheef of ondersteboven, niet alleen perfect recht.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 8;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

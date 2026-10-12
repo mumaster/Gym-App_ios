@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { decodeSize, DECODE_MAX_WIDTH } from "../barcodeDecode";
+import { decodeSize, DECODE_MAX_WIDTH, TILT_ANGLES } from "../barcodeDecode";
 import { lookupBarcode } from "../barcodeLookup";
 
 describe("decodeSize", () => {
@@ -41,5 +41,13 @@ describe("lookupBarcode cache", () => {
     await Promise.resolve();
     expect((await lookupBarcode("222"))?.name).toBe("Bar");
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("TILT_ANGLES", () => {
+  it("starts upright and covers tilts both ways", () => {
+    expect(TILT_ANGLES[0]).toBe(0);
+    expect(Math.min(...TILT_ANGLES)).toBeLessThan(0);
+    expect(Math.max(...TILT_ANGLES)).toBeGreaterThan(0);
   });
 });
