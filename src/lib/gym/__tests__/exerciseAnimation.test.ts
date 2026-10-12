@@ -5,17 +5,27 @@ import { ExerciseAnimation } from "../../../components/gym/ExerciseAnimation";
 import { ExerciseDetailSheet } from "../../../components/gym/ExerciseDetailSheet";
 import { EXERCISES } from "../data";
 import {
+  backSquatPose,
   BENCH_PRESS_RIG,
+  bentRowPose,
+  BOX_TOP,
+  BOX_Z,
+  curlPose,
+  dbRowPose,
   deadliftPose,
   depthAt,
   elbowFlare,
   EXERCISE_ANIMATIONS,
   gobletPose,
+  inclinePressPose,
   latPulldownPose,
   phaseAt,
   pressPose,
   rdlPose,
+  reverseLungePose,
   seatedPressPose,
+  stepUpPose,
+  sumoPose,
   type FigurePose,
 } from "../exerciseAnimation";
 import { GymProvider } from "../store";
@@ -58,10 +68,18 @@ describe("bench press rig", () => {
 const ANIMATED = [
   "bb-bench",
   "bb-deadlift",
+  "bb-row",
+  "bb-squat",
+  "db-curl",
+  "db-row",
   "db-shoulder-press",
+  "db-step-up",
+  "db-sumo-deadlift",
   "goblet-squat",
+  "incline-db-press",
   "lat-pulldown",
   "rdl",
+  "reverse-lunge",
 ];
 
 const POSES: Record<string, (d: number) => FigurePose> = {
@@ -70,11 +88,26 @@ const POSES: Record<string, (d: number) => FigurePose> = {
   "goblet-squat": gobletPose,
   "db-shoulder-press": seatedPressPose,
   "lat-pulldown": latPulldownPose,
+  "bb-squat": backSquatPose,
+  "bb-row": bentRowPose,
+  "incline-db-press": inclinePressPose,
+  "db-curl": curlPose,
+  "reverse-lunge": reverseLungePose,
+  "db-step-up": stepUpPose,
+  "db-sumo-deadlift": sumoPose,
+  "db-row": dbRowPose,
 };
+
+/** Height of the near foot's ankle when it is not on the floor. */
+const NEAR_ANKLE_Y: Record<string, number> = { "db-step-up": 8 + BOX_TOP };
+
+/** Samples every 0.05 of depth, from the start pose to the turning point. */
+const WALK = Array.from({ length: 21 }, (_, i) => i / 20);
+const JOINTS = ["shoulders", "elbows", "wrists", "hips", "knees", "ankles"] as const;
 
 describe("figure rigs", () => {
   it("keep limb lengths constant and the feet planted through the rep", () => {
-    for (const pose of Object.values(POSES)) {
+    for (const [id, pose] of Object.entries(POSES)) {
       for (const d of [0, 0.25, 0.5, 0.75, 1]) {
         const p = pose(d);
         for (const i of [0, 1] as const) {
@@ -85,7 +118,21 @@ describe("figure rigs", () => {
           expect(dist(p.hips[i], p.knees[i])).toBeCloseTo(45, 3);
           expect(Math.abs(dist(p.knees[i], p.ankles[i]) - 43)).toBeLessThan(1.2);
         }
-        expect(p.ankles[1][1]).toBe(8);
+        expect(p.ankles[1][1]).toBe(NEAR_ANKLE_Y[id] ?? 8);
+      }
+    }
+  });
+  it("move every joint smoothly through the whole rep (no snaps between neighbouring samples)", () => {
+    for (const [id, pose] of Object.entries(POSES)) {
+      let prev = pose(0);
+      for (const d of WALK.slice(1)) {
+        const p = pose(d);
+        for (const j of JOINTS) {
+          for (const i of [0, 1] as const) {
+            expect(dist(p[j][i], prev[j][i]), `${id} ${j} at ${d}`).toBeLessThan(14);
+          }
+        }
+        prev = p;
       }
     }
   });
@@ -142,6 +189,129 @@ describe("figure rigs", () => {
     expect(Math.abs(bottom.wrists[1][1] - bottom.shoulders[1][1])).toBeLessThan(15);
     expect(bottom.elbows[1][1]).toBeLessThan(bottom.wrists[1][1] - 8);
     expect(bottom.elbows[1][2]).toBeLessThan(bottom.wrists[1][2]);
+  });
+  it("back squat: just below parallel, knees over the toes, bar over the mid-foot", () => {
+    const p = backSquatPose(1);
+    expect(p.hips[1][1]).toBeLessThanOrEqual(p.knees[1][1] + 1);
+    expect(p.hips[1][1]).toBeGreaterThan(p.knees[1][1] - 12);
+    expect(p.knees[1][2]).toBeGreaterThan(p.ankles[1][2] + 10);
+    expect(Math.abs(p.bar[2] - 7)).toBeLessThan(8);
+    const lean = Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
+    expect((lean * 180) / Math.PI).toBeLessThan(45);
+    // The hips sink steadily; the legs never lock out early or snap.
+    let prev = dist(backSquatPose(0).hips[1], backSquatPose(0).ankles[1]);
+    for (const d of WALK.slice(1)) {
+      const q = backSquatPose(d);
+      const reach = dist(q.hips[1], q.ankles[1]);
+      expect(reach).toBeLessThanOrEqual(prev + 0.01);
+      expect(q.bar[2]).toBeGreaterThan(-8);
+      expect(q.bar[2]).toBeLessThan(12);
+      prev = reach;
+    }
+    expect(backSquatPose(0).hips[1][2]).toBeCloseTo(backSquatPose(0).ankles[1][2], 0);
+  });
+  it("bent-over row: torso angle held, arms straight at the bottom, elbows back at the top", () => {
+    const lean = (p: FigurePose) =>
+      (Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]) * 180) /
+      Math.PI;
+    for (const d of WALK)
+      expect(Math.abs(lean(bentRowPose(d)) - lean(bentRowPose(0)))).toBeLessThan(0.5);
+    expect(lean(bentRowPose(0))).toBeGreaterThan(40);
+    expect(lean(bentRowPose(0))).toBeLessThan(65);
+    const hang = bentRowPose(0);
+    expect(dist(hang.shoulders[1], hang.wrists[1])).toBeGreaterThan(53);
+    const top = bentRowPose(1);
+    expect(top.elbows[1][2]).toBeLessThan(top.shoulders[1][2] - 15);
+    expect(top.wrists[1][1]).toBeGreaterThan(hang.wrists[1][1] + 15);
+    expect(top.wrists[1][1]).toBeLessThan(top.shoulders[1][1] - 20);
+  });
+  it("incline press: bench at 45 degrees, wrists over elbows at the bottom, locked out at the top", () => {
+    const bottom = inclinePressPose(1);
+    const top = inclinePressPose(0);
+    expect(Math.abs(bottom.elbows[1][2] - bottom.wrists[1][2])).toBeLessThan(4);
+    expect(bottom.wrists[1][1]).toBeGreaterThan(bottom.elbows[1][1] + 20);
+    expect(dist(top.shoulders[1], top.wrists[1])).toBeGreaterThan(52);
+    const back = (p: FigurePose) =>
+      (Math.atan2(p.hips[1][2] - p.shoulders[1][2], p.shoulders[1][1] - p.hips[1][1]) * 180) /
+      Math.PI;
+    expect(back(top)).toBeGreaterThan(40);
+    expect(back(top)).toBeLessThan(50);
+    expect(top.wrists[1][1]).toBeGreaterThan(top.shoulders[1][1] + 45);
+  });
+  it("curl: elbows stay pinned, the wrist ends at shoulder height", () => {
+    const start = curlPose(0);
+    const end = curlPose(1);
+    for (const d of WALK) {
+      const p = curlPose(d);
+      expect(dist(p.elbows[1], start.elbows[1])).toBeLessThan(9);
+      expect(p.hips[1][1]).toBe(start.hips[1][1]);
+    }
+    expect(dist(start.shoulders[1], start.wrists[1])).toBeGreaterThan(52);
+    expect(Math.abs(end.wrists[1][1] - end.shoulders[1][1])).toBeLessThan(12);
+  });
+  it("reverse lunge: front shin vertical and thigh level, back knee near the floor, torso upright", () => {
+    const p = reverseLungePose(1);
+    expect(Math.abs(p.knees[1][1] - p.hips[1][1])).toBeLessThan(6);
+    expect(Math.abs(p.knees[1][2] - p.ankles[1][2])).toBeLessThan(8);
+    expect(p.knees[0][1]).toBeLessThan(25);
+    expect(p.ankles[0][2]).toBeLessThan(-80);
+    const lean = Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
+    expect((lean * 180) / Math.PI).toBeLessThan(12);
+    let prev = 0;
+    for (const d of WALK) {
+      const q = reverseLungePose(d);
+      expect(q.ankles[1][2]).toBe(0);
+      expect(q.ankles[0][2]).toBeLessThanOrEqual(prev + 0.01);
+      expect(q.knees[0][1]).toBeGreaterThan(8);
+      prev = q.ankles[0][2];
+    }
+  });
+  it("step-up: the free foot clears the box and the box foot stays put", () => {
+    for (const d of WALK) {
+      const p = stepUpPose(d);
+      expect(p.ankles[1]).toEqual(stepUpPose(0).ankles[1]);
+      const free = p.ankles[0];
+      const belowTop = free[1] - 8 < BOX_TOP - 0.5;
+      if (belowTop) expect(free[2] + 15).toBeLessThanOrEqual(BOX_Z.from + 0.5);
+      expect(p.hips[1][1]).toBeGreaterThan(80);
+    }
+    const bottom = stepUpPose(1);
+    expect(bottom.ankles[0][1]).toBe(8);
+    expect(Math.abs(bottom.knees[1][1] - bottom.hips[1][1])).toBeLessThan(12);
+    const top = stepUpPose(0);
+    expect(top.hips[1][1]).toBeGreaterThan(top.ankles[1][1] + 85);
+  });
+  it("sumo deadlift: wide stance, knees out, dumbbell near the floor, hips and legs open steadily", () => {
+    const bottom = sumoPose(1);
+    expect(bottom.ankles[1][0]).toBeGreaterThan(24);
+    expect(Math.abs(bottom.knees[1][0])).toBeGreaterThan(Math.abs(bottom.hips[1][0]) + 12);
+    expect(bottom.bar[1]).toBeLessThan(26);
+    const lean = Math.atan2(
+      bottom.shoulders[1][2] - bottom.hips[1][2],
+      bottom.shoulders[1][1] - bottom.hips[1][1],
+    );
+    expect((lean * 180) / Math.PI).toBeGreaterThan(30);
+    expect((lean * 180) / Math.PI).toBeLessThan(48);
+    let prev = dist(bottom.hips[1], bottom.ankles[1]);
+    for (const d of [...WALK].reverse().slice(1)) {
+      const reach = dist(sumoPose(d).hips[1], sumoPose(d).ankles[1]);
+      expect(reach).toBeGreaterThanOrEqual(prev - 0.01);
+      prev = reach;
+    }
+  });
+  it("one-arm row: flat back, free hand and knee on the bench, elbow back at the top", () => {
+    for (const d of WALK) {
+      const p = dbRowPose(d);
+      const lean = Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
+      expect((lean * 180) / Math.PI).toBeGreaterThan(70);
+      expect(p.wrists[0][1]).toBeLessThan(50);
+      expect(p.ankles[0][1]).toBeGreaterThan(50);
+    }
+    const hang = dbRowPose(0);
+    expect(dist(hang.shoulders[1], hang.wrists[1])).toBeGreaterThan(53);
+    const top = dbRowPose(1);
+    expect(top.elbows[1][2]).toBeLessThan(top.shoulders[1][2] - 15);
+    expect(top.wrists[1][1]).toBeGreaterThan(hang.wrists[1][1] + 30);
   });
 });
 

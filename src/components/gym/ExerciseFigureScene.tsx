@@ -1,4 +1,11 @@
-import type { FigureModel, FigurePose, V3 } from "../../lib/gym/exerciseAnimation";
+import {
+  BOX_TOP,
+  BOX_Z,
+  ROW_BENCH_Y,
+  type FigureModel,
+  type FigurePose,
+  type V3,
+} from "../../lib/gym/exerciseAnimation";
 
 const W = 320;
 const FLOOR = 196;
@@ -96,6 +103,54 @@ export function FigureFront({ model, pose }: Props) {
           <path d={line(p([0, 46, 0]), p([0, 0, 0]))} className={furnLine} strokeWidth={s(8)} />
         </g>
       )}
+      {model.furniture === "incline-bench" && (
+        <g>
+          <rect
+            x={p([-16, 0, 0])[0]}
+            y={p([0, 112, 0])[1]}
+            width={s(32)}
+            height={s(66)}
+            rx={6}
+            className={furn}
+          />
+          <rect
+            x={p([-18, 0, 0])[0]}
+            y={p([0, 44, 0])[1]}
+            width={s(36)}
+            height={s(8)}
+            rx={4}
+            className={furn}
+          />
+          <path d={line(p([0, 44, 0]), p([0, 0, 0]))} className={furnLine} strokeWidth={s(8)} />
+        </g>
+      )}
+      {model.furniture === "flat-bench" && (
+        <g>
+          <rect
+            x={p([-14, 0, 0])[0]}
+            y={p([0, ROW_BENCH_Y, 0])[1]}
+            width={s(28)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          <path
+            d={line(p([0, ROW_BENCH_Y - 9, 0]), p([0, 0, 0]))}
+            className={furnLine}
+            strokeWidth={s(8)}
+          />
+        </g>
+      )}
+      {model.furniture === "box" && (
+        <rect
+          x={p([-26, 0, 0])[0]}
+          y={p([0, BOX_TOP, 0])[1]}
+          width={s(52)}
+          height={s(BOX_TOP)}
+          rx={4}
+          className={furn}
+        />
+      )}
       {/* legs */}
       {SIDES.map((i) => (
         <path
@@ -108,10 +163,11 @@ export function FigureFront({ model, pose }: Props) {
       {SIDES.map((i) => {
         const a = p(pose.ankles[i]);
         const out = i === 0 ? -1 : 1;
+        const y = FLOOR - s(pose.feet[i].floor) - 2;
         return (
           <path
             key={i}
-            d={line([a[0] - out * s(2), FLOOR - 2], [a[0] + out * s(10), FLOOR - 2])}
+            d={line([a[0] - out * s(2), y], [a[0] + out * s(10), y])}
             className="stroke-foreground/45"
             strokeWidth={s(6)}
           />
@@ -170,7 +226,7 @@ export function FigureFront({ model, pose }: Props) {
         </g>
       )}
       {model.implement === "dumbbells" &&
-        [wl, wr].map((w, i) => (
+        (model.oneDumbbell ? [wr] : [wl, wr]).map((w, i) => (
           <g key={i}>
             <path
               d={line([w[0] - s(12), w[1]], [w[0] + s(12), w[1]])}
@@ -248,7 +304,10 @@ export function FigureSide({ model, pose }: Props) {
     return (
       <path
         opacity={op}
-        d={`${poly(p(pose.hips[i]), p(pose.knees[i]), a)}L${pt([a[0] + s(15), FLOOR - 2])}`}
+        d={`${poly(p(pose.hips[i]), p(pose.knees[i]), a)}L${pt([
+          a[0] + pose.feet[i].dir * s(15),
+          FLOOR - s(pose.feet[i].floor) - 2,
+        ])}`}
         className={cls}
         strokeWidth={w}
       />
@@ -317,6 +376,57 @@ export function FigureSide({ model, pose }: Props) {
           />
           <path d={line(p([0, 44, 0]), p([0, 0, 0]))} className={furnLine} strokeWidth={s(8)} />
         </g>
+      )}
+      {model.furniture === "incline-bench" && (
+        <g>
+          <path
+            d={line(p([0, 41, -9]), p([0, 100, -66]))}
+            className="stroke-foreground/15"
+            strokeWidth={s(9)}
+          />
+          <rect
+            x={p([0, 0, -14])[0]}
+            y={p([0, 42, 0])[1]}
+            width={s(50)}
+            height={s(7)}
+            rx={3}
+            className={furn}
+          />
+          <path d={line(p([0, 42, 8]), p([0, 0, 8]))} className={furnLine} strokeWidth={s(7)} />
+          <path d={line(p([0, 3, -30]), p([0, 3, 40]))} className={furnLine} strokeWidth={s(6)} />
+        </g>
+      )}
+      {model.furniture === "flat-bench" && (
+        <g>
+          <rect
+            x={p([0, 0, -42])[0]}
+            y={p([0, ROW_BENCH_Y, 0])[1]}
+            width={s(92)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          <path
+            d={line(p([0, ROW_BENCH_Y - 9, -32]), p([0, 0, -32]))}
+            className={furnLine}
+            strokeWidth={s(7)}
+          />
+          <path
+            d={line(p([0, ROW_BENCH_Y - 9, 38]), p([0, 0, 38]))}
+            className={furnLine}
+            strokeWidth={s(7)}
+          />
+        </g>
+      )}
+      {model.furniture === "box" && (
+        <rect
+          x={p([0, 0, BOX_Z.from])[0]}
+          y={p([0, BOX_TOP, 0])[1]}
+          width={s(BOX_Z.to - BOX_Z.from)}
+          height={s(BOX_TOP)}
+          rx={4}
+          className={furn}
+        />
       )}
       {leg(far, limb, s(9), 0.35)}
       {arms(far, s(6), 0.4)}
