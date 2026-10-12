@@ -30,6 +30,7 @@ import { lookupBarcode } from "../../lib/gym/barcodeLookup";
 import { decodeMeal, mealCodeFrom } from "../../lib/gym/mealShare";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
 import { useTranslation } from "../../lib/gym/i18n";
+import { track } from "../../lib/gym/analytics";
 import { scanNutritionLabel, type ScannedLabel } from "../../lib/gym/labelScan";
 import {
   loadNevoFoods,
@@ -455,6 +456,7 @@ export function AddFoodSheet({
     setStep("scanning");
     try {
       const { base64: imageBase64, mimeType } = await fileToBase64(file);
+      track("feature.used", { feature: "label_scan" });
       const result = await scanNutritionLabel({
         data: { imageBase64, mimeType },
       });
@@ -488,6 +490,7 @@ export function AddFoodSheet({
     }
     setScannerStatus("lookingUp");
     try {
+      track("feature.used", { feature: "barcode_scan" });
       const result = await lookupBarcode(code);
       if (!result) {
         unknownBarcode.current = code;

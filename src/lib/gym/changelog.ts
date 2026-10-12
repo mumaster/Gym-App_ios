@@ -49,11 +49,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Wat is er nieuw: de app laat na een update zien wat er veranderd is en toont het versienummer in Instellingen.",
     },
   },
+  {
+    version: 6,
+    text: {
+      en: "Usage statistics: the app now shares anonymous info about which features get used, to help improve it. You can turn it off, or opt in to more detail, in Settings.",
+      nl: "Gebruiksstatistieken: de app deelt nu anoniem welke functies gebruikt worden, om hem te verbeteren. In Instellingen zet je dit uit, of kies je voor meer detail.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

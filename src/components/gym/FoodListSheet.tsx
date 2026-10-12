@@ -12,6 +12,7 @@ import {
   type FoodListSource,
   type ListFood,
 } from "../../lib/gym/foodList";
+import { track } from "../../lib/gym/analytics";
 import { readFoodList } from "../../lib/gym/foodListScan";
 import { useTranslation } from "../../lib/gym/i18n";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
@@ -184,6 +185,7 @@ export function FoodListSheet({
     setStep("reading");
     try {
       const image = payload.file ? await fileToBase64(payload.file, PHOTO_LIMIT) : null;
+      track("feature.used", { feature: "food_list_ai" });
       const [result, nevo] = await Promise.all([
         readFoodList({
           data: {

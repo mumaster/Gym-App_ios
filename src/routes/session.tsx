@@ -80,6 +80,7 @@ import {
 } from "../lib/gym/sessionResume";
 import { haptic, useGym } from "../lib/gym/store";
 import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
+import { track } from "../lib/gym/analytics";
 import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
 import { EXERCISE_ANIMATIONS } from "../lib/gym/exerciseAnimation";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
@@ -1032,7 +1033,10 @@ function SessionScreen() {
                 cardRef={s === slot ? activeCardRef : undefined}
                 onSwap={() => setSwapIndex(idx)}
                 onOpenInfo={setInfoExercise}
-                onOpenAnimation={setAnimExercise}
+                onOpenAnimation={(ex) => {
+                  track("feature.used", { feature: "exercise_animation", exercise_id: ex.id });
+                  setAnimExercise(ex);
+                }}
                 onHurts={() => setPainIndex(idx)}
                 {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
@@ -1765,6 +1769,9 @@ function ExerciseBlock({
           ) : null}
           <a
             href={exerciseVideoUrl(exercise)}
+            onClick={() =>
+              track("feature.used", { feature: "exercise_video", exercise_id: exercise.id })
+            }
             target="_blank"
             rel="noreferrer noopener"
             aria-label={t.session.watchDemo}
