@@ -77,11 +77,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Kruiden en zout: zoek bij het toevoegen van eten naar zout, peper, paprika, kaneel, oregano en zo'n 25 andere veelgebruikte Europese kruiden.",
     },
   },
+  {
+    version: 10,
+    text: {
+      en: "Plan food ahead: pick a day in the future on the Nutrition week bar and add food or saved meals to it, handy for meal prep.",
+      nl: "Eten vooruit plannen: kies op de weekbalk bij Voeding een dag in de toekomst en voeg eten of opgeslagen maaltijden toe, handig voor meal prep.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 9;
+export const CURRENT_VERSION = 10;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

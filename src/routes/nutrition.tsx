@@ -65,6 +65,8 @@ import { haptic, useGym } from "../lib/gym/store";
 /** Food, drinks (water and coffee) and bodyweight, as sub-tabs like
  *  History's. The week strip is on every tab and shows that tab's own
  *  data per day; the picked day is shared, so switching keeps it. */
+/** How many weeks ahead the week strip goes (planning meals in advance). */
+const MAX_WEEKS_AHEAD = 12;
 const NUTRITION_TABS = ["food", "drinks", "weight"] as const;
 export type NutritionTab = (typeof NUTRITION_TABS)[number];
 
@@ -151,7 +153,7 @@ function NutritionScreen() {
   /** The list reader (a note, a plate or typed words), opened from Add food. */
   const [listSheet, setListSheet] = useState<ReadListRequest | null>(null);
   const todayKey = dayKeyFromDate(new Date());
-  /** The day shown. Only today allows adding. */
+  /** The day shown. Food can be added to today and to days ahead (meal prep). */
   const [selectedKey, setSelectedKey] = useState(todayKey);
 
   const selectedDate = useMemo(() => parseDayKey(selectedKey), [selectedKey]);
@@ -164,6 +166,8 @@ function NutritionScreen() {
   const dayGoals = dayNutrition.goals;
   const hasGoals = NUTRIENT_ORDER.some((k) => dayGoals[k] != null);
   const isToday = selectedKey === todayKey;
+  const isFuture = selectedKey > todayKey;
+  const canAddFood = isToday || isFuture;
   const proteinTarget = proteinPerMealTarget(latestBodyKg(weightLog, nutritionProfile));
 
   const yesterdayKey = dayKeyFromDate(addDays(new Date(), -1));
@@ -191,7 +195,7 @@ function NutritionScreen() {
     haptic(15);
     setFoodSheet(meal ? { meal } : {});
   };
-  const meals = isToday
+  const meals = canAddFood
     ? MEAL_ORDER
     : MEAL_ORDER.filter((m) => selectedEntries.some((e) => e.meal === m));
 
@@ -311,7 +315,7 @@ function NutritionScreen() {
             }}
           />
 
-          {isToday ? (
+          {canAddFood ? (
             <button onClick={() => openAdd()} className={`${button.primary} mt-4 w-full`}>
               <Plus className="size-5" /> {t.nutrition.addFood}
             </button>
@@ -320,7 +324,7 @@ function NutritionScreen() {
           <SectionLabel>{t.nutrition.log}</SectionLabel>
           {meals.length === 0 ? (
             <Card className="p-6 text-center text-[15px] text-muted-foreground">
-              {t.nutrition.nothingLoggedDay}
+              {isFuture ? t.nutrition.nothingPlannedDay : t.nutrition.nothingLoggedDay}
             </Card>
           ) : (
             <div className="space-y-4">
@@ -335,7 +339,7 @@ function NutritionScreen() {
                   meal={meal}
                   entries={selectedEntries.filter((e) => e.meal === meal)}
                   proteinTarget={proteinTarget}
-                  canAdd={isToday}
+                  canAdd={canAddFood}
                   onAdd={() => openAdd(meal)}
                   onOpen={() => {
                     haptic(12);
@@ -406,6 +410,7 @@ function NutritionScreen() {
         open={foodSheet !== null}
         editEntry={foodSheet && "id" in foodSheet ? foodSheet : null}
         initialMeal={foodSheet && !("id" in foodSheet) ? foodSheet.meal : undefined}
+        day={selectedKey}
         onClose={() => setFoodSheet(null)}
         onCreateMeal={() => {
           setFoodSheet(null);
@@ -432,6 +437,7 @@ function NutritionScreen() {
         photo={listSheet?.start === "photo" ? listSheet : null}
         target="log"
         initialMeal={listSheet?.meal}
+        day={selectedKey}
         onClose={() => setListSheet(null)}
         onSaveAsRecipe={(ingredients, meta) => {
           setListSheet(null);
@@ -447,7 +453,7 @@ function NutritionScreen() {
         goals={dayGoals}
         proteinTarget={proteinTarget}
         dayLabel={dayLabel}
-        canAdd={isToday}
+        canAdd={canAddFood}
         onClose={() => setOverviewMeal(null)}
         onAdd={() => {
           const meal = overviewMeal ?? undefined;
@@ -515,7 +521,7 @@ type StripDay = { pct?: number; over?: boolean; label?: string | null; aria: str
  * day's mark comes from the tab (`day`) — calories against that day's
  * limit, water against the goal, or the weigh-in — and the line under it
  * is the tab's weekly summary (`footer`). Arrows move a week at a time;
- * days after today can't be picked.
+ * days ahead can be picked too, to plan food for them.
  */
 function WeekStrip({
   selectedKey,
@@ -540,18 +546,20 @@ function WeekStrip({
   const thisMonday = mondayOf(parseDayKey(todayKey)).getTime();
   const weeksBack = Math.round((thisMonday - monday.getTime()) / (7 * 864e5));
   const title =
-    weeksBack === 0
-      ? t.nutrition.thisWeek
-      : weeksBack === 1
-        ? t.nutrition.lastWeek
-        : `${monday.toLocaleDateString(locale, { day: "numeric", month: "short" })} – ${addDays(
-            monday,
-            6,
-          ).toLocaleDateString(locale, { day: "numeric", month: "short" })}`;
+    weeksBack === -1
+      ? t.nutrition.nextWeek
+      : weeksBack === 0
+        ? t.nutrition.thisWeek
+        : weeksBack === 1
+          ? t.nutrition.lastWeek
+          : `${monday.toLocaleDateString(locale, { day: "numeric", month: "short" })} – ${addDays(
+              monday,
+              6,
+            ).toLocaleDateString(locale, { day: "numeric", month: "short" })}`;
   const move = (weeks: number) => {
     haptic(10);
     const target = dayKeyFromDate(addDays(parseDayKey(selectedKey), weeks * 7));
-    onSelect(target > todayKey ? todayKey : target);
+    onSelect(target);
   };
 
   return (
@@ -567,7 +575,7 @@ function WeekStrip({
         <p className="text-[14px] font-semibold">{title}</p>
         <button
           onClick={() => move(1)}
-          disabled={weeksBack === 0}
+          disabled={weeksBack <= -MAX_WEEKS_AHEAD}
           aria-label={t.nutrition.nextWeek}
           className="tap-target flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground disabled:opacity-30"
         >
@@ -576,21 +584,19 @@ function WeekStrip({
       </div>
       <div className="mt-1.5 grid grid-cols-7 gap-0.5">
         {days.map(({ date, key }) => {
-          const future = key > todayKey;
           const selected = key === selectedKey;
           const mark = day(date, key);
           const name = t.common.dow[date.getDay()] ?? "";
           return (
             <button
               key={key}
-              disabled={future}
               onClick={() => {
                 haptic(10);
                 onSelect(key);
               }}
               aria-pressed={selected}
               aria-label={mark.aria}
-              className={`flex flex-col items-center gap-1 rounded-xl py-1.5 disabled:opacity-35 ${
+              className={`flex flex-col items-center gap-1 rounded-xl py-1.5 ${
                 selected ? "bg-primary/15 ring-1 ring-primary" : ""
               }`}
             >

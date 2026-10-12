@@ -37,7 +37,7 @@ import {
 } from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
-import { dayKey } from "./date";
+import { dayKey, loggedAtForDay } from "./date";
 import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
@@ -656,13 +656,13 @@ interface Ctx extends GymState {
   moveExerciseData: (from: string, to: string, workoutIds: ReadonlySet<string>) => void;
   deleteMealTemplate: (id: string) => void;
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
-  logMealTemplate: (id: string, meal: MealType) => void;
+  logMealTemplate: (id: string, meal: MealType, day?: string) => void;
   /** Logs ingredients (a meal shared by another user) as food entries today. */
   logIngredients: (ingredients: MealIngredient[], meal: MealType) => void;
   saveRecipe: (name: string, servings: number, ingredients: MealIngredient[]) => void;
   deleteRecipe: (id: string) => void;
   /** Logs one food entry for `servings` servings of a saved recipe, scaled from its per-serving macros. */
-  logRecipe: (id: string, servings: number, meal: MealType) => void;
+  logRecipe: (id: string, servings: number, meal: MealType, day?: string) => void;
   /** `tap`: a quick-add button, merged with a tap just before it
    *  (mergeWaterTap); a typed amount is always its own entry. */
   logWater: (ml: number, opts?: { tap?: boolean }) => void;
@@ -1749,11 +1749,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
           ...s,
           mealTemplates: s.mealTemplates.filter((t) => t.id !== id),
         })),
-      logMealTemplate: (id, meal) =>
+      logMealTemplate: (id, meal, day) =>
         setState((s) => {
           const template = s.mealTemplates.find((t) => t.id === id);
           if (!template) return s;
-          const now = new Date().toISOString();
+          const now = loggedAtForDay(day);
           const entries: FoodEntry[] = template.ingredients.map((ing) => ({
             id: crypto.randomUUID(),
             name: ing.name,
@@ -1793,14 +1793,14 @@ export function GymProvider({ children }: { children: ReactNode }) {
       // here is just `servings * 100`, not a real weight, purely to encode
       // "how many servings" through the existing grams/per100 shape rather
       // than adding a parallel one just for recipe-sourced entries.
-      logRecipe: (id, servings, meal) =>
+      logRecipe: (id, servings, meal, day) =>
         setState((s) => {
           const recipe = s.recipes.find((r) => r.id === id);
           if (!recipe) return s;
           const entry: FoodEntry = {
             id: crypto.randomUUID(),
             name: recipe.name,
-            logged_at: new Date().toISOString(),
+            logged_at: loggedAtForDay(day),
             meal,
             grams: Math.round(Math.max(0, servings) * 100),
             per100: recipePerServing(recipe),
