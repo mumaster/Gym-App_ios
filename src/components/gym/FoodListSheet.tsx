@@ -13,6 +13,7 @@ import {
   type ListFood,
 } from "../../lib/gym/foodList";
 import { track } from "../../lib/gym/analytics";
+import { loggedAtForDay } from "../../lib/gym/date";
 import { readFoodList } from "../../lib/gym/foodListScan";
 import { useTranslation } from "../../lib/gym/i18n";
 import { fileToBase64 } from "../../lib/gym/imageUpload";
@@ -47,6 +48,7 @@ export function FoodListSheet({
   photo,
   target,
   initialMeal,
+  day,
   onIngredients,
   onSaveAsRecipe,
 }: {
@@ -61,6 +63,8 @@ export function FoodListSheet({
    *  "ingredients": hand them back to a recipe being built. */
   target: "log" | "ingredients";
   initialMeal?: MealType | undefined;
+  /** Day key to log on (a future day for meal prep); today when omitted. */
+  day?: string | undefined;
   onIngredients?: (ingredients: MealIngredient[]) => void;
   onSaveAsRecipe?: (
     ingredients: MealIngredient[],
@@ -144,7 +148,7 @@ export function FoodListSheet({
   const totalKcal = ready.reduce((sum, ing) => sum + scaledMacros(ing).calories, 0);
 
   const logAll = () => {
-    const logged_at = new Date().toISOString();
+    const logged_at = loggedAtForDay(day);
     for (const ing of ready) {
       addFoodEntry({
         id: crypto.randomUUID(),
