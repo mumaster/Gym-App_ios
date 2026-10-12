@@ -12,6 +12,7 @@ import {
 } from "../../lib/gym/exerciseAnimation";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
+import { FigureFront, FigureSide } from "./ExerciseFigureScene";
 import { SegmentedTabs } from "./SegmentedTabs";
 
 type View = "front" | "side";
@@ -76,8 +77,13 @@ export function ExerciseAnimation({ exerciseId }: { exerciseId: string }) {
 
   if (!spec) return null;
   const a = t.exercises.animation;
-  const pose = pressPose(spec.rig, depthAt(phase));
+  const depth = depthAt(phase);
   const current = phaseAt(phase);
+  const caption = spec.phases?.[language][current] ?? a.phase[current];
+  const names = spec.labels?.[language];
+  const figure = spec.figure;
+  const benchPose = spec.rig ? pressPose(spec.rig, depth) : null;
+  const figurePose = figure ? figure.pose(depth) : null;
 
   return (
     <div className="space-y-3">
@@ -102,14 +108,22 @@ export function ExerciseAnimation({ exerciseId }: { exerciseId: string }) {
         <svg
           viewBox={`0 0 ${W} ${H}`}
           role="img"
-          aria-label={view === "front" ? a.frontLabel : a.sideLabel}
+          aria-label={names ? names[view] : view === "front" ? a.frontLabel : a.sideLabel}
           className="block w-full"
         >
-          {view === "front" ? (
-            <FrontScene rig={spec.rig} pose={pose} />
-          ) : (
-            <SideScene rig={spec.rig} pose={pose} />
-          )}
+          {figure && figurePose ? (
+            view === "front" ? (
+              <FigureFront model={figure} pose={figurePose} />
+            ) : (
+              <FigureSide model={figure} pose={figurePose} />
+            )
+          ) : spec.rig && benchPose ? (
+            view === "front" ? (
+              <FrontScene rig={spec.rig} pose={benchPose} />
+            ) : (
+              <SideScene rig={spec.rig} pose={benchPose} />
+            )
+          ) : null}
         </svg>
         <input
           type="range"
@@ -127,7 +141,7 @@ export function ExerciseAnimation({ exerciseId }: { exerciseId: string }) {
           className="px-4 pb-3 text-center text-[15px] font-semibold text-primary-text"
           aria-live="off"
         >
-          {a.phase[current]}
+          {caption}
         </p>
       </div>
       <ul className="space-y-1.5">
