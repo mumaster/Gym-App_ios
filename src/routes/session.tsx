@@ -20,6 +20,7 @@ import {
   Trophy,
   Undo2,
   Youtube,
+  PersonStanding,
   X,
   StickyNote,
   CornerDownRight,
@@ -28,6 +29,7 @@ import {
 } from "lucide-react";
 import { muscleIcon } from "../lib/gym/muscleIcons";
 import { BottomSheet } from "../components/gym/BottomSheet";
+import { ExerciseAnimation } from "../components/gym/ExerciseAnimation";
 import { Confetti } from "../components/gym/Confetti";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
@@ -77,6 +79,7 @@ import {
 import { haptic, useGym } from "../lib/gym/store";
 import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
 import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
+import { EXERCISE_ANIMATIONS } from "../lib/gym/exerciseAnimation";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { chip, button } from "../components/gym/ui";
 
@@ -179,6 +182,7 @@ function SessionScreen() {
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   /** Exercise whose page is open (tapped its title). */
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
+  const [animExercise, setAnimExercise] = useState<Exercise | null>(null);
   /** Plan index whose "Hurts" sheet is open. */
   const [painIndex, setPainIndex] = useState<number | null>(null);
   /** "Keep going" on the time check hides it for the rest of the session. */
@@ -1011,6 +1015,7 @@ function SessionScreen() {
                 cardRef={s === slot ? activeCardRef : undefined}
                 onSwap={() => setSwapIndex(idx)}
                 onOpenInfo={setInfoExercise}
+                onOpenAnimation={setAnimExercise}
                 onHurts={() => setPainIndex(idx)}
                 {...(blockIndex < blocks.length - 1 && !resting ? { onDoLater: doLater } : {})}
                 onLogged={(t) => handleLogged(t, s)}
@@ -1236,6 +1241,13 @@ function SessionScreen() {
       </BottomSheet>
 
       <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
+      <BottomSheet
+        open={!!animExercise}
+        onClose={() => setAnimExercise(null)}
+        title={animExercise?.name ?? ""}
+      >
+        {animExercise ? <ExerciseAnimation exerciseId={animExercise.id} /> : null}
+      </BottomSheet>
       <SwapSheet
         inWorkoutIds={plan.map((p) => p.exercise_id)}
         exerciseId={swapIndex === null ? null : (plan[swapIndex]?.exercise_id ?? null)}
@@ -1366,6 +1378,7 @@ function ExerciseBlock({
   cardRef,
   onSwap,
   onOpenInfo,
+  onOpenAnimation,
   onHurts,
   onDoLater,
   onLogged,
@@ -1389,6 +1402,8 @@ function ExerciseBlock({
   onSwap: () => void;
   /** Opens the exercise's page (tapping its title). */
   onOpenInfo: (exercise: Exercise) => void;
+  /** Opens the form animation (only offered for exercises that have one). */
+  onOpenAnimation: (exercise: Exercise) => void;
   onHurts: () => void;
   /** Present when there's a later exercise to swap places with. */
   onDoLater?: (() => void) | undefined;
@@ -1707,6 +1722,15 @@ function ExerciseBlock({
           >
             <Repeat className="size-4" />
           </button>
+          {EXERCISE_ANIMATIONS[exercise.id] ? (
+            <button
+              onClick={() => onOpenAnimation(exercise)}
+              aria-label={t.session.watchAnimation}
+              className="tap-target flex size-10 items-center justify-center rounded-xl bg-secondary text-secondary-foreground active:scale-95"
+            >
+              <PersonStanding className="size-4 text-primary-text" />
+            </button>
+          ) : null}
           <a
             href={exerciseVideoUrl(exercise)}
             target="_blank"

@@ -552,6 +552,7 @@ const en = {
     targetLine: (sets: number, reps: string, rest: number, side?: string) =>
       `Target ${sets} × ${reps}${side ? ` ${side}` : ""} · ${rest}s rest · `,
     watchDemo: "Watch demo",
+    watchAnimation: "Show form animation",
     wellDone: (n: number) => `Well done — ${n} ${n === 1 ? "set" : "sets"} logged`,
     finishBelow: "Finish your workout below.",
     extraSet: "Extra set",
@@ -2498,6 +2499,7 @@ const nl: Dict = {
     targetLine: (sets: number, reps: string, rest: number, side?: string) =>
       `Doel ${sets} × ${reps}${side ? ` ${side}` : ""} · ${rest}s rust · `,
     watchDemo: "Bekijk demo",
+    watchAnimation: "Toon vormanimatie",
     wellDone: (n: number) => `Goed gedaan — ${n} ${n === 1 ? "set" : "sets"} gelogd`,
     finishBelow: "Rond je training hieronder af.",
     extraSet: "Extra set",
