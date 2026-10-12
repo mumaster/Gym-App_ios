@@ -6,11 +6,17 @@ import { ExerciseDetailSheet } from "../../../components/gym/ExerciseDetailSheet
 import { EXERCISES } from "../data";
 import {
   BENCH_PRESS_RIG,
+  deadliftPose,
   depthAt,
   elbowFlare,
   EXERCISE_ANIMATIONS,
+  gobletPose,
+  latPulldownPose,
   phaseAt,
   pressPose,
+  rdlPose,
+  seatedPressPose,
+  type FigurePose,
 } from "../exerciseAnimation";
 import { GymProvider } from "../store";
 
@@ -49,14 +55,97 @@ describe("bench press rig", () => {
   });
 });
 
+const ANIMATED = [
+  "bb-bench",
+  "bb-deadlift",
+  "db-shoulder-press",
+  "goblet-squat",
+  "lat-pulldown",
+  "rdl",
+];
+
+const POSES: Record<string, (d: number) => FigurePose> = {
+  "bb-deadlift": deadliftPose,
+  rdl: rdlPose,
+  "goblet-squat": gobletPose,
+  "db-shoulder-press": seatedPressPose,
+  "lat-pulldown": latPulldownPose,
+};
+
+describe("figure rigs", () => {
+  it("keep limb lengths constant and the feet planted through the rep", () => {
+    for (const pose of Object.values(POSES)) {
+      for (const d of [0, 0.25, 0.5, 0.75, 1]) {
+        const p = pose(d);
+        for (const i of [0, 1] as const) {
+          expect(dist(p.shoulders[i], p.elbows[i])).toBeCloseTo(29, 3);
+          expect(dist(p.elbows[i], p.wrists[i])).toBeCloseTo(26, 0);
+          // a fully straight leg is clamped to its reach, so the shin may stretch a hair
+
+          expect(dist(p.hips[i], p.knees[i])).toBeCloseTo(45, 3);
+          expect(Math.abs(dist(p.knees[i], p.ankles[i]) - 43)).toBeLessThan(1.2);
+        }
+        expect(p.ankles[1][1]).toBe(8);
+      }
+    }
+  });
+  it("deadlift: bar over the mid-foot, back angle held, then lockout", () => {
+    const floor = deadliftPose(1);
+    expect(floor.bar[1]).toBeCloseTo(22.5, 3);
+    expect(Math.abs(floor.bar[2] - 3)).toBeLessThan(2);
+    const rise = deadliftPose(0.7);
+    const angle = (p: FigurePose) =>
+      Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
+    expect(Math.abs(angle(rise) - angle(floor))).toBeLessThan(0.05);
+    expect(rise.hips[1][1]).toBeGreaterThan(floor.hips[1][1] + 10);
+    expect(rise.shoulders[1][1]).toBeGreaterThan(floor.shoulders[1][1] + 10);
+    const top = deadliftPose(0);
+    expect(top.hips[1][1]).toBeGreaterThan(90);
+    expect(top.shoulders[1][2]).toBeCloseTo(top.hips[1][2], 0);
+  });
+  it("RDL: the knees stay soft while the hips travel back", () => {
+    const knee = (p: FigurePose) => dist(p.hips[1], p.ankles[1]);
+    for (const d of [0, 0.5, 1]) expect(knee(rdlPose(d))).toBeLessThan(88);
+    expect(rdlPose(1).hips[1][2]).toBeLessThan(rdlPose(0).hips[1][2] - 20);
+    expect(rdlPose(1).shoulders[1][1]).toBeLessThan(rdlPose(0).shoulders[1][1] - 25);
+  });
+  it("goblet squat: hips below the knees, knees over the toes, torso upright", () => {
+    const p = gobletPose(1);
+    expect(p.hips[1][1]).toBeLessThan(p.knees[1][1]);
+    expect(p.knees[1][2]).toBeGreaterThan(p.ankles[1][2] + 10);
+    const lean = Math.atan2(p.shoulders[1][2] - p.hips[1][2], p.shoulders[1][1] - p.hips[1][1]);
+    expect((lean * 180) / Math.PI).toBeLessThan(35);
+  });
+  it("seated press: wrists over elbows at the bottom, locked out overhead", () => {
+    const bottom = seatedPressPose(1);
+    expect(Math.abs(bottom.elbows[1][0] - bottom.wrists[1][0])).toBeLessThan(4);
+    expect(bottom.wrists[1][1]).toBeGreaterThan(bottom.elbows[1][1] + 20);
+    const top = seatedPressPose(0);
+    expect(dist(top.shoulders[1], top.wrists[1])).toBeGreaterThan(52);
+    expect(top.wrists[1][1]).toBeGreaterThan(top.shoulders[1][1] + 45);
+    expect(top.hips[1][2]).toBeGreaterThan(top.shoulders[1][2]);
+  });
+  it("lat pulldown: leaning back, bar to the upper chest, elbows below the hands", () => {
+    const bottom = latPulldownPose(1);
+    const top = latPulldownPose(0);
+    expect(bottom.shoulders[1][2]).toBeLessThan(bottom.hips[1][2]);
+    expect(top.wrists[1][1]).toBeGreaterThan(bottom.wrists[1][1] + 40);
+    expect(Math.abs(bottom.wrists[1][1] - bottom.shoulders[1][1])).toBeLessThan(15);
+    expect(bottom.elbows[1][1]).toBeLessThan(bottom.wrists[1][1] - 8);
+    expect(bottom.elbows[1][2]).toBeLessThan(bottom.wrists[1][2]);
+  });
+});
+
 const wrap = (child: ReturnType<typeof createElement>) =>
   renderToString(createElement(GymProvider, null, child));
 
 describe("ExerciseAnimation render", () => {
-  it("renders the bench press and nothing for exercises without one", () => {
-    expect(wrap(createElement(ExerciseAnimation, { exerciseId: "bb-bench" }))).toContain("<svg");
+  it("renders every animated exercise and nothing for exercises without one", () => {
+    for (const id of ANIMATED) {
+      expect(wrap(createElement(ExerciseAnimation, { exerciseId: id }))).toContain("<svg");
+    }
     expect(wrap(createElement(ExerciseAnimation, { exerciseId: "unknown" }))).toBe("");
-    expect(Object.keys(EXERCISE_ANIMATIONS)).toEqual(["bb-bench"]);
+    expect(Object.keys(EXERCISE_ANIMATIONS).sort()).toEqual(ANIMATED);
   });
   it("shows up in the exercise sheet for the barbell bench press only", () => {
     const bench = EXERCISES.find((e) => e.id === "bb-bench")!;
@@ -67,9 +156,17 @@ describe("ExerciseAnimation render", () => {
     expect(open(bench)).toContain("<svg");
     expect(open(other)).not.toContain('role="img"');
   });
-  it("has cues in both languages", () => {
-    const { cues } = EXERCISE_ANIMATIONS["bb-bench"]!;
-    expect(cues.en.length).toBeGreaterThan(0);
-    expect(cues.nl.length).toBe(cues.en.length);
+  it("has cues, captions and names in both languages, and matches catalog ids", () => {
+    const ids = new Set(EXERCISES.map((e) => e.id));
+    for (const id of ANIMATED) {
+      const spec = EXERCISE_ANIMATIONS[id]!;
+      expect(spec.cues.en.length).toBeGreaterThan(0);
+      expect(spec.cues.nl.length).toBe(spec.cues.en.length);
+      if (id !== "bb-bench") {
+        expect(Object.keys(spec.phases!.nl)).toEqual(Object.keys(spec.phases!.en));
+        expect(spec.labels!.nl.side).not.toBe("");
+      }
+    }
+    expect(ANIMATED.every((id) => ids.has(id))).toBe(true);
   });
 });

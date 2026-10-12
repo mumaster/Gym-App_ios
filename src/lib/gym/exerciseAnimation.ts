@@ -145,12 +145,255 @@ export function elbowFlare(pose: Pose, side: 0 | 1 = 1): number {
   return h ? (Math.atan2(Math.abs(u[0]), Math.abs(u[2])) * 180) / Math.PI : 0;
 }
 
-export interface ExerciseAnimationSpec {
-  rig: PressRig;
-  cues: Record<Language, string[]>;
+/* ------------------------------------------------------------------ */
+/* Standing and seated lifts: a figure built from joint angles.        */
+/* ------------------------------------------------------------------ */
+
+export interface FigurePose extends Pose {
+  head: V3;
 }
 
-/** Add an exercise by id. Only the barbell bench press has one so far. */
+export type Implement = "barbell" | "dumbbells" | "goblet" | "latbar";
+export type Furniture = "none" | "upright-bench" | "pulldown";
+
+/** One exercise as a function of `depth` (0 = the start/top position the
+ *  loop begins in, 1 = the turning point), plus what to draw around it. */
+export interface FigureModel {
+  pose: (depth: number) => FigurePose;
+  implement: Implement;
+  furniture: Furniture;
+  /** px per cm, and the z (cm) drawn at the middle of the side view. */
+  scale: number;
+  centerZ: number;
+}
+
+const BODY = { shoulderHalf: 19, hipHalf: 10, thigh: 45, shin: 43, torso: 50 };
+const ARM = 29 + 26;
+const ANKLE_Y = 8;
+const PLATE_RADIUS = 22.5;
+
+const rad = (deg: number) => (deg * Math.PI) / 180;
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const sin = (deg: number) => Math.sin(rad(deg));
+const cos = (deg: number) => Math.cos(rad(deg));
+
+interface Skeleton {
+  hip: { y: number; z: number };
+  shoulder: { y: number; z: number };
+  head: V3;
+  ankleZ: number;
+  footHalf: number;
+  wrist: (s: -1 | 1) => V3;
+  bar: V3;
+  /** Directions the knees and elbows bend towards. */
+  kneePole: (s: -1 | 1) => V3;
+  elbowPole: (s: -1 | 1) => V3;
+}
+
+function assemble(sk: Skeleton): FigurePose {
+  const at = <T>(f: (s: -1 | 1) => T) => [f(-1), f(1)] as [T, T];
+  const i = (s: -1 | 1) => (s < 0 ? 0 : 1);
+  const shoulders = at((s): V3 => [s * BODY.shoulderHalf, sk.shoulder.y, sk.shoulder.z]);
+  const hips = at((s): V3 => [s * BODY.hipHalf, sk.hip.y, sk.hip.z]);
+  const ankles = at((s): V3 => [s * sk.footHalf, ANKLE_Y, sk.ankleZ]);
+  const wrists = at(sk.wrist);
+  const elbows = at((s) => twoBone(shoulders[i(s)], wrists[i(s)], 29, 26, sk.elbowPole(s)));
+  const knees = at((s) => twoBone(hips[i(s)], ankles[i(s)], BODY.thigh, BODY.shin, sk.kneePole(s)));
+  return { shoulders, elbows, wrists, hips, knees, ankles, head: sk.head, bar: sk.bar };
+}
+
+/** Hip position from a shoulder and a torso lean (degrees from vertical,
+ *  positive = chest forward). */
+const hipFrom = (sh: { y: number; z: number }, lean: number) => ({
+  y: sh.y - BODY.torso * cos(lean),
+  z: sh.z - BODY.torso * sin(lean),
+});
+
+const headFrom = (sh: { y: number; z: number }, angle: number): V3 => [
+  0,
+  sh.y + 22 * cos(angle),
+  sh.z + 22 * sin(angle),
+];
+
+const ANKLE_Z = -6;
+const forwardKnees = (s: -1 | 1): V3 => [s * 0.25, 0, 1];
+const straightArms = (s: -1 | 1): V3 => [s * 0.3, 0, 1];
+
+/** Conventional deadlift: bar over the mid-foot, back angle held while the
+ *  hips and shoulders rise together, then the hips come through. */
+export function deadliftPose(depth: number): FigurePose {
+  const barY = lerp(90, PLATE_RADIUS, depth);
+  const barZ = lerp(7, 3, depth);
+  const off = lerp(-6, 4, depth);
+  const shoulder = { z: barZ + off, y: barY + Math.sqrt(ARM * ARM - off * off) };
+  const lean = 60 * smooth(clamp01(depth / 0.62));
+  return assemble({
+    hip: hipFrom(shoulder, lean),
+    shoulder,
+    head: headFrom(shoulder, lean * 0.55),
+    ankleZ: ANKLE_Z,
+    footHalf: 16,
+    wrist: (s) => [s * 22, barY, barZ],
+    bar: [0, barY, barZ],
+    kneePole: forwardKnees,
+    elbowPole: straightArms,
+  });
+}
+
+/** Romanian deadlift: knees stay softly bent, the hips travel back, the bar
+ *  slides down the legs with a flat back. */
+export function rdlPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hipZ = lerp(-2, -30, e);
+  const reach = lerp(87, 82, e);
+  const dz = hipZ - ANKLE_Z;
+  const dx = 14 - BODY.hipHalf;
+  const hip = { z: hipZ, y: ANKLE_Y + Math.sqrt(reach * reach - dz * dz - dx * dx) };
+  const lean = 62 * e;
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  // Arms hang from the shoulders, tilting so the bar stays against the legs.
+  const tilt = lerp(-11, 14, e);
+  const hang = Math.sqrt(ARM * ARM - 3 * 3) - 0.1;
+  const wy = shoulder.y - hang * cos(tilt);
+  const wz = shoulder.z - hang * sin(tilt);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.6),
+    ankleZ: ANKLE_Z,
+    footHalf: 14,
+    wrist: (s) => [s * 22, wy, wz],
+    bar: [0, wy, wz],
+    kneePole: forwardKnees,
+    elbowPole: straightArms,
+  });
+}
+
+/** Goblet squat: dumbbell at the chest, torso upright, knees forward over
+ *  the toes with the heels down, hips below the knees at the bottom. */
+export function gobletPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shin = 38 * e;
+  const thighAngle = 97 * e;
+  const knee = { y: ANKLE_Y + BODY.shin * cos(shin), z: 0 + BODY.shin * sin(shin) };
+  const hip = {
+    y: knee.y + BODY.thigh * cos(thighAngle),
+    z: knee.z - BODY.thigh * sin(thighAngle),
+  };
+  const lean = 24 * e;
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  // Chest: a little below the shoulder joint and in front of the torso line.
+  const chest = {
+    y: shoulder.y - 12 * cos(lean) + 11 * sin(lean),
+    z: shoulder.z - 12 * sin(lean) + 11 * cos(lean) + 6,
+  };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.3),
+    ankleZ: 0,
+    footHalf: 22,
+    wrist: (s) => [s * 6, chest.y, chest.z],
+    bar: [0, chest.y - 4, chest.z + 2],
+    kneePole: (s) => [s * 0.5, 0, 1],
+    elbowPole: (s) => [s * 0.5, -1, 0.1],
+  });
+}
+
+const SEAT_HIP_Y = 53;
+
+/** Seated dumbbell shoulder press on an upright bench. */
+export function seatedPressPose(depth: number): FigurePose {
+  const back = 10;
+  const hip = { y: SEAT_HIP_Y, z: 0 };
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(back),
+    z: hip.z - BODY.torso * sin(back),
+  };
+  // Bottom: upper arm out and a little forward, forearm vertical.
+  const ux = 0.85;
+  const uy = -0.45;
+  const uz = 0.27;
+  const bottom = (s: -1 | 1): V3 => [
+    s * BODY.shoulderHalf + s * 29 * ux,
+    shoulder.y + 29 * uy + 26,
+    shoulder.z + 29 * uz,
+  ];
+  const top = (s: -1 | 1): V3 => [s * 13, shoulder.y + 54.2, shoulder.z + 4];
+  const lerp3 = (a: V3, b: V3, t: number): V3 => [
+    lerp(a[0], b[0], t),
+    lerp(a[1], b[1], t),
+    lerp(a[2], b[2], t),
+  ];
+  return assemble({
+    hip,
+    shoulder,
+    head: [0, shoulder.y + 22, shoulder.z - 2],
+    ankleZ: 40,
+    footHalf: 24,
+    wrist: (s) => lerp3(top(s), bottom(s), depth),
+    bar: [0, shoulder.y + 54, shoulder.z],
+    kneePole: (s) => [s * 0.2, 1, 0.5],
+    elbowPole: (s) => [s, -0.2, 0.1],
+  });
+}
+
+/** Lat pulldown: slight lean back, bar to the upper chest, elbows down and back. */
+export function latPulldownPose(depth: number): FigurePose {
+  const hip = { y: 50, z: 0 };
+  const lean = lerp(12, 18, depth);
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z - BODY.torso * sin(lean),
+  };
+  const grip = 30;
+  const topW: V3 = [grip, shoulder.y + 52, shoulder.z + 14];
+  const bottomW: V3 = [grip, shoulder.y - 8, shoulder.z + 20];
+  const w = (s: -1 | 1): V3 => [
+    s * grip,
+    lerp(topW[1], bottomW[1], depth),
+    lerp(topW[2], bottomW[2], depth),
+  ];
+  const mid = w(1);
+  return assemble({
+    hip,
+    shoulder,
+    head: [0, shoulder.y + 22, shoulder.z + 22 * sin(-lean * 0.4) + 3],
+    ankleZ: 42,
+    footHalf: 18,
+    wrist: w,
+    bar: [0, mid[1], mid[2]],
+    kneePole: (s) => [s * 0.2, 1, 0.5],
+    elbowPole: (s) => [s * 0.5, -1, -0.8],
+  });
+}
+
+export type PhaseLabels = Record<PhaseId, string>;
+
+export interface ExerciseAnimationSpec {
+  /** Bench-press style rig, or a figure model for the other lifts. */
+  rig?: PressRig;
+  figure?: FigureModel;
+  cues: Record<Language, string[]>;
+  /** Captions per phase and the drawings' accessible names; the bench press
+   *  uses the shared strings in i18n. */
+  phases?: Record<Language, PhaseLabels>;
+  labels?: Record<Language, { front: string; side: string }>;
+}
+
+const label = (en: string, nl: string) => ({
+  en: { front: `${en} seen from the front`, side: `${en} seen from the side` },
+  nl: { front: `${nl}, gezien van voren`, side: `${nl}, gezien van de zijkant` },
+});
+
+/** Add an exercise by id (the id in the exercise catalog). */
 export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
   "bb-bench": {
     rig: BENCH_PRESS_RIG,
@@ -168,6 +411,201 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Polsen boven je ellebogen, onderarmen verticaal onderin.",
         "Ellebogen ongeveer 45 tot 75 graden van je romp, niet wijd uit elkaar.",
         "Raak de onderkant van je borst aan, duw omhoog en iets naar achteren boven je schouders tot volledig gestrekt.",
+      ],
+    },
+  },
+
+  "bb-deadlift": {
+    figure: {
+      pose: deadliftPose,
+      implement: "barbell",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: -12,
+    },
+    labels: label("Barbell deadlift", "Deadlift met halterstang"),
+    phases: {
+      en: {
+        lower: "Hinge down, bar close to the legs",
+        touch: "Bar at the floor, flat back",
+        press: "Push the floor away, hips and shoulders rise together",
+        lockout: "Stand tall and lock out",
+      },
+      nl: {
+        lower: "Zak met rechte rug, stang dicht langs je benen",
+        touch: "Stang bij de grond, rechte rug",
+        press: "Duw de vloer weg, heupen en schouders komen samen omhoog",
+        lockout: "Sta rechtop en strek volledig",
+      },
+    },
+    cues: {
+      en: [
+        "Bar over the mid-foot, feet hip-width apart, shins close to the bar.",
+        "Neutral spine from head to hips, chest up, shoulders just in front of the bar.",
+        "Brace your core, pull the slack out of the bar, then push the floor away.",
+        "Hips and shoulders rise together, the bar drags up your legs.",
+        "Finish tall with hips and knees locked out and glutes squeezed, without leaning back.",
+      ],
+      nl: [
+        "Stang boven het midden van je voet, voeten heupbreed, scheenbenen dicht bij de stang.",
+        "Neutrale rug van hoofd tot heupen, borst omhoog, schouders net voor de stang.",
+        "Span je core aan, haal de speling uit de stang en duw dan de vloer weg.",
+        "Heupen en schouders komen samen omhoog, de stang schuift langs je benen.",
+        "Eindig rechtop met heupen en knieën gestrekt en billen aangespannen, zonder achterover te leunen.",
+      ],
+    },
+  },
+  rdl: {
+    figure: { pose: rdlPose, implement: "barbell", furniture: "none", scale: 1.05, centerZ: -4 },
+    labels: label("Barbell Romanian deadlift", "Roemeense deadlift met halterstang"),
+    phases: {
+      en: {
+        lower: "Hips back, soft knees, bar along the legs",
+        touch: "Stretch in the hamstrings, back flat",
+        press: "Drive the hips forward",
+        lockout: "Stand tall, squeeze the glutes",
+      },
+      nl: {
+        lower: "Heupen naar achteren, zachte knieën, stang langs je benen",
+        touch: "Rek in de hamstrings, rug recht",
+        press: "Duw de heupen naar voren",
+        lockout: "Sta rechtop, span de billen aan",
+      },
+    },
+    cues: {
+      en: [
+        "Soft knees: a slight bend that stays the same all rep.",
+        "Push your hips back as if closing a car door with your butt, don't squat down.",
+        "Keep the bar close to your legs, brushing your thighs and shins.",
+        "Flat back and neutral neck throughout. Stop when your hamstrings are stretched, around knee height.",
+        "Drive your hips forward to stand tall and squeeze your glutes.",
+      ],
+      nl: [
+        "Zachte knieën: een lichte buiging die de hele herhaling gelijk blijft.",
+        "Duw je heupen naar achteren, alsof je met je billen een autodeur dichtduwt. Zak niet door je knieën.",
+        "Houd de stang dicht langs je benen, langs je bovenbenen en scheenbenen.",
+        "Rechte rug en neutrale nek de hele herhaling. Stop als je hamstrings gestrekt zijn, rond kniehoogte.",
+        "Duw je heupen naar voren om rechtop te komen en span je billen aan.",
+      ],
+    },
+  },
+  "goblet-squat": {
+    figure: {
+      pose: gobletPose,
+      implement: "goblet",
+      furniture: "none",
+      scale: 1.05,
+      centerZ: 0,
+    },
+    labels: label("Goblet squat", "Goblet squat"),
+    phases: {
+      en: {
+        lower: "Sit down between your knees",
+        touch: "Full depth, chest tall",
+        press: "Drive up through your feet",
+        lockout: "Stand tall",
+      },
+      nl: {
+        lower: "Zak tussen je knieën",
+        touch: "Volle diepte, borst hoog",
+        press: "Duw omhoog door je voeten",
+        lockout: "Sta rechtop",
+      },
+    },
+    cues: {
+      en: [
+        "Hold the dumbbell vertically against your chest, elbows pointing down.",
+        "Feet a little wider than your shoulders, toes turned out slightly.",
+        "Sit down between your legs, knees tracking over your toes and heels flat.",
+        "Keep your torso upright and chest tall. Go to at least parallel, hips at or below your knees.",
+        "Drive up through your whole foot to a full stand.",
+      ],
+      nl: [
+        "Houd de dumbbell verticaal tegen je borst, ellebogen wijzen omlaag.",
+        "Voeten iets breder dan je schouders, tenen een beetje naar buiten.",
+        "Zak tussen je benen door, knieën in lijn met je tenen en hielen plat.",
+        "Houd je romp rechtop en je borst hoog. Ga minstens tot parallel, heupen op of onder kniehoogte.",
+        "Duw omhoog door je hele voet tot je volledig staat.",
+      ],
+    },
+  },
+  "db-shoulder-press": {
+    figure: {
+      pose: seatedPressPose,
+      implement: "dumbbells",
+      furniture: "upright-bench",
+      scale: 1.05,
+      centerZ: 14,
+    },
+    labels: label("Seated dumbbell shoulder press", "Zittend schouderdrukken met dumbbells"),
+    phases: {
+      en: {
+        lower: "Lower to shoulder height",
+        touch: "Wrists over elbows, forearms vertical",
+        press: "Press up and slightly in",
+        lockout: "Lock out overhead",
+      },
+      nl: {
+        lower: "Zak naar schouderhoogte",
+        touch: "Polsen boven ellebogen, onderarmen verticaal",
+        press: "Duw omhoog en iets naar binnen",
+        lockout: "Strek boven je hoofd",
+      },
+    },
+    cues: {
+      en: [
+        "Back flat against the pad, feet planted and core braced. Don't arch off the bench.",
+        "Start with the dumbbells at shoulder height, elbows just in front of your torso.",
+        "Wrists stacked over your elbows, forearms vertical.",
+        "Press up and slightly inward until your arms are fully locked out overhead.",
+        "Lower under control back to shoulder height.",
+      ],
+      nl: [
+        "Rug plat tegen het kussen, voeten stevig en core aangespannen. Geen holle rug van de bank.",
+        "Begin met de dumbbells op schouderhoogte, ellebogen net voor je romp.",
+        "Polsen boven je ellebogen, onderarmen verticaal.",
+        "Duw omhoog en iets naar binnen tot je armen volledig gestrekt zijn boven je hoofd.",
+        "Zak gecontroleerd terug naar schouderhoogte.",
+      ],
+    },
+  },
+  "lat-pulldown": {
+    figure: {
+      pose: latPulldownPose,
+      implement: "latbar",
+      furniture: "pulldown",
+      scale: 1.05,
+      centerZ: 12,
+    },
+    labels: label("Lat pulldown", "Lat pulldown"),
+    phases: {
+      en: {
+        lower: "Pull your elbows down and back",
+        touch: "Bar at the upper chest, squeeze",
+        press: "Return slowly under control",
+        lockout: "Arms long, lats stretched",
+      },
+      nl: {
+        lower: "Trek je ellebogen omlaag en naar achteren",
+        touch: "Stang bij je bovenborst, knijp samen",
+        press: "Laat gecontroleerd terug gaan",
+        lockout: "Lange armen, lats gerekt",
+      },
+    },
+    cues: {
+      en: [
+        "Thighs locked under the pad. Sit tall with a slight lean back, about 15 degrees.",
+        "Grip a little wider than your shoulders. Start with long arms and your shoulders drawn down.",
+        "Lead with your elbows: pull them down and back, not with your hands.",
+        "Pull the bar to your upper chest and squeeze your lats, without swinging.",
+        "Let the bar rise slowly under control until your arms are straight again.",
+      ],
+      nl: [
+        "Bovenbenen vast onder het kussen. Zit rechtop met een lichte lean naar achteren, ongeveer 15 graden.",
+        "Grip iets breder dan je schouders. Begin met lange armen en je schouders omlaag.",
+        "Leid met je ellebogen: trek ze omlaag en naar achteren, niet met je handen.",
+        "Trek de stang naar je bovenborst en span je lats aan, zonder te zwaaien.",
+        "Laat de stang langzaam gecontroleerd omhoog gaan tot je armen weer gestrekt zijn.",
       ],
     },
   },
