@@ -159,6 +159,8 @@ export interface Foot {
   /** Degrees the toes point above horizontal, the foot pivoting about the ankle
    *  (a foot that hangs off the shin instead of standing on something). */
   angle?: number;
+  /** cm the foot's pivot sits below the ankle (8 for a foot that is about to land). */
+  drop?: number;
 }
 
 export interface FigurePose extends Pose {
@@ -603,7 +605,17 @@ export function stepUpPose(depth: number): FigurePose {
     ankleZ: 14,
     footHalf: 11,
     ankle: (s) => (s < 0 ? free : boxAnkle),
-    foot: (s) => ({ floor: s < 0 ? 0 : BOX_TOP, dir: 1 }),
+    foot: (s) => {
+      if (s >= 0) return { floor: BOX_TOP, dir: 1 };
+      // The free foot hangs off the shin while it is in the air, then lands flat.
+      const t = clamp01((free[1] - ANKLE_Y) / 10);
+      return {
+        floor: Math.max(0, free[1] - ANKLE_Y),
+        dir: 1,
+        angle: -35 * t,
+        drop: ANKLE_Y * (1 - t),
+      };
+    },
     wrist: (s) => [s * 22, shoulder.y - hang, shoulder.z + 3],
     bar: [0, shoulder.y - hang, shoulder.z + 3],
     kneePole: (s) => (s < 0 ? [0, 0.2, 1] : [0, 0, 1]),
