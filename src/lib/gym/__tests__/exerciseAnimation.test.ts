@@ -13,6 +13,13 @@ import {
   LEG_PRESS_HIP,
   REAR_BENCH_Y,
   walkingLungePose,
+  dipPose,
+  DIP_BAR_Y,
+  overheadTricepsPose,
+  skullcrusherPose,
+  barbellCurlPose,
+  dbRdlPose,
+  hammerCurlPose,
   BENCH_PRESS_RIG,
   cableCrunchPose,
   cablePushdownPose,
@@ -86,6 +93,7 @@ describe("bench press rig", () => {
 
 const ANIMATED = [
   "bb-bench",
+  "bb-curl",
   "bb-deadlift",
   "bb-row",
   "bb-squat",
@@ -93,12 +101,16 @@ const ANIMATED = [
   "cable-crunch",
   "cable-pushdown",
   "db-curl",
+  "db-hammer-curl",
+  "db-overhead-triceps-ext",
+  "db-rdl",
   "db-row",
   "db-shoulder-press",
   "db-single-leg-rdl",
   "db-step-up",
   "db-sumo-deadlift",
   "db-walking-lunge",
+  "dips",
   "glute-bridge",
   "goblet-squat",
   "hanging-leg-raise",
@@ -113,6 +125,7 @@ const ANIMATED = [
   "pullup",
   "rdl",
   "reverse-lunge",
+  "skullcrusher",
   "standing-calf",
 ];
 
@@ -354,6 +367,9 @@ describe("figure rigs", () => {
   });
 });
 
+const sub3 = (a: [number, number, number], b: [number, number, number]) =>
+  [a[0] - b[0], a[1] - b[1], a[2] - b[2]] as [number, number, number];
+
 const wrap = (child: ReturnType<typeof createElement>) =>
   renderToString(createElement(GymProvider, null, child));
 
@@ -471,6 +487,12 @@ describe("batch 3 lifts", () => {
     "cable-pushdown": cablePushdownPose,
     "cable-crunch": cableCrunchPose,
     "leg-curl": seatedLegCurlPose,
+    skullcrusher: skullcrusherPose,
+    "db-overhead-triceps-ext": overheadTricepsPose,
+    dips: dipPose,
+    "bb-curl": barbellCurlPose,
+    "db-hammer-curl": hammerCurlPose,
+    "db-rdl": dbRdlPose,
   };
   it("keeps limb lengths constant and moves smoothly through the whole rep", () => {
     for (const [id, pose] of Object.entries(B3)) {
@@ -517,6 +539,38 @@ describe("batch 3 lifts", () => {
     const bottom = cableCrunchPose(1);
     expect(Math.abs(top.hips[1][1] - bottom.hips[1][1])).toBeLessThan(1);
     expect(bottom.shoulders[1][1]).toBeLessThan(top.shoulders[1][1] - 15);
+  });
+  it("skullcrusher: the upper arms stay put while the forearms lower toward the head", () => {
+    const a = skullcrusherPose(0);
+    const b = skullcrusherPose(1);
+    expect(
+      Math.hypot(a.elbows[1][1] - b.elbows[1][1], a.elbows[1][2] - b.elbows[1][2]),
+    ).toBeLessThan(6);
+    expect(b.wrists[1][2]).toBeLessThan(b.shoulders[1][2] - 15);
+    expect(a.wrists[1][1]).toBeGreaterThan(b.wrists[1][1] + 30);
+  });
+  it("overhead triceps extension: elbows stay overhead while the dumbbell drops behind the head", () => {
+    const a = overheadTricepsPose(0);
+    const b = overheadTricepsPose(1);
+    expect(
+      Math.hypot(a.elbows[1][1] - b.elbows[1][1], a.elbows[1][2] - b.elbows[1][2]),
+    ).toBeLessThan(6);
+    expect(b.wrists[1][2]).toBeLessThan(a.wrists[1][2] - 10);
+    expect(b.wrists[1][1]).toBeLessThan(b.elbows[1][1]);
+  });
+  it("dips: hands stay on the bars, the body drops and the elbows end near 90 degrees", () => {
+    const a = dipPose(0);
+    const b = dipPose(1);
+    expect(a.wrists[1][1]).toBe(DIP_BAR_Y);
+    expect(b.wrists[1][1]).toBe(DIP_BAR_Y);
+    expect(b.shoulders[1][1]).toBeLessThan(a.shoulders[1][1] - 18);
+    const u = sub3(b.shoulders[1], b.elbows[1]);
+    const f = sub3(b.wrists[1], b.elbows[1]);
+    const ang = (Math.acos((u[0] * f[0] + u[1] * f[1] + u[2] * f[2]) / (29 * 26)) * 180) / Math.PI;
+    expect(ang).toBeGreaterThan(75);
+    expect(ang).toBeLessThan(110);
+    // Feet stay off the floor.
+    expect(b.ankles[1][1]).toBeGreaterThan(20);
   });
   it("seated leg curl: the thigh stays on the pad while the shin swings back", () => {
     const start = seatedLegCurlPose(0);

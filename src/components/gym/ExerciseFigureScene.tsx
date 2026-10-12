@@ -4,6 +4,8 @@ import {
   REAR_BENCH_Y,
   REAR_BENCH_Z,
   BOX_TOP,
+  DIP_BAR_HALF,
+  DIP_BAR_Y,
   BOX_Z,
   PULLUP_BAR_Y,
   ROW_BENCH_Y,
@@ -199,6 +201,24 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {model.furniture === "dip-bars" &&
+        [-1, 1].map((sg) => (
+          <g key={sg}>
+            <path
+              d={line(p([sg * DIP_BAR_HALF, DIP_BAR_Y, 0]), p([sg * DIP_BAR_HALF, 0, 0]))}
+              className={furnLine}
+              strokeWidth={s(5)}
+            />
+            <path
+              d={line(
+                p([sg * (DIP_BAR_HALF - 7), DIP_BAR_Y, 0]),
+                p([sg * (DIP_BAR_HALF + 7), DIP_BAR_Y, 0]),
+              )}
+              className="stroke-foreground/40"
+              strokeWidth={s(4)}
+            />
+          </g>
+        ))}
       {model.furniture === "box" && (
         <rect
           x={p([-26, 0, 0])[0]}
@@ -327,22 +347,38 @@ export function FigureFront({ model, pose }: Props) {
       {model.implement === "dumbbells" &&
         (model.oneDumbbell ? [wr] : [wl, wr]).map((w, i) => (
           <g key={i}>
-            <path
-              d={line([w[0] - s(12), w[1]], [w[0] + s(12), w[1]])}
-              className="stroke-foreground"
-              strokeWidth={3}
-            />
-            {[-1, 1].map((sg) => (
-              <rect
-                key={sg}
-                x={w[0] + sg * s(11) - s(3)}
-                y={w[1] - s(6)}
-                width={s(6)}
-                height={s(12)}
-                rx={2}
-                className="fill-primary stroke-none"
-              />
-            ))}
+            {model.neutralGrip ? (
+              <>
+                {/* Palms facing each other: the dumbbell points at the viewer, seen end-on. */}
+                <circle
+                  cx={w[0]}
+                  cy={w[1]}
+                  r={s(7)}
+                  className="fill-primary/40 stroke-primary"
+                  strokeWidth={2}
+                />
+                <circle cx={w[0]} cy={w[1]} r={2.5} className="fill-foreground stroke-none" />
+              </>
+            ) : (
+              <>
+                <path
+                  d={line([w[0] - s(12), w[1]], [w[0] + s(12), w[1]])}
+                  className="stroke-foreground"
+                  strokeWidth={3}
+                />
+                {[-1, 1].map((sg) => (
+                  <rect
+                    key={sg}
+                    x={w[0] + sg * s(11) - s(3)}
+                    y={w[1] - s(6)}
+                    width={s(6)}
+                    height={s(12)}
+                    rx={2}
+                    className="fill-primary stroke-none"
+                  />
+                ))}
+              </>
+            )}
           </g>
         ))}
       {model.implement === "goblet" && (
@@ -642,6 +678,25 @@ export function FigureSide({ model, pose }: Props) {
           ))}
         </g>
       )}
+      {model.furniture === "dip-bars" && (
+        <g>
+          <path
+            d={line(p([0, DIP_BAR_Y, -26]), p([0, DIP_BAR_Y, 26]))}
+            className="stroke-foreground/40"
+            strokeWidth={s(4)}
+          />
+          <path
+            d={line(p([0, DIP_BAR_Y, 22]), p([0, 0, 22]))}
+            className={furnLine}
+            strokeWidth={s(5)}
+          />
+          <path
+            d={line(p([0, DIP_BAR_Y, -22]), p([0, 0, -22]))}
+            className={furnLine}
+            strokeWidth={s(5)}
+          />
+        </g>
+      )}
       {model.furniture === "box" && (
         <rect
           x={p([0, 0, BOX_Z.from])[0]}
@@ -793,7 +848,27 @@ export function FigureSide({ model, pose }: Props) {
           <circle cx={bar[0]} cy={bar[1]} r={4} className="fill-foreground stroke-none" />
         </g>
       )}
-      {model.implement === "dumbbells" && (
+      {model.implement === "dumbbells" && model.neutralGrip && (
+        <g>
+          <path
+            d={line([wrist[0] - s(12), wrist[1]], [wrist[0] + s(12), wrist[1]])}
+            className="stroke-foreground"
+            strokeWidth={3}
+          />
+          {[-1, 1].map((sg) => (
+            <rect
+              key={sg}
+              x={wrist[0] + sg * s(11) - s(3)}
+              y={wrist[1] - s(6)}
+              width={s(6)}
+              height={s(12)}
+              rx={2}
+              className="fill-primary stroke-none"
+            />
+          ))}
+        </g>
+      )}
+      {model.implement === "dumbbells" && !model.neutralGrip && (
         <g>
           <circle
             cx={wrist[0]}
