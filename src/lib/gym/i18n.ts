@@ -1955,7 +1955,13 @@ const en = {
     thisWeek: "This week",
     units: "load",
     vsAverage: (pct: number) => `${pct}% of your 4-week average`,
-    chartLabel: "Weekly training load, last 6 weeks",
+    chartLabel: "Training load per day, this week",
+    chartLabelMonth: "Training load per day, this month",
+    periods: { week: "Week", month: "Month" } as Record<"week" | "month", string>,
+    prevMonth: "Previous month",
+    nextMonth: "Next month",
+    sessionsOf: (n: number, rated: number) =>
+      `${n} ${n === 1 ? "session" : "sessions"}${rated < n ? ` · ${rated} rated` : ""}`,
     empty:
       "Rate how hard each session was when you finish (or on a session in History) to see your weekly load.",
     spike:
@@ -3908,7 +3914,13 @@ const nl: Dict = {
     thisWeek: "Deze week",
     units: "belasting",
     vsAverage: (pct: number) => `${pct}% van je gemiddelde over 4 weken`,
-    chartLabel: "Trainingsbelasting per week, laatste 6 weken",
+    chartLabel: "Trainingsbelasting per dag, deze week",
+    chartLabelMonth: "Trainingsbelasting per dag, deze maand",
+    periods: { week: "Week", month: "Maand" } as Record<"week" | "month", string>,
+    prevMonth: "Vorige maand",
+    nextMonth: "Volgende maand",
+    sessionsOf: (n: number, rated: number) =>
+      `${n} ${n === 1 ? "sessie" : "sessies"}${rated < n ? ` · ${rated} beoordeeld` : ""}`,
     empty:
       "Geef na elke sessie aan hoe zwaar hij was (of bij een sessie in Geschiedenis) om je weekbelasting te zien.",
     spike:
