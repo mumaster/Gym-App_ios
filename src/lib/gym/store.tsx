@@ -506,6 +506,8 @@ interface Ctx extends GymState {
   ) => void;
   /** Changes the running workout's cardio finisher (minutes, done). */
   updateActiveCardio: (patch: Partial<CardioFinisher & { done: boolean }>) => void;
+  /** Adds (or replaces) the cardio done after the running workout. */
+  setActiveCardio: (cardio: CardioFinisher) => void;
   logSet: (set: LoggedSet) => void;
   /** `rpe: null` clears a set's RPE. */
   updateSet: (
@@ -1181,6 +1183,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ...(input.cardio ? { cardio: input.cardio } : {}),
           },
         })),
+      setActiveCardio: (cardio) =>
+        setState((s) =>
+          s.activeWorkout
+            ? { ...s, activeWorkout: { ...s.activeWorkout, cardio: { ...cardio, done: false } } }
+            : s,
+        ),
       updateActiveCardio: (patch) =>
         setState((s) =>
           s.activeWorkout?.cardio
