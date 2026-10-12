@@ -32,13 +32,12 @@ import { ProgramBuilderSheet } from "./ProgramBuilderSheet";
 import { LinkRow, PickerSection } from "./SettingsRows";
 import { SwitchRow } from "./SwitchRow";
 import { ThemePicker } from "./ThemePicker";
-import { GrowthFocusCard } from "./WeeklyVolume";
 import { WeeklyPlanSheet } from "./WeeklyPlanSheet";
 import { button, chip, text } from "./ui";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate, formatWaterAmount } from "../../lib/gym/nutrition";
 import { ALLERGIES } from "../../lib/gym/allergens";
-import { splitDayLabel, splitTemplateById } from "../../lib/gym/splits";
+import { splitTemplateById } from "../../lib/gym/splits";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /**
@@ -62,8 +61,6 @@ const STEPS = [
   "lifts",
   "plan",
   "planSetup",
-  "planDays",
-  "focus",
   "workout",
   "cardio",
   "weight",
@@ -117,11 +114,6 @@ export function SetupFlow({
   // recommended weekly plan.
   const [pickedKind, setPickedKind] = useState<"weekly" | "program" | null>(null);
   const kind: "weekly" | "program" = pickedKind ?? (program ? "program" : "weekly");
-  const activeRotation = kind === "program" ? program : weeklyScheme;
-  const activeSlots = (activeRotation?.schedule ?? []).map((slot) => ({
-    dow: slot.dow,
-    label: splitDayLabel(activeRotation!.templateId, slot.dayId),
-  }));
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
@@ -131,19 +123,11 @@ export function SetupFlow({
     haptic(10);
     onStep(n);
   };
-  // A plan that was just saved moves the guided steps on; closing without
-  // one stays on the step. The save and the close land in the same tick, so
-  // the check waits for the render that has the saved plan.
-  const [afterPlanSheet, setAfterPlanSheet] = useState(false);
-  const closePlanSheet = () => {
+  // Done (or closing) a step's window moves the guided steps on.
+  const closeSheet = () => {
     setOpen(null);
-    setAfterPlanSheet(true);
+    if (idx < last) go(idx + 1);
   };
-  useEffect(() => {
-    if (!afterPlanSheet) return;
-    setAfterPlanSheet(false);
-    if (id === "planSetup" && (kind === "program" ? program : weeklyScheme)) onStep(idx + 1);
-  }, [afterPlanSheet, id, kind, program, weeklyScheme, idx, onStep]);
   const leave = (to: "/generate" | "/nutrition" | "/") => {
     haptic(12);
     onClose();
@@ -157,8 +141,6 @@ export function SetupFlow({
     lifts: t.setup.liftsTitle,
     plan: t.setup.planTitle,
     planSetup: t.setup.planSetupTitle,
-    planDays: t.setup.planDaysTitle,
-    focus: t.setup.focusTitle,
     workout: t.setup.workoutTitle,
     cardio: t.setup.cardioTitle,
     weight: t.setup.weightTitle,
@@ -174,8 +156,6 @@ export function SetupFlow({
     lifts: t.setup.liftsBody,
     plan: t.setup.planBody,
     planSetup: t.setup.planSetupBody,
-    planDays: t.setup.planDaysBody,
-    focus: t.setup.focusBody,
     workout: t.setup.workoutBody,
     cardio: t.setup.cardioBody,
     weight: t.setup.weightBody,
@@ -313,35 +293,6 @@ export function SetupFlow({
         ) : null}
       </div>
     ),
-    planDays: (
-      <ListCard
-        icon={CalendarDays}
-        title={t.setup.planDaysTitle}
-        subtitle={kind === "program" ? s.program.text : s.weekly.text}
-        filled={kind === "program" ? s.program.set : s.weekly.set}
-      >
-        {activeSlots.length ? (
-          activeSlots.map((slot, i) => (
-            <div
-              key={i}
-              className="flex min-h-[48px] items-center justify-between gap-3 border-t border-border px-4 py-2.5"
-            >
-              <span className={text.rowTitle}>{slot.label}</span>
-              <span className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</span>
-            </div>
-          ))
-        ) : (
-          <p className="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
-            {t.setup.planDaysEmpty}
-          </p>
-        )}
-        {row(
-          t.setup.planDaysEdit,
-          kind === "program" ? t.setup.planDaysEditProgram : t.setup.planDaysEditWeekly,
-          kind,
-        )}
-      </ListCard>
-    ),
     cardio: (
       <ListCard
         icon={HeartPulse}
@@ -352,7 +303,6 @@ export function SetupFlow({
         {row(t.setup.cardioOpen, s.cardio.text, "cardio")}
       </ListCard>
     ),
-    focus: <GrowthFocusCard />,
     workout: <WorkoutStep status={s.workout} />,
     weight: <WeightStep />,
     food: (
@@ -370,7 +320,6 @@ export function SetupFlow({
               ["gym", s.gym],
               ["lifts", s.lifts],
               ["plan", s.plan],
-              ["focus", s.focus],
               ["workout", s.workout],
               ["cardio", s.cardio],
               ["weight", s.weight],
@@ -486,14 +435,14 @@ export function SetupFlow({
         )}
       </div>
 
-      <KnownLiftsSheet open={open === "lifts"} onClose={() => setOpen(null)} />
-      <WeeklyPlanSheet open={open === "weekly"} onClose={() => closePlanSheet()} />
-      <ProgramBuilderSheet open={open === "program"} onClose={() => closePlanSheet()} />
-      <CardioPlanSheet open={open === "cardio"} onClose={() => setOpen(null)} />
-      <NutritionGoalsSheet open={open === "goals"} onClose={() => setOpen(null)} />
+      <KnownLiftsSheet open={open === "lifts"} onClose={closeSheet} />
+      <WeeklyPlanSheet open={open === "weekly"} onClose={closeSheet} />
+      <ProgramBuilderSheet open={open === "program"} onClose={closeSheet} />
+      <CardioPlanSheet open={open === "cardio"} onClose={closeSheet} />
+      <NutritionGoalsSheet open={open === "goals"} onClose={closeSheet} />
       <WaterSettingsSheet
         open={open === "water"}
-        onClose={() => setOpen(null)}
+        onClose={closeSheet}
         onNeedProfile={() => setOpen("goals")}
       />
     </div>

@@ -23,7 +23,7 @@ const render = (step: number) =>
 
 describe("SetupFlow render", () => {
   it("renders every step without throwing", () => {
-    expect(SETUP_STEP_COUNT).toBe(15);
+    expect(SETUP_STEP_COUNT).toBe(13);
     for (let i = 0; i < SETUP_STEP_COUNT; i++) expect(() => render(i)).not.toThrow();
   });
 
