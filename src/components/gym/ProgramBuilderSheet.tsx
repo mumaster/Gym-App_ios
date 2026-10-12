@@ -38,6 +38,7 @@ import { GrowthFocusSection } from "./WeeklyVolume";
 import type { FocusGroup } from "../../lib/gym/volume";
 import type { CardioFinisher } from "../../lib/gym/types";
 import { HybridCardioSection } from "./HybridCardioSection";
+import { MinDaysNotice } from "./MinDaysNotice";
 
 /** A sane default spread of weekdays for a given training frequency — same
  *  table as WeeklyPlanSheet's, kept local rather than shared since it's a
@@ -52,7 +53,7 @@ const EVEN_SPREAD: Record<number, number[]> = {
   7: [0, 1, 2, 3, 4, 5, 6],
 };
 
-type Mode = "manage" | "template" | "days" | "weeks";
+type Mode = "manage" | "template" | "days" | "focus" | "weeks";
 
 export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const {
@@ -190,7 +191,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     const daySlot = program.schedule[workoutDay ?? 0];
     return (
       <>
-        <BottomSheet open={open} onClose={onClose} title={program.name}>
+        <BottomSheet open={open} onClose={onClose} title={program.name} scrollKey={mode}>
           <div className="space-y-4">
             <p className="text-[13px] text-muted-foreground">
               {t.programBuilder.manageSubtitle(
@@ -440,7 +441,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={t.programBuilder.title}>
+    <BottomSheet open={open} onClose={onClose} title={t.programBuilder.title} scrollKey={mode}>
       {mode === "template" ? (
         <div className="space-y-2">
           <p className="mb-1 text-[13px] text-muted-foreground">{t.programBuilder.pickSplitDesc}</p>
@@ -484,6 +485,11 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                 </button>
               ))}
             </div>
+            <MinDaysNotice
+              picked={dows.length}
+              min={template.minDaysPerWeek}
+              label={template.label}
+            />
           </div>
 
           {preview.length ? (
@@ -524,6 +530,23 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
             onChange={setCardioDraft}
           />
 
+          <button
+            onClick={() => setMode("focus")}
+            disabled={!preview.length}
+            className={`${button.primary} w-full`}
+          >
+            {t.weeklyPlan.nextFocus}
+          </button>
+        </div>
+      ) : mode === "focus" ? (
+        <div className="space-y-4">
+          <button
+            onClick={() => setMode("days")}
+            className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
+          >
+            {t.programBuilder.changeTrainingDays}
+          </button>
+
           <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 
           {editingExisting ? (
@@ -540,10 +563,10 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
       ) : (
         <div className="space-y-4">
           <button
-            onClick={() => setMode("days")}
+            onClick={() => setMode("focus")}
             className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
           >
-            {t.programBuilder.changeTrainingDays}
+            {t.programBuilder.backToFocus}
           </button>
 
           <input

@@ -32,6 +32,7 @@ import { GrowthFocusSection } from "./WeeklyVolume";
 import type { FocusGroup } from "../../lib/gym/volume";
 import type { CardioFinisher } from "../../lib/gym/types";
 import { HybridCardioSection } from "./HybridCardioSection";
+import { MinDaysNotice } from "./MinDaysNotice";
 
 /** A sane default spread of weekdays for a given training frequency. */
 const EVEN_SPREAD: Record<number, number[]> = {
@@ -44,7 +45,7 @@ const EVEN_SPREAD: Record<number, number[]> = {
   7: [0, 1, 2, 3, 4, 5, 6],
 };
 
-type Mode = "manage" | "template" | "days";
+type Mode = "manage" | "template" | "days" | "focus";
 
 export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const {
@@ -144,7 +145,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     const daySlot = weeklyScheme.schedule[workoutDay ?? 0];
     return (
       <>
-        <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.title}>
+        <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.title} scrollKey={mode}>
           <div className="space-y-4">
             <p className="text-[13px] text-muted-foreground">
               {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
@@ -279,7 +280,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.setupTitle}>
+    <BottomSheet open={open} onClose={onClose} title={t.weeklyPlan.setupTitle} scrollKey={mode}>
       {mode === "template" ? (
         <div className="space-y-2">
           <p className="mb-1 text-[13px] text-muted-foreground">{t.weeklyPlan.pickSplitDesc}</p>
@@ -297,7 +298,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             </button>
           ))}
         </div>
-      ) : (
+      ) : mode === "days" ? (
         <div className="space-y-4">
           <button
             onClick={() => setMode("template")}
@@ -323,6 +324,11 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                 </button>
               ))}
             </div>
+            <MinDaysNotice
+              picked={dows.length}
+              min={template.minDaysPerWeek}
+              label={template.label}
+            />
           </div>
 
           {preview.length ? (
@@ -363,6 +369,23 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
             value={cardioDraft}
             onChange={setCardioDraft}
           />
+
+          <button
+            onClick={() => setMode("focus")}
+            disabled={!preview.length}
+            className={`${button.primary} w-full`}
+          >
+            {t.weeklyPlan.nextFocus}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <button
+            onClick={() => setMode("days")}
+            className="flex min-h-[44px] items-center text-[13px] font-semibold text-primary-text"
+          >
+            {t.programBuilder.changeTrainingDays}
+          </button>
 
           <GrowthFocusSection value={focusDraft} onChange={setFocusDraft} />
 

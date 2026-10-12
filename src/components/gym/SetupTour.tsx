@@ -38,7 +38,7 @@ import { button, chip, text } from "./ui";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate, formatWaterAmount } from "../../lib/gym/nutrition";
 import { ALLERGIES } from "../../lib/gym/allergens";
-import { splitTemplateById } from "../../lib/gym/splits";
+import { splitDayLabel, splitTemplateById } from "../../lib/gym/splits";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /**
@@ -61,6 +61,7 @@ const STEPS = [
   "gym",
   "lifts",
   "plan",
+  "planDays",
   "focus",
   "workout",
   "cardio",
@@ -110,6 +111,13 @@ export function SetupFlow({
   const idx = Math.min(Math.max(step, 0), last);
   const id: StepId = STEPS[idx]!;
   const s = useSetupStatus();
+  const { program, weeklyScheme } = useGym();
+  // The plan that is running: a program wins over a weekly plan.
+  const activeRotation = program ?? weeklyScheme;
+  const activeSlots = (activeRotation?.schedule ?? []).map((slot) => ({
+    dow: slot.dow,
+    label: splitDayLabel(activeRotation!.templateId, slot.dayId),
+  }));
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
@@ -131,6 +139,7 @@ export function SetupFlow({
     gym: t.setup.gymTitle,
     lifts: t.setup.liftsTitle,
     plan: t.setup.planTitle,
+    planDays: t.setup.planDaysTitle,
     focus: t.setup.focusTitle,
     workout: t.setup.workoutTitle,
     cardio: t.setup.cardioTitle,
@@ -146,6 +155,7 @@ export function SetupFlow({
     gym: t.setup.gymBody,
     lifts: t.setup.liftsBody,
     plan: t.setup.planBody,
+    planDays: t.setup.planDaysBody,
     focus: t.setup.focusBody,
     workout: t.setup.workoutBody,
     cardio: t.setup.cardioBody,
@@ -200,17 +210,62 @@ export function SetupFlow({
       </ListCard>
     ),
     plan: (
+      <div className="space-y-3">
+        <ListCard
+          icon={CalendarDays}
+          title={t.setup.planWeekly}
+          subtitle={s.weekly.set ? s.weekly.text : t.setup.notSet}
+          filled={s.weekly.set}
+        >
+          {row(
+            s.weekly.set ? t.setup.planWeeklyEdit : t.setup.planWeeklySetup,
+            t.setup.planWeeklyDesc,
+            "weekly",
+          )}
+        </ListCard>
+        <ListCard
+          icon={Flame}
+          title={t.setup.planProgram}
+          subtitle={s.program.set ? s.program.text : t.setup.notSet}
+          filled={s.program.set}
+        >
+          {row(
+            s.program.set ? t.setup.planProgramEdit : t.setup.planProgramSetup,
+            t.setup.planProgramDesc,
+            "program",
+          )}
+        </ListCard>
+        {s.program.set && s.weekly.set ? (
+          <p className="px-1 text-[12.5px] text-muted-foreground">{t.setup.planProgramWins}</p>
+        ) : null}
+      </div>
+    ),
+    planDays: (
       <ListCard
         icon={CalendarDays}
-        title={t.setup.planTitle}
+        title={t.setup.planDaysTitle}
         subtitle={s.plan.text}
         filled={s.plan.set}
       >
-        {row(t.setup.planWeekly, s.weekly.set ? s.weekly.text : t.setup.planWeeklyDesc, "weekly")}
+        {activeSlots.length ? (
+          activeSlots.map((slot, i) => (
+            <div
+              key={i}
+              className="flex min-h-[48px] items-center justify-between gap-3 border-t border-border px-4 py-2.5"
+            >
+              <span className={text.rowTitle}>{slot.label}</span>
+              <span className="text-[13px] text-muted-foreground">{t.common.dow[slot.dow]}</span>
+            </div>
+          ))
+        ) : (
+          <p className="border-t border-border px-4 py-3 text-[13px] text-muted-foreground">
+            {t.setup.planDaysEmpty}
+          </p>
+        )}
         {row(
-          t.setup.planProgram,
-          s.program.set ? s.program.text : t.setup.planProgramDesc,
-          "program",
+          t.setup.planDaysEdit,
+          s.program.set ? t.setup.planDaysEditProgram : t.setup.planDaysEditWeekly,
+          s.program.set ? "program" : "weekly",
         )}
       </ListCard>
     ),

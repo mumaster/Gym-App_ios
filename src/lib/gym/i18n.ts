@@ -435,7 +435,7 @@ const en = {
     buildProgramInstead: "Build a program instead",
     planYourTraining: "Plan your training",
     planYourTrainingDesc:
-      "A weekly split repeats forever; a program adds planned progression and a deload.",
+      "Weekly plan: the same split on fixed days, every week. Program: a few weeks that build up, ending with a lighter deload week.",
     deloadExplain:
       "Deload week: half the usual sets at 90% of the weight, so you recover before the next cycle.",
     weeklyPlan: "Weekly plan",
@@ -1302,11 +1302,22 @@ const en = {
     liftsCount: (n: number) => (n === 1 ? "1 lift entered" : `${n} lifts entered`),
     planTitle: "Your training week",
     planBody:
-      "A weekly plan repeats your split on fixed days. A program runs for a few weeks that build up, with a lighter week at the end.",
+      "Choose how your lifting week is planned. Both use a split such as Upper / Lower; they differ in how long they run.",
+    planWeeklySetup: "Set up a weekly plan",
+    planWeeklyEdit: "Open weekly plan",
+    planProgramSetup: "Build a program",
+    planProgramEdit: "Open program",
+    planProgramWins: "A program is running, so it is used instead of the weekly plan.",
+    planDaysTitle: "Your training days",
+    planDaysBody: "Which days you train and what each day covers. Change them any time.",
+    planDaysEmpty: "No plan yet. Go back one step to pick a weekly plan or a program.",
+    planDaysEdit: "Change training days",
+    planDaysEditWeekly: "Opens your weekly plan",
+    planDaysEditProgram: "Opens your program",
     planWeekly: "Weekly plan",
-    planWeeklyDesc: "The same split every week",
+    planWeeklyDesc: "The same split on fixed days, every week. Simple and flexible.",
     planProgram: "Program",
-    planProgramDesc: "A few weeks that build up",
+    planProgramDesc: "A few weeks that build up, with a lighter week at the end.",
     cardioTitle: "Cardio",
     cardioBody:
       "Plan walks, runs or rides on fixed days. They count towards your weekly cardio minutes.",
@@ -1581,6 +1592,7 @@ const en = {
   },
   programBuilder: {
     title: "Build a program",
+    backToFocus: "← Muscles to grow",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} of ${weeks} · ${days} ${days === 1 ? "day" : "days"} a week`,
     nextUp: "Next up",
@@ -1592,7 +1604,7 @@ const en = {
     startNewProgram: "Start a new program",
     removeProgram: "Remove program",
     pickSplitDesc:
-      "Pick a split — a multi-week program sequences it with planned progression and a deload, instead of repeating forever.",
+      "A program runs for a few weeks that build up, with a deload at the end. Pick the split it follows.",
     changeSplit: (label: string) => `← ${label} · change split`,
     whichDays: "Which days do you want to train?",
     proposedSchedule: "Proposed schedule",
@@ -1770,6 +1782,9 @@ const en = {
   },
   weeklyPlan: {
     title: "Your weekly plan",
+    minDaysNotice: (label: string, n: number) =>
+      `Tip: ${label} works best with at least ${n} training days a week.`,
+    nextFocus: "Next: muscles to grow",
     setupTitle: "Set up a weekly plan",
     subtitle: (label: string, days: number) =>
       `${label} · ${days} ${days === 1 ? "day" : "days"} a week`,
@@ -1778,7 +1793,7 @@ const en = {
     changeSplit: "Change split",
     removeWeeklyPlan: "Remove weekly plan",
     pickSplitDesc:
-      "Pick a split — it decides which muscles land on which day. The generator's set, rep and rest scheme is unchanged.",
+      "A weekly plan repeats the same split on fixed days, every week. Pick the split; it decides which muscles land on which day.",
     changeSplitBack: (label: string) => `← ${label} · change split`,
     whichDays: "Which days do you want to train?",
     proposedSchedule: "Proposed schedule",
@@ -2330,7 +2345,7 @@ const nl: Dict = {
     buildProgramInstead: "Stel in plaats daarvan een programma samen",
     planYourTraining: "Plan je training",
     planYourTrainingDesc:
-      "Een weekschema herhaalt zich eindeloos; een programma voegt geplande progressie en een deload toe.",
+      "Weekschema: elke week dezelfde split op vaste dagen. Programma: een paar weken die opbouwen, met een lichtere deloadweek aan het eind.",
     deloadExplain:
       "Deloadweek: de helft van de gebruikelijke sets op 90% van het gewicht, zodat je herstelt voor de volgende cyclus.",
     weeklyPlan: "Weekplan",
@@ -3198,11 +3213,22 @@ const nl: Dict = {
     liftsCount: (n: number) => (n === 1 ? "1 lift ingevoerd" : `${n} lifts ingevoerd`),
     planTitle: "Je trainingsweek",
     planBody:
-      "Een weekschema herhaalt je split op vaste dagen. Een programma loopt een paar weken die opbouwen, met een lichtere week aan het eind.",
+      "Kies hoe je krachtweek wordt gepland. Beide gebruiken een split zoals Boven / Onder; ze verschillen in hoe lang ze lopen.",
+    planWeeklySetup: "Weekschema instellen",
+    planWeeklyEdit: "Weekschema openen",
+    planProgramSetup: "Programma samenstellen",
+    planProgramEdit: "Programma openen",
+    planProgramWins: "Er loopt een programma, dus dat wordt gebruikt in plaats van het weekschema.",
+    planDaysTitle: "Je trainingsdagen",
+    planDaysBody: "Op welke dagen je traint en wat elke dag omvat. Je kunt ze altijd wijzigen.",
+    planDaysEmpty: "Nog geen plan. Ga een stap terug om een weekschema of programma te kiezen.",
+    planDaysEdit: "Trainingsdagen wijzigen",
+    planDaysEditWeekly: "Opent je weekschema",
+    planDaysEditProgram: "Opent je programma",
     planWeekly: "Weekschema",
-    planWeeklyDesc: "Elke week dezelfde split",
+    planWeeklyDesc: "Elke week dezelfde split op vaste dagen. Simpel en flexibel.",
     planProgram: "Programma",
-    planProgramDesc: "Een paar weken die opbouwen",
+    planProgramDesc: "Een paar weken die opbouwen, met een lichtere week aan het eind.",
     cardioTitle: "Cardio",
     cardioBody:
       "Plan wandelingen, hardlooprondjes of fietstochten op vaste dagen. Ze tellen mee voor je cardiominuten per week.",
@@ -3477,6 +3503,7 @@ const nl: Dict = {
   },
   programBuilder: {
     title: "Programma samenstellen",
+    backToFocus: "← Spieren om te laten groeien",
     manageSubtitle: (label: string, week: number, weeks: number, days: number) =>
       `${label} · Week ${week} van ${weeks} · ${days} ${days === 1 ? "dag" : "dagen"} per week`,
     nextUp: "Hierna",
@@ -3488,7 +3515,7 @@ const nl: Dict = {
     startNewProgram: "Start een nieuw programma",
     removeProgram: "Programma verwijderen",
     pickSplitDesc:
-      "Kies een schema — een meerweeks programma volgt dit met geplande progressie en een deload, in plaats van eindeloos te herhalen.",
+      "Een programma loopt een paar weken die opbouwen, met een deload aan het eind. Kies de split die het volgt.",
     changeSplit: (label: string) => `← ${label} · schema wijzigen`,
     whichDays: "Op welke dagen wil je trainen?",
     proposedSchedule: "Voorgesteld schema",
@@ -3668,6 +3695,9 @@ const nl: Dict = {
   },
   weeklyPlan: {
     title: "Jouw weekplan",
+    minDaysNotice: (label: string, n: number) =>
+      `Tip: ${label} werkt het best met minstens ${n} trainingsdagen per week.`,
+    nextFocus: "Volgende: spieren om te laten groeien",
     setupTitle: "Weekplan instellen",
     subtitle: (label: string, days: number) =>
       `${label} · ${days} ${days === 1 ? "dag" : "dagen"} per week`,
@@ -3676,7 +3706,7 @@ const nl: Dict = {
     changeSplit: "Schema wijzigen",
     removeWeeklyPlan: "Weekplan verwijderen",
     pickSplitDesc:
-      "Kies een schema — dit bepaalt welke spieren op welke dag komen. Het set-, rep- en rustschema van de generator blijft ongewijzigd.",
+      "Een weekschema herhaalt elke week dezelfde split op vaste dagen. Kies de split; die bepaalt welke spieren op welke dag komen.",
     changeSplitBack: (label: string) => `← ${label} · schema wijzigen`,
     whichDays: "Op welke dagen wil je trainen?",
     proposedSchedule: "Voorgesteld schema",
