@@ -25,7 +25,12 @@ import {
   pregenerateProgram,
   savedWorkoutFor,
 } from "../../lib/gym/dayWorkouts";
-import { CreateAllWorkoutsButton, DayWorkoutLine, DayWorkoutSheet } from "./DayWorkoutSheet";
+import {
+  CreateAllWorkoutsButton,
+  DayWorkoutLine,
+  DayWorkoutSettings,
+  DayWorkoutSheet,
+} from "./DayWorkoutSheet";
 import { useDayWorkoutContext } from "./useDayWorkoutContext";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
@@ -232,6 +237,8 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                 );
               })}
             </div>
+
+            <DayWorkoutSettings kind="program" />
 
             <CreateAllWorkoutsButton
               schedule={program.schedule}

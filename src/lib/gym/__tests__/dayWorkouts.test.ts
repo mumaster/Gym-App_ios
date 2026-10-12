@@ -5,7 +5,9 @@ import {
   generateDayWorkout,
   hasWeekWorkout,
   isPregenerated,
+  loggedForSlot,
   pregenerateProgram,
+  regenerateSaved,
   readyToStart,
   savedWorkoutFor,
   withAllDayWorkouts,
@@ -14,7 +16,7 @@ import {
 import { EQUIPMENT } from "../data";
 import { DELOAD_WEEK, type Program, type ProgramWeek } from "../programs";
 import { applyDayPicks, buildSchedule, withDayType, type ScheduleSlot } from "../splits";
-import type { DayWorkout, PlannedExercise } from "../types";
+import type { CardioSession, DayWorkout, PlannedExercise, Workout } from "../types";
 
 const ctx: DayWorkoutContext = {
   equipment: EQUIPMENT.map((e) => e.id),
@@ -150,6 +152,79 @@ describe("pregenerateProgram", () => {
     expect(isPregenerated(cleared)).toBe(false);
     expect(cleared.schedule[0]!.weekWorkouts).toBeUndefined();
     expect(cleared.schedule[0]!.workout).toBeDefined();
+  });
+});
+
+describe("same exercises every week", () => {
+  const ids = (w: DayWorkout | null | undefined) => (w?.plan ?? []).map((p) => p.exercise_id);
+  it("repeats day 1's exercises in every week by default", () => {
+    const p = pregenerateProgram(program(), ctx, 45, NOW);
+    const weeks = p.schedule[0]!.weekWorkouts!;
+    expect(ids(weeks[1])).toEqual(ids(weeks[0]));
+    expect(ids(weeks[2])).toEqual(ids(weeks[0]));
+  });
+  it("gives later weeks their own exercises when off", () => {
+    const p = pregenerateProgram({ ...program(), sameExercises: false }, ctx, 45, NOW);
+    const weeks = p.schedule[0]!.weekWorkouts!;
+    expect(ids(weeks[0])).toEqual(ids(p.schedule[0]!.workout));
+    expect(ids(weeks[1])).not.toEqual(ids(weeks[0]));
+  });
+});
+
+describe("regenerateSaved", () => {
+  it("remakes saved days with the new settings and leaves the rest", () => {
+    const schedule = withAllDayWorkouts([upper, lower], ctx, "upper_lower", 60, { now: NOW });
+    const withoutLower = [schedule[0]!, lower];
+    const on = regenerateSaved(
+      withoutLower,
+      { ...ctx, supersets: true, warmups: true },
+      "upper_lower",
+      NOW,
+    );
+    expect(on[1]).toBe(lower);
+    expect(on[0]!.workout!.duration_minutes).toBe(60);
+    expect(on[0]!.workout!.plan.some((p) => p.superset_group !== undefined)).toBe(true);
+    expect(on[0]!.workout!.plan.some((p) => p.warmup_sets > 0)).toBe(true);
+    const off = regenerateSaved(
+      on,
+      { ...ctx, supersets: false, warmups: false },
+      "upper_lower",
+      NOW,
+    );
+    expect(off[0]!.workout!.plan.every((p) => p.superset_group === undefined)).toBe(true);
+    expect(off[0]!.workout!.plan.every((p) => p.warmup_sets === 0)).toBe(true);
+  });
+});
+
+describe("loggedForSlot", () => {
+  const rot = { ...program(), cyclePosition: 3, doneOn: { 0: "2026-09-22", 2: "2026-09-24" } };
+  const w = (id: string, date: string, fromProgramDay?: boolean): Workout =>
+    ({
+      id,
+      date,
+      finished: true,
+      plan: [],
+      sets: [],
+      duration_minutes: 45,
+      target_muscles: [],
+      ...(fromProgramDay ? { fromProgramDay } : {}),
+    }) as unknown as Workout;
+  const run = {
+    id: "c1",
+    date: new Date(2026, 8, 24, 18).toISOString(),
+  } as unknown as CardioSession;
+
+  it("finds the plan's workout of the day it was done", () => {
+    const workouts = [
+      w("other", new Date(2026, 8, 22, 7).toISOString()),
+      w("mine", new Date(2026, 8, 22, 19).toISOString(), true),
+    ];
+    expect(loggedForSlot(rot, 0, "program", workouts, [])).toEqual({ workout: workouts[1] });
+  });
+  it("finds a cardio day's session, and nothing for skipped or upcoming days", () => {
+    expect(loggedForSlot(rot, 2, "program", [], [run])).toEqual({ cardio: run });
+    expect(loggedForSlot(rot, 1, "program", [], [])).toBeNull();
+    expect(loggedForSlot({ ...rot, cyclePosition: 0 }, 0, "program", [], [])).toBeNull();
   });
 });
 

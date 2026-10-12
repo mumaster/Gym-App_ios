@@ -16,9 +16,13 @@ import { splitDayLabel, type SplitTemplateId } from "../../lib/gym/splits";
 export function RotationWeekStrip({
   rotation,
   templateId,
+  onDay,
 }: {
   rotation: Rotation;
   templateId: SplitTemplateId;
+  /** Opens a day's workout (what was logged, or what's planned); returns
+   *  null for a day there is nothing to open, which then isn't a button. */
+  onDay?: ((index: number) => (() => void) | null) | undefined;
 }) {
   const t = useTranslation();
   return (
@@ -30,12 +34,22 @@ export function RotationWeekStrip({
         const isNext = i === rotation.cyclePosition;
         const moved = !done && slotOffset(rotation, i) !== weekIndex(slot.dow);
         const dow = (doneOn ?? plannedDate(rotation, i)).getDay();
+        const open = onDay?.(i) ?? null;
+        const Cell = open ? "button" : "div";
+        const label = splitDayLabel(templateId, slot.dayId);
         return (
-          <div
+          <Cell
             key={i}
+            {...(open
+              ? {
+                  type: "button" as const,
+                  onClick: open,
+                  "aria-label": t.dayWorkout.openDay(label, t.common.dow[dow] ?? ""),
+                }
+              : {})}
             className={`min-w-0 flex-1 rounded-xl py-2 text-center ${
               isNext ? "bg-primary/10" : done ? "border border-border" : "bg-muted"
-            }`}
+            } ${open ? "active:scale-95 transition-transform" : ""}`}
           >
             <p
               className={`flex items-center justify-center gap-0.5 text-[10px] font-bold uppercase tracking-wide ${
@@ -49,9 +63,9 @@ export function RotationWeekStrip({
             <p
               className={`truncate px-0.5 text-[11px] font-semibold ${skipped ? "line-through" : ""}`}
             >
-              {splitDayLabel(templateId, slot.dayId)}
+              {label}
             </p>
-          </div>
+          </Cell>
         );
       })}
     </div>

@@ -2,6 +2,7 @@ import { createElement, Fragment } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { DayWorkoutSheet } from "../../../components/gym/DayWorkoutSheet";
+import { RotationWeekStrip } from "../../../components/gym/RotationWeekStrip";
 import { ProgramBuilderSheet } from "../../../components/gym/ProgramBuilderSheet";
 import { WeeklyPlanSheet } from "../../../components/gym/WeeklyPlanSheet";
 import { EXERCISES } from "../data";
@@ -91,6 +92,10 @@ describe("day workouts in the manage views", () => {
     expect(html).toContain("Create workouts for every day");
     expect(html).toContain("Whole program");
     expect(html).toContain("Pre-generate all 4 workouts");
+    expect(html).toContain("Supersets");
+    expect(html).toContain("Warm-up sets");
+    expect(html).toContain("Same exercises every week");
+    expect(html).toContain("Changing a switch remakes the saved workouts.");
   });
 
   it("shows week chips and the pre-generated actions once the program is pre-generated", () => {
@@ -116,6 +121,8 @@ describe("day workouts in the manage views", () => {
     const html = render(createElement(WeeklyPlanSheet, { open: true, onClose: () => {} }));
     expect(html).toContain("Saved workout · 6 exercises · 45 min");
     expect(html).toContain("Create workouts for every day");
+    expect(html).toContain("Warm-up sets");
+    expect(html).not.toContain("Same exercises every week");
   });
 });
 
@@ -158,5 +165,35 @@ describe("DayWorkoutSheet", () => {
     const html = open({ week: 1 });
     expect(html).toContain("2 × 8");
     expect(html).toContain("Week 2");
+  });
+
+  it("shows warm-ups and a superset as one card with A and B", () => {
+    const w = workoutOf(3);
+    w.plan = w.plan.map((p, i) => ({
+      ...p,
+      warmup_sets: i === 0 ? 2 : 0,
+      ...(i < 2 ? { superset_group: 1, superset_slot: i ? ("B" as const) : ("A" as const) } : {}),
+    }));
+    seed.program = programOf([{ dow: 1, dayId: "upper", workout: w }]);
+    const html = open();
+    expect(html).toContain("2 warm-up · 3 × 8");
+    expect(html).toContain("Superset");
+    expect(html).toContain("3 rounds · 90s rest per round");
+    expect(html.match(/data-day-superset/g)).toHaveLength(1);
+  });
+});
+
+describe("week strip days", () => {
+  it("are buttons when there's something to open", () => {
+    const rotation = programOf(withWorkouts(false));
+    const html = render(
+      createElement(RotationWeekStrip, {
+        rotation,
+        templateId: "upper_lower",
+        onDay: (i: number) => (i === 1 ? null : () => {}),
+      }),
+    );
+    expect(html.match(/<button/g)).toHaveLength(2);
+    expect(html).toContain("Open Upper");
   });
 });

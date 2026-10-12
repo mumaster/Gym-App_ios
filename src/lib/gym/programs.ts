@@ -86,6 +86,10 @@ export interface Program extends Rotation {
   currentWeek: number;
   /** Day id → cardio after the lifting (hybrid programs), as WeeklyScheme. */
   cardio?: Record<string, CardioFinisher> | undefined;
+  /** Pre-generated weeks repeat each day's exercises (day 1 of week 2 = day 1
+   *  of week 1, with that week's volume). Missing = on; off gives every week
+   *  its own exercises (dayWorkouts.ts's `pregenerateProgram`). */
+  sameExercises?: boolean | undefined;
 }
 
 export const currentProgramWeek = (program: Program): ProgramWeek =>

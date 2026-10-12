@@ -2,9 +2,10 @@ import { regionsForMuscles, targetsFromRegions } from "./anatomy";
 import { exerciseById } from "./data";
 import { generateWorkout, suggestionFor, type GenerateArgs } from "./generator";
 import type { Program, ProgramWeek } from "./programs";
-import { isCardioSlot } from "./schedule";
+import { dayKey, dayKeyFromDate } from "./date";
+import { doneDate, isCardioSlot, type Rotation } from "./schedule";
 import { musclesForSlot, type ScheduleSlot, type SplitTemplateId } from "./splits";
-import type { DayWorkout, PlannedExercise } from "./types";
+import type { CardioSession, DayWorkout, PlannedExercise, Workout } from "./types";
 import { focusMuscles, type FocusGroup } from "./volume";
 
 /**
@@ -106,23 +107,62 @@ export function forWeek(workout: DayWorkout, week: ProgramWeek): DayWorkout {
   };
 }
 
-/** The program with every week's workout made for every lifting day: each
- *  day's saved workout (generated first where there is none) carried through
- *  the weeks with each week's volume. Replaces earlier pre-generated weeks. */
+/** The program with every week's workout made for every lifting day. With
+ *  the program's "same exercises every week" on (the default), each day's
+ *  saved workout (generated first where there is none) is carried through
+ *  the weeks with each week's volume, so day 1 of week 2 repeats day 1 of
+ *  week 1. With it off, every week gets its own exercises (week 1 keeps the
+ *  day's saved workout). Replaces earlier pre-generated weeks. */
 export function pregenerateProgram(
   program: Program,
   ctx: DayWorkoutContext,
   duration: number,
   now = new Date(),
 ): Program {
-  const schedule = withAllDayWorkouts(program.schedule, ctx, program.templateId, duration, {
-    now,
-  }).map((slot) =>
-    slot.workout
-      ? { ...slot, weekWorkouts: program.weeks.map((w) => forWeek(slot.workout!, w)) }
-      : slot,
-  );
+  const same = program.sameExercises !== false;
+  const filled = withAllDayWorkouts(program.schedule, ctx, program.templateId, duration, { now });
+  const schedule = filled.map((slot, i) => {
+    if (!slot.workout) return slot;
+    const base = slot.workout;
+    const sameType = filled.filter((s) => s.dayId === slot.dayId).length;
+    const weekWorkouts = program.weeks.map((w, k) => {
+      if (same || k === 0) return forWeek(base, w);
+      const own = generateDayWorkout(
+        ctx,
+        program.templateId,
+        slot,
+        base.duration_minutes,
+        slotVariation(filled, i) + k * sameType,
+        now,
+      );
+      return forWeek(own ?? base, w);
+    });
+    return { ...slot, weekWorkouts };
+  });
   return { ...program, schedule };
+}
+
+/** Every saved workout of a schedule made again (after a setting that shapes
+ *  them changed: supersets, warm-ups): days that had one get a new one at
+ *  their own length; days without stay generated on the day. */
+export function regenerateSaved(
+  schedule: ScheduleSlot[],
+  ctx: DayWorkoutContext,
+  templateId: SplitTemplateId,
+  now = new Date(),
+): ScheduleSlot[] {
+  return schedule.map((slot, i) => {
+    if (!slot.workout) return slot;
+    const workout = generateDayWorkout(
+      ctx,
+      templateId,
+      slot,
+      slot.workout.duration_minutes,
+      slotVariation(schedule, i),
+      now,
+    );
+    return workout ? { ...slot, workout } : slot;
+  });
 }
 
 /** The program without its pre-generated weeks (the days' saved workouts stay). */
@@ -164,4 +204,29 @@ export function readyToStart(
       },
     ];
   });
+}
+
+/** What was logged for a finished session of the current cycle: the
+ *  workout finished that day (one started from this plan first), or for a
+ *  cardio day the cardio session of that day. Null for a skipped or upcoming
+ *  session, or when nothing logged that day is found. */
+export function loggedForSlot(
+  rotation: Rotation,
+  index: number,
+  kind: "program" | "weeklyScheme",
+  workouts: Workout[],
+  cardio: CardioSession[],
+): { workout: Workout } | { cardio: CardioSession } | null {
+  const day = doneDate(rotation, index);
+  const slot = rotation.schedule[index];
+  if (!day || !slot) return null;
+  const key = dayKeyFromDate(day);
+  if (isCardioSlot(slot)) {
+    const c = cardio.find((s) => dayKey(s.date) === key);
+    return c ? { cardio: c } : null;
+  }
+  const onDay = workouts.filter((w) => w.finished && dayKey(w.date) === key);
+  const fromPlan = onDay.find((w) => (kind === "program" ? w.fromProgramDay : w.fromScheduledDay));
+  const workout = fromPlan ?? onDay[0];
+  return workout ? { workout } : null;
 }
