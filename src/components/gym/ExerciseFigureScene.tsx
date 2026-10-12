@@ -1,4 +1,8 @@
 import {
+  LEG_PRESS_HIP,
+  LEG_PRESS_TILT,
+  REAR_BENCH_Y,
+  REAR_BENCH_Z,
   BOX_TOP,
   DIP_BAR_HALF,
   DIP_BAR_Y,
@@ -59,7 +63,9 @@ export function FigureFront({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
+      {(model.furniture === "upright-bench" ||
+        model.furniture === "leg-curl" ||
+        model.furniture === "leg-extension") && (
         <g>
           <rect
             x={p([-17, 0, 0])[0]}
@@ -222,6 +228,43 @@ export function FigureFront({ model, pose }: Props) {
           rx={4}
           className={furn}
         />
+      )}
+      {model.furniture === "rear-bench" && (
+        <g>
+          <rect
+            x={p([-14, 0, 0])[0]}
+            y={p([0, REAR_BENCH_Y, 0])[1]}
+            width={s(28)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          <path
+            d={line(p([0, REAR_BENCH_Y - 9, 0]), p([0, 0, 0]))}
+            className={furnLine}
+            strokeWidth={s(8)}
+          />
+        </g>
+      )}
+      {model.furniture === "leg-press" && (
+        <g>
+          <rect
+            x={p([-24, 0, 0])[0]}
+            y={p([0, (pose.ankles[1][1] + pose.ankles[0][1]) / 2 + 16, 0])[1]}
+            width={s(48)}
+            height={s(32)}
+            rx={5}
+            className={furn}
+          />
+          <rect
+            x={p([-16, 0, 0])[0]}
+            y={p([0, LEG_PRESS_HIP.y + 62, 0])[1]}
+            width={s(32)}
+            height={s(66)}
+            rx={6}
+            className={furn}
+          />
+        </g>
       )}
       {/* legs */}
       {SIDES.map((i) => (
@@ -478,7 +521,9 @@ export function FigureSide({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
+      {(model.furniture === "upright-bench" ||
+        model.furniture === "leg-curl" ||
+        model.furniture === "leg-extension") && (
         <g>
           {/* seat, back pad tilted 10 degrees and its base */}
           <rect
@@ -680,6 +725,88 @@ export function FigureSide({ model, pose }: Props) {
         />
       )}
       {arms(near, s(8))}
+      {model.furniture === "rear-bench" && (
+        <g>
+          <rect
+            x={p([0, 0, REAR_BENCH_Z - 24])[0]}
+            y={p([0, REAR_BENCH_Y, 0])[1]}
+            width={s(48)}
+            height={s(9)}
+            rx={4}
+            className={furn}
+          />
+          {[REAR_BENCH_Z - 17, REAR_BENCH_Z + 17].map((z) => (
+            <path
+              key={z}
+              d={line(p([0, REAR_BENCH_Y - 9, z]), p([0, 0, z]))}
+              className={furnLine}
+              strokeWidth={s(7)}
+            />
+          ))}
+        </g>
+      )}
+      {model.furniture === "leg-press" &&
+        (() => {
+          const hp = LEG_PRESS_HIP;
+          const t = (LEG_PRESS_TILT * Math.PI) / 180;
+          const dir: [number, number] = [Math.sin(t), Math.cos(t)]; // (y, z) along the rails
+          const up: [number, number] = [Math.cos(t), -Math.sin(t)]; // square to the rails, upward
+          const at = (a: number, b: number): P2 =>
+            p([0, hp.y + dir[0] * a + up[0] * b, hp.z + dir[1] * a + up[1] * b]);
+          const an = pose.ankles[1];
+          const along = (an[1] - hp.y) * dir[0] + (an[2] - hp.z) * dir[1];
+          return (
+            <g>
+              {/* back pad and seat */}
+              <path
+                d={line(
+                  p([0, hp.y + 2, hp.z - 3]),
+                  p([0, hp.y + 70 * Math.cos(1.0472), hp.z - 70 * Math.sin(1.0472)]),
+                )}
+                className="stroke-foreground/15"
+                strokeWidth={s(9)}
+              />
+              <rect
+                x={p([0, 0, hp.z - 14])[0]}
+                y={p([0, hp.y - 4, 0])[1]}
+                width={s(30)}
+                height={s(7)}
+                rx={3}
+                className={furn}
+              />
+              {/* rails under the legs and the plate that rides on them */}
+              <path d={line(at(30, -14), at(125, -14))} className={furnLine} strokeWidth={s(6)} />
+              <path
+                d={line(at(along + 7, 24), at(along + 7, -14))}
+                className="stroke-foreground/35"
+                strokeWidth={s(5)}
+              />
+              <path
+                d={line(p([0, hp.y - 4, hp.z]), at(30, -14))}
+                className={furnLine}
+                strokeWidth={s(6)}
+              />
+            </g>
+          );
+        })()}
+      {model.furniture === "leg-extension" &&
+        (() => {
+          const kn = pose.knees[near];
+          const an = pose.ankles[near];
+          const th = Math.atan2(kn[1] - an[1], an[2] - kn[2]);
+          // The pad rests on the front of the lower shin.
+          const c: [number, number] = [
+            kn[1] + (an[1] - kn[1]) * 0.88 + Math.cos(th) * 6.5,
+            kn[2] + (an[2] - kn[2]) * 0.88 + Math.sin(th) * 6.5,
+          ];
+          const pc = p([0, c[0], c[1]]);
+          return (
+            <g>
+              <circle cx={pc[0]} cy={pc[1]} r={s(4.5)} className="fill-foreground/30 stroke-none" />
+              <path d={line(pc, p([0, 46, 18]))} className={furnLine} strokeWidth={s(3)} />
+            </g>
+          );
+        })()}
       {model.furniture === "leg-curl" && (
         <g>
           {/* thigh pad on the thighs and the ankle roller behind the lower shin */}

@@ -181,7 +181,10 @@ export type Furniture =
   | "pullup-bar"
   | "cable-tower"
   | "leg-curl"
-  | "dip-bars";
+  | "dip-bars"
+  | "leg-extension"
+  | "leg-press"
+  | "rear-bench";
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -1081,6 +1084,155 @@ const label = (en: string, nl: string) => ({
 });
 
 /** Add an exercise by id (the id in the exercise catalog). */
+/** The seat and foot plate of the leg press (cm): the sled runs up and
+ *  forward at LEG_PRESS_TILT degrees above horizontal. */
+export const LEG_PRESS_TILT = 35;
+export const LEG_PRESS_HIP = { y: 30, z: -25 };
+
+/** Leg press: reclined, hips and back on the pad, the feet push the plate up
+ *  its rails; the knees come toward the chest at the bottom. */
+export function legPressPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = LEG_PRESS_HIP;
+  const dist = lerp(BODY.thigh + BODY.shin - 0.1, 70, e);
+  const ankle: V3 = [0, hip.y + dist * sin(LEG_PRESS_TILT), hip.z + dist * cos(LEG_PRESS_TILT)];
+  const shoulder = { y: hip.y + BODY.torso * cos(60), z: hip.z - BODY.torso * sin(60) };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, -60),
+    ankleZ: ankle[2],
+    footHalf: 12,
+    ankle: (sd) => [sd * 12, ankle[1], ankle[2]],
+    // The sole lies flat on the plate, which is square to the rails.
+    foot: () => ({ floor: ankle[1] - 2, dir: 1, angle: LEG_PRESS_TILT + 90 }),
+    wrist: (sd) => [sd * 24, hip.y + 12, hip.z + 14],
+    bar: [0, hip.y + 12, hip.z + 14],
+    kneePole: (sd) => [sd * 0.3, cos(LEG_PRESS_TILT), -sin(LEG_PRESS_TILT)],
+    elbowPole: (sd) => [sd * 0.5, -1, 0.3],
+  });
+}
+
+/** The rear bench of the Bulgarian split squat: top height and the z of the
+ *  back foot resting on it (cm). */
+export const REAR_BENCH_Y = 45;
+export const REAR_BENCH_Z = -78;
+
+/** Bulgarian split squat: the back foot rests on a bench, the front foot stays
+ *  put and the hips drop until the front thigh is level. */
+export function bulgarianPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: lerp(90, 53, e), z: lerp(-3, -37, e) };
+  const lean = 14 * e;
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  const hang = Math.sqrt((ARM - 0.3) ** 2 - 18);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.5),
+    ankleZ: 0,
+    footHalf: 11,
+    ankle: (sd) => (sd < 0 ? [-11, REAR_BENCH_Y + ANKLE_Y, REAR_BENCH_Z] : [11, ANKLE_Y, 0]),
+    foot: (sd) => (sd < 0 ? { floor: REAR_BENCH_Y, dir: -1 } : { floor: 0, dir: 1 }),
+    wrist: (sd) => [sd * 22, shoulder.y - hang, shoulder.z + 3],
+    bar: [0, shoulder.y - hang, shoulder.z + 3],
+    kneePole: (sd) => (sd < 0 ? [0, -1, 0.3] : [0, 0, 1]),
+    elbowPole: straightArms,
+  });
+}
+
+/** Leg extension: thighs and back on the pads, the shins swing from hanging
+ *  to level, knees straightening. */
+export function legExtensionPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: 53, z: -3 };
+  const knee = { y: hip.y - 45 * sin(4), z: hip.z + 45 * cos(4) };
+  const theta = lerp(85, -3, e); // shin angle below level
+  const ankle: V3 = [0, knee.y - 43 * sin(theta), knee.z + 43 * cos(theta)];
+  const shoulder = { y: hip.y + BODY.torso * cos(7), z: hip.z - BODY.torso * sin(7) };
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, -4),
+    ankleZ: ankle[2],
+    footHalf: 10,
+    ankle: (sd) => [sd * 10, ankle[1], ankle[2]],
+    foot: () => ({ floor: Math.max(0, ankle[1] - 2), dir: 1, angle: 80 - theta }),
+    wrist: (sd) => [sd * 24, 64, 14],
+    bar: [0, 64, 14],
+    kneePole: () => [0, 1, 0.5],
+    elbowPole: (sd) => [sd * 0.5, -1, -0.3],
+  });
+}
+
+/** Dumbbell walking lunge: step forward, drop until the front thigh is level,
+ *  then push off the front heel to stand. */
+export function walkingLungePose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const hip = { y: lerp(STAND_HIP_Y, 52.5, e), z: lerp(0, 45, smooth(clamp01(e / 0.7))) };
+  const lean = 6 * e;
+  const shoulder = {
+    y: hip.y + BODY.torso * cos(lean),
+    z: hip.z + BODY.torso * sin(lean),
+  };
+  const swing = smooth(clamp01(e / 0.6));
+  const lead: V3 = [11, ANKLE_Y + 14 * sin(180 * clamp01(e / 0.6)), lerp(0, 87, swing)];
+  const heel = smooth(clamp01((e - 0.3) / 0.7));
+  const hang = Math.sqrt((ARM - 0.3) ** 2 - 18);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.5),
+    ankleZ: 0,
+    footHalf: 11,
+    ankle: (sd) => (sd > 0 ? lead : [-11, ANKLE_Y + 11 * heel, 0]),
+    foot: (sd) => {
+      if (sd < 0) return { floor: 0, dir: 1, pitch: 45 * heel };
+      // The lead foot hangs off the shin in the air and lands flat.
+      const t = clamp01((lead[1] - ANKLE_Y) / 10);
+      return {
+        floor: Math.max(0, lead[1] - ANKLE_Y),
+        dir: 1,
+        angle: -35 * t,
+        drop: ANKLE_Y * (1 - t),
+      };
+    },
+    wrist: (sd) => [sd * 22, shoulder.y - hang, shoulder.z + 3],
+    bar: [0, shoulder.y - hang, shoulder.z + 3],
+    kneePole: (sd) => (sd < 0 ? [0, -1, 0.5] : [0, 0, 1]),
+    elbowPole: straightArms,
+  });
+}
+
+/** Standing calf raise: legs straight, heels rise until the toes carry the
+ *  body, then lower to flat. Starts at the top. */
+export function calfRaisePose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const pitch = 40 * (1 - e);
+  const ankleY = ANKLE_Y + 11 * (pitch / 45);
+  const hip = { y: ankleY + BODY.thigh + BODY.shin - 0.1, z: 0 };
+  const shoulder = { y: hip.y + BODY.torso, z: 0 };
+  const hang = Math.sqrt((ARM - 0.3) ** 2 - 18);
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, 0),
+    ankleZ: 0,
+    footHalf: 11,
+    ankle: (sd) => [sd * 11, ankleY, 0],
+    foot: () => ({ floor: 0, dir: 1, pitch }),
+    wrist: (sd) => [sd * 22, shoulder.y - hang, 3],
+    bar: [0, shoulder.y - hang, 3],
+    kneePole: forwardKnees,
+    elbowPole: straightArms,
+  });
+}
+
+/** Add an exercise by id (the id in the exercise catalog). */
+
 export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
   "bb-bench": {
     rig: BENCH_PRESS_RIG,
@@ -2244,6 +2396,196 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Leun licht naar voren en houd je ellebogen dicht langs je lichaam.",
         "Zak tot je ellebogen ongeveer 90 graden gebogen zijn.",
         "Duw omhoog tot gestrekte armen zonder je schouders op te trekken.",
+      ],
+    },
+  },
+  "leg-press": {
+    figure: {
+      pose: legPressPose,
+      implement: "none",
+      furniture: "leg-press",
+      scale: 1.5,
+      centerZ: -2,
+    },
+    labels: label("Leg press", "Leg press"),
+    phases: {
+      en: {
+        lower: "Bring your knees toward your chest",
+        touch: "Knees bent about 90 degrees, hips on the pad",
+        press: "Push the plate away through your whole foot",
+        lockout: "Legs almost straight, knees soft",
+      },
+      nl: {
+        lower: "Breng je knieën naar je borst",
+        touch: "Knieën ongeveer 90 graden gebogen, heupen op het kussen",
+        press: "Duw de plaat weg met je hele voet",
+        lockout: "Benen bijna gestrekt, knieën zacht",
+      },
+    },
+    cues: {
+      en: [
+        "Sit with your back and hips flat on the pad and your feet shoulder-width on the plate.",
+        "Lower the plate until your knees are bent about 90 degrees.",
+        "Keep your hips on the seat so your lower back does not round.",
+        "Push through your whole foot and stop just short of locking your knees.",
+      ],
+      nl: [
+        "Zit met je rug en heupen plat op het kussen en je voeten op schouderbreedte op de plaat.",
+        "Laat de plaat zakken tot je knieën ongeveer 90 graden gebogen zijn.",
+        "Houd je heupen op de zitting zodat je onderrug niet rondt.",
+        "Duw af met je hele voet en stop net voordat je knieën op slot gaan.",
+      ],
+    },
+  },
+  "bulgarian-split": {
+    figure: {
+      pose: bulgarianPose,
+      implement: "dumbbells",
+      furniture: "rear-bench",
+      scale: 1.05,
+      centerZ: -36,
+    },
+    labels: label("Bulgarian split squat", "Bulgarian split squat"),
+    phases: {
+      en: {
+        lower: "Drop straight down on your front leg",
+        touch: "Front thigh level, back knee near the floor",
+        press: "Drive through your front heel to stand",
+        lockout: "Stand tall, back foot resting on the bench",
+      },
+      nl: {
+        lower: "Zak recht omlaag op je voorste been",
+        touch: "Voorste bovenbeen horizontaal, achterste knie bijna op de grond",
+        press: "Duw af met je voorste hiel om te staan",
+        lockout: "Sta rechtop, achterste voet op de bank",
+      },
+    },
+    cues: {
+      en: [
+        "Rest the top of your back foot on the bench and step the front foot well forward.",
+        "Lower straight down with your torso tall and the dumbbells hanging at your sides.",
+        "Front knee tracks over your toes and your front heel stays down.",
+        "Drive through the front heel to stand.",
+      ],
+      nl: [
+        "Leg de bovenkant van je achterste voet op de bank en zet je voorste voet ver naar voren.",
+        "Zak recht omlaag met een rechte romp en de dumbbells langs je zij.",
+        "Je voorste knie volgt je tenen en je voorste hiel blijft op de grond.",
+        "Duw af met je voorste hiel om te staan.",
+      ],
+    },
+  },
+  "leg-extension": {
+    figure: {
+      pose: legExtensionPose,
+      implement: "none",
+      furniture: "leg-extension",
+      scale: 1.2,
+      centerZ: 20,
+    },
+    labels: label("Leg extension", "Leg extension"),
+    phases: {
+      en: {
+        lower: "Straighten your knees to lift the pad",
+        touch: "Legs straight, thighs squeezed",
+        press: "Lower the pad slowly",
+        lockout: "Knees bent about 90 degrees, back on the pad",
+      },
+      nl: {
+        lower: "Strek je knieën om het kussen op te tillen",
+        touch: "Benen gestrekt, bovenbenen aangespannen",
+        press: "Laat het kussen langzaam zakken",
+        lockout: "Knieën ongeveer 90 graden gebogen, rug tegen het kussen",
+      },
+    },
+    cues: {
+      en: [
+        "Sit back with the pad resting on your lower shins, just above the ankles.",
+        "Straighten your knees to lift the pad until your legs are almost level.",
+        "Squeeze your thighs at the top without kicking.",
+        "Lower slowly back to the start.",
+      ],
+      nl: [
+        "Zit achterover met het kussen op je onderbenen, net boven de enkels.",
+        "Strek je knieën om het kussen op te tillen tot je benen bijna horizontaal zijn.",
+        "Span je bovenbenen aan bovenin zonder te schoppen.",
+        "Laat langzaam terugzakken naar de start.",
+      ],
+    },
+  },
+  "db-walking-lunge": {
+    figure: {
+      pose: walkingLungePose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 0.95,
+      centerZ: 44,
+    },
+    labels: label("Dumbbell walking lunge", "Walking lunge met dumbbells"),
+    phases: {
+      en: {
+        lower: "Step forward and drop straight down",
+        touch: "Front thigh level, back knee just above the floor",
+        press: "Push through your front heel and bring your feet together",
+        lockout: "Stand tall with the dumbbells at your sides",
+      },
+      nl: {
+        lower: "Stap naar voren en zak recht omlaag",
+        touch: "Voorste bovenbeen horizontaal, achterste knie net boven de grond",
+        press: "Duw af met je voorste hiel en breng je voeten bij elkaar",
+        lockout: "Sta rechtop met de dumbbells langs je zij",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall with a dumbbell in each hand at your sides.",
+        "Take a long step forward and land heel first.",
+        "Drop straight down until your front thigh is level and your back knee hovers above the floor.",
+        "Push through your front heel to stand and step into the next rep.",
+      ],
+      nl: [
+        "Sta rechtop met een dumbbell in elke hand langs je zij.",
+        "Zet een grote stap naar voren en land met je hiel eerst.",
+        "Zak recht omlaag tot je voorste bovenbeen horizontaal is en je achterste knie boven de grond zweeft.",
+        "Duw af met je voorste hiel om te staan en stap door naar de volgende herhaling.",
+      ],
+    },
+  },
+  "standing-calf": {
+    figure: {
+      pose: calfRaisePose,
+      implement: "dumbbells",
+      furniture: "none",
+      scale: 1.0,
+      centerZ: 6,
+    },
+    labels: label("Standing calf raise", "Staande kuitheffing"),
+    phases: {
+      en: {
+        lower: "Lower your heels slowly",
+        touch: "Heels down, calves stretched",
+        press: "Rise up onto your toes",
+        lockout: "Up on your toes, calves squeezed",
+      },
+      nl: {
+        lower: "Laat je hielen langzaam zakken",
+        touch: "Hielen omlaag, kuiten gerekt",
+        press: "Kom omhoog op je tenen",
+        lockout: "Op je tenen, kuiten aangespannen",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall with your feet hip-width apart and your knees straight, not locked.",
+        "Rise as high as you can onto the balls of your feet.",
+        "Pause and squeeze your calves at the top.",
+        "Lower slowly until your heels are back flat.",
+      ],
+      nl: [
+        "Sta rechtop met je voeten op heupbreedte en je knieën gestrekt, niet op slot.",
+        "Kom zo hoog mogelijk omhoog op de bal van je voeten.",
+        "Pauzeer en span je kuiten aan bovenin.",
+        "Zak langzaam tot je hielen weer plat staan.",
       ],
     },
   },

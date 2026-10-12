@@ -6,6 +6,13 @@ import { ExerciseDetailSheet } from "../../../components/gym/ExerciseDetailSheet
 import { EXERCISES } from "../data";
 import {
   backSquatPose,
+  bulgarianPose,
+  calfRaisePose,
+  legExtensionPose,
+  legPressPose,
+  LEG_PRESS_HIP,
+  REAR_BENCH_Y,
+  walkingLungePose,
   dipPose,
   DIP_BAR_Y,
   overheadTricepsPose,
@@ -90,6 +97,7 @@ const ANIMATED = [
   "bb-deadlift",
   "bb-row",
   "bb-squat",
+  "bulgarian-split",
   "cable-crunch",
   "cable-pushdown",
   "db-curl",
@@ -101,6 +109,7 @@ const ANIMATED = [
   "db-single-leg-rdl",
   "db-step-up",
   "db-sumo-deadlift",
+  "db-walking-lunge",
   "dips",
   "glute-bridge",
   "goblet-squat",
@@ -111,10 +120,13 @@ const ANIMATED = [
   "lat-pulldown",
   "lateral-raise",
   "leg-curl",
+  "leg-extension",
+  "leg-press",
   "pullup",
   "rdl",
   "reverse-lunge",
   "skullcrusher",
+  "standing-calf",
 ];
 
 const POSES: Record<string, (d: number) => FigurePose> = {
@@ -565,5 +577,70 @@ describe("batch 3 lifts", () => {
     const end = seatedLegCurlPose(1);
     expect(dist(end.knees[1], start.knees[1])).toBeLessThan(0.5);
     expect(end.ankles[1][2]).toBeLessThan(start.ankles[1][2] - 25);
+  });
+});
+
+describe("batch 4 lifts", () => {
+  const B4: Record<string, (d: number) => FigurePose> = {
+    "leg-press": legPressPose,
+    "bulgarian-split": bulgarianPose,
+    "leg-extension": legExtensionPose,
+    "db-walking-lunge": walkingLungePose,
+    "standing-calf": calfRaisePose,
+  };
+  it("keeps limb lengths constant and moves smoothly through the whole rep", () => {
+    for (const [id, pose] of Object.entries(B4)) {
+      let prev = pose(0);
+      for (const d of WALK) {
+        const p = pose(d);
+        for (const i of [0, 1] as const) {
+          expect(dist(p.shoulders[i], p.elbows[i]), id).toBeCloseTo(29, 3);
+          expect(dist(p.hips[i], p.knees[i]), id).toBeCloseTo(45, 3);
+          expect(Math.abs(dist(p.knees[i], p.ankles[i]) - 43), id).toBeLessThan(1.2);
+          for (const j of JOINTS)
+            expect(dist(p[j][i], prev[j][i]), `${id} ${j} at ${d}`).toBeLessThan(
+              id === "db-walking-lunge" ? 16 : 14,
+            );
+        }
+        prev = p;
+      }
+    }
+  });
+  it("leg press: the hips stay on the seat while the ankles travel up the rails", () => {
+    const a = legPressPose(0);
+    const b = legPressPose(1);
+    expect(a.hips[1][1]).toBeCloseTo(LEG_PRESS_HIP.y, 3);
+    expect(b.hips[1][1]).toBeCloseTo(LEG_PRESS_HIP.y, 3);
+    // Depth 0 is the lockout, depth 1 the bottom with the plate closest.
+    expect(dist(b.ankles[1], b.hips[1])).toBeLessThan(dist(a.ankles[1], a.hips[1]) - 15);
+  });
+  it("bulgarian split squat: the rear foot stays on the bench and the hips drop", () => {
+    const a = bulgarianPose(0);
+    const b = bulgarianPose(1);
+    expect(a.ankles[0][1]).toBeGreaterThan(REAR_BENCH_Y);
+    expect(a.ankles[0][1]).toBeCloseTo(b.ankles[0][1], 3);
+    expect(a.ankles[0][2]).toBeCloseTo(b.ankles[0][2], 3);
+    expect(b.hips[1][1]).toBeLessThan(a.hips[1][1] - 25);
+  });
+  it("leg extension: the thigh stays put while the shin swings up", () => {
+    const a = legExtensionPose(0);
+    const b = legExtensionPose(1);
+    expect(a.hips[1][1]).toBeCloseTo(b.hips[1][1], 3);
+    expect(b.ankles[1][1]).toBeGreaterThan(a.ankles[1][1] + 25);
+  });
+  it("walking lunge: the front thigh ends near level and the back knee stays above the floor", () => {
+    const b = walkingLungePose(1);
+    expect(Math.abs(b.knees[1][1] - b.hips[1][1])).toBeLessThan(14);
+    for (const d of WALK) {
+      const p = walkingLungePose(d);
+      expect(Math.min(p.knees[0][1], p.knees[1][1])).toBeGreaterThan(0);
+    }
+  });
+  it("standing calf raise: legs stay straight while the hips rise", () => {
+    const a = calfRaisePose(0);
+    const b = calfRaisePose(1);
+    expect(a.hips[1][1]).toBeGreaterThan(b.hips[1][1] + 6);
+    expect(dist(a.hips[1], a.ankles[1])).toBeGreaterThan(86);
+    expect(dist(b.hips[1], b.ankles[1])).toBeGreaterThan(86);
   });
 });
