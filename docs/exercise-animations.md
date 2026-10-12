@@ -53,6 +53,9 @@ Four stills can look right while the motion between them is wrong. For every new
 - Barbell curl: shoulder-width underhand grip that stays put, elbows pinned, bar finishes at shoulder height.
 - Hammer curl: palms face each other (`neutralGrip`: dumbbells drawn lengthways in the side view and upright in the front view), hands stay close to the thighs.
 - Dumbbell RDL: the RDL hinge with the dumbbells hanging just outside the thighs.
+- Skullcrusher: lying flat, upper arms vertical (a few degrees toward the head) and still, only the forearms hinge, the weights stop beside the forehead, elbows not flared.
+- Overhead triceps extension: elbows stay overhead beside the ears, only the forearms hinge, the dumbbell drops behind the head to neck height. The raised pose is tall, so its scale is 0.88 to keep the dumbbell inside the frame.
+- Dips: hands fixed on the bars (`dip-bars` furniture, `DIP_BAR_Y`), elbows bent about 90 degrees at the bottom, chest leaning forward, knees bent with the feet hanging behind (an `angle` foot).
 
 ## Feet and furniture
 

@@ -180,7 +180,8 @@ export type Furniture =
   | "thrust-bench"
   | "pullup-bar"
   | "cable-tower"
-  | "leg-curl";
+  | "leg-curl"
+  | "dip-bars";
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -568,6 +569,82 @@ export function barbellCurlPose(depth: number): FigurePose {
 /** Hammer curl: palms face each other, so the hands stay close to the thighs. */
 export function hammerCurlPose(depth: number): FigurePose {
   return curlPose(depth, (e) => 21 - 2 * e);
+}
+
+/** Skullcrusher: lying on a flat bench, the upper arms stay vertical and only
+ *  the forearms hinge, lowering the dumbbells toward the head and back up. */
+export function skullcrusherPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shoulder = { y: ROW_BENCH_Y + 10, z: -8 };
+  const hip = { y: shoulder.y, z: shoulder.z + BODY.torso };
+  const tilt = 8; // upper arm leans slightly toward the head
+  // The elbows sit a little inside the shoulders, the hands a little inside the elbows.
+  const upper = Math.sqrt(29 * 29 - 5 * 5);
+  const fore = Math.sqrt(26 * 26 - 3 * 3);
+  const elbow = { y: shoulder.y + upper * cos(tilt), z: shoulder.z - upper * sin(tilt) };
+  const phi = lerp(tilt, 112, e); // forearm angle from straight up, toward the head
+  const w = { y: elbow.y + fore * cos(phi), z: elbow.z - fore * sin(phi) };
+  return assemble({
+    hip,
+    shoulder,
+    head: [0, shoulder.y, shoulder.z - 22],
+    ankleZ: hip.z + 24,
+    footHalf: 13,
+    wrist: (sd) => [sd * 11, w.y, w.z],
+    bar: [0, w.y, w.z],
+    kneePole: () => [0, 1, 0.3],
+    elbowPole: (sd) => [sd * 0.02, 1, 0.1],
+  });
+}
+
+/** Dumbbell overhead triceps extension: standing, both hands under one
+ *  dumbbell, the upper arms stay beside the ears and the forearms hinge. */
+export function overheadTricepsPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shoulder = { y: STAND_SHOULDER_Y, z: 0 };
+  const upper = Math.sqrt(29 * 29 - 6 * 6);
+  const fore = Math.sqrt(26 * 26 - 4 * 4);
+  const elbow = { y: shoulder.y + upper, z: 0 };
+  const phi = lerp(0, 148, e); // forearm angle from straight up, toward the back
+  const w = { y: elbow.y + fore * cos(phi), z: elbow.z - fore * sin(phi) };
+  return assemble({
+    hip: { y: STAND_HIP_Y, z: 0 },
+    shoulder,
+    head: [0, shoulder.y + 22, 4],
+    ankleZ: 0,
+    footHalf: 11,
+    wrist: (sd) => [sd * 9, w.y, w.z],
+    bar: [0, w.y - 4, w.z],
+    kneePole: forwardKnees,
+    elbowPole: (sd) => [sd * 0.1, 1, 0],
+  });
+}
+
+/** Parallel bars for dips: bar height and half the distance between the bars (cm). */
+export const DIP_BAR_Y = 88;
+export const DIP_BAR_HALF = 22;
+
+/** Dips: straight arms on the bars at the top, body lowered until the elbows
+ *  are bent about 90 degrees, chest leaning forward, knees bent behind. */
+export function dipPose(depth: number): FigurePose {
+  const e = smooth(depth);
+  const shoulder = { y: lerp(DIP_BAR_Y + 54.5, DIP_BAR_Y + 34, e), z: lerp(2, 18, e) };
+  const lean = lerp(12, 28, e);
+  const hip = hipFrom(shoulder, lean);
+  const ankle: V3 = [0, hip.y - 52, hip.z - 36];
+  return assemble({
+    hip,
+    shoulder,
+    head: headFrom(shoulder, lean * 0.5),
+    ankleZ: ankle[2],
+    footHalf: 8,
+    ankle: (sd) => [sd * 8, ankle[1], ankle[2]],
+    foot: () => ({ floor: Math.max(0, ankle[1] - 2), dir: 1, angle: -40 }),
+    wrist: (sd) => [sd * DIP_BAR_HALF, DIP_BAR_Y, 0],
+    bar: [0, DIP_BAR_Y, 0],
+    kneePole: () => [0, 0, 1],
+    elbowPole: (sd) => [sd * 0.3, 0, -1],
+  });
 }
 
 /** Reverse lunge: the far leg steps back, the hips drop straight down until
@@ -2050,6 +2127,123 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
         "Houd de dumbbells dicht langs je benen, langs je bovenbenen en scheenbenen.",
         "Rechte rug en neutrale nek de hele herhaling. Stop als je hamstrings gestrekt zijn, rond kniehoogte.",
         "Duw je heupen naar voren om rechtop te komen en span je billen aan.",
+      ],
+    },
+  },
+  skullcrusher: {
+    figure: {
+      pose: skullcrusherPose,
+      implement: "dumbbells",
+      furniture: "flat-bench",
+      scale: 1.05,
+      centerZ: -4,
+      neutralGrip: true,
+    },
+    labels: label("Dumbbell skullcrusher", "Skullcrusher met dumbbells"),
+    phases: {
+      en: {
+        lower: "Bend your elbows to lower the weights toward your head",
+        touch: "Weights just beside your forehead, upper arms still",
+        press: "Straighten your elbows to press back up",
+        lockout: "Arms straight above your shoulders",
+      },
+      nl: {
+        lower: "Buig je ellebogen en laat de gewichten naar je hoofd zakken",
+        touch: "Gewichten net naast je voorhoofd, bovenarmen stil",
+        press: "Strek je ellebogen om terug omhoog te duwen",
+        lockout: "Armen gestrekt boven je schouders",
+      },
+    },
+    cues: {
+      en: [
+        "Lie on a flat bench, feet flat, dumbbells above your shoulders with your palms facing each other.",
+        "Keep your upper arms still. Only your forearms move.",
+        "Lower the weights toward your forehead by bending your elbows.",
+        "Straighten your elbows to press back up without flaring them out.",
+        "Keep your lower back on the bench and your wrists straight.",
+      ],
+      nl: [
+        "Ga op een vlakke bank liggen, voeten plat, dumbbells boven je schouders met je handpalmen naar elkaar toe.",
+        "Houd je bovenarmen stil. Alleen je onderarmen bewegen.",
+        "Laat de gewichten zakken richting je voorhoofd door je ellebogen te buigen.",
+        "Strek je ellebogen om omhoog te duwen zonder ze naar buiten te laten wijken.",
+        "Houd je onderrug op de bank en je polsen recht.",
+      ],
+    },
+  },
+  "db-overhead-triceps-ext": {
+    figure: {
+      pose: overheadTricepsPose,
+      implement: "goblet",
+      furniture: "none",
+      scale: 0.88,
+      centerZ: 0,
+    },
+    labels: label("Overhead triceps extension", "Triceps extension boven het hoofd"),
+    phases: {
+      en: {
+        lower: "Bend your elbows to lower the dumbbell behind your head",
+        touch: "Dumbbell behind your head, elbows pointing up",
+        press: "Straighten your arms to press it back up",
+        lockout: "Arms straight overhead",
+      },
+      nl: {
+        lower: "Buig je ellebogen en laat de dumbbell achter je hoofd zakken",
+        touch: "Dumbbell achter je hoofd, ellebogen wijzen omhoog",
+        press: "Strek je armen om hem weer omhoog te duwen",
+        lockout: "Armen gestrekt boven je hoofd",
+      },
+    },
+    cues: {
+      en: [
+        "Stand tall with both hands under one dumbbell, held overhead.",
+        "Keep your upper arms close to your ears and pointing up.",
+        "Lower the dumbbell behind your head by bending only your elbows.",
+        "Press back up until your arms are straight, without arching your back.",
+      ],
+      nl: [
+        "Sta rechtop met beide handen onder één dumbbell, boven je hoofd.",
+        "Houd je bovenarmen dicht bij je oren en wijzend omhoog.",
+        "Laat de dumbbell achter je hoofd zakken door alleen je ellebogen te buigen.",
+        "Duw omhoog tot je armen gestrekt zijn, zonder je rug te hol te trekken.",
+      ],
+    },
+  },
+  dips: {
+    figure: {
+      pose: dipPose,
+      implement: "none",
+      furniture: "dip-bars",
+      scale: 1.0,
+      centerZ: 0,
+    },
+    labels: label("Dips", "Dips"),
+    phases: {
+      en: {
+        lower: "Lower your body by bending your elbows",
+        touch: "Elbows about 90 degrees, chest leaning forward",
+        press: "Press up through your palms",
+        lockout: "Arms straight, shoulders away from your ears",
+      },
+      nl: {
+        lower: "Zak door je ellebogen te buigen",
+        touch: "Ellebogen ongeveer 90 graden, borst naar voren",
+        press: "Duw omhoog met je handpalmen",
+        lockout: "Armen gestrekt, schouders weg van je oren",
+      },
+    },
+    cues: {
+      en: [
+        "Grip the bars and start with straight arms, shoulders pulled down.",
+        "Lean slightly forward and keep your elbows close to your body.",
+        "Lower until your elbows are about 90 degrees.",
+        "Press up to straight arms without shrugging.",
+      ],
+      nl: [
+        "Pak de leuningen vast en begin met gestrekte armen, schouders naar beneden.",
+        "Leun licht naar voren en houd je ellebogen dicht langs je lichaam.",
+        "Zak tot je ellebogen ongeveer 90 graden gebogen zijn.",
+        "Duw omhoog tot gestrekte armen zonder je schouders op te trekken.",
       ],
     },
   },

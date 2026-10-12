@@ -1,5 +1,7 @@
 import {
   BOX_TOP,
+  DIP_BAR_HALF,
+  DIP_BAR_Y,
   BOX_Z,
   PULLUP_BAR_Y,
   ROW_BENCH_Y,
@@ -193,6 +195,24 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {model.furniture === "dip-bars" &&
+        [-1, 1].map((sg) => (
+          <g key={sg}>
+            <path
+              d={line(p([sg * DIP_BAR_HALF, DIP_BAR_Y, 0]), p([sg * DIP_BAR_HALF, 0, 0]))}
+              className={furnLine}
+              strokeWidth={s(5)}
+            />
+            <path
+              d={line(
+                p([sg * (DIP_BAR_HALF - 7), DIP_BAR_Y, 0]),
+                p([sg * (DIP_BAR_HALF + 7), DIP_BAR_Y, 0]),
+              )}
+              className="stroke-foreground/40"
+              strokeWidth={s(4)}
+            />
+          </g>
+        ))}
       {model.furniture === "box" && (
         <rect
           x={p([-26, 0, 0])[0]}
@@ -618,6 +638,25 @@ export function FigureSide({ model, pose }: Props) {
               strokeWidth={s(7)}
             />
           ))}
+        </g>
+      )}
+      {model.furniture === "dip-bars" && (
+        <g>
+          <path
+            d={line(p([0, DIP_BAR_Y, -26]), p([0, DIP_BAR_Y, 26]))}
+            className="stroke-foreground/40"
+            strokeWidth={s(4)}
+          />
+          <path
+            d={line(p([0, DIP_BAR_Y, 22]), p([0, 0, 22]))}
+            className={furnLine}
+            strokeWidth={s(5)}
+          />
+          <path
+            d={line(p([0, DIP_BAR_Y, -22]), p([0, 0, -22]))}
+            className={furnLine}
+            strokeWidth={s(5)}
+          />
         </g>
       )}
       {model.furniture === "box" && (
