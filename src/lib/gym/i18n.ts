@@ -1614,6 +1614,9 @@ const en = {
     createAll: "Create workouts for every day",
     createAllHint: "Days that already have a saved workout stay as they are.",
     sameExercises: "Same exercises every week",
+    changeDayType: "Change day",
+    changeDayTypeHint: "Changes this day in every week of the plan. Its saved workout is removed.",
+    cardioDayNote: "A cardio day is logged on the day, from the Workout tab.",
     noWorkoutYet: "No workout saved for this day yet. Pick how you want it, then generate it.",
     openDay: (day: string, dow: string) => `Open ${day} (${dow})`,
     sameExercisesDesc: "Day 1 of every week repeats day 1 of week 1",
@@ -3507,6 +3510,10 @@ const nl: Dict = {
     createAll: "Voor elke dag een training maken",
     createAllHint: "Dagen die al een opgeslagen training hebben, blijven zoals ze zijn.",
     sameExercises: "Elke week dezelfde oefeningen",
+    changeDayType: "Dag wijzigen",
+    changeDayTypeHint:
+      "Verandert deze dag in elke week van het schema. De opgeslagen training wordt verwijderd.",
+    cardioDayNote: "Een cardiodag log je op de dag zelf, vanuit het tabblad Training.",
     noWorkoutYet:
       "Voor deze dag is nog geen training opgeslagen. Kies hoe je hem wilt en genereer hem.",
     openDay: (day: string, dow: string) => `${day} openen (${dow})`,

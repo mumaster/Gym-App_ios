@@ -159,6 +159,7 @@ function WorkoutHome() {
     kind: RotationKind;
     index: number;
     week: number | undefined;
+    weekday: string;
     title: string;
   } | null>(null);
   const [regions, setRegions] = useState<RegionId[]>([]);
@@ -176,8 +177,8 @@ function WorkoutHome() {
   const [cardioLogKind, setCardioLogKind] = useState<RotationKind | null>(null);
   /** A tap on a week-strip day: a finished one opens what was logged
    *  (the session's page), any other lifting day its planned workout (the
-   *  saved one, or a fresh one to save). Upcoming cardio days have nothing
-   *  to open. */
+   *  saved one, or the options to generate it); every day can also change
+   *  its type there, cardio days included. */
   const openDay = (kind: RotationKind) => (index: number) => {
     const rotation = kind === "program" ? program : weeklyScheme;
     const slot = rotation?.schedule[index];
@@ -191,14 +192,14 @@ function WorkoutHome() {
       const cardioId = logged.cardio.id;
       return () => navigate({ to: "/history/cardio/$cardioId", params: { cardioId } });
     }
-    if (isCardioSlot(slot)) return null;
     const label = splitDayLabel(rotation.templateId, slot.dayId);
     const dow = (doneDate(rotation, index) ?? plannedDate(rotation, index)).getDay();
     const week =
       kind === "program" && program && isPregenerated(program) ? program.currentWeek : undefined;
     return () => {
       haptic(10);
-      setDayView({ kind, index, week, title: `${label} · ${t.common.dow[dow] ?? ""}` });
+      const weekday = t.common.dow[dow] ?? "";
+      setDayView({ kind, index, week, weekday, title: `${label} · ${weekday}` });
     };
   };
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -1534,6 +1535,8 @@ function WorkoutHome() {
           slotIndex={dayView.index}
           week={dayView.week}
           title={dayView.title}
+          weekday={dayView.weekday}
+          changeType
         />
       ) : null}
       <SwapSheet
