@@ -87,7 +87,8 @@ export interface Program extends Rotation {
   /** Day id → cardio after the lifting (hybrid programs), as WeeklyScheme. */
   cardio?: Record<string, CardioFinisher> | undefined;
   /** Pre-generated weeks repeat each day's exercises (day 1 of week 2 = day 1
-   *  of week 1, with that week's volume). Missing = on; off gives every week
+   *  of week 1, with that week's volume) when true. Missing or false (the
+   *  default, so a program already running isn't changed) gives every week
    *  its own exercises (dayWorkouts.ts's `pregenerateProgram`). */
   sameExercises?: boolean | undefined;
 }
