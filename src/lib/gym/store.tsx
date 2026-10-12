@@ -108,6 +108,7 @@ import {
   stateHash,
 } from "./syncState";
 import { manualCardioWatch, sortCardioPlan } from "./cardio";
+import { CURRENT_VERSION } from "./changelog";
 import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
 
 interface GymState {
@@ -140,6 +141,9 @@ interface GymState {
   /** The setup tour (SetupTour.tsx, after the welcome tour) has been
    *  finished or skipped. Settings → "Set up Forge" sets it back to false. */
   setupSeen: boolean;
+  /** Last changelog version (changelog.ts) the person has seen; the update
+   *  screen lists everything newer. */
+  lastSeenVersion: number;
   supersetsEnabled: boolean;
   /** Warm-up sets before compound exercises. Off: none are planned, and a
    *  running workout starts every exercise on a working set. */
@@ -251,6 +255,7 @@ const initialState: GymState = {
   welcomeSeen: false,
   notifSeen: [],
   setupSeen: false,
+  lastSeenVersion: CURRENT_VERSION,
   supersetsEnabled: false,
   warmupsEnabled: true,
   alcoholEnabled: true,
@@ -421,6 +426,9 @@ function migrate(raw: Partial<GymState>): GymState {
     // Saves from before the setup tour: whoever is past the welcome tour
     // already uses the app, so only someone still in front of it gets it.
     setupSeen: raw.setupSeen ?? welcomeSeenFrom(raw),
+    // Saves from before the update screen: someone who already uses the app
+    // sees everything; a brand-new install starts on the current version.
+    lastSeenVersion: raw.lastSeenVersion ?? (welcomeSeenFrom(raw) ? 0 : CURRENT_VERSION),
     supersetsEnabled: raw.supersetsEnabled ?? false,
     warmupsEnabled: raw.warmupsEnabled ?? true,
     alcoholEnabled: raw.alcoholEnabled ?? true,

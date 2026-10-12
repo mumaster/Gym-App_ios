@@ -1899,6 +1899,13 @@ const en = {
     errorBody: "Something went wrong on our end. You can try again or go back home.",
     tryAgain: "Try again",
   },
+  whatsNew: {
+    title: "What's new",
+    done: "Got it",
+    version: "Version",
+    row: "What's new",
+    rowDesc: "Everything that changed in each version",
+  },
   updateBanner: {
     text: "A new version is ready",
     reload: "Reload",
@@ -3866,6 +3873,13 @@ const nl: Dict = {
     errorTitle: "Deze pagina laadde niet",
     errorBody: "Er ging iets mis aan onze kant. Probeer het opnieuw of ga terug naar home.",
     tryAgain: "Opnieuw proberen",
+  },
+  whatsNew: {
+    title: "Wat is er nieuw",
+    done: "Begrepen",
+    version: "Versie",
+    row: "Wat is er nieuw",
+    rowDesc: "Alles wat er per versie is veranderd",
   },
   updateBanner: {
     text: "Een nieuwe versie is beschikbaar",

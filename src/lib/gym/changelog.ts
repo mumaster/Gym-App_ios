@@ -1,0 +1,63 @@
+import type { Language } from "./types";
+
+/**
+ * What's new, one entry per deploy-worthy change. The version is the entry's
+ * number: alpha style `0.001`, `0.002`, … (see formatVersion), so the next
+ * change adds the next number at the END of this list. The app shows
+ * everything newer than the last version a person has seen (WhatsNew.tsx), so
+ * write each text for them: short, plain language, English and Dutch.
+ * __tests__/changelog.test.ts fails when the list has gaps or a missing text.
+ */
+export interface ChangelogEntry {
+  version: number;
+  text: Record<Language, string>;
+}
+
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 1,
+    text: {
+      en: "Weekly program: plan a training week, tap a day to see or generate its workout, and switch day types.",
+      nl: "Weekprogramma: plan een trainingsweek, tik op een dag om de training te zien of te maken en wissel van dagtype.",
+    },
+  },
+  {
+    version: 2,
+    text: {
+      en: "Set up Forge: a short guided setup for your profile, equipment and goals, which you can replay from Settings.",
+      nl: "Forge instellen: een korte rondleiding voor je profiel, uitrusting en doelen, die je opnieuw kunt starten via Instellingen.",
+    },
+  },
+  {
+    version: 3,
+    text: {
+      en: "Exercise animations: see how an exercise is done from the front and the side, with the button next to the video button.",
+      nl: "Oefeningen in beeld: bekijk hoe een oefening gaat van voren en van opzij, met de knop naast de videoknop.",
+    },
+  },
+  {
+    version: 4,
+    text: {
+      en: "After a workout you can still add an exercise or a cardio session to it.",
+      nl: "Na een training kun je er nog een oefening of cardiosessie aan toevoegen.",
+    },
+  },
+  {
+    version: 5,
+    text: {
+      en: "What's new: the app now tells you what changed after an update, and shows its version number in Settings.",
+      nl: "Wat is er nieuw: de app laat na een update zien wat er veranderd is en toont het versienummer in Instellingen.",
+    },
+  },
+];
+
+/** What this build is. Bump it with every deploy-worthy change, together with
+ *  its entry above (the changelog test fails when the two disagree). */
+export const CURRENT_VERSION = 5;
+
+/** `5` → "0.005" (alpha: major 0, three-digit build number). */
+export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
+
+/** Entries newer than `seen`, newest first. */
+export const entriesSince = (seen: number): ChangelogEntry[] =>
+  CHANGELOG.filter((e) => e.version > seen).sort((a, b) => b.version - a.version);
