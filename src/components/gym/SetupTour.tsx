@@ -209,7 +209,7 @@ export function SetupFlow({
       </ListCard>
     ),
     plan: (
-      <div className="space-y-3" role="radiogroup" aria-label={t.setup.planTitle}>
+      <div className="space-y-3">
         {(
           [
             ["weekly", t.setup.planWeekly, t.setup.planWeeklyDesc, CalendarDays, s.weekly],
@@ -218,42 +218,23 @@ export function SetupFlow({
         ).map(([k, title, desc, Icon, st]) => (
           <button
             key={k}
-            role="radio"
-            aria-checked={kind === k}
             onClick={() => {
-              haptic(10);
               setPickedKind(k);
+              go(idx + 1);
             }}
-            className={`glass flex w-full items-start gap-3 rounded-2xl border p-4 text-left active:scale-[0.985] ${
-              kind === k ? "border-primary/70" : "border-transparent"
-            }`}
+            className="glass flex w-full items-start gap-3 rounded-2xl p-4 text-left active:scale-[0.985]"
           >
             <Icon className="mt-0.5 size-5 shrink-0 text-primary-text" aria-hidden />
             <span className="min-w-0 flex-1">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className={text.rowTitle}>{title}</span>
-                {k === "weekly" ? (
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
-                    {t.setup.recommended}
-                  </span>
-                ) : null}
-              </span>
+              <span className={`${text.rowTitle} block`}>{title}</span>
               <span className="mt-0.5 block text-[12.5px] text-muted-foreground">{desc}</span>
               <span className="mt-1 block text-[12.5px] font-semibold text-muted-foreground">
                 {st.set ? st.text : t.setup.notSet}
               </span>
             </span>
-            <span
-              className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                kind === k ? "border-primary bg-primary text-primary-foreground" : "border-border"
-              }`}
-              aria-hidden
-            >
-              {kind === k ? <Check className="size-3" /> : null}
-            </span>
+            <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
           </button>
         ))}
-        <p className="px-1 text-[12.5px] text-muted-foreground">{t.setup.planPickOne}</p>
       </div>
     ),
     planSetup: (
