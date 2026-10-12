@@ -13,6 +13,12 @@ import {
   curlPose,
   dbRowPose,
   deadliftPose,
+  gluteBridgePose,
+  hipThrustPose,
+  kettlebellSwingPose,
+  lateralRaisePose,
+  singleLegRdlPose,
+  THRUST_BENCH_Y,
   depthAt,
   elbowFlare,
   EXERCISE_ANIMATIONS,
@@ -73,11 +79,16 @@ const ANIMATED = [
   "db-curl",
   "db-row",
   "db-shoulder-press",
+  "db-single-leg-rdl",
   "db-step-up",
   "db-sumo-deadlift",
+  "glute-bridge",
   "goblet-squat",
+  "hip-thrust",
   "incline-db-press",
+  "kb-swing",
   "lat-pulldown",
+  "lateral-raise",
   "rdl",
   "reverse-lunge",
 ];
@@ -96,6 +107,11 @@ const POSES: Record<string, (d: number) => FigurePose> = {
   "db-step-up": stepUpPose,
   "db-sumo-deadlift": sumoPose,
   "db-row": dbRowPose,
+  "lateral-raise": lateralRaisePose,
+  "kb-swing": kettlebellSwingPose,
+  "db-single-leg-rdl": singleLegRdlPose,
+  "glute-bridge": gluteBridgePose,
+  "hip-thrust": hipThrustPose,
 };
 
 /** Height of the near foot's ankle when it is not on the floor. */
@@ -347,5 +363,80 @@ describe("ExerciseAnimation render", () => {
       }
     }
     expect(ANIMATED.every((id) => ids.has(id))).toBe(true);
+  });
+});
+
+describe("batch 2 lifts", () => {
+  it("lateral raise: arms stay almost straight and end at shoulder height", () => {
+    const top = lateralRaisePose(1);
+    expect(Math.abs(top.wrists[1][1] - top.shoulders[1][1])).toBeLessThan(6);
+    expect(top.wrists[1][0]).toBeGreaterThan(top.shoulders[1][0] + 40);
+    expect(dist(top.shoulders[1], top.wrists[1])).toBeGreaterThan(50);
+    // never above the shoulders
+    for (const d of WALK) {
+      const p = lateralRaisePose(d);
+      expect(p.wrists[1][1]).toBeLessThan(p.shoulders[1][1] + 1);
+    }
+  });
+  it("kettlebell swing: bell reaches chest height at the top, back between the legs at the bottom, arms straight", () => {
+    const top = kettlebellSwingPose(0);
+    const bottom = kettlebellSwingPose(1);
+    expect(Math.abs(top.bar[1] - top.shoulders[1][1])).toBeLessThan(18);
+    expect(top.bar[2]).toBeGreaterThan(top.hips[1][2] + 40);
+    expect(bottom.bar[1]).toBeLessThan(bottom.hips[1][1]);
+    expect(bottom.hips[1][2]).toBeLessThan(top.hips[1][2] - 25);
+    for (const d of WALK) {
+      const p = kettlebellSwingPose(d);
+      expect(dist(p.shoulders[1], p.wrists[1])).toBeGreaterThan(50);
+    }
+  });
+  it("single-leg RDL: the free leg rises in line with the torso, the standing leg stays soft", () => {
+    const bottom = singleLegRdlPose(1);
+    expect(bottom.ankles[0][1]).toBeGreaterThan(40);
+    // torso and free leg point in opposite directions along one line
+    const torso: [number, number] = [
+      bottom.shoulders[1][1] - bottom.hips[1][1],
+      bottom.shoulders[1][2] - bottom.hips[1][2],
+    ];
+    const leg: [number, number] = [
+      bottom.ankles[0][1] - bottom.hips[0][1],
+      bottom.ankles[0][2] - bottom.hips[0][2],
+    ];
+    const cross = torso[0] * leg[1] - torso[1] * leg[0];
+    expect(Math.abs(cross) / (Math.hypot(...torso) * Math.hypot(...leg))).toBeLessThan(0.08);
+    expect(Math.abs(bottom.hips[1][1] - bottom.hips[0][1])).toBeLessThan(0.01);
+    expect(dist(bottom.hips[1], bottom.ankles[1])).toBeLessThan(87.5);
+    expect(bottom.feet[0].floor).toBeGreaterThan(30);
+  });
+  it("glute bridge: shoulders stay on the floor and shoulders, hips and knees line up at the top", () => {
+    const top = gluteBridgePose(0);
+    for (const d of WALK) {
+      const p = gluteBridgePose(d);
+      expect(p.shoulders[1][1]).toBe(12);
+      expect(p.hips[1][1]).toBeGreaterThan(9.9);
+    }
+    const a: [number, number] = [
+      top.hips[1][1] - top.shoulders[1][1],
+      top.hips[1][2] - top.shoulders[1][2],
+    ];
+    const b: [number, number] = [
+      top.knees[1][1] - top.hips[1][1],
+      top.knees[1][2] - top.hips[1][2],
+    ];
+    const angle = Math.acos((a[0] * b[0] + a[1] * b[1]) / (Math.hypot(...a) * Math.hypot(...b)));
+    expect((angle * 180) / Math.PI).toBeLessThan(25);
+    expect(top.hips[1][1]).toBeGreaterThan(gluteBridgePose(1).hips[1][1] + 20);
+  });
+  it("hip thrust: shoulders stay on the bench; at the top the torso and thighs are level and the shins vertical", () => {
+    const top = hipThrustPose(0);
+    for (const d of WALK) {
+      const p = hipThrustPose(d);
+      expect(p.shoulders[1][1]).toBe(THRUST_BENCH_Y + 8);
+      expect(p.bar[1]).toBeGreaterThan(p.hips[1][1]);
+    }
+    expect(Math.abs(top.hips[1][1] - top.shoulders[1][1])).toBeLessThan(1);
+    expect(Math.abs(top.knees[1][1] - top.hips[1][1])).toBeLessThan(4);
+    expect(Math.abs(top.knees[1][2] - top.ankles[1][2])).toBeLessThan(4);
+    expect(hipThrustPose(1).hips[1][1]).toBeLessThan(top.hips[1][1] - 25);
   });
 });
