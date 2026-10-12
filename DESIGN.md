@@ -236,6 +236,7 @@ A decorative icon gets `aria-hidden`.
 
 - **Reduce Motion** is always respected: no slides or scale, a fade at most. `styles.css` has a fallback for the common cases (every `animate-in`/`animate-out` keeps its fade and loses its slide, zoom and spin; the card flash and confetti go), but check `prefers-reduced-motion` for every new animation of your own.
 - **Page transitions** move only the content: a crossfade with no slide (120 ms out, 200 ms in, starting together). The chrome, meaning the header (title, profile button, sub-tabs) and the tab bar, never moves or fades between screens; each has its own `view-transition-name` and swaps in place. A new piece of chrome that sits in the same spot on every screen gets the same treatment. A sliding, fading header shows two titles at once.
+- **Exercise explainer animations** (`ExerciseAnimation.tsx`, rigs in `lib/gym/exerciseAnimation.ts`) are the one exception to the 400 ms rule: a slow, looping rep drawn as inline SVG from one 3D rig, so front and side views agree. Moving parts use the accent, the body and bench use `foreground` at low opacity (both themes). Reduce Motion starts it paused on the key frame, and the slider lets you scrub through the rep. A new exercise is a new entry in `EXERCISE_ANIMATIONS` (rig numbers plus EN and NL cues).
 - Don't animate on first paint from SSR without `fill-mode-both` (see CLAUDE.md, Splash screen).
 
 ## 10. Haptics

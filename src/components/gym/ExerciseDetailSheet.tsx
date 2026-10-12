@@ -1,6 +1,7 @@
 import { limbOf } from "../../lib/gym/unilateral";
 import { Heart, Pencil, ShieldOff, Youtube } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { ExerciseAnimation } from "./ExerciseAnimation";
 import { ExerciseProgressChart } from "./ExerciseProgressChart";
 import { exerciseVideoUrl } from "../../lib/gym/exerciseVideo";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -83,6 +84,7 @@ export function ExerciseDetailSheet({
               </button>
             ) : null}
           </div>
+          <ExerciseAnimation exerciseId={exercise.id} />
           <a
             href={exerciseVideoUrl(exercise)}
             target="_blank"
