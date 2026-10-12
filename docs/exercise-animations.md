@@ -57,6 +57,8 @@ Four stills can look right while the motion between them is wrong. For every new
 
 `FigurePose.feet` says what each foot stands on (`floor` = height under it in cm, `dir` = toe direction, -1 when kneeling). Set it with `foot:` in the skeleton for lifts where a foot is on a box or bench, otherwise the toes are drawn on the floor. New furniture (`incline-bench`, `flat-bench`, `box`, `thrust-bench`) and the `kettlebell` implement is drawn in `ExerciseFigureScene.tsx`.
 
+**A foot hanging off the shin** (hanging leg raise, seated leg curl) uses `feet[].angle` (toes above horizontal, pivoting about the ankle): hanging raise `a - 45`, leg curl `75 - shinAngle`, so the foot keeps a fixed angle to the shin with toes up and forward at the top. Max drew this on 2026-10-12.
+
 **A foot in the air** (pull-up, hanging leg raise) gets `foot: { floor: ankleY - ANKLE_Y, dir: 1, pitch: 55 }`, so the sole follows the ankle with the toes tipped down. The front view then draws a short connector from the ankle to the foot bar. A foot that is only touching the floor keeps `floor: 0` and no pitch.
 
 Furniture added with batch 3: `pullup-bar` (bar at `PULLUP_BAR_Y`), `cable-tower` (pulley at `FigureModel.pulley {y, z}`, used by the `cable` implement for the pushdown and crunch) and `leg-curl` (seat, thigh pad and ankle roller).

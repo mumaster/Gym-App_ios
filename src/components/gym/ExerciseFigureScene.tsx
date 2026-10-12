@@ -397,8 +397,14 @@ export function FigureSide({ model, pose }: Props) {
     // Flat sole, heel down; only a genuinely lifted heel (rear foot of a lunge) slopes.
     const raised = soleY - a[1] > s(14);
     const pitch = pose.feet[i].pitch ?? 0;
+    const angle = pose.feet[i].angle;
     let foot: string;
-    if (pitch > 0) {
+    if (angle !== undefined) {
+      // A foot hanging off the shin: it pivots about the ankle, toes at `angle` above horizontal.
+      const c = Math.cos((angle * Math.PI) / 180);
+      const sn = Math.sin((angle * Math.PI) / 180);
+      foot = `M${pt([a[0] - dir * s(5) * c, a[1] + s(5) * sn])}L${pt([a[0] + dir * s(15) * c, a[1] - s(15) * sn])}`;
+    } else if (pitch > 0) {
       // A foot in the air: the sole rotates about the ankle, toes tipping down.
       const k = Math.min(1, pitch / 75);
       const oy = soleY + (a[1] - soleY) * k;

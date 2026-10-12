@@ -156,6 +156,9 @@ export interface Foot {
   dir: 1 | -1;
   /** Degrees the toes tip down from flat (a leg held in the air). */
   pitch?: number;
+  /** Degrees the toes point above horizontal, the foot pivoting about the ankle
+   *  (a foot that hangs off the shin instead of standing on something). */
+  angle?: number;
 }
 
 export interface FigurePose extends Pose {
@@ -866,9 +869,9 @@ export function hangingLegRaisePose(depth: number): FigurePose {
     footHalf: 10,
     ankle: (sd) => [sd * 10, hip.y - leg * cos(a), hip.z + leg * sin(a)],
     foot: () => ({
-      floor: Math.max(0, hip.y - leg * cos(a) - ANKLE_Y),
+      floor: Math.max(0, hip.y - leg * cos(a) - 2),
       dir: 1,
-      pitch: lerp(30, 88, e),
+      angle: a - 45,
     }),
     wrist: (sd) => [sd * grip, PULLUP_BAR_Y, 0],
     bar: [0, PULLUP_BAR_Y, 0],
@@ -954,7 +957,7 @@ export function seatedLegCurlPose(depth: number): FigurePose {
     ankleZ: ankle[2],
     footHalf: 10,
     ankle: (sd) => [sd * 10, ankle[1], ankle[2]],
-    foot: () => ({ floor: Math.max(0, ankle[1] - 3), dir: 1 }),
+    foot: () => ({ floor: Math.max(0, ankle[1] - 2), dir: 1, angle: 75 - theta }),
     wrist: (sd) => [sd * 24, 64, 14],
     bar: [0, 64, 14],
     kneePole: () => [0, 1, 0.5],
