@@ -26,6 +26,8 @@ import { Screen } from "../components/gym/Screen";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SourcesSheet } from "../components/gym/SourcesSheet";
 import { ThemePicker } from "../components/gym/ThemePicker";
+import { WhatsNewSheet } from "../components/gym/WhatsNew";
+import { CURRENT_VERSION, formatVersion } from "../lib/gym/changelog";
 import { useTranslation } from "../lib/gym/i18n";
 import { haptic, useGym } from "../lib/gym/store";
 import { forceUpdate } from "../pwa";
@@ -64,6 +66,7 @@ function SettingsScreen() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [liftsOpen, setLiftsOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
   const [allergiesOpen, setAllergiesOpen] = useState(false);
 
   const handleForceUpdate = () => {
@@ -265,6 +268,19 @@ function SettingsScreen() {
           <LinkRow
             onClick={() => {
               haptic(10);
+              setNewOpen(true);
+            }}
+            title={t.whatsNew.row}
+            desc={t.whatsNew.rowDesc}
+            trailing={
+              <span className="shrink-0 text-[13px] font-semibold tabular-nums text-muted-foreground">
+                {t.whatsNew.version} {formatVersion(CURRENT_VERSION)}
+              </span>
+            }
+          />
+          <LinkRow
+            onClick={() => {
+              haptic(10);
               update({ setupSeen: false });
             }}
             title={t.setup.row}
@@ -292,6 +308,7 @@ function SettingsScreen() {
       <AuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
       <SourcesSheet open={sourcesOpen} onClose={() => setSourcesOpen(false)} />
       <KnownLiftsSheet open={liftsOpen} onClose={() => setLiftsOpen(false)} />
+      <WhatsNewSheet open={newOpen} onClose={() => setNewOpen(false)} since={0} />
       <MoveDataSheet open={moveOpen} onClose={() => setMoveOpen(false)} />
     </Screen>
   );

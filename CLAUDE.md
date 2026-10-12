@@ -851,3 +851,7 @@ The app shipped English-only until a Settings toggle (`LanguagePicker.tsx`, in "
 ### Imports
 
 `@/*` resolves to `./src/*` (from `tsconfig.json`, wired up by the pre-bundled Vite config — see above). Usage is inconsistent in the existing code — `components/ui/*` and `lib/gym/catalog.ts` use `@/...`, while `routes/*` and `components/gym/*` mostly use relative imports. Either works; match the surrounding file's style.
+
+## Versions and "What's new"
+
+Every deploy-worthy change (every PR that reaches the live branch) must bump `CURRENT_VERSION` in `src/lib/gym/changelog.ts` by one and add a matching `CHANGELOG` entry at the end with a short plain-language text in **both** English and Dutch. Alpha numbering: version `5` shows as `0.005`. The app shows people everything newer than the last version they saw (`WhatsNew.tsx`) and the version in Settings → About. `src/lib/gym/__tests__/changelog.test.ts` fails when the current version has no entry or a text is missing in a language.
