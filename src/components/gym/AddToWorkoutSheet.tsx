@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Dumbbell, HeartPulse, Plus, Shuffle } from "lucide-react";
+import { AlertTriangle, Dumbbell, HeartPulse, Plus, Shuffle } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { ActivityPicker, EffortPicker } from "./CardioControls";
 import { button, chip } from "./ui";
-import { EQUIPMENT } from "../../lib/gym/data";
+import { EQUIPMENT, exerciseById } from "../../lib/gym/data";
+import { nearDuplicateIn } from "../../lib/gym/similar";
 import { muscleLabel } from "../../lib/gym/antagonist";
 import { muscleIcon } from "../../lib/gym/muscleIcons";
 import { useTranslation } from "../../lib/gym/i18n";
@@ -18,6 +19,7 @@ const subtitleOf = (e: Exercise) =>
     .join(" · ");
 
 type View = "menu" | "pick" | "cardio";
+type Pending = { e: Exercise; other: string };
 
 /** What tapping "Exercise" on the finish panel opens: a new exercise picked
  *  for the user, one they choose (the best fit suggested first), or cardio
@@ -26,6 +28,7 @@ export function AddToWorkoutSheet({
   open,
   onClose,
   options,
+  inWorkoutIds = [],
   targetMuscles,
   onAuto,
   onPick,
@@ -35,6 +38,8 @@ export function AddToWorkoutSheet({
   onClose: () => void;
   /** Exercises not yet in the workout that the gear allows. */
   options: Exercise[];
+  /** Everything already in the workout, to warn about near-duplicates. */
+  inWorkoutIds?: readonly string[];
   targetMuscles: readonly string[];
   onAuto: () => void;
   onPick: (e: Exercise) => void;
@@ -45,8 +50,12 @@ export function AddToWorkoutSheet({
   const [activity, setActivity] = useState<CardioActivity>("run");
   const [effort, setEffort] = useState<CardioEffort>("moderate");
   const [custom, setCustom] = useState("");
+  const [pending, setPending] = useState<Pending | null>(null);
   useEffect(() => {
-    if (!open) setView("menu");
+    if (!open) {
+      setView("menu");
+      setPending(null);
+    }
   }, [open]);
 
   const fits = options.filter((e) => targetMuscles.includes(e.primary_muscle));
@@ -56,12 +65,23 @@ export function AddToWorkoutSheet({
   const customMin = Math.round(Number(custom));
   const customOk = customMin >= 1 && customMin <= 240;
 
+  const similarName = (e: Exercise) => {
+    const id = nearDuplicateIn(e.id, inWorkoutIds);
+    return id ? exerciseById(id)?.name : undefined;
+  };
+  const choose = (e: Exercise) => {
+    const other = similarName(e);
+    if (other) setPending({ e, other });
+    else onPick(e);
+  };
+
   const row = (e: Exercise) => {
+    const similar = similarName(e);
     const Icon = muscleIcon(e.primary_muscle);
     return (
       <button
         key={e.id}
-        onClick={() => onPick(e)}
+        onClick={() => choose(e)}
         className="glass flex min-h-[56px] w-full items-center gap-3 rounded-2xl px-4 py-2 text-left active:scale-[0.985]"
       >
         <Icon aria-hidden className="size-5 shrink-0 text-primary-text" />
@@ -70,6 +90,11 @@ export function AddToWorkoutSheet({
           <span data-cut-ok className="block truncate text-[13px] text-muted-foreground">
             {subtitleOf(e)}
           </span>
+          {similar ? (
+            <span className="block text-[13px] text-warning-text">
+              {t.swapSheet.similarTo(similar)}
+            </span>
+          ) : null}
         </span>
         <Plus className="size-5 shrink-0 text-primary-text" />
       </button>
@@ -104,7 +129,30 @@ export function AddToWorkoutSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose} title={t.session.addSheetTitle}>
-      {view === "menu" ? (
+      {pending ? (
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-warning/50 bg-warning/10 p-4">
+            <p className="flex items-center gap-2 text-[15px] font-bold text-warning-text">
+              <AlertTriangle className="size-5" /> {t.swapSheet.similarTitle}
+            </p>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              {t.swapSheet.similarBody(pending.e.name, pending.other)}
+            </p>
+          </div>
+          <button
+            onClick={() => onPick(pending.e)}
+            className="glass min-h-[52px] w-full rounded-2xl text-[16px] font-semibold active:scale-95"
+          >
+            {t.swapSheet.keepSimilar}
+          </button>
+          <button
+            onClick={() => setPending(null)}
+            className="min-h-[44px] w-full text-[15px] font-semibold text-muted-foreground active:scale-95"
+          >
+            {t.swapSheet.backToList}
+          </button>
+        </div>
+      ) : view === "menu" ? (
         <div className="space-y-2">
           {options.length
             ? choice(Shuffle, t.session.addAuto, t.session.addAutoHint, onAuto)

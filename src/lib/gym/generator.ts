@@ -6,6 +6,7 @@ import { crossEstimate, withKnownLifts, type KnownLift } from "./startWeight";
 import { isBodyweightExercise } from "./load";
 import { roundToStep, suggestWeight } from "./progression";
 import type { Pace } from "./pace";
+import { isNearDuplicate } from "./similar";
 import { sharesLoadStation } from "./stations";
 import { MAX_SESSION_SETS_PER_MUSCLE, planSets, setContribution, weeklyTarget } from "./volume";
 import type {
@@ -507,6 +508,10 @@ export function generateWorkout({
 
   const plan: PlannedExercise[] = [];
   const used = new Set<string>();
+  // Used already, or nearly the same movement as something in the plan
+  // (similar.ts): never two calf raises in one workout.
+  const taken = (e: Exercise) =>
+    used.has(e.id) || [...used].some((id) => isNearDuplicate(id, e.id));
   const compoundQuota = Math.max(1, Math.round(shape.maxExercises * shape.compoundShare));
 
   const makeEntry = (choice: Exercise, compound: boolean): PlannedExercise => {
@@ -553,7 +558,7 @@ export function generateWorkout({
     compound: boolean,
     accept: (e: Exercise) => boolean = () => true,
   ): Exercise | undefined => {
-    const free = pool.filter((e) => !used.has(e.id) && accept(e));
+    const free = pool.filter((e) => !taken(e) && accept(e));
     const group = TARGET_MUSCLE_GROUP[target];
     // An exercise that trains this head as part of another muscle group
     // (a row for the biceps, a bench press for the front delts) only counts
@@ -565,7 +570,7 @@ export function generateWorkout({
     // all: a shoulders day should not fill up with push-ups because they
     // also touch the front delts (a chosen day trains what was chosen).
     const groupLeft = free.filter((e) => e.primary_muscle === group);
-    const groupFree = pool.some((e) => !used.has(e.id) && e.primary_muscle === group);
+    const groupFree = pool.some((e) => !taken(e) && e.primary_muscle === group);
     // capped or out of time for this group: stop rather than spill over
     const forMuscle = ownGroup.length
       ? ownGroup
@@ -747,7 +752,10 @@ export function generateWorkout({
             const keptEx = exOf(kept)!;
             const oldEx = exOf(old)!;
             const alt = alternativesFor(oldEx, equipment, avoided).find(
-              (e) => !used.has(e.id) && pairScore(keptEx, e) !== null,
+              (e) =>
+                !used.has(e.id) &&
+                ![...used].some((id) => id !== oldEx.id && isNearDuplicate(id, e.id)) &&
+                pairScore(keptEx, e) !== null,
             );
             if (!alt) continue;
             const entry = makeEntry(alt, alt.compound);
