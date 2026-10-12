@@ -227,13 +227,13 @@ export function deadliftPose(depth: number): FigurePose {
   const barZ = lerp(7, 3, depth);
   const off = lerp(-6, 4, depth);
   const shoulder = { z: barZ + off, y: barY + Math.sqrt(ARM * ARM - off * off) };
-  const lean = 60 * smooth(clamp01(depth / 0.62));
+  const lean = 66 * smooth(clamp01(depth / 0.62));
   return assemble({
     hip: hipFrom(shoulder, lean),
     shoulder,
-    head: headFrom(shoulder, lean * 0.55),
-    ankleZ: ANKLE_Z,
-    footHalf: 16,
+    head: headFrom(shoulder, lean * 0.7),
+    ankleZ: 1,
+    footHalf: 12,
     wrist: (s) => [s * 22, barY, barZ],
     bar: [0, barY, barZ],
     kneePole: forwardKnees,
@@ -278,7 +278,7 @@ export function rdlPose(depth: number): FigurePose {
 export function gobletPose(depth: number): FigurePose {
   const e = smooth(depth);
   const shin = 38 * e;
-  const thighAngle = 97 * e;
+  const thighAngle = 86 * e;
   const knee = { y: ANKLE_Y + BODY.shin * cos(shin), z: 0 + BODY.shin * sin(shin) };
   const hip = {
     y: knee.y + BODY.thigh * cos(thighAngle),
@@ -299,7 +299,7 @@ export function gobletPose(depth: number): FigurePose {
     shoulder,
     head: headFrom(shoulder, lean * 0.3),
     ankleZ: 0,
-    footHalf: 22,
+    footHalf: 17,
     wrist: (s) => [s * 6, chest.y, chest.z],
     bar: [0, chest.y - 4, chest.z + 2],
     kneePole: (s) => [s * 0.5, 0, 1],
@@ -354,8 +354,8 @@ export function latPulldownPose(depth: number): FigurePose {
     z: hip.z - BODY.torso * sin(lean),
   };
   const grip = 30;
-  const topW: V3 = [grip, shoulder.y + 52, shoulder.z + 14];
-  const bottomW: V3 = [grip, shoulder.y - 8, shoulder.z + 20];
+  const topW: V3 = [grip, shoulder.y + 46, shoulder.z + 22];
+  const bottomW: V3 = [grip, shoulder.y - 6, shoulder.z + 24];
   const w = (s: -1 | 1): V3 => [
     s * grip,
     lerp(topW[1], bottomW[1], depth),

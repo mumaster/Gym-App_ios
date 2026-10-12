@@ -25,8 +25,8 @@ interface Props {
 const mid = (a: V3, b: V3): V3 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
 
 /** Cable, pulley and frame of the pulldown machine (cm, side view z). */
-const PULLEY_Z = 3;
-const TOP_Y = 182;
+const PULLEY_Z = 16;
+const TOP_Y = 170;
 
 export function FigureFront({ model, pose }: Props) {
   const k = model.scale;
@@ -328,7 +328,7 @@ export function FigureSide({ model, pose }: Props) {
       {model.furniture === "pulldown" && (
         <rect
           x={p(mid(pose.hips[near], pose.knees[near]))[0] - s(16)}
-          y={p(mid(pose.hips[near], pose.knees[near]))[1] - s(16)}
+          y={p(mid(pose.hips[near], pose.knees[near]))[1] - s(13)}
           width={s(32)}
           height={s(8)}
           rx={4}
@@ -342,7 +342,7 @@ export function FigureSide({ model, pose }: Props) {
             cx={bar[0]}
             cy={bar[1]}
             r={s(PLATE_RADIUS)}
-            className="fill-primary/30 stroke-primary"
+            className="fill-primary/12 stroke-primary"
             strokeWidth={2}
           />
           <circle cx={bar[0]} cy={bar[1]} r={4} className="fill-foreground stroke-none" />
