@@ -191,6 +191,43 @@ describe("DayWorkoutSheet", () => {
   });
 });
 
+describe("changing the day's type", () => {
+  const open = (slotIndex: number, changeType: boolean) =>
+    render(
+      createElement(DayWorkoutSheet, {
+        open: true,
+        onClose: () => {},
+        kind: "program",
+        slotIndex,
+        title: "Upper Body · Mon",
+        weekday: "Mon",
+        changeType,
+      }),
+    );
+
+  it("shows the day's type with a Change day button from the week strip", () => {
+    seed.program = programOf(withWorkouts(false));
+    const html = open(0, true);
+    expect(html).toContain("Session type");
+    expect(html).toContain("Upper Body");
+    expect(html).toContain("Change day");
+    expect(html).toContain("Save workout");
+  });
+
+  it("isn't offered from the plan's own day list", () => {
+    seed.program = programOf(withWorkouts(false));
+    expect(open(0, false)).not.toContain("Change day");
+  });
+
+  it("opens a cardio day too, with its type and no workout", () => {
+    seed.program = programOf(withWorkouts(false));
+    const html = open(1, true);
+    expect(html).toContain("Change day");
+    expect(html).toContain("A cardio day is logged on the day");
+    expect(html).not.toContain("Generate workout");
+  });
+});
+
 describe("week strip days", () => {
   it("are buttons when there's something to open", () => {
     const rotation = programOf(withWorkouts(false));

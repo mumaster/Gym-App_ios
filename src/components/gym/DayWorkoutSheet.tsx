@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, ClipboardList, Repeat, Shuffle, Trash2, Wand2, X } from "lucide-react";
+import { Check, ChevronDown, ClipboardList, Repeat, Shuffle, Trash2, Wand2, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { DayTypePicker } from "./DayTypePicker";
 import { SwapSheet } from "./SwapSheet";
 import { SwitchRow } from "./SwitchRow";
 import { useDayWorkoutContext } from "./useDayWorkoutContext";
@@ -20,7 +21,7 @@ import { suggestionFor } from "../../lib/gym/generator";
 import { planBlocks } from "../../lib/gym/planBlocks";
 import { useTranslation } from "../../lib/gym/i18n";
 import { isCardioSlot } from "../../lib/gym/schedule";
-import type { ScheduleSlot, SplitTemplateId } from "../../lib/gym/splits";
+import { splitDayLabel, type ScheduleSlot, type SplitTemplateId } from "../../lib/gym/splits";
 import { haptic, useGym, type RotationKind } from "../../lib/gym/store";
 import type { DayWorkout, PlannedExercise } from "../../lib/gym/types";
 import { button, chip } from "./ui";
@@ -51,6 +52,8 @@ export function DayWorkoutSheet({
   slotIndex,
   week,
   title,
+  weekday,
+  changeType = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -60,8 +63,22 @@ export function DayWorkoutSheet({
   week?: number | undefined;
   /** "Push · Monday". */
   title: string;
+  /** With it the title is the day's current type and this weekday, so it
+   *  follows a change of type ("Lower Body · Tue"). */
+  weekday?: string | undefined;
+  /** Offers changing the day's type (opened from the Workout tab's week strip). */
+  changeType?: boolean;
 }) {
-  const { program, weeklyScheme, setSlotWorkout, update } = useGym();
+  const {
+    program,
+    weeklyScheme,
+    setSlotWorkout,
+    update,
+    updateProgramSlotDay,
+    updateScheduleSlotDay,
+    updateProgramSlotCardio,
+    updateScheduleSlotCardio,
+  } = useGym();
   const ctx = useDayWorkoutContext();
   const t = useTranslation();
   const rotation = kind === "program" ? program : weeklyScheme;
@@ -85,6 +102,7 @@ export function DayWorkoutSheet({
   /** The length picked before anything is generated. */
   const [pickedDuration, setPickedDuration] = useState(DEFAULT_DURATION);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  const [typeOpen, setTypeOpen] = useState(false);
   // A fresh draft each time the sheet opens (or is pointed at another day):
   // the day's saved workout, else nothing: a day without one opens on the
   // options to generate it (nothing is made until Generate is tapped). Set
@@ -97,16 +115,79 @@ export function DayWorkoutSheet({
     if (openKey) {
       setVariation(0);
       setSwapIndex(null);
+      setTypeOpen(false);
       setPickedDuration(DEFAULT_DURATION);
       setDraft(savedWorkoutFor(slot, week));
     }
   }
   // Edits to a week's own workout are not "the day's saved workout".
   const hasSaved = week === undefined ? !!slot?.workout : !!slot?.weekWorkouts?.[week];
-  if (!rotation || !slot || isCardioSlot(slot)) {
+  if (!rotation || !slot || (isCardioSlot(slot) && !changeType)) {
     return (
       <BottomSheet open={false} onClose={onClose} title={title}>
         {null}
+      </BottomSheet>
+    );
+  }
+  const dayLabel = splitDayLabel(rotation.templateId, slot.dayId);
+  const sheetTitle = weekday ? `${dayLabel} · ${weekday}` : title;
+  // The day's type, and (opened) every type it can become. A change applies
+  // at once, to this weekday in every week, like the plan's own day edits;
+  // the saved workout belonged to the old type, so it goes and the sheet
+  // shows the options to generate a new one.
+  const typeSection = changeType ? (
+    <div className="glass rounded-2xl p-3" data-day-type>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[12.5px] font-semibold text-muted-foreground">
+            {t.programBuilder.sessionType}
+          </p>
+          <p className="truncate text-[15px] font-semibold">{dayLabel}</p>
+        </div>
+        <button
+          onClick={() => setTypeOpen(!typeOpen)}
+          aria-expanded={typeOpen}
+          className={`${button.secondary} shrink-0`}
+        >
+          {t.dayWorkout.changeDayType}
+          <ChevronDown
+            className={`size-4 transition-transform ${typeOpen ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
+      </div>
+      {typeOpen ? (
+        <div className="mt-3 space-y-2">
+          <DayTypePicker
+            templateId={rotation.templateId}
+            value={slot.dayId}
+            onChange={(dayId) => {
+              if (dayId === slot.dayId) return;
+              if (kind === "program") updateProgramSlotDay(slotIndex, dayId);
+              else updateScheduleSlotDay(slotIndex, dayId);
+              setDraft(null);
+              setVariation(0);
+            }}
+            cardio={slot.cardio}
+            onCardioChange={(cardio) =>
+              kind === "program"
+                ? updateProgramSlotCardio(slotIndex, cardio)
+                : updateScheduleSlotCardio(slotIndex, cardio)
+            }
+          />
+          <p className="text-[12.5px] text-muted-foreground">{t.dayWorkout.changeDayTypeHint}</p>
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+  if (isCardioSlot(slot)) {
+    // A cardio day has no workout to make here; it's logged on the day.
+    return (
+      <BottomSheet open={open} onClose={onClose} title={sheetTitle}>
+        <div className="space-y-4">
+          {typeSection}
+          <p className="text-[14px] text-muted-foreground">{t.dayWorkout.cardioDayNote}</p>
+        </div>
       </BottomSheet>
     );
   }
@@ -135,8 +216,9 @@ export function DayWorkoutSheet({
     // Nothing saved for this day yet: the choices that shape the workout,
     // and Generate. Supersets and warm-ups are the app-wide switches.
     return (
-      <BottomSheet open={open} onClose={onClose} title={title}>
+      <BottomSheet open={open} onClose={onClose} title={sheetTitle}>
         <div className="space-y-4" data-day-options>
+          {typeSection}
           <p className="text-[14px] text-muted-foreground">{t.dayWorkout.noWorkoutYet}</p>
           {durationChips(pickedDuration, (m) => {
             haptic(10);
@@ -254,8 +336,9 @@ export function DayWorkoutSheet({
 
   return (
     <>
-      <BottomSheet open={open} onClose={onClose} title={title}>
+      <BottomSheet open={open} onClose={onClose} title={sheetTitle}>
         <div className="space-y-4">
+          {typeSection}
           {durationChips(draft.duration_minutes, setDuration)}
 
           <div className="flex items-center justify-between gap-2">
