@@ -186,7 +186,11 @@ export function FigureFront({ model, pose }: Props) {
         return (
           <path
             key={i}
-            d={line([a[0] - out * s(2), y], [a[0] + out * s(10), y])}
+            d={`${line([a[0] - out * s(2), y], [a[0] + out * s(10), y])}${
+              (pose.feet[i].pitch ?? 0) > 0
+                ? `M${a[0].toFixed(1)},${a[1].toFixed(1)}L${(a[0] + out * s(4)).toFixed(1)},${y.toFixed(1)}`
+                : ""
+            }`}
             className="stroke-foreground/45"
             strokeWidth={s(6)}
           />
