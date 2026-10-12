@@ -68,17 +68,76 @@ async function fetchBarcode(barcode: string): Promise<ScannedLabel | null> {
   const json = (await res.json()) as OpenFoodFactsResponse;
   if (json.status !== 1 || !json.product) return null;
 
-  const n = json.product.nutriments ?? {};
-  const name = json.product.product_name?.trim();
+  return toLabel(json.product);
+}
 
+type OffProduct = NonNullable<OpenFoodFactsResponse["product"]>;
+
+/** One product's per-100g values as the shape both a scan and a search
+ *  result share, so a searched product logs exactly like a scanned one. */
+function toLabel(product: OffProduct): ScannedLabel {
+  const n = product.nutriments ?? {};
   return {
-    name: name || null,
+    name: product.product_name?.trim() || null,
     calories: num(n["energy-kcal_100g"]),
     protein: num(n["proteins_100g"]),
     carbs: num(n["carbohydrates_100g"]),
     fat: num(n["fat_100g"]),
     fiber: num(n["fiber_100g"]),
     salt: num(n["salt_100g"]),
-    servingSizeGrams: parseServingSizeGrams(json.product.serving_size),
+    servingSizeGrams: parseServingSizeGrams(product.serving_size),
   };
+}
+
+export interface ProductHit {
+  barcode: string;
+  name: string;
+  brand: string | null;
+  label: ScannedLabel;
+}
+
+const SEARCH_ENDPOINT = "https://world.openfoodfacts.org/cgi/search.pl";
+const SEARCH_FIELDS = "code,product_name,brands,nutriments,serving_size";
+const searchCache = new Map<string, Promise<ProductHit[]>>();
+
+/** Text search in the same Open Food Facts database the barcode scanner
+ *  uses. Products without a name or without any kcal figure are dropped (a
+ *  row you can't log is noise); other missing values stay null and show up
+ *  as unfilled in the review form, as with a scan. Throws on a network
+ *  failure, for the caller to show. */
+export function searchProducts(query: string): Promise<ProductHit[]> {
+  const key = query.trim().toLowerCase();
+  const hit = searchCache.get(key);
+  if (hit) return hit;
+  const request = fetchSearch(key);
+  searchCache.set(key, request);
+  request.catch(() => searchCache.delete(key));
+  if (searchCache.size > CACHE_SIZE) {
+    searchCache.delete(searchCache.keys().next().value as string);
+  }
+  return request;
+}
+
+async function fetchSearch(query: string): Promise<ProductHit[]> {
+  const params = new URLSearchParams({
+    search_terms: query,
+    search_simple: "1",
+    action: "process",
+    json: "1",
+    page_size: "20",
+    fields: SEARCH_FIELDS,
+  });
+  const res = await fetch(`${SEARCH_ENDPOINT}?${params}`);
+  if (!res.ok) throw new Error(`Open Food Facts search failed (${res.status})`);
+  const json = (await res.json()) as {
+    products?: (OffProduct & { code?: string; brands?: string })[];
+  };
+  const hits: ProductHit[] = [];
+  for (const p of json.products ?? []) {
+    const label = toLabel(p);
+    if (!label.name || label.calories === null || typeof p.code !== "string") continue;
+    const brand = p.brands?.split(",")[0]?.trim() || null;
+    hits.push({ barcode: p.code, name: label.name, brand, label });
+  }
+  return hits;
 }

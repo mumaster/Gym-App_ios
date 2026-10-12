@@ -91,11 +91,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Nieuwe oefeninganimaties: barbell curl, hammer curl, dumbbell RDL, skullcrusher, triceps-extensie boven het hoofd en dips. De dumbbell bij een hammer curl draait nu mee met je hand.",
     },
   },
+  {
+    version: 12,
+    text: {
+      en: "Search products by name: when you add food, packaged products from Open Food Facts (the scanner's database) now show up in the results, so you can log them without scanning the barcode.",
+      nl: "Producten zoeken op naam: bij het toevoegen van eten zie je nu ook verpakte producten uit Open Food Facts (de database van de scanner), zodat je ze kunt loggen zonder de barcode te scannen.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 11;
+export const CURRENT_VERSION = 12;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
