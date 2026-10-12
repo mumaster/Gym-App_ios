@@ -1614,6 +1614,7 @@ const en = {
     createAll: "Create workouts for every day",
     createAllHint: "Days that already have a saved workout stay as they are.",
     sameExercises: "Same exercises every week",
+    noWorkoutYet: "No workout saved for this day yet. Pick how you want it, then generate it.",
     openDay: (day: string, dow: string) => `Open ${day} (${dow})`,
     sameExercisesDesc: "Day 1 of every week repeats day 1 of week 1",
     settingsRemake: "Changing a switch remakes the saved workouts.",
@@ -3506,6 +3507,8 @@ const nl: Dict = {
     createAll: "Voor elke dag een training maken",
     createAllHint: "Dagen die al een opgeslagen training hebben, blijven zoals ze zijn.",
     sameExercises: "Elke week dezelfde oefeningen",
+    noWorkoutYet:
+      "Voor deze dag is nog geen training opgeslagen. Kies hoe je hem wilt en genereer hem.",
     openDay: (day: string, dow: string) => `${day} openen (${dow})`,
     sameExercisesDesc: "Dag 1 van elke week herhaalt dag 1 van week 1",
     settingsRemake: "Een schakelaar omzetten maakt de opgeslagen trainingen opnieuw.",
