@@ -164,7 +164,10 @@ function Tour({ language, onDone }: { language: "en" | "nl"; onDone: () => void 
           </div>
           {index < last ? (
             <button
-              onClick={() => finish()}
+              onClick={() => {
+                haptic(10);
+                goTo(last);
+              }}
               className="min-h-[40px] rounded-full px-3 text-[15px] font-semibold text-muted-foreground"
             >
               {w.skip}

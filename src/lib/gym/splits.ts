@@ -32,6 +32,9 @@ export interface SplitTemplate {
   description: string;
   /** Preselected training frequency when a user first picks this template. */
   suggestedDaysPerWeek: number;
+  /** Fewest training days a week that still reaches every day type of the
+   *  split once (3 for push/pull/legs). Fewer is allowed, just less ideal. */
+  minDaysPerWeek: number;
   /** The repeating sequence of day-types this split rotates through. */
   days: SplitDay[];
 }
@@ -94,6 +97,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Full Body",
     description: "Every session trains the whole body, rotating whichever muscles rested longest.",
     suggestedDaysPerWeek: 3,
+    minDaysPerWeek: 3,
     days: [FULL_DAY],
   },
   {
@@ -101,6 +105,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Upper / Lower",
     description: "Alternate upper and lower body sessions.",
     suggestedDaysPerWeek: 4,
+    minDaysPerWeek: 2,
     days: [UPPER_DAY, LOWER_DAY],
   },
   {
@@ -109,6 +114,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     description:
       "Three upper body sessions for every lower body one, so each upper muscle is trained about 3 times a week.",
     suggestedDaysPerWeek: 4,
+    minDaysPerWeek: 4,
     // The week repeats, so the order is a rotation of the same ring; putting the
     // odd day third spaces the three main days 1/3/3 days apart on Mon/Tue/Thu/Fri
     // instead of 1/2/4 (the app's own spacing choice, not a published number).
@@ -120,6 +126,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     description:
       "Three lower body sessions for every upper body one, so each lower muscle is trained about 3 times a week.",
     suggestedDaysPerWeek: 4,
+    minDaysPerWeek: 4,
     days: [LOWER_DAY, LOWER_DAY, UPPER_DAY, LOWER_DAY],
   },
   {
@@ -127,6 +134,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Push / Pull / Legs",
     description: "The classic 3-day rotation — repeat it for a 6-day week.",
     suggestedDaysPerWeek: 6,
+    minDaysPerWeek: 3,
     days: [PUSH_DAY, PULL_DAY, LEGS_DAY],
   },
   {
@@ -134,6 +142,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Bro Split",
     description: "One major muscle group takes center stage each day.",
     suggestedDaysPerWeek: 5,
+    minDaysPerWeek: 5,
     days: [CHEST_DAY, BACK_DAY, SHOULDERS_DAY, LEGS_DAY, ARMS_DAY],
   },
   {
@@ -141,6 +150,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Hybrid",
     description: "Upper and lower body sessions, each ending with a block of cardio.",
     suggestedDaysPerWeek: 4,
+    minDaysPerWeek: 2,
     days: [
       {
         id: "upper",
@@ -161,6 +171,7 @@ export const SPLIT_TEMPLATES: SplitTemplate[] = [
     label: "Hybrid · cardio days",
     description: "Upper and lower body days. Plan cardio on the days you choose.",
     suggestedDaysPerWeek: 3,
+    minDaysPerWeek: 2,
     days: [UPPER_DAY, LOWER_DAY],
   },
 ];
