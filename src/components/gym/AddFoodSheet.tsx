@@ -343,6 +343,13 @@ export function AddFoodSheet({
     };
   }, [q, open, step]);
   const productsLoading = q.length >= 3 && products?.query !== q;
+  /** Products you've already saved (by barcode) show under Your foods, with
+   *  your edited values, so the database copy is hidden. */
+  const productHits = useMemo(() => {
+    if (!products || products.hits === "error") return [];
+    const saved = new Set(myFoods.flatMap((f) => (f.barcode ? [f.barcode] : [])));
+    return products.hits.filter((hit) => !saved.has(hit.barcode));
+  }, [products, myFoods]);
   /** Your own foods matching the search come first: they carry your usual
    *  portion, so they're a one-tap "+". */
   const savedMatches = useMemo((): ListFood[] => {
@@ -803,8 +810,8 @@ export function AddFoodSheet({
                     icon={ScanBarcode}
                     title={t.addFood.products}
                     subtitle={
-                      !productsLoading && Array.isArray(products?.hits)
-                        ? t.mealOverview.foods(products.hits.length)
+                      !productsLoading && products && products.hits !== "error"
+                        ? t.mealOverview.foods(productHits.length)
                         : ""
                     }
                     filled
@@ -817,9 +824,9 @@ export function AddFoodSheet({
                       <p className="border-t border-border px-4 py-3 text-[13px] text-destructive-text">
                         {t.addFood.productsError}
                       </p>
-                    ) : products && products.hits.length ? (
+                    ) : products && productHits.length ? (
                       <div className="divide-y divide-border border-t border-border">
-                        {products.hits.map((hit) => (
+                        {productHits.map((hit) => (
                           <button
                             key={hit.barcode}
                             onClick={() => startFromProduct(hit)}
@@ -894,7 +901,7 @@ export function AddFoodSheet({
                     {t.addFood.spicesNote}
                   </p>
                 ) : null}
-                {q.length >= 3 && products && products.hits !== "error" && products.hits.length ? (
+                {q.length >= 3 && products && productHits.length ? (
                   <p className="px-1 text-[11px] leading-snug text-muted-foreground">
                     {t.addFood.productsNote}
                   </p>
