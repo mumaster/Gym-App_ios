@@ -110,8 +110,6 @@ function HistoryScreen() {
     const first = times.length ? Math.min(...times) : Date.now();
     return mondayOf(new Date(first));
   }, [workouts, cardioSessions]);
-  const short = (d: Date) => d.toLocaleDateString(locale, { day: "numeric", month: "short" });
-  const weekLabel = `${short(weekMonday)} – ${short(addDays(weekMonday, 6))}`;
 
   const volumeByMuscle = useMemo(() => {
     const map = new Map<Muscle, number>();
@@ -534,10 +532,7 @@ function HistoryScreen() {
           {workouts.length ? (
             <>
               <div className="mt-4">
-                <TrainingLoadCard
-                  weekOf={weekOffset < 0 ? weekMonday : undefined}
-                  subtitle={weekOffset < 0 ? weekLabel : undefined}
-                />
+                <TrainingLoadCard weekOf={weekOffset < 0 ? weekMonday : undefined} />
               </div>
             </>
           ) : null}

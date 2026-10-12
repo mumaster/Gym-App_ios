@@ -47,9 +47,7 @@ describe("Activity week picker", () => {
 
   it("renders the week cards for a past week without crashing", () => {
     const past = addDays(thisMonday, -21);
-    expect(() =>
-      wrap(createElement(TrainingLoadCard, { weekOf: past, subtitle: "x" })),
-    ).not.toThrow();
+    expect(() => wrap(createElement(TrainingLoadCard, { weekOf: past }))).not.toThrow();
     expect(() => wrap(createElement(CardioWeekCard, { weekOf: past }))).not.toThrow();
     expect(() => wrap(createElement(WeeklySetsCard, { weekOf: past }))).not.toThrow();
   });
@@ -57,5 +55,27 @@ describe("Activity week picker", () => {
   it("shows the muscles to grow read-only, with no buttons", () => {
     const html = wrap(createElement(GrowthFocusCard));
     expect(html).not.toContain("<button");
+  });
+});
+
+describe("dailyLoads", () => {
+  it("sums rated load per day and ignores other days", async () => {
+    const { dailyLoads } = await import("../trainingLoad");
+    const mon = mondayOf(new Date("2026-10-07T12:00:00"));
+    const at = (n: number) => addDays(mon, n).toISOString();
+    const days = dailyLoads(
+      [
+        { date: at(0), minutes: 60, rpe: 7 },
+        { date: at(0), minutes: 30, rpe: 5 },
+        { date: at(2), minutes: 40, rpe: null },
+        { date: at(9), minutes: 60, rpe: 8 },
+      ],
+      mon,
+      7,
+    );
+    expect(days).toHaveLength(7);
+    expect(days[0]).toMatchObject({ load: 570, sessions: 2, rated: 2 });
+    expect(days[2]).toMatchObject({ load: 0, sessions: 1, rated: 0 });
+    expect(days.reduce((n, d) => n + d.load, 0)).toBe(570);
   });
 });

@@ -101,6 +101,37 @@ export function weeklyLoads(entries: LoadEntry[], weeks = 6, today = new Date())
   return out;
 }
 
+export interface DayLoad {
+  /** Local midnight of the day. */
+  date: Date;
+  load: number;
+  sessions: number;
+  rated: number;
+}
+
+/** Load per day for `days` days from `start` (local midnight). */
+export function dailyLoads(entries: LoadEntry[], start: Date, days: number): DayLoad[] {
+  const out: DayLoad[] = [];
+  for (let i = 0; i < days; i++) {
+    const from = new Date(start);
+    from.setDate(from.getDate() + i);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+    const inDay = entries.filter((e) => {
+      const t = new Date(e.date).getTime();
+      return t >= from.getTime() && t < to.getTime();
+    });
+    const loads = inDay.map(entryLoad).filter((x): x is number => x != null);
+    out.push({
+      date: from,
+      load: loads.reduce((a, b) => a + b, 0),
+      sessions: inDay.length,
+      rated: loads.length,
+    });
+  }
+  return out;
+}
+
 /**
  * The last 7 days' load against the average week of the last 28 days — the
  * acute:chronic ratio as Gabbett (Br J Sports Med 2016) used it. That paper
