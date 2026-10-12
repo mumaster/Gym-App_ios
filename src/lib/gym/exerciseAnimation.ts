@@ -549,7 +549,10 @@ export function reverseLungePose(depth: number): FigurePose {
     ankleZ: 0,
     footHalf: 11,
     ankle: (s) =>
-      s < 0 ? [-11, ANKLE_Y + 15 * smooth(clamp01(e / 0.5)), lerp(0, -103, e)] : [11, ANKLE_Y, 0],
+      s < 0 ? [-11, ANKLE_Y + 11 * smooth(clamp01(e / 0.5)), lerp(0, -92, e)] : [11, ANKLE_Y, 0],
+    // Back heel rises, the toes stay on the floor.
+    foot: (s) =>
+      s < 0 ? { floor: 0, dir: 1, pitch: 45 * smooth(clamp01(e / 0.5)) } : { floor: 0, dir: 1 },
     // Hands on the hips.
     wrist: (s) => [s * 22, hip.y + 8, hip.z],
     bar: [0, hip.y + 8, hip.z],
