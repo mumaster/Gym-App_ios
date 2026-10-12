@@ -131,19 +131,11 @@ export function SetupFlow({
     haptic(10);
     onStep(n);
   };
-  // A plan that was just saved moves the guided steps on; closing without
-  // one stays on the step. The save and the close land in the same tick, so
-  // the check waits for the render that has the saved plan.
-  const [afterPlanSheet, setAfterPlanSheet] = useState(false);
-  const closePlanSheet = () => {
+  // Done (or closing) a step's window moves the guided steps on.
+  const closeSheet = () => {
     setOpen(null);
-    setAfterPlanSheet(true);
+    if (idx < last) go(idx + 1);
   };
-  useEffect(() => {
-    if (!afterPlanSheet) return;
-    setAfterPlanSheet(false);
-    if (id === "planSetup" && (kind === "program" ? program : weeklyScheme)) onStep(idx + 1);
-  }, [afterPlanSheet, id, kind, program, weeklyScheme, idx, onStep]);
   const leave = (to: "/generate" | "/nutrition" | "/") => {
     haptic(12);
     onClose();
@@ -486,14 +478,14 @@ export function SetupFlow({
         )}
       </div>
 
-      <KnownLiftsSheet open={open === "lifts"} onClose={() => setOpen(null)} />
-      <WeeklyPlanSheet open={open === "weekly"} onClose={() => closePlanSheet()} />
-      <ProgramBuilderSheet open={open === "program"} onClose={() => closePlanSheet()} />
-      <CardioPlanSheet open={open === "cardio"} onClose={() => setOpen(null)} />
-      <NutritionGoalsSheet open={open === "goals"} onClose={() => setOpen(null)} />
+      <KnownLiftsSheet open={open === "lifts"} onClose={closeSheet} />
+      <WeeklyPlanSheet open={open === "weekly"} onClose={closeSheet} />
+      <ProgramBuilderSheet open={open === "program"} onClose={closeSheet} />
+      <CardioPlanSheet open={open === "cardio"} onClose={closeSheet} />
+      <NutritionGoalsSheet open={open === "goals"} onClose={closeSheet} />
       <WaterSettingsSheet
         open={open === "water"}
-        onClose={() => setOpen(null)}
+        onClose={closeSheet}
         onNeedProfile={() => setOpen("goals")}
       />
     </div>
