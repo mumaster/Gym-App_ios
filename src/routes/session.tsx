@@ -37,6 +37,7 @@ import { finisherCardioLog } from "../lib/gym/cardio";
 import type { CardioFinisher } from "../lib/gym/types";
 import { SwitchRow } from "../components/gym/SwitchRow";
 import { SwapSheet } from "../components/gym/SwapSheet";
+import { AddToWorkoutSheet } from "../components/gym/AddToWorkoutSheet";
 import { PlateHint } from "../components/gym/PlateHint";
 import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
 import { SectionLabel } from "../components/gym/Screen";
@@ -137,6 +138,7 @@ function SessionScreen() {
     finishWorkout,
     logCardio,
     updateActiveCardio,
+    setActiveCardio,
     cancelWorkout,
     restSeconds,
     restOverride,
@@ -180,6 +182,7 @@ function SessionScreen() {
    *  after an exercise or superset is finished (not between sets or rounds). */
   const [restPreview, setRestPreview] = useState<number | null>(null);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   /** Exercise whose page is open (tapped its title). */
   const [infoExercise, setInfoExercise] = useState<Exercise | null>(null);
   const [animExercise, setAnimExercise] = useState<Exercise | null>(null);
@@ -715,6 +718,14 @@ function SessionScreen() {
     return other === undefined ? null : (plan[other]?.exercise_id ?? null);
   })();
 
+  /** Extends the session with this exercise (the next screen is its entry form). */
+  const addBonusExercise = (id: string) => {
+    haptic(20);
+    appendBonusExercise(id);
+    setAddOpen(false);
+    setPos({ block: blocks.length, slot: 0, round: 1 });
+  };
+
   /** Automatically extends the session with an exercise matching today's target muscles. */
   const addBonus = () => {
     const onTarget = bonusOptions.filter((e) =>
@@ -722,10 +733,7 @@ function SessionScreen() {
     );
     const pool = onTarget.length ? onTarget : bonusOptions;
     if (!pool.length) return;
-    haptic(20);
-    const pick = pool[Math.floor(Math.random() * pool.length)]!;
-    appendBonusExercise(pick.id);
-    setPos({ block: blocks.length, slot: 0, round: 1 });
+    addBonusExercise(pool[Math.floor(Math.random() * pool.length)]!.id);
   };
 
   const endWorkout = () => {
@@ -1210,7 +1218,7 @@ function SessionScreen() {
                 : {})}
               {...(blockIndex > 0 ? { onBack: () => goToBlock(blockIndex - 1) } : {})}
               {...(formOpenHere ? {} : { onExtraSet: () => addExtraSet(planIndex) })}
-              {...(bonusOptions.length > 0 ? { onExtraExercise: addBonus } : {})}
+              onExtraExercise={() => setAddOpen(true)}
             />
           )}
         </nav>
@@ -1248,6 +1256,20 @@ function SessionScreen() {
       >
         {animExercise ? <ExerciseAnimation exerciseId={animExercise.id} /> : null}
       </BottomSheet>
+      <AddToWorkoutSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        options={bonusOptions}
+        targetMuscles={activeWorkout.target_muscles}
+        onAuto={addBonus}
+        onPick={(e) => addBonusExercise(e.id)}
+        onCardio={(c) => {
+          haptic(20);
+          setActiveCardio(c);
+          setAddOpen(false);
+        }}
+      />
+
       <SwapSheet
         inWorkoutIds={plan.map((p) => p.exercise_id)}
         exerciseId={swapIndex === null ? null : (plan[swapIndex]?.exercise_id ?? null)}
