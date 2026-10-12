@@ -90,12 +90,13 @@ export function GrowthFocusSection({
 
 /** This Monday–Sunday week's working sets per muscle against the sourced
  *  targets (starred: a muscle to grow), furthest behind first. */
-export function WeeklySetsCard() {
+export function WeeklySetsCard({ weekOf }: { weekOf?: Date | undefined }) {
   const { workouts, activeWorkout, growthFocus } = useGym();
   const focus = useMemo(() => focusMuscles(growthFocus), [growthFocus]);
   const rows = useMemo(
-    () => weeklyVolume(MUSCLES, weeklySets(workouts, activeWorkout), focus),
-    [workouts, activeWorkout, focus],
+    () => weeklyVolume(MUSCLES, weeklySets(workouts, activeWorkout, weekOf), focus),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [workouts, activeWorkout, focus, weekOf?.getTime()],
   );
   const t = useTranslation();
 
@@ -103,7 +104,7 @@ export function WeeklySetsCard() {
     <Card className="overflow-hidden p-4">
       <CardHead
         icon={ListChecks}
-        title={t.volume.thisWeek}
+        title={weekOf ? t.volume.weekTitle : t.volume.thisWeek}
         subtitle={t.volume.onTarget(rows.filter((r) => r.done >= r.target).length, rows.length)}
         filled={rows.some((r) => r.done > 0)}
       />

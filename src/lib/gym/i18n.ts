@@ -1785,6 +1785,7 @@ const en = {
       core: "Core",
     } as Record<"chest" | "back" | "shoulders" | "arms" | "glutes" | "legs" | "core", string>,
     thisWeek: "Sets this week",
+    weekTitle: "Weekly sets",
     setsOf: (done: number, target: number) => `${done}/${target}`,
     reached: "Weekly target reached",
     sessionLimit: (muscles: string) =>
@@ -3732,6 +3733,7 @@ const nl: Dict = {
       core: "Core",
     },
     thisWeek: "Sets deze week",
+    weekTitle: "Sets per week",
     setsOf: (done: number, target: number) => `${String(done).replace(".", ",")}/${target}`,
     reached: "Weekdoel bereikt",
     sessionLimit: (muscles: string) =>
