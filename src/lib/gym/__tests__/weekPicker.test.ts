@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { CardioWeekCard } from "../../../components/gym/CardioWeekCard";
 import { TrainingLoadCard } from "../../../components/gym/TrainingLoadCard";
 import { WeekPicker } from "../../../components/gym/WeekPicker";
-import { WeeklySetsCard } from "../../../components/gym/WeeklyVolume";
+import { GrowthFocusCard, WeeklySetsCard } from "../../../components/gym/WeeklyVolume";
 import { addDays } from "../date";
 import { mondayOf } from "../schedule";
 import { GymProvider } from "../store";
@@ -52,5 +52,10 @@ describe("Activity week picker", () => {
     ).not.toThrow();
     expect(() => wrap(createElement(CardioWeekCard, { weekOf: past }))).not.toThrow();
     expect(() => wrap(createElement(WeeklySetsCard, { weekOf: past }))).not.toThrow();
+  });
+
+  it("shows the muscles to grow read-only, with no buttons", () => {
+    const html = wrap(createElement(GrowthFocusCard));
+    expect(html).not.toContain("<button");
   });
 });

@@ -1769,6 +1769,7 @@ const en = {
   },
   volume: {
     growTitle: "Muscles to grow",
+    growReadOnly: "Shown from your weekly plan. Change them there.",
     growCount: (n: number) => (n ? `${n} picked` : "None picked"),
     onTarget: (n: number, of: number) => `${n} of ${of} on target`,
     growPlanDesc:
@@ -3717,6 +3718,7 @@ const nl: Dict = {
   },
   volume: {
     growTitle: "Spieren om te laten groeien",
+    growReadOnly: "Overgenomen uit je weekplan. Pas ze daar aan.",
     growCount: (n: number) => (n ? `${n} gekozen` : "Niets gekozen"),
     onTarget: (n: number, of: number) => `${n} van ${of} op doel`,
     growPlanDesc:

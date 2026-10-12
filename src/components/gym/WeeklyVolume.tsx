@@ -51,11 +51,11 @@ export function GrowthFocusPicker({
   );
 }
 
-/** The picker as a card on History → Activity, under the weekly sets it
- *  sets targets for; the plan builders show it too. */
+/** History → Activity's read-only view of the muscles to grow: they're set
+ *  in the plan builders, so this only shows what's there. */
 export function GrowthFocusCard() {
   const t = useTranslation();
-  const { growthFocus, update } = useGym();
+  const { growthFocus } = useGym();
   return (
     <Card className="overflow-hidden p-4">
       <CardHead
@@ -64,8 +64,20 @@ export function GrowthFocusCard() {
         subtitle={t.volume.growCount(growthFocus.length)}
         filled={growthFocus.length > 0}
       />
-      <p className="mb-3 text-[12.5px] text-muted-foreground">{t.volume.growDesc}</p>
-      <GrowthFocusPicker value={growthFocus} onChange={(next) => update({ growthFocus: next })} />
+      <p className="mb-3 text-[12.5px] text-muted-foreground">{t.volume.growReadOnly}</p>
+      {growthFocus.length ? (
+        <div className="flex flex-wrap gap-x-1.5 gap-y-2.5">
+          {FOCUS_GROUPS.filter((g) => growthFocus.includes(g.id)).map((g) => (
+            <span
+              key={g.id}
+              className="flex min-h-[36px] items-center gap-1 rounded-full bg-muted px-3 text-[13px] font-semibold"
+            >
+              <Star className="size-3.5 text-primary-text" fill="currentColor" />
+              {t.volume.groups[g.id]}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </Card>
   );
 }
