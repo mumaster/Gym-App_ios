@@ -719,7 +719,7 @@ export function singleLegRdlPose(depth: number): FigurePose {
   // The free leg trails a little below the torso line, like a seesaw that is
   // not quite level.
   const legAngle = Math.max(0, lean - 6);
-  const free: V3 = [-11, hip.y - 87.4 * cos(legAngle), hip.z - 87.4 * sin(legAngle)];
+  const free: V3 = [-11, hip.y - 87.95 * cos(legAngle), hip.z - 87.95 * sin(legAngle)];
   const lift = clamp01((free[1] - ANKLE_Y) / 25);
   const wy = shoulder.y - Math.sqrt((ARM - 0.3) ** 2 - 1);
   return assemble({
