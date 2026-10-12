@@ -50,6 +50,6 @@ describe("changelog", () => {
     );
     expect(html).toContain("What&#x27;s new");
     expect(html).toContain("0.001");
-    expect(html).toContain("0.00" + CURRENT_VERSION);
+    expect(html).toContain(formatVersion(CURRENT_VERSION));
   });
 });
