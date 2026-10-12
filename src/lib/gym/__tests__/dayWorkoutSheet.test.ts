@@ -152,12 +152,17 @@ describe("DayWorkoutSheet", () => {
     expect(html).toContain("Remove saved workout");
   });
 
-  it("generates a draft when nothing is saved, with no remove button", () => {
+  it("opens on the generate options when nothing is saved, without making a workout", () => {
     seed.program = programOf(withWorkouts(false));
     const html = open({ slotIndex: 2 });
-    expect(html).toContain("Save workout");
+    expect(html).toContain("No workout saved for this day yet");
+    expect(html).toContain("Generate workout");
+    expect(html).toContain("Supersets");
+    expect(html).toContain("Warm-up sets");
+    expect(html).toContain("45 min");
+    expect(html).not.toContain("Save workout");
     expect(html).not.toContain("Remove saved workout");
-    expect(html).toMatch(/\d+ × /);
+    expect(html).not.toMatch(/\d+ × /);
   });
 
   it("shows a deload week's own sets", () => {

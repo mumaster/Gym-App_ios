@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ClipboardList, Repeat, Shuffle, Trash2, X } from "lucide-react";
+import { Check, ClipboardList, Repeat, Shuffle, Trash2, Wand2, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { SwapSheet } from "./SwapSheet";
 import { SwitchRow } from "./SwitchRow";
@@ -61,7 +61,7 @@ export function DayWorkoutSheet({
   /** "Push · Monday". */
   title: string;
 }) {
-  const { program, weeklyScheme, setSlotWorkout } = useGym();
+  const { program, weeklyScheme, setSlotWorkout, update } = useGym();
   const ctx = useDayWorkoutContext();
   const t = useTranslation();
   const rotation = kind === "program" ? program : weeklyScheme;
@@ -82,10 +82,13 @@ export function DayWorkoutSheet({
 
   const [variation, setVariation] = useState(0);
   const [draft, setDraft] = useState<DayWorkout | null>(null);
+  /** The length picked before anything is generated. */
+  const [pickedDuration, setPickedDuration] = useState(DEFAULT_DURATION);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   // A fresh draft each time the sheet opens (or is pointed at another day):
-  // the day's saved workout, else a newly generated one. Set while rendering,
-  // so the first frame already has it.
+  // the day's saved workout, else nothing: a day without one opens on the
+  // options to generate it (nothing is made until Generate is tapped). Set
+  // while rendering, so the first frame already has it.
   const openKey = open ? `${kind}-${slotIndex}-${week ?? "all"}` : null;
   const [draftKey, setDraftKey] = useState<string | null>(null);
   if (openKey !== draftKey) {
@@ -94,15 +97,78 @@ export function DayWorkoutSheet({
     if (openKey) {
       setVariation(0);
       setSwapIndex(null);
-      setDraft(savedWorkoutFor(slot, week) ?? make(DEFAULT_DURATION, 0));
+      setPickedDuration(DEFAULT_DURATION);
+      setDraft(savedWorkoutFor(slot, week));
     }
   }
   // Edits to a week's own workout are not "the day's saved workout".
   const hasSaved = week === undefined ? !!slot?.workout : !!slot?.weekWorkouts?.[week];
-  if (!rotation || !slot || !draft) {
+  if (!rotation || !slot || isCardioSlot(slot)) {
     return (
       <BottomSheet open={false} onClose={onClose} title={title}>
         {null}
+      </BottomSheet>
+    );
+  }
+  const durationChips = (current: number, pick: (m: number) => void) => (
+    <div>
+      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+        {t.dayWorkout.duration}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {DURATIONS.map((m) => (
+          <button
+            key={m}
+            onClick={() => pick(m)}
+            aria-pressed={current === m}
+            className={`min-h-[44px] rounded-2xl px-3.5 text-[14px] font-semibold ${
+              current === m ? chip.on : chip.off
+            }`}
+          >
+            {t.dayWorkout.minutes(m)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  if (!draft) {
+    // Nothing saved for this day yet: the choices that shape the workout,
+    // and Generate. Supersets and warm-ups are the app-wide switches.
+    return (
+      <BottomSheet open={open} onClose={onClose} title={title}>
+        <div className="space-y-4" data-day-options>
+          <p className="text-[14px] text-muted-foreground">{t.dayWorkout.noWorkoutYet}</p>
+          {durationChips(pickedDuration, (m) => {
+            haptic(10);
+            setPickedDuration(m);
+          })}
+          <div className="glass overflow-hidden rounded-2xl">
+            <SwitchRow
+              label={t.generate.supersets}
+              desc={t.generate.supersetsDesc}
+              ariaLabel={t.generate.supersets}
+              on={!!ctx.supersets}
+              onToggle={() => update({ supersetsEnabled: !ctx.supersets })}
+            />
+            <div className="border-t border-border" />
+            <SwitchRow
+              label={t.generate.warmups}
+              desc={t.generate.warmupsDesc}
+              ariaLabel={t.generate.warmups}
+              on={ctx.warmups !== false}
+              onToggle={() => update({ warmupsEnabled: ctx.warmups === false })}
+            />
+          </div>
+          <button
+            onClick={() => {
+              haptic(20);
+              setDraft(make(pickedDuration, variation));
+            }}
+            className={`${button.primary} w-full`}
+          >
+            <Wand2 className="size-5" /> {t.generate.generateWorkout}
+          </button>
+        </div>
       </BottomSheet>
     );
   }
@@ -190,25 +256,7 @@ export function DayWorkoutSheet({
     <>
       <BottomSheet open={open} onClose={onClose} title={title}>
         <div className="space-y-4">
-          <div>
-            <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
-              {t.dayWorkout.duration}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {DURATIONS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setDuration(m)}
-                  aria-pressed={draft.duration_minutes === m}
-                  className={`min-h-[44px] rounded-2xl px-3.5 text-[14px] font-semibold ${
-                    draft.duration_minutes === m ? chip.on : chip.off
-                  }`}
-                >
-                  {t.dayWorkout.minutes(m)}
-                </button>
-              ))}
-            </div>
-          </div>
+          {durationChips(draft.duration_minutes, setDuration)}
 
           <div className="flex items-center justify-between gap-2">
             <p className="text-[13px] text-muted-foreground">
