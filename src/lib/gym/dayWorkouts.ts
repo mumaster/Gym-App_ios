@@ -14,9 +14,10 @@ import { focusMuscles, type FocusGroup } from "./volume";
  * uses as is instead of generating a new one, and a program can be
  * pre-generated in full, one workout per day per week (`weekWorkouts`).
  *
- * Pre-generating keeps the same exercises every week (a routine, so the
- * progression in progression.ts has the same lifts to build on); only a
- * week's volume changes, so a deload week has half the working sets. The
+ * Pre-generating gives every week its own exercises, unless the program's
+ * "same exercises every week" is on (a routine, so the progression in
+ * progression.ts has the same lifts to build on); each week's volume is
+ * applied, so a deload week has half the working sets. The
  * suggested weights are not frozen: they're worked out again when the day
  * is started (`readyToStart`), from the history up to that day.
  */
@@ -108,10 +109,10 @@ export function forWeek(workout: DayWorkout, week: ProgramWeek): DayWorkout {
 }
 
 /** The program with every week's workout made for every lifting day. With
- *  the program's "same exercises every week" on (the default), each day's
+ *  the program's "same exercises every week" on (off by default), each day's
  *  saved workout (generated first where there is none) is carried through
  *  the weeks with each week's volume, so day 1 of week 2 repeats day 1 of
- *  week 1. With it off, every week gets its own exercises (week 1 keeps the
+ *  week 1. With it off (the default), every week gets its own exercises (week 1 keeps the
  *  day's saved workout). Replaces earlier pre-generated weeks. */
 export function pregenerateProgram(
   program: Program,
@@ -119,7 +120,7 @@ export function pregenerateProgram(
   duration: number,
   now = new Date(),
 ): Program {
-  const same = program.sameExercises !== false;
+  const same = program.sameExercises === true;
   const filled = withAllDayWorkouts(program.schedule, ctx, program.templateId, duration, { now });
   const schedule = filled.map((slot, i) => {
     if (!slot.workout) return slot;

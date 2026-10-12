@@ -421,7 +421,7 @@ export function CreateAllWorkoutsButton({
 /**
  * The settings that shape a plan's workouts, at the top of its manage view:
  * Supersets and Warm-up sets (the same app-wide switches as on the Workout
- * tab) and, for a program, "Same exercises every week". Flipping one remakes
+ * tab) and, for a program, "Same exercises every week" (off by default). Flipping one remakes
  * the saved and pre-generated workouts at once, so what's shown matches the
  * switch; days without a saved workout pick it up when they're generated.
  */
@@ -444,7 +444,7 @@ export function DayWorkoutSettings({ kind }: { kind: RotationKind }) {
       setRotationSlots(kind, schedule);
     }
   };
-  const same = program?.sameExercises !== false;
+  const same = program?.sameExercises === true;
 
   return (
     <div className="glass overflow-hidden rounded-2xl" data-day-settings>

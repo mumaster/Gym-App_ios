@@ -157,14 +157,14 @@ describe("pregenerateProgram", () => {
 
 describe("same exercises every week", () => {
   const ids = (w: DayWorkout | null | undefined) => (w?.plan ?? []).map((p) => p.exercise_id);
-  it("repeats day 1's exercises in every week by default", () => {
-    const p = pregenerateProgram(program(), ctx, 45, NOW);
+  it("repeats day 1's exercises in every week when on", () => {
+    const p = pregenerateProgram({ ...program(), sameExercises: true }, ctx, 45, NOW);
     const weeks = p.schedule[0]!.weekWorkouts!;
     expect(ids(weeks[1])).toEqual(ids(weeks[0]));
     expect(ids(weeks[2])).toEqual(ids(weeks[0]));
   });
-  it("gives later weeks their own exercises when off", () => {
-    const p = pregenerateProgram({ ...program(), sameExercises: false }, ctx, 45, NOW);
+  it("gives later weeks their own exercises by default (off)", () => {
+    const p = pregenerateProgram(program(), ctx, 45, NOW);
     const weeks = p.schedule[0]!.weekWorkouts!;
     expect(ids(weeks[0])).toEqual(ids(p.schedule[0]!.workout));
     expect(ids(weeks[1])).not.toEqual(ids(weeks[0]));

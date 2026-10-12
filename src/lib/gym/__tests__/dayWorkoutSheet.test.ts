@@ -95,6 +95,9 @@ describe("day workouts in the manage views", () => {
     expect(html).toContain("Supersets");
     expect(html).toContain("Warm-up sets");
     expect(html).toContain("Same exercises every week");
+    // Off unless turned on, so a program already running keeps its weeks.
+    const same = html.match(/<button[^>]*aria-label="Same exercises every week"[^>]*>/)?.[0];
+    expect(same).toContain('aria-checked="false"');
     expect(html).toContain("Changing a switch remakes the saved workouts.");
   });
 
