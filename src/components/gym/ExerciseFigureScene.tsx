@@ -1,6 +1,7 @@
 import {
   BOX_TOP,
   BOX_Z,
+  PULLUP_BAR_Y,
   ROW_BENCH_Y,
   THRUST_BENCH_Y,
   THRUST_BENCH_Z,
@@ -56,7 +57,7 @@ export function FigureFront({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {model.furniture === "upright-bench" && (
+      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
         <g>
           <rect
             x={p([-17, 0, 0])[0]}
@@ -103,6 +104,38 @@ export function FigureFront({ model, pose }: Props) {
             className={furn}
           />
           <path d={line(p([0, 46, 0]), p([0, 0, 0]))} className={furnLine} strokeWidth={s(8)} />
+        </g>
+      )}
+      {model.furniture === "pullup-bar" && (
+        <g>
+          {[-1, 1].map((sg) => (
+            <path
+              key={sg}
+              d={line(p([sg * 56, 0, 0]), p([sg * 56, PULLUP_BAR_Y, 0]))}
+              className={furnLine}
+              strokeWidth={s(5)}
+            />
+          ))}
+          <path
+            d={line(p([-56, PULLUP_BAR_Y, 0]), p([56, PULLUP_BAR_Y, 0]))}
+            className="stroke-foreground/50"
+            strokeWidth={s(3.5)}
+          />
+        </g>
+      )}
+      {model.furniture === "cable-tower" && model.pulley && (
+        <g>
+          <path
+            d={line(p([0, 0, 0]), p([0, model.pulley.y, 0]))}
+            className={furnLine}
+            strokeWidth={s(8)}
+          />
+          <circle
+            cx={p([0, model.pulley.y, 0])[0]}
+            cy={p([0, model.pulley.y, 0])[1]}
+            r={s(5)}
+            className="fill-foreground/30 stroke-none"
+          />
         </g>
       )}
       {model.furniture === "incline-bench" && (
@@ -310,6 +343,20 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {model.implement === "cable" && model.pulley && (
+        <g>
+          <path
+            d={poly(wl, p([0, model.pulley.y, 0]), wr)}
+            className="stroke-foreground/50"
+            strokeWidth={1.5}
+          />
+          <path
+            d={line([wl[0] - s(3), wl[1]], [wr[0] + s(3), wr[1]])}
+            className="stroke-foreground"
+            strokeWidth={3}
+          />
+        </g>
+      )}
       {model.implement === "latbar" && (
         <g>
           <path
@@ -350,8 +397,14 @@ export function FigureSide({ model, pose }: Props) {
     // Flat sole, heel down; only a genuinely lifted heel (rear foot of a lunge) slopes.
     const raised = soleY - a[1] > s(14);
     const pitch = pose.feet[i].pitch ?? 0;
+    const angle = pose.feet[i].angle;
     let foot: string;
-    if (pitch > 0) {
+    if (angle !== undefined) {
+      // A foot hanging off the shin: it pivots about the ankle, toes at `angle` above horizontal.
+      const c = Math.cos((angle * Math.PI) / 180);
+      const sn = Math.sin((angle * Math.PI) / 180);
+      foot = `M${pt([a[0] - dir * s(5) * c, a[1] + s(5) * sn])}L${pt([a[0] + dir * s(15) * c, a[1] - s(15) * sn])}`;
+    } else if (pitch > 0) {
       // A foot in the air: the sole rotates about the ankle, toes tipping down.
       const k = Math.min(1, pitch / 75);
       const oy = soleY + (a[1] - soleY) * k;
@@ -388,7 +441,7 @@ export function FigureSide({ model, pose }: Props) {
         className="stroke-foreground/15"
         strokeWidth={2}
       />
-      {model.furniture === "upright-bench" && (
+      {(model.furniture === "upright-bench" || model.furniture === "leg-curl") && (
         <g>
           {/* seat, back pad tilted 10 degrees and its base */}
           <rect
@@ -434,6 +487,52 @@ export function FigureSide({ model, pose }: Props) {
             className={furn}
           />
           <path d={line(p([0, 44, 0]), p([0, 0, 0]))} className={furnLine} strokeWidth={s(8)} />
+        </g>
+      )}
+      {model.furniture === "pullup-bar" && (
+        <g>
+          <path
+            d={line(p([0, 0, -56]), p([0, PULLUP_BAR_Y, -56]))}
+            className={furnLine}
+            strokeWidth={s(6)}
+          />
+          <path
+            d={line(p([0, PULLUP_BAR_Y, -56]), p([0, PULLUP_BAR_Y, 0]))}
+            className={furnLine}
+            strokeWidth={s(5)}
+          />
+          <circle
+            cx={p([0, PULLUP_BAR_Y, 0])[0]}
+            cy={p([0, PULLUP_BAR_Y, 0])[1]}
+            r={s(2.5)}
+            className="fill-foreground stroke-none"
+          />
+        </g>
+      )}
+      {model.furniture === "cable-tower" && model.pulley && (
+        <g>
+          <path
+            d={line(
+              p([0, 0, model.pulley.z + 16]),
+              p([0, model.pulley.y + 8, model.pulley.z + 16]),
+            )}
+            className={furnLine}
+            strokeWidth={s(7)}
+          />
+          <path
+            d={line(
+              p([0, model.pulley.y + 8, model.pulley.z + 16]),
+              p([0, model.pulley.y + 8, model.pulley.z]),
+            )}
+            className={furnLine}
+            strokeWidth={s(7)}
+          />
+          <circle
+            cx={p([0, model.pulley.y, model.pulley.z])[0]}
+            cy={p([0, model.pulley.y, model.pulley.z])[1]}
+            r={s(5)}
+            className="fill-foreground/30 stroke-none"
+          />
         </g>
       )}
       {model.furniture === "incline-bench" && (
@@ -525,6 +624,35 @@ export function FigureSide({ model, pose }: Props) {
         />
       )}
       {arms(near, s(8))}
+      {model.furniture === "leg-curl" && (
+        <g>
+          {/* thigh pad on the thighs and the ankle roller behind the lower shin */}
+          <rect
+            x={p([0, 0, 24])[0]}
+            y={p([0, 62, 0])[1]}
+            width={s(24)}
+            height={s(7)}
+            rx={3}
+            className="fill-foreground/30 stroke-none"
+          />
+          {(() => {
+            const kn = pose.knees[near];
+            const an = pose.ankles[near];
+            const th = Math.atan2(kn[1] - an[1], an[2] - kn[2]);
+            const c: [number, number] = [
+              kn[1] + (an[1] - kn[1]) * 0.9 - Math.cos(th) * 6.5,
+              kn[2] + (an[2] - kn[2]) * 0.9 - Math.sin(th) * 6.5,
+            ];
+            const pc = p([0, c[0], c[1]]);
+            return (
+              <g>
+                <circle cx={pc[0]} cy={pc[1]} r={s(4)} className="fill-foreground/30 stroke-none" />
+                <path d={line(pc, p([0, 38, 56]))} className={furnLine} strokeWidth={s(3)} />
+              </g>
+            );
+          })()}
+        </g>
+      )}
       {model.implement === "barbell" && (
         <g>
           <circle
@@ -588,6 +716,16 @@ export function FigureSide({ model, pose }: Props) {
             className="stroke-foreground"
             strokeWidth={3}
           />
+        </g>
+      )}
+      {model.implement === "cable" && model.pulley && (
+        <g>
+          <path
+            d={line(bar, p([0, model.pulley.y, model.pulley.z]))}
+            className="stroke-foreground/50"
+            strokeWidth={1.5}
+          />
+          <circle cx={bar[0]} cy={bar[1]} r={4} className="fill-foreground stroke-none" />
         </g>
       )}
       {model.implement === "latbar" && (
