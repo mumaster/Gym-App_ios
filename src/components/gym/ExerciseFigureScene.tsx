@@ -348,17 +348,48 @@ export function FigureFront({ model, pose }: Props) {
         (model.oneDumbbell ? [wr] : [wl, wr]).map((w, i) => (
           <g key={i}>
             {model.neutralGrip ? (
-              <>
-                {/* Palms facing each other: the dumbbell points at the viewer, seen end-on. */}
-                <circle
-                  cx={w[0]}
-                  cy={w[1]}
-                  r={s(7)}
-                  className="fill-primary/40 stroke-primary"
-                  strokeWidth={2}
-                />
-                <circle cx={w[0]} cy={w[1]} r={2.5} className="fill-foreground stroke-none" />
-              </>
+              (() => {
+                // The dumbbell is square to the forearm: end-on while the forearm hangs,
+                // standing upright once the forearm points forward.
+                const el = pose.elbows[model.oneDumbbell ? 1 : i]!;
+                const wc = pose.wrists[model.oneDumbbell ? 1 : i]!;
+                const fy = wc[1] - el[1];
+                const fz = wc[2] - el[2];
+                const ay = Math.abs(fz) / (Math.hypot(fy, fz) || 1);
+                if (ay < 0.3)
+                  return (
+                    <>
+                      <circle
+                        cx={w[0]}
+                        cy={w[1]}
+                        r={s(7)}
+                        className="fill-primary/40 stroke-primary"
+                        strokeWidth={2}
+                      />
+                      <circle cx={w[0]} cy={w[1]} r={2.5} className="fill-foreground stroke-none" />
+                    </>
+                  );
+                return (
+                  <>
+                    <path
+                      d={line([w[0], w[1] - s(12) * ay], [w[0], w[1] + s(12) * ay])}
+                      className="stroke-foreground"
+                      strokeWidth={3}
+                    />
+                    {[-1, 1].map((sg) => (
+                      <rect
+                        key={sg}
+                        x={w[0] - s(6)}
+                        y={w[1] + sg * s(11) * ay - s(3) * ay}
+                        width={s(12)}
+                        height={s(6) * ay}
+                        rx={2}
+                        className="fill-primary stroke-none"
+                      />
+                    ))}
+                  </>
+                );
+              })()
             ) : (
               <>
                 <path
@@ -848,26 +879,35 @@ export function FigureSide({ model, pose }: Props) {
           <circle cx={bar[0]} cy={bar[1]} r={4} className="fill-foreground stroke-none" />
         </g>
       )}
-      {model.implement === "dumbbells" && model.neutralGrip && (
-        <g>
-          <path
-            d={line([wrist[0] - s(12), wrist[1]], [wrist[0] + s(12), wrist[1]])}
-            className="stroke-foreground"
-            strokeWidth={3}
-          />
-          {[-1, 1].map((sg) => (
-            <rect
-              key={sg}
-              x={wrist[0] + sg * s(11) - s(3)}
-              y={wrist[1] - s(6)}
-              width={s(6)}
-              height={s(12)}
-              rx={2}
-              className="fill-primary stroke-none"
-            />
-          ))}
-        </g>
-      )}
+      {model.implement === "dumbbells" &&
+        model.neutralGrip &&
+        (() => {
+          // The dumbbell is square to the forearm, so it turns with the hand.
+          const el = p(pose.elbows[near]);
+          const fx = wrist[0] - el[0];
+          const fy = wrist[1] - el[1];
+          const deg = (Math.atan2(fx, -fy) * 180) / Math.PI;
+          return (
+            <g transform={`translate(${wrist[0]} ${wrist[1]}) rotate(${deg})`}>
+              <path
+                d={line([-s(12), 0], [s(12), 0])}
+                className="stroke-foreground"
+                strokeWidth={3}
+              />
+              {[-1, 1].map((sg) => (
+                <rect
+                  key={sg}
+                  x={sg * s(11) - s(3)}
+                  y={-s(6)}
+                  width={s(6)}
+                  height={s(12)}
+                  rx={2}
+                  className="fill-primary stroke-none"
+                />
+              ))}
+            </g>
+          );
+        })()}
       {model.implement === "dumbbells" && !model.neutralGrip && (
         <g>
           <circle
