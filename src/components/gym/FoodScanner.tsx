@@ -1,9 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, ImageIcon, X } from "lucide-react";
+import { AlertTriangle, Camera, ImageIcon, SwitchCamera, X } from "lucide-react";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
 import { createVideoDecoder, SCAN_INTERVAL_MS } from "../../lib/gym/barcodeDecode";
+import {
+  backCameras,
+  loadCameraId,
+  nextCamera,
+  saveCameraId,
+  shortLensName,
+  type BackCamera,
+} from "../../lib/gym/cameraChoice";
+
+/** The deviceId of the lens a playing video is currently showing. */
+function stream_track_id(video: HTMLVideoElement | null): string | null {
+  const stream = video?.srcObject;
+  if (typeof MediaStream === "undefined" || !(stream instanceof MediaStream)) return null;
+  return stream.getVideoTracks()[0]?.getSettings().deviceId ?? null;
+}
 
 /** Opens the connection to a host ahead of the first request. */
 function preconnect(href: string) {
@@ -75,6 +90,10 @@ export function FoodScanner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
+  // The back lens in use (null: the browser's default back camera) and the
+  // back lenses the device offers; a switch shows when there are several.
+  const [cameraId, setCameraId] = useState<string | null>(loadCameraId);
+  const [cameras, setCameras] = useState<BackCamera[]>([]);
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -111,28 +130,37 @@ export function FoodScanner({
     // other), and the product database connection is opened early.
     preconnect("https://world.openfoodfacts.org");
     const video = videoRef.current;
-    const cameraReady = navigator.mediaDevices
-      .getUserMedia({
-        // Ask for a high-resolution stream: the same frames feed the label
-        // reader, which needs legible print.
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      })
-      .then(async (s) => {
-        stream = s;
-        if (cancelled) {
-          s.getTracks().forEach((track) => track.stop());
-          return null;
-        }
-        if (video) {
-          video.srcObject = s;
-          await video.play().catch(() => undefined);
-        }
-        return video;
-      });
+    // Ask for a high-resolution stream: the same frames feed the label
+    // reader, which needs legible print.
+    const size = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+    const getCamera = (video: MediaTrackConstraints) =>
+      navigator.mediaDevices.getUserMedia({ video });
+    const cameraReady = (
+      cameraId
+        ? // A remembered lens that's gone (or refused) falls back to the default.
+          getCamera({ deviceId: { exact: cameraId }, ...size }).catch(() =>
+            getCamera({ facingMode: "environment", ...size }),
+          )
+        : getCamera({ facingMode: "environment", ...size })
+    ).then(async (s) => {
+      stream = s;
+      if (cancelled) {
+        s.getTracks().forEach((track) => track.stop());
+        return null;
+      }
+      // Labels (and so the lens list) only exist once permission is granted.
+      navigator.mediaDevices
+        .enumerateDevices()
+        .then((devices) => {
+          if (!cancelled) setCameras(backCameras(devices));
+        })
+        .catch(() => undefined);
+      if (video) {
+        video.srcObject = s;
+        await video.play().catch(() => undefined);
+      }
+      return video;
+    });
     const decoderReady = video ? createVideoDecoder(video) : Promise.resolve(null);
 
     Promise.all([cameraReady, decoderReady])
@@ -173,7 +201,7 @@ export function FoodScanner({
       stream?.getTracks().forEach((track) => track.stop());
       if (video) video.srcObject = null;
     };
-  }, [open, t]);
+  }, [open, t, cameraId]);
 
   const capture = () => {
     const video = videoRef.current;
@@ -184,6 +212,15 @@ export function FoodScanner({
     canvas.height = video.videoHeight;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     canvas.toBlob((blob) => blob && onPhoto(blob, mode), "image/jpeg", 0.92);
+  };
+
+  const activeId = cameraId ?? stream_track_id(videoRef.current) ?? cameras[0]?.deviceId ?? null;
+  const switchCamera = () => {
+    const next = nextCamera(cameras, activeId);
+    if (!next) return;
+    haptic(10);
+    saveCameraId(next.deviceId);
+    setCameraId(next.deviceId);
   };
 
   const switchMode = (next: ScanMode) => {
@@ -224,13 +261,27 @@ export function FoodScanner({
 
       <div className="safe-top relative flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent px-5 pb-6 pt-3">
         <p className="text-[15px] font-semibold text-white">{copy.titleFor[mode]}</p>
-        <button
-          onClick={onClose}
-          aria-label={t.common.close}
-          className="glass flex size-9 items-center justify-center rounded-full text-white active:scale-95"
-        >
-          <X className="size-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {cameras.length > 1 ? (
+            <button
+              onClick={switchCamera}
+              aria-label={`${copy.switchCamera}: ${shortLensName(
+                cameras.find((c) => c.deviceId === activeId)?.label ?? "",
+              )}`}
+              className="glass flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-white active:scale-95"
+            >
+              <SwitchCamera className="size-4" />
+              {shortLensName(cameras.find((c) => c.deviceId === activeId)?.label ?? "")}
+            </button>
+          ) : null}
+          <button
+            onClick={onClose}
+            aria-label={t.common.close}
+            className="glass flex size-9 items-center justify-center rounded-full text-white active:scale-95"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
       </div>
 
       <div

@@ -1199,6 +1199,7 @@ const en = {
     cameraAccessDenied:
       "Camera access was denied — allow it in your browser settings, or use a photo or manual entry instead.",
     cameraStartFailed: "Couldn't start the camera — try a photo or manual entry instead.",
+    switchCamera: "Switch camera",
   },
   auth: {
     title: "Sync across devices",
@@ -3229,6 +3230,7 @@ const nl: Dict = {
     cameraAccessDenied:
       "Cameratoegang werd geweigerd — sta dit toe in je browserinstellingen, of gebruik een foto of handmatige invoer.",
     cameraStartFailed: "Kon de camera niet starten — probeer een foto of handmatige invoer.",
+    switchCamera: "Camera wisselen",
   },
   auth: {
     title: "Synchroniseer tussen apparaten",
