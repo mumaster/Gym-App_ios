@@ -197,8 +197,8 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 26,
     text: {
-      en: "Records in History: your best estimated 1-rep max, heaviest set and record history per exercise, plus a strength score. The muscle map now tints muscles that are still recovering, and program weeks set how many reps to leave in reserve, shown while you lift.",
-      nl: "Records in Geschiedenis: je beste geschatte 1RM, zwaarste set en recordgeschiedenis per oefening, plus een krachtscore. De spierkaart kleurt spieren die nog herstellen, en programmaweken bepalen hoeveel reps je overhoudt, zichtbaar tijdens het trainen.",
+      en: "Records in History: your best estimated 1-rep max, heaviest set and record history per exercise, plus a strength score. The muscle map now tints muscles that are still recovering (also under History → Activity), and program weeks set how many reps to leave in reserve, shown while you lift.",
+      nl: "Records in Geschiedenis: je beste geschatte 1RM, zwaarste set en recordgeschiedenis per oefening, plus een krachtscore. De spierkaart kleurt spieren die nog herstellen (ook onder Geschiedenis → Activiteit), en programmaweken bepalen hoeveel reps je overhoudt, zichtbaar tijdens het trainen.",
     },
   },
 ];

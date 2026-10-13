@@ -19,6 +19,7 @@ import { Card, Screen } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { ListCard } from "../components/gym/ListCard";
 import { RecordsTab } from "../components/gym/RecordsTab";
+import { RecoveryCard } from "../components/gym/RecoveryCard";
 import { StreakCalendar } from "../components/gym/StreakCalendar";
 import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeekPicker } from "../components/gym/WeekPicker";
@@ -465,6 +466,9 @@ function HistoryScreen() {
                   {t.history.streakSource}
                 </p>
               </Card>
+              <div className="mt-4">
+                <RecoveryCard />
+              </div>
             </>
           ) : null}
 

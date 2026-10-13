@@ -2095,6 +2095,10 @@ const en = {
     hoursLeft: (h: number) => `${h} h`,
     more: (n: number) => `+${n} more`,
     showFewer: "Show fewer",
+    title: "Recovery",
+    countLine: (n: number) =>
+      n ? `${n} ${n === 1 ? "muscle" : "muscles"} recovering` : "All recovered",
+    allRecovered: "Every muscle has recovered from your last 3 days of training.",
     regionAria: (label: string, h: number) => `${label}, still recovering, about ${h} h to go`,
     infoAria: "How recovery is worked out",
     info: "From your sets and their RPE in the last 3 days. A muscle needs 48 to 72 hours, longer after hard or high-volume sets. A lighter tint means almost recovered.",
@@ -4189,6 +4193,10 @@ const nl: Dict = {
     hoursLeft: (h: number) => `${h} u`,
     more: (n: number) => `+${n} meer`,
     showFewer: "Minder tonen",
+    title: "Herstel",
+    countLine: (n: number) =>
+      n ? `${n} ${n === 1 ? "spier herstelt" : "spieren herstellen"} nog` : "Alles hersteld",
+    allRecovered: "Elke spier is hersteld van je training van de laatste 3 dagen.",
     regionAria: (label: string, h: number) => `${label}, herstelt nog, ongeveer ${h} uur te gaan`,
     infoAria: "Hoe herstel wordt berekend",
     info: "Uit je sets en hun RPE van de laatste 3 dagen. Een spier heeft 48 tot 72 uur nodig, langer na zware sets of veel sets. Een lichtere tint betekent bijna hersteld.",

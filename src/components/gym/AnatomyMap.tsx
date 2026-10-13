@@ -328,8 +328,11 @@ export function AnatomyMap({
   suggested,
   recovery,
   onToggle,
+  readOnly = false,
 }: {
   selected: RegionId[];
+  /** Only shows recovery (History): no picking, no muscle chips. */
+  readOnly?: boolean;
   /** Region currently highlighted as a pairing suggestion. */
   suggested?: RegionId | null;
   /** Regions still recovering from recent training, tinted when idle. */
@@ -369,7 +372,7 @@ export function AnatomyMap({
     <div>
       <MapDefs />
 
-      <div className="flex gap-3">
+      <div className="flex gap-3" inert={readOnly || undefined}>
         <Body
           view="front"
           selected={selected}
@@ -449,33 +452,41 @@ export function AnatomyMap({
         </div>
       ) : null}
 
-      {/* What's selected, as removable chips; the full list is one tap away. */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
-        {chosen.length ? (
-          chosen.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => onToggle(r.id)}
-              aria-label={t.muscleMap.removeMuscle(r.label)}
-              className={`tap-target flex min-h-[34px] items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold active:scale-95 ${chipStyle.on}`}
-            >
-              {r.label}
-              <X className="size-3.5 opacity-70" strokeWidth={3} />
-            </button>
-          ))
-        ) : (
-          <p className="text-[12.5px] text-muted-foreground">{t.muscleMap.tapHint}</p>
-        )}
-        <button
-          onClick={() => setListOpen((v) => !v)}
-          aria-expanded={listOpen}
-          className="tap-target min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
-        >
-          {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
-        </button>
-      </div>
+      {readOnly && !recovering.length ? (
+        <p className="mt-2 text-center text-[12.5px] text-muted-foreground">
+          {t.recovery.allRecovered}
+        </p>
+      ) : null}
 
-      {listOpen ? (
+      {/* What's selected, as removable chips; the full list is one tap away. */}
+      {readOnly ? null : (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
+          {chosen.length ? (
+            chosen.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => onToggle(r.id)}
+                aria-label={t.muscleMap.removeMuscle(r.label)}
+                className={`tap-target flex min-h-[34px] items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold active:scale-95 ${chipStyle.on}`}
+              >
+                {r.label}
+                <X className="size-3.5 opacity-70" strokeWidth={3} />
+              </button>
+            ))
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">{t.muscleMap.tapHint}</p>
+          )}
+          <button
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            className="tap-target min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
+          >
+            {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
+          </button>
+        </div>
+      )}
+
+      {listOpen && !readOnly ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
           {REGIONS.map(chip)}
         </div>

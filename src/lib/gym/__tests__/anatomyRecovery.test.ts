@@ -34,4 +34,22 @@ describe("AnatomyMap recovery shading", () => {
   it("shows nothing extra when nothing is recovering", () => {
     expect(render({})).not.toContain("Tinted muscles");
   });
+
+  it("read-only (History): no muscle chips, says when all is recovered", () => {
+    const html = renderToString(
+      createElement(
+        GymProvider,
+        null,
+        createElement(AnatomyMap, {
+          selected: [],
+          recovery: {},
+          onToggle: () => {},
+          readOnly: true,
+        }),
+      ),
+    );
+    expect(html).toContain("Every muscle has recovered");
+    expect(html).not.toContain("Tap the map");
+    expect(html).toContain("inert");
+  });
 });
