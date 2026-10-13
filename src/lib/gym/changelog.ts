@@ -229,11 +229,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Voedsel-tab: “Kan ik het?” en “Importeren” staan nu als twee knoppen direct onder Voedsel toevoegen.",
     },
   },
+  {
+    version: 31,
+    text: {
+      en: "Dutch wording: the Food tab button now reads “Mag ik het?” instead of “Kan ik het?”.",
+      nl: "Betere zin: de knop in de Voedsel-tab heet nu “Mag ik het?” in plaats van “Kan ik het?”.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 30;
+export const CURRENT_VERSION = 31;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
