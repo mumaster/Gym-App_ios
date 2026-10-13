@@ -144,13 +144,25 @@ export function singleArmLatPulldownPose(depth: number): FigurePose {
     y: hip.y + BODY.torso * cos(lean),
     z: hip.z + BODY.torso * sin(lean),
   };
-  // Hand path: straight up (slightly out and forward) to the upper chest side.
-  const start: V3 = [BODY.shoulderHalf + 11, shoulder.y + 49, shoulder.z + 20];
-  const end: V3 = [BODY.shoulderHalf + 6, shoulder.y - 10, shoulder.z + 13];
-  const right: V3 = [
-    lerp(start[0], end[0], e),
-    lerp(start[1], end[1], e),
-    lerp(start[2], end[2], e),
+  // The upper arm swings down along the side, from a long stretch toward the
+  // pulley to the elbow beside the hip; the forearm stays between vertical and
+  // the cable's line, so the hand ends just outside the shoulder.
+  const S: V3 = [BODY.shoulderHalf, shoulder.y, shoulder.z];
+  const theta = lerp(22, 160, e); // upper arm from straight up, out to the side
+  const u = unit([sin(theta), cos(theta), lerp(0.45, -0.3, e)]);
+  const elbow: V3 = [S[0] + 29 * u[0], S[1] + 29 * u[1], S[2] + 29 * u[2]];
+  const toPulley = unit([
+    HIFLY_TOWER.x - elbow[0],
+    HIFLY_TOWER.y - elbow[1],
+    HIFLY_TOWER.z - elbow[2],
+  ]);
+  const fwd = lerp(0.35, 0.15, e); // keeps the hand ahead of the face in the side view
+  const f = unit([toPulley[0] * 0.5, toPulley[1] * 0.5 + 0.5, toPulley[2] * 0.5 + fwd]);
+  const right: V3 = [elbow[0] + 26 * f[0], elbow[1] + 26 * f[1], elbow[2] + 26 * f[2]];
+  const pole: V3 = [
+    elbow[0] - (S[0] + right[0]) / 2,
+    elbow[1] - (S[1] + right[1]) / 2,
+    elbow[2] - (S[2] + right[2]) / 2,
   ];
   const build = (free: V3) =>
     assemble({
@@ -164,8 +176,7 @@ export function singleArmLatPulldownPose(depth: number): FigurePose {
       wrist: (s) => (s > 0 ? right : free),
       bar: right,
       kneePole: (s) => (s > 0 ? [0, -1, 1] : [0, 1, 0.3]),
-      elbowPole: (s) =>
-        s > 0 ? [lerp(0.3, 0.5, e), lerp(-0.2, -1, e), lerp(-1, -0.5, e)] : [-0.6, -1, 0.1],
+      elbowPole: (s) => (s > 0 ? pole : [-0.6, -1, 0.1]),
     });
   // The free hand rests on the front (far) thigh, a little above its middle.
   const probe = build([-14, 0, 0]);
