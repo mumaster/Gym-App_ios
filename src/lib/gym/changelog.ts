@@ -119,11 +119,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Producten zoeken toont productnamen nu in de taal van je app (Nederlands of Engels) als Open Food Facts die heeft, in plaats van vaak Frans.",
     },
   },
+  {
+    version: 16,
+    text: {
+      en: "Updating the app no longer shows an error screen: if the old version is still open after an update, it now loads the new one cleanly.",
+      nl: "Een update van de app geeft geen foutscherm meer: staat de oude versie na een update nog open, dan laadt de nieuwe versie nu netjes.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 15;
+export const CURRENT_VERSION = 16;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -25,7 +25,7 @@
 // `activate` below then deletes every cache key not in CURRENT_CACHES,
 // clearing the stale entry out from under any device still running the
 // previous version.
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const OCR_CACHE = `forge-ocr-${CACHE_VERSION}`;
 const PAGES_CACHE = `forge-pages-${CACHE_VERSION}`;
 const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;
@@ -34,6 +34,17 @@ const ASSETS_CACHE = `forge-assets-${CACHE_VERSION}`;
 const PREFS_CACHE = "forge-prefs";
 const REST_COPY_URL = "/__forge/rest-notification-copy";
 const CURRENT_CACHES = [OCR_CACHE, PAGES_CACHE, ASSETS_CACHE, PREFS_CACHE];
+
+// Drops every cached app-shell page (not only "/"): each URL the app was
+// opened at has its own entry, and any of them can reference JS filenames a
+// newer deploy has deleted. With no entry left the next navigation is forced
+// onto the network and gets the current deploy's HTML.
+function evictShells() {
+  return caches
+    .open(PAGES_CACHE)
+    .then((cache) => cache.keys().then((keys) => Promise.all(keys.map((k) => cache.delete(k)))))
+    .catch(() => undefined);
+}
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -82,7 +93,15 @@ self.addEventListener("fetch", (event) => {
         const cached = await cache.match(request);
         if (cached) return cached;
         const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
+        if (response.ok) {
+          cache.put(request, response.clone());
+        } else if (response.status === 404) {
+          // A hashed file that no longer exists means the cached shell is
+          // from an older deploy. Evict it now so the page's reload (or the
+          // next launch) gets the new shell right away, instead of failing
+          // again on the same stale HTML.
+          event.waitUntil(evictShells());
+        }
         return response;
       }),
     );
@@ -235,13 +254,7 @@ self.addEventListener("message", (event) => {
       // timeout before this settled) — nothing left to notify.
     }
   };
-  event.waitUntil(
-    caches
-      .open(PAGES_CACHE)
-      .then((cache) => cache.delete("/"))
-      .catch(() => undefined)
-      .finally(reply),
-  );
+  event.waitUntil(evictShells().finally(reply));
 });
 
 // Rest-timer notifications sent by the send-rest-notifications edge function

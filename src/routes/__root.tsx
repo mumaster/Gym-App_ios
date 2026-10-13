@@ -19,6 +19,7 @@ import { GymProvider } from "../lib/gym/store";
 import { loadCachedCatalog, refreshCatalog } from "../lib/gym/catalog";
 import { installAppWideHaptics } from "../lib/gym/tapFeedback";
 import { registerServiceWorker } from "../pwa";
+import { canAutoRecover, isChunkLoadError, recoverFromStaleShell } from "../lib/staleShell";
 import { SplashScreen } from "../components/gym/SplashScreen";
 import { TabBar } from "../components/gym/TabBar";
 import { AnalyticsTracker } from "../components/gym/AnalyticsTracker";
@@ -80,6 +81,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   const t = useStandaloneDict();
+  // After an update the old page can ask for JS files the new deploy deleted.
+  // That's not a real error: fetch the fresh shell instead of showing this.
+  const recovering = isChunkLoadError(error) && canAutoRecover();
+  useEffect(() => {
+    if (recovering) recoverFromStaleShell();
+  }, [recovering]);
+  if (recovering) return <div className="min-h-[100dvh] bg-background" />;
 
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
