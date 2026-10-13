@@ -191,6 +191,20 @@ function NutritionScreen() {
     setCreateMealOpen(true);
   };
 
+  // After adding to a meal, land back on that meal (not the day overview) so
+  // more items can be added. Only when something was actually logged there.
+  const [returnToMeal, setReturnToMeal] = useState<{ meal: MealType; before: number } | null>(null);
+  const mealCount = (meal: MealType) => selectedEntries.filter((e) => e.meal === meal).length;
+  const closeAddFor = (meal: MealType | undefined) => {
+    if (meal) setReturnToMeal({ meal, before: mealCount(meal) });
+  };
+  useEffect(() => {
+    if (!returnToMeal) return;
+    if (mealCount(returnToMeal.meal) > returnToMeal.before) setOverviewMeal(returnToMeal.meal);
+    setReturnToMeal(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returnToMeal]);
+
   const openAdd = (meal?: MealType) => {
     haptic(15);
     setFoodSheet(meal ? { meal } : {});
@@ -419,7 +433,10 @@ function NutritionScreen() {
         editEntry={foodSheet && "id" in foodSheet ? foodSheet : null}
         initialMeal={foodSheet && !("id" in foodSheet) ? foodSheet.meal : undefined}
         day={selectedKey}
-        onClose={() => setFoodSheet(null)}
+        onClose={() => {
+          closeAddFor(foodSheet && !("id" in foodSheet) ? foodSheet.meal : undefined);
+          setFoodSheet(null);
+        }}
         onCreateMeal={() => {
           setFoodSheet(null);
           setMealSeed(null);
@@ -446,7 +463,10 @@ function NutritionScreen() {
         target="log"
         initialMeal={listSheet?.meal}
         day={selectedKey}
-        onClose={() => setListSheet(null)}
+        onClose={() => {
+          closeAddFor(listSheet?.meal);
+          setListSheet(null);
+        }}
         onSaveAsRecipe={(ingredients, meta) => {
           setListSheet(null);
           setRecipeSeed({ name: meta.title ?? "", servings: meta.servings, ingredients });

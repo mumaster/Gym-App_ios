@@ -243,11 +243,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De oefeninganimatie laat de pagina niet meer verspringen: de tekst onder de animatie (Zakken, Duwen, ...) houdt nu bij elke stap dezelfde hoogte, zodat scrollen rustig blijft.",
     },
   },
+  {
+    version: 33,
+    text: {
+      en: "Adding food to a meal (lunch, dinner, snack) now brings you back to that meal instead of the day overview, so you can keep adding.",
+      nl: "Als je eten aan een maaltijd toevoegt (lunch, diner, snack), kom je nu terug bij die maaltijd in plaats van bij het dagoverzicht, zodat je door kunt gaan met toevoegen.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 32;
+export const CURRENT_VERSION = 33;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
