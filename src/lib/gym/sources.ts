@@ -27,6 +27,8 @@ export type SourceId =
   | "warmup"
   | "volume"
   | "deload"
+  | "rirWeeks"
+  | "recovery"
   | "sessionRpe"
   | "loadSpike"
   | "e1rm"
@@ -140,6 +142,22 @@ export const SOURCES: SourceEntry[] = [
     refs: [
       "Bell et al., Sports Med Open 2023 (Delphi consensus) and 2024 (survey)",
       "Bell et al., Strength Cond J 2025",
+    ],
+  },
+  {
+    id: "rirWeeks",
+    group: "training",
+    refs: [
+      "Helms, Cronin, Storey & Zourdos, Strength Cond J 2016",
+      "Refalo et al. 2023; Robinson et al. 2024",
+    ],
+  },
+  {
+    id: "recovery",
+    group: "training",
+    refs: [
+      "ACSM progression position stand (2009)",
+      "Morán-Navarro et al., Eur J Appl Physiol 2017",
     ],
   },
   {

@@ -57,6 +57,7 @@ import {
   selectOnFocus,
 } from "../lib/gym/numericInput";
 import { plateStep } from "../lib/gym/plates";
+import { rpeBandForRir, rpeForRir } from "../lib/gym/programs";
 import { estimated1RM } from "../lib/gym/progress";
 import { TARGET_RPE, rpeAdjustedWeight, suggestWeight } from "../lib/gym/progression";
 import { crossEstimate, heavierHint, withKnownLifts, withRunning } from "../lib/gym/startWeight";
@@ -1574,11 +1575,15 @@ function ExerciseBlock({
     setEditIdx(null);
   }, [logged.length]);
 
+  // A program week's RIR target narrows the band the load aims for.
+  const rirTarget = activeWorkout?.rir_target;
+  const rpeBand: [number, number] = rirTarget ? rpeBandForRir(rirTarget.rir) : TARGET_RPE;
+  const rpeTargetValue = rirTarget ? rpeForRir(rirTarget.rir) : null;
   // After a working set logged outside the target RPE range, the next set's
   // weight moves 4% per point (see progression.ts's rpeAdjustedWeight).
   const rpeAdjustment =
     lastLogged?.set_type === "working" && setType === "working"
-      ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step, bodyKg)
+      ? rpeAdjustedWeight(lastLogged.weight, lastLogged.rpe, step, bodyKg, rpeBand)
       : null;
   // Working sets carry on from the last *working* set — after warm-ups the
   // last logged set is a light one, which used to become the prefill.
@@ -1621,8 +1626,8 @@ function ExerciseBlock({
             reps: null,
             text: t.session.rpeAdjusted(
               lastLogged.rpe,
-              TARGET_RPE[0],
-              TARGET_RPE[1],
+              rpeBand[0],
+              rpeBand[1],
               rpeAdjustment.direction === "down",
             ),
           }
@@ -1908,7 +1913,7 @@ function ExerciseBlock({
                     <span className="w-6 shrink-0 text-[10px] font-semibold uppercase text-muted-foreground">
                       {t.session.rpe}
                     </span>
-                    <RpePicker value={editRpe} onChange={setEditRpe} />
+                    <RpePicker value={editRpe} onChange={setEditRpe} target={rpeTargetValue} />
                   </div>
                 ) : null}
                 <div className="flex gap-2">
@@ -2202,12 +2207,19 @@ function ExerciseBlock({
                 <span className="w-9 shrink-0 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {t.session.rpe}
                 </span>
-                <RpePicker value={rpe} onChange={setRpe} />
+                <RpePicker value={rpe} onChange={setRpe} target={rpeTargetValue} />
               </div>
             ) : null}
             {setType === "working" ? (
               <p className="text-[12px] text-muted-foreground">
-                {t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
+                {rirTarget
+                  ? t.rir.sessionLine(
+                      rirTarget.rir,
+                      rirTarget.week,
+                      rirTarget.weeks,
+                      rirTarget.deload,
+                    )
+                  : t.session.rpeTarget(TARGET_RPE[0], TARGET_RPE[1])}
               </p>
             ) : null}
 
@@ -2435,7 +2447,8 @@ function RestPanel({
   onRateLastSet: (rpe: number | null) => void;
 }) {
   const t = useTranslation();
-  const { firstName } = useGym();
+  const { firstName, activeWorkout } = useGym();
+  const rirTarget = activeWorkout?.rir_target;
   const pct = done ? 0 : Math.max(0, Math.min(100, (secondsLeft / Math.max(1, duration)) * 100));
   return (
     <div className="mx-auto w-full max-w-xl" role="region" aria-label={t.session.restLabel}>
@@ -2513,7 +2526,11 @@ function RestPanel({
           <span className="w-20 shrink-0 text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
             {t.session.rateLastSet}
           </span>
-          <RpePicker value={lastSetRpe} onChange={onRateLastSet} />
+          <RpePicker
+            value={lastSetRpe}
+            onChange={onRateLastSet}
+            target={rirTarget ? rpeForRir(rirTarget.rir) : null}
+          />
         </div>
       ) : null}
     </div>
@@ -2671,12 +2688,15 @@ function FinishPanel({
 
 /** RPE 6–10 on Zourdos et al.'s RIR-based scale; tapping the chosen value
  *  again clears it. */
-function RpePicker({
+export function RpePicker({
   value,
   onChange,
+  target = null,
 }: {
   value: number | null;
   onChange: (rpe: number | null) => void;
+  /** The program week's RPE target: marked with a dashed outline, not a fill. */
+  target?: number | null;
 }) {
   const t = useTranslation();
   return (
@@ -2690,9 +2710,11 @@ function RpePicker({
             onChange(value === n ? null : n);
           }}
           aria-pressed={value === n}
-          aria-label={t.session.rpeAriaLabel(n)}
+          aria-label={target === n ? t.rir.targetAria(n) : t.session.rpeAriaLabel(n)}
           className={`tap-target h-10 flex-1 rounded-lg text-[13px] font-bold active:scale-95 ${
-            value === n ? chip.on : chip.off
+            value === n
+              ? chip.on
+              : `${chip.off} ${target === n ? "outline outline-1 -outline-offset-1 outline-dashed outline-primary/60" : ""}`
           }`}
         >
           {n}

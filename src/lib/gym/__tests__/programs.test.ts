@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { DELOAD_WEEK, PROGRAM_PRESETS, advanceProgram, type Program } from "../programs";
+import {
+  DELOAD_WEEK,
+  PROGRAM_PRESETS,
+  advanceProgram,
+  programPresetById,
+  rpeBandForRir,
+  weekRirTargets,
+  type Program,
+} from "../programs";
 
 describe("program presets (Bell et al. 2023–2025)", () => {
   it("deload every 4–6 weeks, ending each wave", () => {
@@ -40,5 +48,20 @@ describe("advanceProgram", () => {
   it("wraps back to week one after the deload", () => {
     const last = { ...program, currentWeek: program.weeks.length - 1, cyclePosition: 1 };
     expect(advanceProgram(last, new Date(2026, 8, 24)).currentWeek).toBe(0);
+  });
+});
+
+describe("RIR targets per program week", () => {
+  it("steps from 3 to 1 reps in reserve across build weeks, 4 in the deload", () => {
+    expect(weekRirTargets(programPresetById("wave_4").weeks)).toEqual([3, 2, 1, 4]);
+    expect(weekRirTargets(programPresetById("wave_5").weeks)).toEqual([3, 2, 2, 1, 4]);
+    expect(weekRirTargets(programPresetById("wave_6").weeks)).toEqual([3, 3, 2, 2, 1, 4]);
+  });
+
+  it("aims the load adjustment at the week's target", () => {
+    expect(rpeBandForRir(2)).toEqual([7, 9]);
+    expect(rpeBandForRir(3)).toEqual([6, 8]);
+    expect(rpeBandForRir(1)).toEqual([8, 9]);
+    expect(rpeBandForRir(4)).toEqual([5, 7]);
   });
 });
