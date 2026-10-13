@@ -2,7 +2,6 @@ import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   depthAt,
-  EXERCISE_ANIMATIONS,
   phaseAt,
   pressPose,
   REP_SECONDS,
@@ -10,6 +9,7 @@ import {
   type PressRig,
   type V3,
 } from "../../lib/gym/exerciseAnimation";
+import { EXERCISE_ANIMATIONS } from "../../lib/gym/exerciseAnimations";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
 import { FigureFront, FigureSide } from "./ExerciseFigureScene";

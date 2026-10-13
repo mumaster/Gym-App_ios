@@ -168,8 +168,10 @@ export interface FigurePose extends Pose {
   feet: [Foot, Foot];
 }
 
+/** Built-in implements; animation batches add their own names, drawn by
+ *  their figureExtras module (`string & {}` keeps autocomplete). */
 export type Implement =
-  "barbell" | "dumbbells" | "goblet" | "kettlebell" | "latbar" | "cable" | "none";
+  "barbell" | "dumbbells" | "goblet" | "kettlebell" | "latbar" | "cable" | "none" | (string & {});
 export type Furniture =
   | "none"
   | "upright-bench"
@@ -184,7 +186,8 @@ export type Furniture =
   | "dip-bars"
   | "leg-extension"
   | "leg-press"
-  | "rear-bench";
+  | "rear-bench"
+  | (string & {});
 
 /** One exercise as a function of `depth` (0 = the start/top position the
  *  loop begins in, 1 = the turning point), plus what to draw around it. */
@@ -1233,7 +1236,8 @@ export function calfRaisePose(depth: number): FigurePose {
 
 /** Add an exercise by id (the id in the exercise catalog). */
 
-export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
+/** The first batches of animations; `exerciseAnimations.ts` merges in the rest. */
+export const BASE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
   "bb-bench": {
     rig: BENCH_PRESS_RIG,
     cues: {
@@ -2590,3 +2594,40 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
     },
   },
 };
+
+/** Building blocks for the animation modules that `exerciseAnimations.ts`
+ *  merges in (one module per batch, so batches can be built side by side). */
+export {
+  sub,
+  add,
+  mul,
+  dot,
+  len,
+  norm,
+  smooth,
+  BODY,
+  ARM,
+  ANKLE_Y,
+  PLATE_RADIUS,
+  rad,
+  lerp,
+  lerp3,
+  clamp01,
+  sin,
+  cos,
+  assemble,
+  hipFrom,
+  hipAt,
+  headFrom,
+  ANKLE_Z,
+  forwardKnees,
+  straightArms,
+  SEAT_HIP_Y,
+  STAND_HIP_Y,
+  STAND_SHOULDER_Y,
+  INCLINE_BACK,
+  INCLINE_HIP,
+  hangShoulderY,
+  label,
+};
+export type { Skeleton };

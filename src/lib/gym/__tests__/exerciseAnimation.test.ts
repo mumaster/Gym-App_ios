@@ -41,7 +41,6 @@ import {
   THRUST_BENCH_Y,
   depthAt,
   elbowFlare,
-  EXERCISE_ANIMATIONS,
   gobletPose,
   inclinePressPose,
   latPulldownPose,
@@ -54,6 +53,7 @@ import {
   sumoPose,
   type FigurePose,
 } from "../exerciseAnimation";
+import { EXERCISE_ANIMATIONS } from "../exerciseAnimations";
 import { GymProvider } from "../store";
 
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - (b[i] ?? 0)));
@@ -383,7 +383,7 @@ describe("ExerciseAnimation render", () => {
   });
   it("shows up in the exercise sheet for the barbell bench press only", () => {
     const bench = EXERCISES.find((e) => e.id === "bb-bench")!;
-    const other = EXERCISES.find((e) => e.id === "db-bench")!;
+    const other = EXERCISES.find((e) => e.id === "plank")!;
     const open = (e: typeof bench) =>
       wrap(createElement(ExerciseDetailSheet, { exercise: e, onClose: () => {} }));
     expect(() => open(bench)).not.toThrow();

@@ -82,7 +82,7 @@ import { haptic, useGym } from "../lib/gym/store";
 import type { Exercise, LoggedSet, PlannedExercise, SetType } from "../lib/gym/types";
 import { track } from "../lib/gym/analytics";
 import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
-import { EXERCISE_ANIMATIONS } from "../lib/gym/exerciseAnimation";
+import { EXERCISE_ANIMATIONS } from "../lib/gym/exerciseAnimations";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { chip, button } from "../components/gym/ui";
 
