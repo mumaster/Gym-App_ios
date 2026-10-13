@@ -239,7 +239,7 @@ function WaterCard({
       {waterGoalMl ? (
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className="bar-grow h-full rounded-full bg-primary"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -387,7 +387,7 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
       />
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
         <div
-          className={`h-full rounded-full transition-all ${barClass(status)}`}
+          className={`bar-grow h-full rounded-full ${barClass(status)}`}
           style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
         />
       </div>

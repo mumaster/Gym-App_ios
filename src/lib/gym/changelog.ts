@@ -154,11 +154,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Scanner: start op de ultragroothoekcamera als je telefoon die heeft, totdat je een andere camera kiest.",
     },
   },
+  {
+    version: 21,
+    text: {
+      en: "Progress bars for water, calories, coffee and nutrients now glide smoothly to the new value when you add or remove something.",
+      nl: "Voortgangsbalken voor water, calorieën, koffie en voedingsstoffen schuiven nu vloeiend naar de nieuwe waarde als je iets toevoegt of verwijdert.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 20;
+export const CURRENT_VERSION = 21;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
