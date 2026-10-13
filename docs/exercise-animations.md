@@ -79,3 +79,40 @@ Furniture added with batch 3: `pullup-bar` (bar at `PULLUP_BAR_Y`), `cable-tower
 Furniture added with batch 4: `leg-press` (back pad, seat, rails and a plate perpendicular to the rails; tilt `LEG_PRESS_TILT`, seat at `LEG_PRESS_HIP`; depth 0 is the lockout, depth 1 the bottom; the sole lies flat on the plate via `angle = tilt + 90`), `leg-extension` (seat plus a roller on the front of the lower shin; the shin foot follows with `angle = 80 - shinAngle`) and `rear-bench` (the Bulgarian split squat's bench at `REAR_BENCH_Y`/`REAR_BENCH_Z`, back foot `dir: -1` on top of it).
 
 Batch 4 posture: leg press hips stay on the seat and the torso is reclined about 60 degrees, so the knees come up beside the chest without the hips lifting; Bulgarian split squat keeps the rear ankle fixed on the bench and the front foot flat; walking lunge swings the lead foot in an arc (hanging foot, `angle` + `drop`) and lands it flat, back heel up with `pitch`, back knee above the floor; standing calf raise starts at the top with `pitch` toes down and a straight leg, heel lowering to flat.
+
+## Batch 6 (30 most-suggested exercises, 2026-10-13)
+
+Picked by running the generator over every target muscle and three equipment sets and ranking what it suggests by `EXERCISE_POPULARITY`; holds (plank, wall sit) are left out because they have no rep.
+
+**How the code is split.** `exerciseAnimations.ts` builds `EXERCISE_ANIMATIONS` from `BASE_ANIMATIONS` (exerciseAnimation.ts), the near-copies in `VARIANTS` (same movement, other equipment: lever leg extension, machine seated leg curl, chest dip, bodyweight step-up and calf raise) and one module per batch, `exerciseAnimationW1.ts` … `W5.ts`. A batch draws its own furniture or implements in `components/gym/figureExtras/wN.tsx` (prefixed names such as `w4-pecdeck`), hooked into the scene by `ExerciseFigureExtras.tsx` in three layers: `behind` the body, `mid` (before the near arm, for pads on the body) and `over`. New batches can be built side by side this way. Render review frames with `scripts/animation-frames/render.sh <outdir> <id>...` (front and side at 0/300/450/700/900 plus a 12-frame strip) and look at them before posting.
+
+Posture:
+
+- Push-up: one straight line shoulder, hip, ankle pivoting about the toes, hands under the shoulders, elbows about 45 degrees and travelling back, chest ends just above the floor. Toes on the floor with the heel genuinely lifted (`pitch`).
+- Diamond push-up: the same plank, hands together under the chest, elbows tucked closer than the push-up.
+- Pike push-up: hips high in an inverted V, legs straight, heels down, the head lowers to just in front of the hands.
+- Bench dip: hands on the flat bench's front edge, legs straight with heels flat, hips drop straight down in front of the bench to about 90 degrees at the elbows.
+- Bodyweight squat: heels down, knees over the toes, thighs about parallel, the arms reach forward to shoulder height as you descend.
+- Split squat: neither foot moves (tested), hips drop straight down, front thigh level, back knee hovering, back foot on the ball (`pitch`), hands on the hips.
+- Crunch: hips and feet fixed, only the shoulders curl up (torso shortens a little), hands at the temples. The torso is drawn straight, so the lift is kept under 20 degrees so it does not read as a sit-up.
+- Reverse crunch: shoulders and arms flat, knees held at 90 degrees, the hips curl up bringing the knees over the chest; airborne feet use `angle`.
+- Lying leg raise: lower back fixed, legs perfectly straight (no knee bulge, tested) from just above the floor to vertical; feet hang off the shin like the hanging leg raise.
+- Russian twist: torso fixed at 45 degrees back, hips, knees and heels still, the shoulders and clasped hands rotate about the torso axis from one side to the other.
+- Nordic curl: knees on the pad, ankles under the roller (kneeling feet `dir: -1`), knees to head one straight line that tips forward, hands catch at the floor.
+- 45 degree back extension: hip pad below the hip crease, ankles under the ankle pad, sole flat on the footplate; straight line at the top, about 90 degrees of hip flexion at the bottom, no hyperextension, arms crossed.
+- Dumbbell bench press: head, shoulders and hips on the flat bench, feet flat; wrists over elbows at the bottom with elbows about 50 degrees, lockout over the chest. Single-arm: free hand still on the lower chest, hips level.
+- Dumbbell flye: one fixed soft elbow bend, the arm swings as one piece out to chest level and back, palms facing.
+- Incline barbell bench and Smith incline press: 45 degree bench, bar to the upper chest, wrists over elbows at the bottom; the Smith bar path is exactly vertical along the drawn rails.
+- Standing overhead press: torso upright over the ankles, bar from the collarbones straight up over the mid-foot, head moves back to let the bar pass and forward under it (bar centre stays clear of the head).
+- Seated cable row: upright torso, feet flat on the platform (`floor` = platform height), arms straight forward at the start, handle to the lower belly with elbows past the torso.
+- Face pull: rope from a high pulley, hands end beside the ears with elbows out at shoulder height.
+- Cable crossover: two high pulleys, slight lean, one fixed elbow bend, hands sweep down and in to meet at the waist.
+- Cable lateral raise: cable from a low pulley on the far side crossing the body, the working arm rises to shoulder height and never above, free hand on the tower.
+- Pec deck: back on the pad, upper arms at shoulder height, arms sweep horizontally until the handles meet.
+- Chest-supported machine row: chest stays on the pad (torso angle fixed, tested), arms straight at the start, elbows end behind the torso.
+- Chin-up: like the pull-up with an underhand, shoulder-width grip and the elbows coming down in front of the shoulders.
+- Bent-over reverse flye: hinge held about 58 degrees with soft knees, soft fixed elbows, hands open to shoulder height in line with the shoulders.
+- Seated rear lateral raise: on the end of the bench, chest on the thighs and still, dumbbells by the calves rising to shoulder height.
+- Concentration curl: elbow fixed on the inner thigh (tested), only the forearm moves, free hand on the other knee.
+- Dumbbell shrug: arms straight, shoulders rise about 8 cm straight up, head still.
+- Landmine T-bar row: torso held about 48 degrees, feet either side of the bar, the bar pivots about its floor anchor so the plates move on an arc.
