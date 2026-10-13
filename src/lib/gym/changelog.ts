@@ -225,6 +225,20 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 30,
     text: {
+      en: "Food tab: “Can I eat it?” and “Import meal” now sit as two buttons right under Add food.",
+      nl: "Voedsel-tab: “Kan ik het?” en “Importeren” staan nu als twee knoppen direct onder Voedsel toevoegen.",
+    },
+  },
+  {
+    version: 31,
+    text: {
+      en: "Dutch wording: the Food tab button now reads “Mag ik het?” instead of “Kan ik het?”.",
+      nl: "Betere zin: de knop in de Voedsel-tab heet nu “Mag ik het?” in plaats van “Kan ik het?”.",
+    },
+  },
+  {
+    version: 32,
+    text: {
       en: "The exercise animation no longer makes the page jump: the note under the animation (Lower, Press, ...) now keeps the same height on every step, so scrolling stays smooth.",
       nl: "De oefeninganimatie laat de pagina niet meer verspringen: de tekst onder de animatie (Zakken, Duwen, ...) houdt nu bij elke stap dezelfde hoogte, zodat scrollen rustig blijft.",
     },
@@ -233,7 +247,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 30;
+export const CURRENT_VERSION = 32;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
