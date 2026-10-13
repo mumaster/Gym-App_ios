@@ -9,7 +9,7 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 import { WhatsNewSheet } from "../../../components/gym/WhatsNew";
-import { CHANGELOG, CURRENT_VERSION, entriesSince, formatVersion } from "../changelog";
+import { CHANGELOG, CURRENT_VERSION, entriesSince, entryTexts, formatVersion } from "../changelog";
 import { EXERCISE_ANIMATIONS } from "../exerciseAnimations";
 import { GymProvider } from "../store";
 
@@ -23,8 +23,12 @@ describe("changelog", () => {
   it("numbers entries 1, 2, 3 … with both texts filled in", () => {
     CHANGELOG.forEach((e, i) => {
       expect(e.version).toBe(i + 1);
-      expect(e.text.en.trim().length).toBeGreaterThan(0);
-      expect(e.text.nl.trim().length).toBeGreaterThan(0);
+      for (const lang of ["en", "nl"] as const) {
+        const texts = entryTexts(e, lang);
+        expect(texts.length).toBeGreaterThan(0);
+        texts.forEach((t) => expect(t.trim().length).toBeGreaterThan(0));
+      }
+      expect(Boolean(e.text) !== Boolean(e.items), `v${e.version}: use text or items`).toBe(true);
     });
   });
 
@@ -53,6 +57,8 @@ describe("changelog", () => {
     expect(html).toContain("0.001");
     expect(html).toContain(formatVersion(CURRENT_VERSION));
     // An entry's animation preview renders as a drawing.
+    // A release with several features lists them with a "New" pill each.
+    expect(html).toContain(">New</span>");
     expect(html).toContain('viewBox="0 0 320 206"');
   });
 

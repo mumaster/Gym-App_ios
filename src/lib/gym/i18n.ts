@@ -1986,6 +1986,7 @@ const en = {
   },
   whatsNew: {
     title: "What's new",
+    newPill: "New",
     done: "Got it",
     version: "Version",
     row: "What's new",
@@ -4097,6 +4098,7 @@ const nl: Dict = {
   },
   whatsNew: {
     title: "Wat is er nieuw",
+    newPill: "Nieuw",
     done: "Begrepen",
     version: "Versie",
     row: "Wat is er nieuw",

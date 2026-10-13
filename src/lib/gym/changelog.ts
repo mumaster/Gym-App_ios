@@ -10,7 +10,11 @@ import type { Language } from "./types";
  */
 export interface ChangelogEntry {
   version: number;
-  text: Record<Language, string>;
+  /** One change: a plain sentence. Leave it out when `items` is used. */
+  text?: Record<Language, string>;
+  /** Several features in one release: one short item per feature, shown as
+   *  bullets that each start with a "New" pill. */
+  items?: Record<Language, string>[];
   /** An exercise id whose animation plays under the text, as a small preview. */
   animation?: string;
 }
@@ -266,16 +270,38 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: 36,
+    items: [
+      {
+        en: "Add spices to your meal with the Add spices button in your food overview: pick salt, pepper and more from an A–Z list, or search them.",
+        nl: "Voeg kruiden toe aan je maaltijd met de knop Kruiden toevoegen in je voedseloverzicht: kies zout, peper en meer uit een A–Z-lijst, of zoek ze.",
+      },
+      {
+        en: "Superset: the rest screen now shows what comes next and which set it is, for example “Barbell bench press, set 2 / 3”.",
+        nl: "Superset: het rustscherm laat nu zien wat er hierna komt en de hoeveelste set het is, bijvoorbeeld “Barbell bench press, set 2 / 3”.",
+      },
+      {
+        en: "Workout: “Finish workout” now asks “Are you sure?” first.",
+        nl: "Training: “Training afronden” vraagt nu eerst “Weet je het zeker?”.",
+      },
+    ],
+  },
+  {
+    version: 37,
     text: {
-      en: "Food: new “Add spices” button to pick salt, pepper and other spices from an A–Z list (or search them), and the “Add to” row is gone when adding from a meal’s plus button. Superset: the rest screen now shows what comes next and which set it is, for example “Barbell bench press, set 2 / 3”. Workout: “Finish workout” now asks “Are you sure?” first.",
-      nl: "Eten: nieuwe knop “Kruiden toevoegen” om zout, peper en andere kruiden uit een A–Z-lijst te kiezen (of te zoeken), en de rij “Toevoegen aan” verdwijnt als je via de plusknop van een maaltijd toevoegt. Superset: het rustscherm laat nu zien wat er hierna komt en de hoeveelste set het is, bijvoorbeeld “Barbell bench press, set 2 / 3”. Training: “Training afronden” vraagt nu eerst “Weet je het zeker?”.",
+      en: "What's new now lists several features of one update as bullets, each with a “New” tag.",
+      nl: "Wat is er nieuw toont meerdere functies van één update nu als opsommingstekens, elk met een label “Nieuw”.",
     },
   },
 ];
 
+/** The texts of an entry in one language: one for a plain entry, one per
+ *  feature for an entry with `items`. */
+export const entryTexts = (entry: ChangelogEntry, language: Language): string[] =>
+  entry.items ? entry.items.map((i) => i[language]) : entry.text ? [entry.text[language]] : [];
+
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 36;
+export const CURRENT_VERSION = 37;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
