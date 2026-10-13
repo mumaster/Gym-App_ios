@@ -549,6 +549,9 @@ const en = {
     cancelWorkoutTitle: "Cancel this workout?",
     cancelWorkoutBody: (n: number, word: string) =>
       `${n} logged ${word} will be discarded. This can't be undone.`,
+    finishWorkoutTitle: "Finish this workout?",
+    finishWorkoutBody: (n: number, word: string) =>
+      `${n} logged ${word} will be saved to your history.`,
     set: "set",
     sets: "sets",
     keepTraining: "Keep training",
@@ -2650,6 +2653,9 @@ const nl: Dict = {
     cancelWorkoutTitle: "Deze training annuleren?",
     cancelWorkoutBody: (n: number, word: string) =>
       `${n} gelogde ${word} worden verwijderd. Dit kan niet ongedaan worden gemaakt.`,
+    finishWorkoutTitle: "Deze training afronden?",
+    finishWorkoutBody: (n: number, word: string) =>
+      `${n} gelogde ${word} worden opgeslagen in je geschiedenis.`,
     set: "set",
     sets: "sets",
     keepTraining: "Doorgaan met trainen",

@@ -197,6 +197,7 @@ function SessionScreen() {
   const [finishedSummary, setFinishedSummary] = useState<PlannedExercise[] | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const activeCardRef = useRef<HTMLElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
@@ -1352,8 +1353,9 @@ function SessionScreen() {
         </div>
         <button
           onClick={() => {
+            haptic(15);
             setListOpen(false);
-            endWorkout();
+            setFinishConfirmOpen(true);
           }}
           className={`${button.primary} mt-4 w-full`}
         >
@@ -1388,6 +1390,39 @@ function SessionScreen() {
               </button>
               <button
                 onClick={() => setCancelConfirmOpen(false)}
+                className="min-h-[52px] w-full rounded-2xl bg-secondary text-[15px] font-semibold text-secondary-foreground active:scale-95"
+              >
+                {t.session.keepTraining}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {finishConfirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+          <button
+            aria-label={t.session.keepTraining}
+            onClick={() => setFinishConfirmOpen(false)}
+            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+          />
+          <div className="glass-strong relative w-full max-w-sm rounded-3xl p-6 text-center shadow-[var(--shadow-float)]">
+            <h2 className="text-[20px] font-bold tracking-tight">{t.session.finishWorkoutTitle}</h2>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              {t.session.finishWorkoutBody(done, done === 1 ? t.session.set : t.session.sets)}
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setFinishConfirmOpen(false);
+                  endWorkout();
+                }}
+                className={`${button.primary} w-full`}
+              >
+                {t.session.finishWorkout}
+              </button>
+              <button
+                onClick={() => setFinishConfirmOpen(false)}
                 className="min-h-[52px] w-full rounded-2xl bg-secondary text-[15px] font-semibold text-secondary-foreground active:scale-95"
               >
                 {t.session.keepTraining}
