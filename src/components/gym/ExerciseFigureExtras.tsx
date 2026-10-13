@@ -5,6 +5,12 @@ import { EXTRAS_W2 } from "./figureExtras/w2";
 import { EXTRAS_W3 } from "./figureExtras/w3";
 import { EXTRAS_W4 } from "./figureExtras/w4";
 import { EXTRAS_W5 } from "./figureExtras/w5";
+import { EXTRAS_W6 } from "./figureExtras/w6";
+import { EXTRAS_W7 } from "./figureExtras/w7";
+import { EXTRAS_W8 } from "./figureExtras/w8";
+import { EXTRAS_W9 } from "./figureExtras/w9";
+import { EXTRAS_W10 } from "./figureExtras/w10";
+import { EXTRAS_VARIANTS } from "./figureExtras/variants";
 
 export type P2 = [number, number];
 
@@ -33,6 +39,12 @@ export const FIGURE_EXTRAS: Record<string, FigureExtra> = {
   ...EXTRAS_W3,
   ...EXTRAS_W4,
   ...EXTRAS_W5,
+  ...EXTRAS_W6,
+  ...EXTRAS_W7,
+  ...EXTRAS_W8,
+  ...EXTRAS_W9,
+  ...EXTRAS_W10,
+  ...EXTRAS_VARIANTS,
 };
 
 /** The hooks of one layer for a model's furniture and implement. */
