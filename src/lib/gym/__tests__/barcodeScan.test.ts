@@ -90,3 +90,33 @@ describe("searchProducts", () => {
     });
   });
 });
+
+describe("searchProducts language", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("prefers the name in the app language, else the generic one", async () => {
+    const { searchProducts } = await import("../barcodeLookup");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              products: [
+                {
+                  code: "10",
+                  product_name: "Beurre de cacahuète",
+                  product_name_nl: "Pindakaas",
+                  nutriments: { "energy-kcal_100g": 600 },
+                },
+                { code: "11", product_name: "Confiture", nutriments: { "energy-kcal_100g": 250 } },
+              ],
+            }),
+        }),
+      ),
+    );
+    const hits = await searchProducts("lang-test", "nl");
+    expect(hits.map((h) => h.name)).toEqual(["Pindakaas", "Confiture"]);
+  });
+});

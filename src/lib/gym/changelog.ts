@@ -112,11 +112,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Een product dat je met je eigen waarden hebt opgeslagen, staat in de zoekresultaten niet meer dubbel onder Producten.",
     },
   },
+  {
+    version: 15,
+    text: {
+      en: "Product search now shows product names in your app language (Dutch or English) when Open Food Facts has them, instead of often French.",
+      nl: "Producten zoeken toont productnamen nu in de taal van je app (Nederlands of Engels) als Open Food Facts die heeft, in plaats van vaak Frans.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 14;
+export const CURRENT_VERSION = 15;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -29,6 +29,8 @@ interface OpenFoodFactsResponse {
   status?: number;
   product?: {
     product_name?: string;
+    product_name_nl?: string;
+    product_name_en?: string;
     serving_size?: string;
     nutriments?: Record<string, unknown>;
   };
@@ -75,10 +77,13 @@ type OffProduct = NonNullable<OpenFoodFactsResponse["product"]>;
 
 /** One product's per-100g values as the shape both a scan and a search
  *  result share, so a searched product logs exactly like a scanned one. */
-function toLabel(product: OffProduct): ScannedLabel {
+function toLabel(product: OffProduct, language?: "en" | "nl"): ScannedLabel {
   const n = product.nutriments ?? {};
+  // The generic name is whatever language the contributor typed (often
+  // French); Open Food Facts also keeps one per language, so prefer yours.
+  const localized = language ? product[`product_name_${language}`]?.trim() : undefined;
   return {
-    name: product.product_name?.trim() || null,
+    name: localized || product.product_name?.trim() || null,
     calories: num(n["energy-kcal_100g"]),
     protein: num(n["proteins_100g"]),
     carbs: num(n["carbohydrates_100g"]),
@@ -97,7 +102,8 @@ export interface ProductHit {
 }
 
 const SEARCH_ENDPOINT = "https://world.openfoodfacts.org/cgi/search.pl";
-const SEARCH_FIELDS = "code,product_name,brands,nutriments,serving_size";
+const SEARCH_FIELDS =
+  "code,product_name,product_name_nl,product_name_en,brands,nutriments,serving_size";
 const searchCache = new Map<string, Promise<ProductHit[]>>();
 
 /** Text search in the same Open Food Facts database the barcode scanner
@@ -105,11 +111,11 @@ const searchCache = new Map<string, Promise<ProductHit[]>>();
  *  row you can't log is noise); other missing values stay null and show up
  *  as unfilled in the review form, as with a scan. Throws on a network
  *  failure, for the caller to show. */
-export function searchProducts(query: string): Promise<ProductHit[]> {
-  const key = query.trim().toLowerCase();
+export function searchProducts(query: string, language?: "en" | "nl"): Promise<ProductHit[]> {
+  const key = `${language ?? ""}:${query.trim().toLowerCase()}`;
   const hit = searchCache.get(key);
   if (hit) return hit;
-  const request = fetchSearch(key);
+  const request = fetchSearch(query.trim().toLowerCase(), language);
   searchCache.set(key, request);
   request.catch(() => searchCache.delete(key));
   if (searchCache.size > CACHE_SIZE) {
@@ -118,7 +124,7 @@ export function searchProducts(query: string): Promise<ProductHit[]> {
   return request;
 }
 
-async function fetchSearch(query: string): Promise<ProductHit[]> {
+async function fetchSearch(query: string, language?: "en" | "nl"): Promise<ProductHit[]> {
   const params = new URLSearchParams({
     search_terms: query,
     search_simple: "1",
@@ -134,7 +140,7 @@ async function fetchSearch(query: string): Promise<ProductHit[]> {
   };
   const hits: ProductHit[] = [];
   for (const p of json.products ?? []) {
-    const label = toLabel(p);
+    const label = toLabel(p, language);
     if (!label.name || label.calories === null || typeof p.code !== "string") continue;
     const brand = p.brands?.split(",")[0]?.trim() || null;
     hits.push({ barcode: p.code, name: label.name, brand, label });
