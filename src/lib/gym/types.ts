@@ -289,6 +289,9 @@ export interface WorkoutTemplate {
   plan: PlannedExercise[];
   duration_minutes: number;
   target_muscles: Muscle[];
+  /** Set when it was saved as the template of a day type (a SplitDay.id such
+   *  as "upper"): shown with that day's name. */
+  day_id?: string;
 }
 
 /** A workout saved for one day of a weekly plan or program (a schedule

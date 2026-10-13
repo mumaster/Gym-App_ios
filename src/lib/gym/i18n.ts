@@ -1884,6 +1884,13 @@ const en = {
     deleteTemplate: (name: string) => `Delete ${name}`,
     startTemplate: (name: string) => `Start ${name}`,
     empty: 'No saved templates yet — generate a plan, then tap "Save" before starting it.',
+    saveDone: "Save this workout",
+    saveDoneTitle: "Save workout",
+    asWorkout: "As a workout",
+    asDayType: "As a day template",
+    dayTypeHint: "A template for this kind of day. Pick the type.",
+    dayTemplate: (day: string) => `${day} template`,
+    saved: "Saved. Find it under Saved templates on the Workout tab.",
   },
   swapSheet: {
     title: "Swap exercise",
@@ -3981,6 +3988,13 @@ const nl: Dict = {
     startTemplate: (name: string) => `Start ${name}`,
     empty:
       'Nog geen opgeslagen sjablonen — genereer een plan en tik op "Opslaan" voordat je het start.',
+    saveDone: "Deze training opslaan",
+    saveDoneTitle: "Training opslaan",
+    asWorkout: "Als training",
+    asDayType: "Als dagsjabloon",
+    dayTypeHint: "Een sjabloon voor dit soort dag. Kies het type.",
+    dayTemplate: (day: string) => `Sjabloon ${day}`,
+    saved: "Opgeslagen. Je vindt het onder Opgeslagen sjablonen in de Training-tab.",
   },
   swapSheet: {
     title: "Oefening wisselen",

@@ -243,11 +243,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De oefeninganimatie laat de pagina niet meer verspringen: de tekst onder de animatie (Zakken, Duwen, ...) houdt nu bij elke stap dezelfde hoogte, zodat scrollen rustig blijft.",
     },
   },
+  {
+    version: 33,
+    text: {
+      en: "Save a finished workout: open it in History and tap “Save this workout” to keep it as a workout or as a template for a kind of day (Upper Body, Lower Body...). Find it under Saved templates on the Workout tab.",
+      nl: "Een afgeronde training opslaan: open hem in Geschiedenis en tik op “Deze training opslaan” om hem te bewaren als training of als sjabloon voor een soort dag (Bovenlichaam, Onderlichaam...). Je vindt hem onder Opgeslagen sjablonen in de Training-tab.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 32;
+export const CURRENT_VERSION = 33;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
