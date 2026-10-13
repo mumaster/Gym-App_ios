@@ -417,26 +417,31 @@ export function AnatomyMap({
               {t.recovery.info}
             </p>
           ) : null}
-          <ul className="mt-1.5 flex flex-wrap justify-center gap-1.5">
+          {/* Two columns meeting at the centre line: left pills end and right
+                pills start the same distance from it. */}
+          <ul className="mt-1.5 grid grid-cols-2 gap-1.5">
             {/* The slowest few; the rest one tap away, so a full-body day
                 doesn't push the chips below a wall of pills. */}
             {(allRecovering ? recovering : recovering.slice(0, RECOVERY_PILLS)).map(
-              ({ region, rec, level }) => (
+              ({ region, rec, level }, i) => (
                 <li
                   key={region.id}
-                  className="flex items-center gap-1.5 rounded-full bg-foreground/5 px-2.5 py-1 text-[12px] font-semibold text-foreground/80"
+                  className={`${i % 2 ? "justify-self-start" : "justify-self-end"} flex min-w-0 max-w-full items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-1 text-[12px] font-semibold text-foreground/80`}
                 >
                   <span
                     aria-hidden
                     className="size-2 shrink-0 rounded-full"
                     style={{ background: `var(--map-recover-${level})` }}
                   />
-                  {region.label} · {t.recovery.hoursLeft(rec.hoursLeft)}
+                  <span className="truncate">{region.label}</span>
+                  <span className="shrink-0 whitespace-nowrap">
+                    · {t.recovery.hoursLeft(rec.hoursLeft)}
+                  </span>
                 </li>
               ),
             )}
             {recovering.length > RECOVERY_PILLS ? (
-              <li>
+              <li className="col-span-2 justify-self-center">
                 <button
                   onClick={() => setAllRecovering((v) => !v)}
                   aria-expanded={allRecovering}
