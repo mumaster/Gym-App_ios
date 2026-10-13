@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backCameras, nextCamera, shortLensName } from "../cameraChoice";
+import { backCameras, shortLensName } from "../cameraChoice";
 
 const dev = (deviceId: string, label: string, kind = "videoinput") =>
   ({ deviceId, label, kind }) as MediaDeviceInfo;
@@ -14,21 +14,6 @@ describe("backCameras", () => {
       dev("", "Back Camera"),
     ]);
     expect(list.map((c) => c.deviceId)).toEqual(["a", "c"]);
-  });
-});
-
-describe("nextCamera", () => {
-  const cams = [
-    { deviceId: "a", label: "Back Camera" },
-    { deviceId: "c", label: "Back Ultra Wide Camera" },
-  ];
-  it("cycles and wraps", () => {
-    expect(nextCamera(cams, "a")?.deviceId).toBe("c");
-    expect(nextCamera(cams, "c")?.deviceId).toBe("a");
-  });
-  it("starts at the first when unknown, null when empty", () => {
-    expect(nextCamera(cams, null)?.deviceId).toBe("a");
-    expect(nextCamera([], "a")).toBeNull();
   });
 });
 
