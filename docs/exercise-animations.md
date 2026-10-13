@@ -174,3 +174,12 @@ Furniture and implements:
 - `w8-kick-tower` (furniture): column the lifter holds with a hand bar, base and low pulley (`KICK_PULLEY`); `w8-kick-strap` (implement): ankle cuff and cable from the working ankle to the low pulley.
 - `w8-rev-deck` (furniture): reverse pec deck: seat, floor rail, front column with the handle pivot, chest pad on the front of the torso (mid layer so the hands stay in front of it), levers to the grips.
 - W9: `w9-cross-bench`, `w9-incline-30`, `w9-prone-bench`, `w9-pullover-db`, `w9-zottman` (zottman grip turn stored in `pose.bar[0]`: palms up and down look the same, so the dumbbells pass through neutral at the bottom and top).
+
+## Batch 8 (home gym, v0.025)
+
+Picked by running `generateWorkout` with only the Home Gym profile's equipment (every target, 30/45/60 min, variations 0-3, with and without supersets) and ranking the suggested exercises without an animation by popularity, skipping holds and carries. Built in `exerciseAnimationW11.ts` / `figureExtras/w11.tsx`.
+
+- Single-arm cable rear delt fly: the tower stands on the far side (`w11-rdf-tower`, x -98, pulley y 172 like `w8-hi-tower`, z 34) so the cable crosses in front of the body to the opposite hand; one fixed soft elbow bend, the hand sweeps from across the chest to out at shoulder height and stops in line with the body; the free hand on the hip.
+- Smith machine shoulder press: `w11-smith-seat` is the W6 Smith frame (`smithFrame`, now exported from w6.tsx) plus an upright bench. `w11-smith-bar-small` draws side-view plates at radius 10 so they stay clear of the face; the bar's z is fixed (shoulder z + 19) and it runs from chin height to lockout.
+- Half-kneeling single-arm lat pulldown: reuses `w8-hi-tower` and `w8-hi-handle`; the near knee is down with the shin flat on the floor, the far foot flat 40 cm ahead, the free hand on the front thigh. Starts in a full stretch with the hand in front of the face line.
+- Smith machine RDL: `w3-smith-bar` with a `w11-smith-rdl` frame (top 150). Bar z fixed over mid-foot (12 against an ankle z of 6), torso 0 to 76 degrees, hips about 28 cm back, shins about vertical. With straight arms the bar only reaches just below the knee, which is where an RDL stops for most people anyway.

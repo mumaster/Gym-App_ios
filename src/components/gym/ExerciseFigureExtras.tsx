@@ -10,6 +10,7 @@ import { EXTRAS_W7 } from "./figureExtras/w7";
 import { EXTRAS_W8 } from "./figureExtras/w8";
 import { EXTRAS_W9 } from "./figureExtras/w9";
 import { EXTRAS_W10 } from "./figureExtras/w10";
+import { EXTRAS_W11 } from "./figureExtras/w11";
 import { EXTRAS_VARIANTS } from "./figureExtras/variants";
 
 export type P2 = [number, number];
@@ -44,6 +45,7 @@ export const FIGURE_EXTRAS: Record<string, FigureExtra> = {
   ...EXTRAS_W8,
   ...EXTRAS_W9,
   ...EXTRAS_W10,
+  ...EXTRAS_W11,
   ...EXTRAS_VARIANTS,
 };
 
