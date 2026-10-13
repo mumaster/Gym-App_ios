@@ -63,6 +63,26 @@ export function MealOverviewSheet({
     >
       {meal ? (
         <div className="space-y-4">
+          <div className="flex gap-2">
+            {canAdd ? (
+              <button
+                onClick={onAdd}
+                className={`${button.primary} min-w-0 flex-1 whitespace-nowrap`}
+              >
+                <Plus className="size-4" /> {t.mealOverview.add}
+              </button>
+            ) : null}
+            {entries.length ? (
+              <button
+                onClick={onShare}
+                aria-label={t.mealShare.share}
+                className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
+              >
+                <Share2 className="size-4" /> {t.mealShare.share}
+              </button>
+            ) : null}
+          </div>
+
           <div>
             <div className="flex items-center justify-between gap-3">
               <p className="tabular leading-none">
@@ -186,23 +206,6 @@ export function MealOverviewSheet({
           ) : (
             <p className="px-1 text-[14px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
           )}
-
-          <div className="flex gap-2">
-            {canAdd ? (
-              <button onClick={onAdd} className={`${button.primary} flex-1`}>
-                <Plus className="size-4" /> {t.mealOverview.add}
-              </button>
-            ) : null}
-            {entries.length ? (
-              <button
-                onClick={onShare}
-                aria-label={t.mealShare.share}
-                className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
-              >
-                <Share2 className="size-4" /> {t.mealShare.share}
-              </button>
-            ) : null}
-          </div>
 
           {entries.some((e) => e.nevo?.length) ? (
             <p className="px-1 text-[11px] leading-snug text-muted-foreground">

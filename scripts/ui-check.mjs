@@ -605,7 +605,13 @@ for (const [lang, scheme] of combos) {
       r.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
     );
     const { activeWorkoutForSession, ...seedState } = seed;
-    const state = { ...seedState, language: lang, colorScheme: scheme, welcomeSeen: true };
+    const state = {
+      ...seedState,
+      language: lang,
+      colorScheme: scheme,
+      welcomeSeen: true,
+      lastSeenVersion: 1e6,
+    };
     await context.addInitScript(
       (s) => {
         try {
