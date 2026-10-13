@@ -190,14 +190,14 @@ function DayBars({
                 )}
                 {total > 0 && !(over && overIsBad) && (
                   <div
-                    className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse overflow-hidden rounded-full"
+                    className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
                     style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
                   >
                     {parts.map((p, k) => (
                       <span
                         key={k}
-                        className={`${p.className} ${k === parts.length - 1 ? "rounded-t-full" : ""} ${k === 0 ? "rounded-b-full" : ""}`}
-                        style={{ height: `${(p.value / total) * 100}%` }}
+                        className={`${p.className} min-h-1 rounded-full`}
+                        style={{ flex: `${p.value} 1 0%` }}
                       />
                     ))}
                   </div>
