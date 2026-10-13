@@ -151,3 +151,10 @@ export function searchSpices(query: string, language: "en" | "nl", limit = 10): 
   scored.sort((a, b) => a.score - b.score);
   return scored.slice(0, limit).map((s) => s.spice);
 }
+
+/** Every spice for the "Add spices" picker: with a query the same matches as
+ *  `searchSpices` (no cut-off), without one the whole list, salt and pepper
+ *  first as in `ROWS`. */
+export function listSpices(query: string, language: "en" | "nl"): Spice[] {
+  return foldText(query).trim() ? searchSpices(query, language, SPICES.length) : SPICES;
+}
