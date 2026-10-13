@@ -2093,8 +2093,6 @@ const en = {
     legend: "Tinted muscles are still recovering from recent training",
     stillRecovering: "Still recovering",
     hoursLeft: (h: number) => `${h} h`,
-    more: (n: number) => `+${n} more`,
-    showFewer: "Show fewer",
     title: "Recovery",
     countLine: (n: number) =>
       n ? `${n} ${n === 1 ? "muscle" : "muscles"} recovering` : "All recovered",
@@ -4191,8 +4189,6 @@ const nl: Dict = {
     legend: "Getinte spieren herstellen nog van recente training",
     stillRecovering: "Herstelt nog",
     hoursLeft: (h: number) => `${h} u`,
-    more: (n: number) => `+${n} meer`,
-    showFewer: "Minder tonen",
     title: "Herstel",
     countLine: (n: number) =>
       n ? `${n} ${n === 1 ? "spier herstelt" : "spieren herstellen"} nog` : "Alles hersteld",

@@ -201,11 +201,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Records in Geschiedenis: je beste geschatte 1RM, zwaarste set en recordgeschiedenis per oefening, plus een krachtscore. De spierkaart kleurt spieren die nog herstellen (ook onder Geschiedenis → Activiteit), en programmaweken bepalen hoeveel reps je overhoudt, zichtbaar tijdens het trainen.",
     },
   },
+  {
+    version: 27,
+    text: {
+      en: "The list of recovering muscles on the muscle map is now always fully shown, instead of collapsing behind \"+N more\".",
+      nl: "De lijst met herstellende spieren op de spierkaart toont nu altijd alles, in plaats van in te klappen achter \"+N meer\".",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 26;
+export const CURRENT_VERSION = 27;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
