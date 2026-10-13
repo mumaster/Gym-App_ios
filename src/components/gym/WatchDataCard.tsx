@@ -264,7 +264,7 @@ function Zones({ title, zones }: { title: string; zones: { name: string; minutes
             </p>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-primary"
+                className="bar-in-x h-full rounded-full bg-primary"
                 style={{ width: `${(z.minutes / max) * 100}%` }}
               />
             </div>
@@ -351,7 +351,7 @@ function SplitRow({
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         {pace && fastest && isWholeSplit(split.label) ? (
           <div
-            className="h-full rounded-full bg-primary"
+            className="bar-in-x h-full rounded-full bg-primary"
             style={{ width: `${(fastest / pace) * 100}%` }}
           />
         ) : null}

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CHART_ANIMATION } from "../../lib/gym/chartAnimation";
 import { exerciseById } from "../../lib/gym/data";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { isBodyweightExercise, latestBodyKg } from "../../lib/gym/load";
@@ -82,7 +83,7 @@ export function ExerciseProgressChart({
                 stroke={ACTUAL_STROKE}
                 strokeWidth={2.5}
                 dot={{ r: 3, fill: ACTUAL_STROKE, stroke: ACTUAL_STROKE }}
-                isAnimationActive={false}
+                {...CHART_ANIMATION}
               />
             ) : null}
             <Line
@@ -91,7 +92,7 @@ export function ExerciseProgressChart({
               stroke="var(--primary)"
               strokeWidth={2}
               dot={{ r: 3, fill: "var(--primary)" }}
-              isAnimationActive={false}
+              {...CHART_ANIMATION}
             />
           </LineChart>
         </ResponsiveContainer>

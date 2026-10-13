@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { chartSelection, type WeightEntry, type WeightTrend } from "../../lib/gym/bodyweight";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 
@@ -169,12 +169,16 @@ export function WeightChart({
               stroke="var(--primary)"
               strokeWidth={2}
               strokeLinecap="round"
+              pathLength={1}
+              className="chart-draw"
             />
           ) : null}
 
           {pts.map((p, i) => (
             <circle
               key={p.t}
+              className="chart-dot"
+              style={{ "--dot-delay": `${Math.min(i * 40, 600)}ms` } as CSSProperties}
               cx={x(p.t)}
               cy={yy(p.kg)}
               r={i === active ? 5.5 : 4}

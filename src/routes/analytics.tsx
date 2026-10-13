@@ -39,7 +39,7 @@ function Bars({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
             <div
-              className="h-full rounded-full bg-primary"
+              className="bar-in-x h-full rounded-full bg-primary"
               style={{ width: `${Math.max(3, (r.value / max) * 100)}%` }}
             />
           </div>

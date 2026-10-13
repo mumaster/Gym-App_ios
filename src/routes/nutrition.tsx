@@ -621,7 +621,7 @@ function WeekStrip({
               ) : (
                 <span className="h-1 w-6 overflow-hidden rounded-full bg-muted">
                   <span
-                    className={`block h-full rounded-full ${mark.over ? "bg-destructive" : "bg-primary"}`}
+                    className={`bar-in-x block h-full rounded-full ${mark.over ? "bg-destructive" : "bg-primary"}`}
                     style={{ width: `${mark.pct ?? 0}%` }}
                   />
                 </span>

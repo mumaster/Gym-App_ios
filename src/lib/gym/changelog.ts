@@ -208,11 +208,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: 'De lijst met herstellende spieren op de spierkaart toont nu altijd alles, in plaats van in te klappen achter "+N meer".',
     },
   },
+  {
+    version: 28,
+    text: {
+      en: "Every bar, column and chart now grows in when it appears, with the same motion as the volume chart in History: progress and goal bars, the weekly recap, records, training load and the weight and exercise graphs. Nothing moves if Reduce Motion is on.",
+      nl: "Elke balk, kolom en grafiek groeit nu in zodra hij verschijnt, met dezelfde beweging als de volumegrafiek in Geschiedenis: voortgangs- en doelbalken, het weekoverzicht, records, trainingsbelasting en de gewichts- en oefeninggrafieken. Er beweegt niets als Beweging verminderen aanstaat.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 27;
+export const CURRENT_VERSION = 28;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

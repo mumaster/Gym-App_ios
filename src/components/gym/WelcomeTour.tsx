@@ -359,7 +359,10 @@ function Eyebrow({ children, className = "" }: { children: ReactNode; className?
 function Bar({ pct, className = "" }: { pct: number; className?: string }) {
   return (
     <div className={`h-1.5 overflow-hidden rounded-full bg-muted ${className}`}>
-      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, pct)}%` }} />
+      <div
+        className="bar-in-x h-full rounded-full bg-primary"
+        style={{ width: `${Math.min(100, pct)}%` }}
+      />
     </div>
   );
 }

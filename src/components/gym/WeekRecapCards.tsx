@@ -172,7 +172,7 @@ function DayBars({
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
             <div className="flex h-28 w-full items-end justify-center" aria-hidden>
               <div
-                className="relative w-5"
+                className="bar-in-y relative w-5"
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
                 <span
@@ -190,14 +190,14 @@ function DayBars({
                 )}
                 {total > 0 && !(over && overIsBad) && (
                   <div
-                    className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse overflow-hidden rounded-full"
+                    className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
                     style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
                   >
                     {parts.map((p, k) => (
                       <span
                         key={k}
-                        className={`${p.className} ${k === parts.length - 1 ? "rounded-t-full" : ""} ${k === 0 ? "rounded-b-full" : ""}`}
-                        style={{ height: `${(p.value / total) * 100}%` }}
+                        className={`${p.className} min-h-1 rounded-full`}
+                        style={{ flex: `${p.value} 1 0%` }}
                       />
                     ))}
                   </div>
@@ -426,7 +426,7 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
       {cardio.whoMinutes > 0 ? (
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            <div className="bar-in-x h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <p className={`${text.meta} mt-1.5`}>
             {t.weekRecap.whoLine(cardio.whoMinutes, cardio.whoTarget)}
@@ -523,7 +523,7 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
             <div
-              className={`h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
+              className={`bar-in-x h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
               style={{
                 width: `${Math.min(100, Math.round((average.calories / calorieGoal) * 100))}%`,
               }}

@@ -374,8 +374,70 @@
   transition:
     width 500ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color 300ms ease-out;
+  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+    animation: none;
+  }
+}
+
+/* Every bar and column grows in when it is first drawn (the motion of History's
+   Volume per muscle group chart). `bar-in-x` grows a horizontal fill from its
+   left edge, `bar-in-y` a vertical one from its baseline. Animating the size
+   rather than scaling keeps the rounded ends round. Charts from Recharts use
+   the same timing (`CHART_ANIMATION`, lib/gym/chartAnimation.ts). */
+@keyframes bar-in-x {
+  from {
+    width: 0;
+  }
+}
+@keyframes bar-in-y {
+  from {
+    height: 0;
+  }
+}
+@utility bar-in-x {
+  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+/* SVG charts: a line draws itself, dots pop in one after another. */
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes chart-dot {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+@utility chart-draw {
+  stroke-dasharray: 1;
+  animation: chart-draw 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+@utility chart-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-dot 400ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  animation-delay: var(--dot-delay, 0ms);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@utility bar-in-y {
+  animation: bar-in-y 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 
