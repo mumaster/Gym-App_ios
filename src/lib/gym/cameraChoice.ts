@@ -27,6 +27,11 @@ export function shortLensName(label: string): string {
   return name || "Main";
 }
 
+/** The ultra wide lens, if the device lists one (iOS: "Back Ultra Wide Camera"). */
+export function ultraWideCamera(cameras: BackCamera[]): BackCamera | undefined {
+  return cameras.find((c) => /ultra\s*wide/i.test(c.label));
+}
+
 export function loadCameraId(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEY);
