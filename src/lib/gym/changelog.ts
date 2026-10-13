@@ -257,11 +257,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Een afgeronde training opslaan: open hem in Geschiedenis en tik op “Deze training opslaan” om hem te bewaren als training of als sjabloon voor een soort dag (Bovenlichaam, Onderlichaam...). Je vindt hem onder Opgeslagen sjablonen in de Training-tab.",
     },
   },
+  {
+    version: 35,
+    text: {
+      en: "Adding food to a meal (lunch, dinner, snack) now brings you back to that meal instead of the day overview, so you can keep adding.",
+      nl: "Als je eten aan een maaltijd toevoegt (lunch, diner, snack), kom je nu terug bij die maaltijd in plaats van bij het dagoverzicht, zodat je door kunt gaan met toevoegen.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 34;
+export const CURRENT_VERSION = 35;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
