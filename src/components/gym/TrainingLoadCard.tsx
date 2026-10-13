@@ -5,6 +5,7 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { mondayOf } from "../../lib/gym/schedule";
 import { useGym } from "../../lib/gym/store";
 import { LOAD_SPIKE_RATIO, dailyLoads, loadEntries, loadRatio } from "../../lib/gym/trainingLoad";
+import { BarReadout, barColumn, usePickedBar } from "./BarReadout";
 import { CardHead } from "./CardHead";
 import { Card } from "./Screen";
 import { SegmentedTabs } from "./SegmentedTabs";
@@ -58,6 +59,9 @@ export function TrainingLoadCard({ weekOf }: { weekOf?: Date | undefined }) {
   );
 
   const total = days.reduce((n, d) => n + d.load, 0);
+  const { picked, toggle, clear } = usePickedBar();
+  // A different week, month or period is a different set of bars.
+  useEffect(clear, [weekKey, monthKey, period]); // eslint-disable-line react-hooks/exhaustive-deps
   const sessions = days.reduce((n, d) => n + d.sessions, 0);
   const rated = days.reduce((n, d) => n + d.rated, 0);
   const max = Math.max(1, ...days.map((d) => d.load));
@@ -118,39 +122,51 @@ export function TrainingLoadCard({ weekOf }: { weekOf?: Date | undefined }) {
         </div>
 
         {rated ? (
-          <div
-            className={`flex h-24 items-end ${period === "week" ? "gap-2" : "gap-0.5"}`}
-            role="img"
-            aria-label={
-              period === "week" ? t.trainingLoad.chartLabel : t.trainingLoad.chartLabelMonth
-            }
-          >
-            {days.map((d, i) => {
-              const label =
-                period === "week"
-                  ? (t.common.dow[d.date.getDay()] ?? "").charAt(0).toUpperCase()
-                  : i % 7 === 0
-                    ? String(d.date.getDate())
-                    : "";
-              return (
-                <div
-                  key={d.date.toISOString()}
-                  className="flex h-full min-w-0 flex-1 flex-col justify-end gap-1"
-                >
-                  <div className="flex min-h-0 flex-1 items-end rounded-t-md bg-foreground/10">
-                    <div
-                      className="bar-in-y w-full rounded-t-md bg-primary"
-                      style={{ height: `${d.load ? Math.max(6, (d.load / max) * 100) : 0}%` }}
-                      title={`${d.load}`}
-                    />
-                  </div>
-                  <span className="h-[14px] text-center text-[11px] leading-[14px] text-muted-foreground">
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <BarReadout
+              text={
+                picked != null && days[picked]
+                  ? `${days[picked]!.date.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })} · ${days[picked]!.load.toLocaleString(locale)} ${t.trainingLoad.units}`
+                  : null
+              }
+            />
+            <div
+              className={`flex h-24 items-end ${period === "week" ? "gap-2" : "gap-0.5"}`}
+              role="group"
+              aria-label={
+                period === "week" ? t.trainingLoad.chartLabel : t.trainingLoad.chartLabelMonth
+              }
+            >
+              {days.map((d, i) => {
+                const label =
+                  period === "week"
+                    ? (t.common.dow[d.date.getDay()] ?? "").charAt(0).toUpperCase()
+                    : i % 7 === 0
+                      ? String(d.date.getDate())
+                      : "";
+                return (
+                  <button
+                    type="button"
+                    key={d.date.toISOString()}
+                    onClick={() => toggle(i)}
+                    aria-pressed={picked === i}
+                    aria-label={`${d.date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}: ${d.load} ${t.trainingLoad.units}`}
+                    className={`${barColumn(picked === i)} flex h-full min-w-0 flex-1 flex-col justify-end gap-1`}
+                  >
+                    <div className="flex min-h-0 flex-1 items-end rounded-t-md bg-foreground/10">
+                      <div
+                        className="bar-in-y w-full rounded-t-md bg-primary"
+                        style={{ height: `${d.load ? Math.max(6, (d.load / max) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <span className="h-[14px] text-center text-[11px] leading-[14px] text-muted-foreground">
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <p className="text-[13px] text-muted-foreground">{t.trainingLoad.empty}</p>
         )}

@@ -52,6 +52,7 @@ const en = {
     ofTotal: (n: number, total: number) => `${n} of ${total}`,
     /** Sun-first, matching lib/gym/splits.ts's DOW_LABELS index (Date#getDay order). */
     dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as string[],
+    tapBarHint: "Tap a bar to see its figures",
     customColor: "Custom color",
   },
   tabbar: {
@@ -2140,6 +2141,7 @@ const nl: Dict = {
     loading: "Laden",
     ofTotal: (n: number, total: number) => `${n} van ${total}`,
     dow: ["zo", "ma", "di", "wo", "do", "vr", "za"] as string[],
+    tapBarHint: "Tik op een balk voor de cijfers",
     customColor: "Aangepaste kleur",
   },
   tabbar: {

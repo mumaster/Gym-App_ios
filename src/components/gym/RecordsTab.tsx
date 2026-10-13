@@ -17,6 +17,7 @@ import { CardHead } from "./CardHead";
 import { ExerciseProgressChart } from "./ExerciseProgressChart";
 import { ListCard } from "./ListCard";
 import { Card, SectionLabel } from "./Screen";
+import { BarReadout, barColumn, usePickedBar } from "./BarReadout";
 import { button } from "./ui";
 
 /** A record set this recently still gets the "New" pill. */
@@ -36,55 +37,73 @@ function ScoreBars({ months }: { months: { month: Date; score: number | null }[]
   const t = useTranslation();
   const locale = useLocale();
   const scale = Math.max(100, ...months.map((m) => m.score ?? 0));
+  const { picked, toggle } = usePickedBar();
+  const pickedMonth = picked == null ? null : months[picked]!;
   return (
-    <ul className="grid grid-cols-6 gap-1">
-      {months.map(({ month, score }) => {
-        const total = score ?? 0;
-        const height = Math.max(100, total);
-        const over = total > 100;
-        const name = month.toLocaleDateString(locale, { month: "short" });
-        return (
-          <li
-            key={month.getTime()}
-            aria-label={t.records.monthAria(name, score)}
-            className="flex flex-col items-center"
-          >
-            <div className="flex h-28 w-full items-end justify-center" aria-hidden>
-              <div
-                className="bar-in-y relative w-5"
-                style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+    <>
+      <BarReadout
+        text={
+          pickedMonth
+            ? t.records.monthAria(
+                pickedMonth.month.toLocaleDateString(locale, { month: "long" }),
+                pickedMonth.score,
+              )
+            : null
+        }
+      />
+      <ul className="grid grid-cols-6 gap-1">
+        {months.map(({ month, score }, i) => {
+          const total = score ?? 0;
+          const height = Math.max(100, total);
+          const over = total > 100;
+          const name = month.toLocaleDateString(locale, { month: "short" });
+          return (
+            <li key={month.getTime()}>
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                aria-label={t.records.monthAria(name, score)}
+                aria-pressed={picked === i}
+                className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
               >
-                <span
-                  className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
-                  style={{ height: `${(100 / height) * 100}%` }}
-                />
-                {total > 0 && over ? (
-                  <>
-                    <span className="absolute inset-0 rounded-full bg-primary" />
+                <div className="flex h-28 w-full items-end justify-center" aria-hidden>
+                  <div
+                    className="bar-in-y relative w-5"
+                    style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+                  >
                     <span
-                      className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
-                      style={{ height: `${(100 / total) * 100}%` }}
+                      className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
+                      style={{ height: `${(100 / height) * 100}%` }}
                     />
-                  </>
-                ) : null}
-                {total > 0 && !over ? (
-                  <span
-                    className="intake-fill absolute inset-x-0 bottom-0 rounded-full"
-                    style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
-                  />
-                ) : null}
-              </div>
-            </div>
-            <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
-              {score == null ? "–" : score}
-            </span>
-            <span className="text-[10px] uppercase leading-4 text-muted-foreground" aria-hidden>
-              {name}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+                    {total > 0 && over ? (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-primary" />
+                        <span
+                          className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
+                          style={{ height: `${(100 / total) * 100}%` }}
+                        />
+                      </>
+                    ) : null}
+                    {total > 0 && !over ? (
+                      <span
+                        className="intake-fill absolute inset-x-0 bottom-0 rounded-full"
+                        style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+                <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
+                  {score == null ? "–" : score}
+                </span>
+                <span className="text-[10px] uppercase leading-4 text-muted-foreground" aria-hidden>
+                  {name}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
