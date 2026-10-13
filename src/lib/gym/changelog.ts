@@ -292,6 +292,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Wat is er nieuw toont meerdere functies van één update nu als opsommingstekens, elk met een label “Nieuw”.",
     },
   },
+  {
+    version: 38,
+    items: [
+      {
+        en: "Meal overview: the Add food and Share buttons are now at the top of the screen.",
+        nl: "Maaltijdoverzicht: de knoppen Toevoegen en Delen staan nu bovenaan het scherm.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -301,7 +310,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 37;
+export const CURRENT_VERSION = 38;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

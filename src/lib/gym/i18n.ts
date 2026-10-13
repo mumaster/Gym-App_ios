@@ -3620,7 +3620,7 @@ const nl: Dict = {
     split: "Energie uit",
     foods: (n: number) => (n === 1 ? "1 product" : `${n} producten`),
     proteinMeal: (g: number, target: number) => `Eiwit in deze maaltijd: ${g} van ${target} g`,
-    add: "Voeding toevoegen",
+    add: "Toevoegen",
     save: "Opslaan als maaltijd",
   },
   mealShare: {
