@@ -332,7 +332,7 @@ export function AddFoodSheet({
     }
     let stale = false;
     const timer = setTimeout(() => {
-      searchProducts(q).then(
+      searchProducts(q, language).then(
         (hits) => !stale && setProducts({ query: q, hits }),
         () => !stale && setProducts({ query: q, hits: "error" }),
       );
@@ -341,7 +341,7 @@ export function AddFoodSheet({
       stale = true;
       clearTimeout(timer);
     };
-  }, [q, open, step]);
+  }, [q, open, step, language]);
   const productsLoading = q.length >= 3 && products?.query !== q;
   /** Products you've already saved (by barcode) show under Your foods, with
    *  your edited values, so the database copy is hidden. */
