@@ -38,6 +38,33 @@ const pt = ([x, y]: P2) => `${f(x)},${f(y)}`;
 const line = (a: P2, b: P2) => `M${pt(a)}L${pt(b)}`;
 
 /**
+ * A small, silent looping side view of one exercise (no controls), for
+ * previews such as What's new. Holds the resting frame under Reduce Motion.
+ */
+export function AnimationSnippet({ exerciseId, label }: { exerciseId: string; label: string }) {
+  const figure = EXERCISE_ANIMATIONS[exerciseId]?.figure;
+  const [phase, setPhase] = useState(REST_T);
+  useEffect(() => {
+    if (!figure) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      setPhase((REST_T + (now - start) / 1000 / REP_SECONDS) % 1);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [figure]);
+  if (!figure) return null;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="block w-full">
+      <FigureSide model={figure} pose={figure.pose(depthAt(phase))} />
+    </svg>
+  );
+}
+
+/**
  * A looping front or side drawing of one exercise, driven by the rig in
  * `exerciseAnimation.ts`. Renders nothing for exercises without a rig.
  * Honors reduced motion by holding the bar on the chest until played.

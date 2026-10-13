@@ -10,6 +10,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 import { WhatsNewSheet } from "../../../components/gym/WhatsNew";
 import { CHANGELOG, CURRENT_VERSION, entriesSince, formatVersion } from "../changelog";
+import { EXERCISE_ANIMATIONS } from "../exerciseAnimations";
 import { GymProvider } from "../store";
 
 describe("changelog", () => {
@@ -51,5 +52,13 @@ describe("changelog", () => {
     expect(html).toContain("What&#x27;s new");
     expect(html).toContain("0.001");
     expect(html).toContain(formatVersion(CURRENT_VERSION));
+    // An entry's animation preview renders as a drawing.
+    expect(html).toContain('viewBox="0 0 320 206"');
+  });
+
+  it("only previews exercises that have a figure animation", () => {
+    for (const e of CHANGELOG) {
+      if (e.animation) expect(EXERCISE_ANIMATIONS[e.animation]?.figure, e.animation).toBeDefined();
+    }
   });
 });
