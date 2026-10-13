@@ -8,9 +8,6 @@ import { chip as chipStyle } from "./ui";
 
 type RecoveryMap = Partial<Record<RegionId, RegionRecovery>>;
 
-/** Recovering muscles named under the map before "+N more". */
-const RECOVERY_PILLS = 4;
-
 /** Distinct hue used for pairing suggestions (map highlight + popup border). */
 export const SUGGESTED_COLOR = "oklch(0.85 0.18 90)";
 
@@ -342,7 +339,6 @@ export function AnatomyMap({
   const t = useTranslation();
   const [listOpen, setListOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [allRecovering, setAllRecovering] = useState(false);
   const recovering = REGIONS.flatMap((r) => {
     const rec = recovery?.[r.id];
     const level = rec ? recoveryLevel(rec) : null;
@@ -420,39 +416,22 @@ export function AnatomyMap({
           {/* Two columns meeting at the centre line: left pills end and right
                 pills start the same distance from it. */}
           <ul className="mt-1.5 grid grid-cols-2 gap-1.5">
-            {/* The slowest few; the rest one tap away, so a full-body day
-                doesn't push the chips below a wall of pills. */}
-            {(allRecovering ? recovering : recovering.slice(0, RECOVERY_PILLS)).map(
-              ({ region, rec, level }, i) => (
-                <li
-                  key={region.id}
-                  className={`${i % 2 ? "justify-self-start" : "justify-self-end"} flex min-w-0 max-w-full items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-1 text-[12px] font-semibold text-foreground/80`}
-                >
-                  <span
-                    aria-hidden
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ background: `var(--map-recover-${level})` }}
-                  />
-                  <span className="truncate">{region.label}</span>
-                  <span className="shrink-0 whitespace-nowrap">
-                    · {t.recovery.hoursLeft(rec.hoursLeft)}
-                  </span>
-                </li>
-              ),
-            )}
-            {recovering.length > RECOVERY_PILLS ? (
-              <li className="col-span-2 justify-self-center">
-                <button
-                  onClick={() => setAllRecovering((v) => !v)}
-                  aria-expanded={allRecovering}
-                  className="tap-target rounded-full border border-dashed border-border px-2.5 py-1 text-[12px] font-semibold text-muted-foreground active:scale-95"
-                >
-                  {allRecovering
-                    ? t.recovery.showFewer
-                    : t.recovery.more(recovering.length - RECOVERY_PILLS)}
-                </button>
+            {recovering.map(({ region, rec, level }, i) => (
+              <li
+                key={region.id}
+                className={`${i % 2 ? "justify-self-start" : "justify-self-end"} flex min-w-0 max-w-full items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-1 text-[12px] font-semibold text-foreground/80`}
+              >
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: `var(--map-recover-${level})` }}
+                />
+                <span className="truncate">{region.label}</span>
+                <span className="shrink-0 whitespace-nowrap">
+                  · {t.recovery.hoursLeft(rec.hoursLeft)}
+                </span>
               </li>
-            ) : null}
+            ))}
           </ul>
         </div>
       ) : null}
