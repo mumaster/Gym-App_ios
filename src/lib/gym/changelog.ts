@@ -194,11 +194,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "4 nieuwe oefeninganimaties voor thuisgymtrainingen: de reverse fly met één arm aan de kabel, schouderpress en Roemeense deadlift in de Smith machine, en de lat pulldown met één arm op één knie.",
     },
   },
+  {
+    version: 26,
+    text: {
+      en: "Records in History: your best estimated 1-rep max, heaviest set and record history per exercise, plus a strength score. The muscle map now tints muscles that are still recovering (also under History → Activity), and program weeks set how many reps to leave in reserve, shown while you lift.",
+      nl: "Records in Geschiedenis: je beste geschatte 1RM, zwaarste set en recordgeschiedenis per oefening, plus een krachtscore. De spierkaart kleurt spieren die nog herstellen (ook onder Geschiedenis → Activiteit), en programmaweken bepalen hoeveel reps je overhoudt, zichtbaar tijdens het trainen.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 25;
+export const CURRENT_VERSION = 26;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

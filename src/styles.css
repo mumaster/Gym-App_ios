@@ -988,10 +988,28 @@
   --map-panel-hi: color-mix(in oklch, var(--foreground) 38%, var(--background));
   --map-rim: color-mix(in oklch, var(--foreground) 18%, transparent);
   --map-on-rim: color-mix(in oklch, var(--primary) 60%, white);
+  /* Recovery tint (amber family from --warning, apart from the accent and
+     from the yellow suggestion hatch). "low" = more fatigued = stronger.
+     Dark: panels land near oklch L 0.64 / 0.54 against the body's 0.20, so
+     about 5:1 and 3.3:1 (needs 3:1 for graphics). */
+  --map-recover-low: color-mix(in oklch, var(--warning) 78%, var(--map-panel));
+  --map-recover-low-hi: color-mix(in oklch, var(--warning) 88%, var(--map-panel-hi));
+  --map-recover-mid: color-mix(in oklch, var(--warning) 50%, var(--map-panel));
+  --map-recover-mid-hi: color-mix(in oklch, var(--warning) 60%, var(--map-panel-hi));
 }
 .light {
   --map-body: color-mix(in oklch, var(--foreground) 3%, var(--background));
   --map-panel: color-mix(in oklch, var(--foreground) 12%, var(--background));
   --map-panel-hi: color-mix(in oklch, var(--foreground) 5%, var(--background));
   --map-rim: color-mix(in oklch, var(--foreground) 16%, transparent);
+  /* Light: the light theme's --warning (#a17a10) is a mustard that read as
+     olive green on the grey tiles, so the map uses its own amber here (hue
+     ~65–75, apart from the red accent and the yellow hatch). "low" lands
+     near L 0.68, about 3:1 against the body's 0.97; "mid" is a light amber
+     that reads by hue next to the grey tiles, with the pills under the map
+     naming every recovering muscle (never colour alone). */
+  --map-recover-low: oklch(0.68 0.15 62);
+  --map-recover-low-hi: oklch(0.76 0.14 68);
+  --map-recover-mid: oklch(0.82 0.1 72);
+  --map-recover-mid-hi: oklch(0.88 0.08 76);
 }

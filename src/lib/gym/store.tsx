@@ -38,7 +38,7 @@ import {
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey, loggedAtForDay } from "./date";
-import { DELOAD_WEEK, advanceProgram, type Program } from "./programs";
+import { DELOAD_WEEK, advanceProgram, programRirTarget, type Program } from "./programs";
 import type { FocusGroup } from "./volume";
 import type { WeightEntry } from "./bodyweight";
 import { withWeighIn, type ScaleWeighIn } from "./scale";
@@ -1215,6 +1215,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
             fromScheduledDay: input.fromScheduledDay ?? false,
             fromProgramDay: input.fromProgramDay ?? false,
             ...(input.cardio ? { cardio: input.cardio } : {}),
+            ...(input.fromProgramDay && s.program
+              ? { rir_target: programRirTarget(s.program) }
+              : {}),
           },
         }));
       },

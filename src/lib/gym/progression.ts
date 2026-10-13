@@ -179,10 +179,13 @@ export function rpeAdjustedWeight(
   rpe: number | undefined,
   roundStep: number,
   bodyKg: number | null = null,
+  /** The RPE band to aim for; a program week's RIR target narrows it
+   *  (programs.ts's `rpeBandForRir`). */
+  band: [number, number] = TARGET_RPE,
 ): { weight: number; direction: "up" | "down" } | null {
   const moved = weight + (bodyKg ?? 0);
   if (rpe == null || moved <= 0 || (weight <= 0 && bodyKg == null)) return null;
-  const [lo, hi] = TARGET_RPE;
+  const [lo, hi] = band;
   const off = rpe > hi ? rpe - hi : rpe < lo ? rpe - lo : 0;
   if (!off) return null;
   const raw = moved * (1 - off * LOAD_CHANGE_PER_RPE_POINT) - (bodyKg ?? 0);

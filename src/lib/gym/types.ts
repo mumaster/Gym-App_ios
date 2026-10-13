@@ -134,6 +134,19 @@ export interface Workout {
    *  finishing the workout logs it as its own CardioSession, so it counts
    *  toward cardio minutes and calories the way any logged cardio does. */
   cardio?: CardioFinisher & { done?: boolean };
+  /** Reps-in-reserve target of the program week this session was started
+   *  in (programs.ts's `programRirTarget`); only on program-day sessions. */
+  rir_target?: RirTarget;
+}
+
+/** A program week's effort target, carried by a session started from it. */
+export interface RirTarget {
+  /** Reps to leave in reserve on working sets. */
+  rir: number;
+  /** 1-based week of the program. */
+  week: number;
+  weeks: number;
+  deload: boolean;
 }
 
 /** A sports watch's own summary of one session, read from screenshots of

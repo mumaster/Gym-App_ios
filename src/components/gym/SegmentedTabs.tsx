@@ -77,7 +77,9 @@ export function SegmentedTabs<T extends string>({
           role="tab"
           aria-selected={id === value}
           onClick={() => onChange(id)}
-          className={`tap-target relative min-h-[34px] min-w-0 rounded-full px-2 text-[13.5px] font-semibold transition-colors ${
+          // Four tabs (History) get less side padding, so Dutch "Voortgang"
+          // fits at 375 wide without a smaller font.
+          className={`tap-target relative min-h-[34px] min-w-0 rounded-full ${tabs.length > 3 ? "px-1" : "px-2"} text-[13.5px] font-semibold transition-colors ${
             id === value ? "text-primary-text" : "text-muted-foreground"
           }`}
         >

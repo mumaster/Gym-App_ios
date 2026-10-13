@@ -47,6 +47,7 @@ import { EQUIPMENT, MUSCLES, TARGET_MUSCLE_GROUP, exerciseById } from "../lib/gy
 import { estimateMinutes, generateWorkout } from "../lib/gym/generator";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { learnPace } from "../lib/gym/pace";
+import { regionRecovery } from "../lib/gym/recovery";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import {
   PAIRINGS,
@@ -59,7 +60,7 @@ import {
 } from "../lib/gym/anatomy";
 import { moveBlock, planBlocks } from "../lib/gym/planBlocks";
 import { plateStep } from "../lib/gym/plates";
-import { currentProgramWeek } from "../lib/gym/programs";
+import { currentProgramWeek, programRirTarget } from "../lib/gym/programs";
 import {
   hasWeekWorkout,
   isPregenerated,
@@ -153,6 +154,7 @@ function WorkoutHome() {
   /** The user's own set pace, learned from their history — plans are fitted
    *  to it and their length is estimated with it (lib/gym/pace.ts). */
   const pace = useMemo(() => learnPace(workouts), [workouts]);
+  const recovery = useMemo(() => regionRecovery(workouts), [workouts]);
   const [duration, setDuration] = useState(45);
   const [customInput, setCustomInput] = useState("");
   /** The week-strip day whose planned workout is open (DayWorkoutSheet). */
@@ -810,6 +812,11 @@ function WorkoutHome() {
             {programWeek.type === "deload" ? (
               <p className="mt-1 text-[12.5px] text-muted-foreground">{t.generate.deloadExplain}</p>
             ) : null}
+            {/* The week's effort target (programs.ts's weekRirTargets), which
+                the session then shows on the RPE scale. */}
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              {t.rir.programLine(programRirTarget(program).rir)}
+            </p>
 
             <div className="mt-3 flex gap-1">
               {program.weeks.map((w, i) => (
@@ -1224,6 +1231,7 @@ function WorkoutHome() {
                 <AnatomyMap
                   selected={regions}
                   suggested={proposalPair?.with ?? null}
+                  recovery={recovery}
                   onToggle={toggleRegion}
                 />
 

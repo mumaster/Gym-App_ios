@@ -1,8 +1,15 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { REGIONS, regionById, type RegionId } from "../../lib/gym/anatomy";
+import type { RegionRecovery } from "../../lib/gym/recovery";
+import { recoveryLevel } from "../../lib/gym/recovery";
 import { chip as chipStyle } from "./ui";
+
+type RecoveryMap = Partial<Record<RegionId, RegionRecovery>>;
+
+/** Recovering muscles named under the map before "+N more". */
+const RECOVERY_PILLS = 4;
 
 /** Distinct hue used for pairing suggestions (map highlight + popup border). */
 export const SUGGESTED_COLOR = "oklch(0.85 0.18 90)";
@@ -110,12 +117,14 @@ function Body({
   view,
   selected,
   suggested,
+  recovery,
   onToggle,
   showLabel = true,
 }: {
   view: "front" | "back";
   selected: RegionId[];
   suggested?: RegionId | null;
+  recovery?: RecoveryMap | undefined;
   onToggle: (id: RegionId) => void;
   showLabel?: boolean;
 }) {
@@ -177,12 +186,18 @@ function Body({
         {ids.map((id) => {
           const active = selected.includes(id);
           const hinted = !active && suggested === id;
+          const rec = !active && !hinted ? recovery?.[id] : undefined;
+          const level = rec ? recoveryLevel(rec) : null;
           return (
             <g
               key={id}
               role="checkbox"
               aria-checked={active}
-              aria-label={regionById(id).label}
+              aria-label={
+                rec && level
+                  ? t.recovery.regionAria(regionById(id).label, rec.hoursLeft)
+                  : regionById(id).label
+              }
               tabIndex={0}
               onClick={() => onToggle(id)}
               onKeyDown={(e) => {
@@ -202,7 +217,13 @@ function Body({
                   d={d}
                   strokeLinejoin="round"
                   style={{
-                    fill: active ? "url(#map-on)" : hinted ? "url(#map-hint)" : "url(#map-idle)",
+                    fill: active
+                      ? "url(#map-on)"
+                      : hinted
+                        ? "url(#map-hint)"
+                        : level
+                          ? `url(#map-recover-${level})`
+                          : "url(#map-idle)",
                     stroke: active
                       ? "var(--map-on-rim)"
                       : hinted
@@ -252,6 +273,12 @@ function MapDefs() {
           <stop offset="0%" style={{ stopColor: "var(--map-panel-hi)" }} />
           <stop offset="100%" style={{ stopColor: "var(--map-panel)" }} />
         </linearGradient>
+        {(["low", "mid"] as const).map((level) => (
+          <linearGradient key={level} id={`map-recover-${level}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style={{ stopColor: `var(--map-recover-${level}-hi)` }} />
+            <stop offset="100%" style={{ stopColor: `var(--map-recover-${level})` }} />
+          </linearGradient>
+        ))}
         <linearGradient id="map-on" x1="0" y1="0" x2="0" y2="1">
           <stop
             offset="0%"
@@ -299,15 +326,28 @@ export function AnatomyPreview({
 export function AnatomyMap({
   selected,
   suggested,
+  recovery,
   onToggle,
+  readOnly = false,
 }: {
   selected: RegionId[];
+  /** Only shows recovery (History): no picking, no muscle chips. */
+  readOnly?: boolean;
   /** Region currently highlighted as a pairing suggestion. */
   suggested?: RegionId | null;
+  /** Regions still recovering from recent training, tinted when idle. */
+  recovery?: RecoveryMap | undefined;
   onToggle: (id: RegionId) => void;
 }) {
   const t = useTranslation();
   const [listOpen, setListOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [allRecovering, setAllRecovering] = useState(false);
+  const recovering = REGIONS.flatMap((r) => {
+    const rec = recovery?.[r.id];
+    const level = rec ? recoveryLevel(rec) : null;
+    return rec && level ? [{ region: r, rec, level }] : [];
+  }).sort((a, b) => b.rec.hoursLeft - a.rec.hoursLeft);
   const chosen = REGIONS.filter((r) => selected.includes(r.id));
   const suggestedHere =
     suggested && !selected.includes(suggested) && (suggested in FRONT || suggested in BACK);
@@ -332,13 +372,25 @@ export function AnatomyMap({
     <div>
       <MapDefs />
 
-      <div className="flex gap-3">
-        <Body view="front" selected={selected} suggested={suggested ?? null} onToggle={onToggle} />
+      <div className="flex gap-3" inert={readOnly || undefined}>
+        <Body
+          view="front"
+          selected={selected}
+          suggested={suggested ?? null}
+          recovery={recovery}
+          onToggle={onToggle}
+        />
         <div
           className="w-px shrink-0 self-stretch bg-gradient-to-b from-transparent via-border to-transparent"
           aria-hidden
         />
-        <Body view="back" selected={selected} suggested={suggested ?? null} onToggle={onToggle} />
+        <Body
+          view="back"
+          selected={selected}
+          suggested={suggested ?? null}
+          recovery={recovery}
+          onToggle={onToggle}
+        />
       </div>
 
       {suggestedHere ? (
@@ -347,33 +399,99 @@ export function AnatomyMap({
         </p>
       ) : null}
 
-      {/* What's selected, as removable chips; the full list is one tap away. */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
-        {chosen.length ? (
-          chosen.map((r) => (
+      {recovering.length ? (
+        <div className="mt-2">
+          <div className="flex items-center justify-center gap-1">
             <button
-              key={r.id}
-              onClick={() => onToggle(r.id)}
-              aria-label={t.muscleMap.removeMuscle(r.label)}
-              className={`tap-target flex min-h-[34px] items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold active:scale-95 ${chipStyle.on}`}
+              onClick={() => setInfoOpen((v) => !v)}
+              aria-expanded={infoOpen}
+              aria-label={t.recovery.infoAria}
+              className="tap-target flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-95"
             >
-              {r.label}
-              <X className="size-3.5 opacity-70" strokeWidth={3} />
+              <Info className="size-4" />
             </button>
-          ))
-        ) : (
-          <p className="text-[12.5px] text-muted-foreground">{t.muscleMap.tapHint}</p>
-        )}
-        <button
-          onClick={() => setListOpen((v) => !v)}
-          aria-expanded={listOpen}
-          className="tap-target min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
-        >
-          {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
-        </button>
-      </div>
+            <p className="text-[12px] text-muted-foreground">{t.recovery.legend}</p>
+          </div>
+          {infoOpen ? (
+            <p className="mt-1 text-center text-[12.5px] text-muted-foreground">
+              {t.recovery.info}
+            </p>
+          ) : null}
+          {/* Two columns meeting at the centre line: left pills end and right
+                pills start the same distance from it. */}
+          <ul className="mt-1.5 grid grid-cols-2 gap-1.5">
+            {/* The slowest few; the rest one tap away, so a full-body day
+                doesn't push the chips below a wall of pills. */}
+            {(allRecovering ? recovering : recovering.slice(0, RECOVERY_PILLS)).map(
+              ({ region, rec, level }, i) => (
+                <li
+                  key={region.id}
+                  className={`${i % 2 ? "justify-self-start" : "justify-self-end"} flex min-w-0 max-w-full items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-1 text-[12px] font-semibold text-foreground/80`}
+                >
+                  <span
+                    aria-hidden
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ background: `var(--map-recover-${level})` }}
+                  />
+                  <span className="truncate">{region.label}</span>
+                  <span className="shrink-0 whitespace-nowrap">
+                    · {t.recovery.hoursLeft(rec.hoursLeft)}
+                  </span>
+                </li>
+              ),
+            )}
+            {recovering.length > RECOVERY_PILLS ? (
+              <li className="col-span-2 justify-self-center">
+                <button
+                  onClick={() => setAllRecovering((v) => !v)}
+                  aria-expanded={allRecovering}
+                  className="tap-target rounded-full border border-dashed border-border px-2.5 py-1 text-[12px] font-semibold text-muted-foreground active:scale-95"
+                >
+                  {allRecovering
+                    ? t.recovery.showFewer
+                    : t.recovery.more(recovering.length - RECOVERY_PILLS)}
+                </button>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
 
-      {listOpen ? (
+      {readOnly && !recovering.length ? (
+        <p className="mt-2 text-center text-[12.5px] text-muted-foreground">
+          {t.recovery.allRecovered}
+        </p>
+      ) : null}
+
+      {/* What's selected, as removable chips; the full list is one tap away. */}
+      {readOnly ? null : (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
+          {chosen.length ? (
+            chosen.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => onToggle(r.id)}
+                aria-label={t.muscleMap.removeMuscle(r.label)}
+                className={`tap-target flex min-h-[34px] items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold active:scale-95 ${chipStyle.on}`}
+              >
+                {r.label}
+                <X className="size-3.5 opacity-70" strokeWidth={3} />
+              </button>
+            ))
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">{t.muscleMap.tapHint}</p>
+          )}
+          <button
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            className="tap-target min-h-[34px] rounded-full border border-dashed border-border px-3 text-[12.5px] font-semibold text-muted-foreground active:scale-95"
+          >
+            {listOpen ? t.muscleMap.hideList : `+ ${t.muscleMap.allMuscles}`}
+          </button>
+        </div>
+      )}
+
+      {listOpen && !readOnly ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2.5">
           {REGIONS.map(chip)}
         </div>

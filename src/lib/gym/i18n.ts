@@ -362,6 +362,10 @@ const en = {
         "Suggested water goal: at least 2.0 L (women) or 2.5 L (men) of total water, 1 ml per kcal of your energy needs, 80% of it from drinks",
       cardioMets:
         "How hard each cardio activity is (METs), for the weekly minutes and a cardio session's energy",
+      rirWeeks:
+        "Reps in reserve per program week: from 3 down to 1 across the build weeks, 4 in a deload",
+      recovery:
+        "Recovery shading on the muscle map: 48–72 hours per muscle, longer after hard or high-volume sets",
     },
   },
   settings: {
@@ -696,7 +700,12 @@ const en = {
     sessions: "Sessions",
     minutesShort: (n: number) => `${n} min`,
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
-    tabs: { sessions: "Sessions", progress: "Progress", activity: "Activity" },
+    tabs: {
+      sessions: "Sessions",
+      progress: "Progress",
+      records: "Records",
+      activity: "Activity",
+    },
     daysThisWeek: "Days this week",
     thisWeek: "This week",
     lastWeek: "Last week",
@@ -2048,6 +2057,61 @@ const en = {
     sessionLoadLine: (rpe: number, minutes: number, load: number) =>
       `${rpe} × ${minutes} min = ${load} load`,
   },
+  records: {
+    scoreTitle: "Strength score",
+    scoreSub: (n: number) => `From ${n} ${n === 1 ? "exercise" : "exercises"}`,
+    scoreLine: (score: number) =>
+      score > 100
+        ? `${score - 100}% stronger than when you started`
+        : score < 100
+          ? `${100 - score}% below where you started`
+          : "Level with where you started",
+    scoreInfoAria: "What the strength score means",
+    scoreInfo:
+      "100 is where you started. For each exercise you've done twice or more, your best estimated 1-rep max of the last 8 weeks is compared with your first session of it, and the results are averaged.",
+    scoreEmpty: "Log an exercise in two sessions to get a strength score.",
+    chartNote: "Grey is your start (100); the solid part is how far above it you are.",
+    monthAria: (month: string, score: number | null) =>
+      score == null ? `${month}: no score` : `${month}: ${score}`,
+    listTitle: "Personal records",
+    listSub: (n: number) => `${n} ${n === 1 ? "exercise" : "exercises"}`,
+    empty: "Finish a workout to see your records here.",
+    bestE1rm: "Best est. 1RM",
+    heaviest: "Heaviest set",
+    bestSet: "Best set",
+    newPr: "New",
+    rowAria: (name: string) => `Show records for ${name}`,
+    sessions: (n: number) => `${n} ${n === 1 ? "session" : "sessions"}`,
+    historyTitle: "Record history",
+    historyCount: (n: number) => `${n} ${n === 1 ? "record" : "records"}`,
+    firstSession: "First session",
+    kindE1rm: "Est. 1RM",
+    kindHeaviest: "Heaviest",
+    progress: "Progress",
+  },
+  recovery: {
+    legend: "Tinted muscles are still recovering from recent training",
+    stillRecovering: "Still recovering",
+    hoursLeft: (h: number) => `${h} h`,
+    more: (n: number) => `+${n} more`,
+    showFewer: "Show fewer",
+    title: "Recovery",
+    countLine: (n: number) =>
+      n ? `${n} ${n === 1 ? "muscle" : "muscles"} recovering` : "All recovered",
+    allRecovered: "Every muscle has recovered from your last 3 days of training.",
+    regionAria: (label: string, h: number) => `${label}, still recovering, about ${h} h to go`,
+    infoAria: "How recovery is worked out",
+    info: "From your sets and their RPE in the last 3 days. A muscle needs 48 to 72 hours, longer after hard or high-volume sets. A lighter tint means almost recovered.",
+  },
+  rir: {
+    sessionLine: (rir: number, week: number, weeks: number, deload: boolean) =>
+      `${deload ? "Deload week" : `Week ${week} of ${weeks}`}: stop with ${rir} ${
+        rir === 1 ? "rep" : "reps"
+      } left (RPE ${10 - rir})`,
+    targetAria: (rpe: number) => `RPE ${rpe}, this week's target`,
+    programLine: (rir: number) =>
+      `This week: stop each set with ${rir} ${rir === 1 ? "rep" : "reps"} left`,
+  },
   progression: {
     hitTop: (top: number) =>
       `You hit ${top}+ reps on every set in your last two sessions — time to add weight.`,
@@ -2392,6 +2456,8 @@ const nl: Dict = {
         "Voorgesteld waterdoel: minstens 2,0 L (vrouwen) of 2,5 L (mannen) totaal water, 1 ml per kcal van je energiebehoefte, waarvan 80% uit drinken",
       cardioMets:
         "Hoe zwaar elke cardio-activiteit is (MET), voor de minuten per week en de energie van een cardiosessie",
+      rirWeeks: "Reps over per programmaweek: van 3 naar 1 in de opbouwweken, 4 in een deloadweek",
+      recovery: "Herstel op de spierkaart: 48–72 uur per spier, langer na zware sets of veel sets",
     },
   },
   settings: {
@@ -2728,7 +2794,12 @@ const nl: Dict = {
     sessions: "Sessies",
     minutesShort: (n: number) => `${n} min`,
     setsAndVolume: (sets: number, volume: string) => `${sets} sets · ${volume} kg`,
-    tabs: { sessions: "Sessies", progress: "Voortgang", activity: "Activiteit" },
+    tabs: {
+      sessions: "Sessies",
+      progress: "Voortgang",
+      records: "Records",
+      activity: "Activiteit",
+    },
     daysThisWeek: "Dagen deze week",
     thisWeek: "Deze week",
     lastWeek: "Vorige week",
@@ -4083,6 +4154,61 @@ const nl: Dict = {
     sessionEffort: "Sessie-inspanning",
     sessionLoadLine: (rpe: number, minutes: number, load: number) =>
       `${rpe} × ${minutes} min = ${load} belasting`,
+  },
+  records: {
+    scoreTitle: "Krachtscore",
+    scoreSub: (n: number) => `Uit ${n} ${n === 1 ? "oefening" : "oefeningen"}`,
+    scoreLine: (score: number) =>
+      score > 100
+        ? `${score - 100}% sterker dan bij je start`
+        : score < 100
+          ? `${100 - score}% onder je start`
+          : "Gelijk aan je start",
+    scoreInfoAria: "Wat de krachtscore betekent",
+    scoreInfo:
+      "100 is je start. Voor elke oefening die je twee keer of vaker deed, wordt je beste geschatte 1RM van de laatste 8 weken vergeleken met je eerste sessie ervan, en daarvan het gemiddelde genomen.",
+    scoreEmpty: "Log een oefening in twee sessies voor een krachtscore.",
+    chartNote: "Grijs is je start (100); het volle deel is hoeveel je erboven zit.",
+    monthAria: (month: string, score: number | null) =>
+      score == null ? `${month}: geen score` : `${month}: ${score}`,
+    listTitle: "Persoonlijke records",
+    listSub: (n: number) => `${n} ${n === 1 ? "oefening" : "oefeningen"}`,
+    empty: "Rond een training af om je records hier te zien.",
+    bestE1rm: "Beste geschatte 1RM",
+    heaviest: "Zwaarste set",
+    bestSet: "Beste set",
+    newPr: "Nieuw",
+    rowAria: (name: string) => `Records van ${name} tonen`,
+    sessions: (n: number) => `${n} ${n === 1 ? "sessie" : "sessies"}`,
+    historyTitle: "Recordgeschiedenis",
+    historyCount: (n: number) => `${n} ${n === 1 ? "record" : "records"}`,
+    firstSession: "Eerste sessie",
+    kindE1rm: "Geschatte 1RM",
+    kindHeaviest: "Zwaarste",
+    progress: "Voortgang",
+  },
+  recovery: {
+    legend: "Getinte spieren herstellen nog van recente training",
+    stillRecovering: "Herstelt nog",
+    hoursLeft: (h: number) => `${h} u`,
+    more: (n: number) => `+${n} meer`,
+    showFewer: "Minder tonen",
+    title: "Herstel",
+    countLine: (n: number) =>
+      n ? `${n} ${n === 1 ? "spier herstelt" : "spieren herstellen"} nog` : "Alles hersteld",
+    allRecovered: "Elke spier is hersteld van je training van de laatste 3 dagen.",
+    regionAria: (label: string, h: number) => `${label}, herstelt nog, ongeveer ${h} uur te gaan`,
+    infoAria: "Hoe herstel wordt berekend",
+    info: "Uit je sets en hun RPE van de laatste 3 dagen. Een spier heeft 48 tot 72 uur nodig, langer na zware sets of veel sets. Een lichtere tint betekent bijna hersteld.",
+  },
+  rir: {
+    sessionLine: (rir: number, week: number, weeks: number, deload: boolean) =>
+      `${deload ? "Deloadweek" : `Week ${week} van ${weeks}`}: stop met nog ${rir} ${
+        rir === 1 ? "rep" : "reps"
+      } over (RPE ${10 - rir})`,
+    targetAria: (rpe: number) => `RPE ${rpe}, het doel van deze week`,
+    programLine: (rir: number) =>
+      `Deze week: stop elke set met nog ${rir} ${rir === 1 ? "rep" : "reps"} over`,
   },
   progression: {
     hitTop: (top: number) =>

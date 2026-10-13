@@ -1,6 +1,6 @@
 import { advanceRotation, type Rotation } from "./schedule";
 import type { SplitTemplateId } from "./splits";
-import type { CardioFinisher } from "./types";
+import type { CardioFinisher, RirTarget } from "./types";
 
 export type ProgramWeekType = "build" | "deload";
 
@@ -104,4 +104,60 @@ export function advanceProgram(program: Program, today = new Date(), doneOn?: Da
   return wrapped
     ? { ...rotation, currentWeek: (program.currentWeek + 1) % program.weeks.length }
     : rotation;
+}
+
+/**
+ * Reps-in-reserve target for each week of a program: build weeks step from
+ * 3 reps left down to 1, and a deload week asks for 4.
+ *
+ * - Stepping effort up across a block is how Helms, Cronin, Storey & Zourdos
+ *   (Strength Cond J 2016) apply the RIR-based RPE scale: a mesocycle starts
+ *   further from failure and moves closer to it week by week.
+ * - The range is the app's target of RPE 7–9, i.e. 1–3 reps in reserve
+ *   (progression.ts's TARGET_RPE, from Refalo et al. 2023 and Robinson et
+ *   al. 2024: growth improves closer to failure with diminishing returns, and
+ *   strength barely depends on it), so the last build week ends at 1 rep left
+ *   rather than at failure.
+ * - A deload keeps 4 reps in reserve (RPE 6, the bottom of the scale the app
+ *   logs): Bell et al.'s deload guidance (2023–2025, see DELOAD_WEEK) lowers
+ *   effort along with volume and load.
+ *
+ * Weeks in between are spaced evenly and rounded (a 5-week wave: 3, 2, 2, 1,
+ * then the deload) — that spacing is the app's own, not a published table.
+ */
+export const RIR_BUILD: [number, number] = [3, 1];
+export const RIR_DELOAD = 4;
+
+export function weekRirTargets(weeks: ProgramWeek[]): number[] {
+  const builds = weeks.filter((w) => w.type === "build").length;
+  let i = 0;
+  return weeks.map((w) => {
+    if (w.type === "deload") return RIR_DELOAD;
+    const [start, end] = RIR_BUILD;
+    const step = builds > 1 ? i / (builds - 1) : 0;
+    i += 1;
+    return Math.round(start + (end - start) * step);
+  });
+}
+
+/** The target for the week a program is in, as a session carries it. */
+export function programRirTarget(program: Program): RirTarget {
+  const week = program.currentWeek % Math.max(1, program.weeks.length);
+  return {
+    rir: weekRirTargets(program.weeks)[week] ?? RIR_BUILD[0],
+    week: week + 1,
+    weeks: program.weeks.length,
+    deload: program.weeks[week]?.type === "deload",
+  };
+}
+
+/** RIR on Zourdos et al.'s scale is 10 − RPE. */
+export const rpeForRir = (rir: number) => 10 - rir;
+
+/** The RPE band the in-session load adjustment aims for in a week with an
+ *  RIR target: the target ± 1, never accepting failure (RPE 10) as on
+ *  target. Without a target it's the app's usual TARGET_RPE. */
+export function rpeBandForRir(rir: number): [number, number] {
+  const rpe = rpeForRir(rir);
+  return [rpe - 1, Math.min(9, rpe + 1)];
 }
