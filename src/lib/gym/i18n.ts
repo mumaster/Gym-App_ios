@@ -518,6 +518,7 @@ const en = {
     upNext: "Up next:",
     restNextSet: (n: number, total: number) => `Set ${n} of ${total}`,
     restNextExercise: (name: string) => name,
+    restNextExerciseSet: (name: string, n: number, total: number) => `${name}, set ${n} / ${total}`,
     addRest: "+30 s",
     undoSet: "Undo",
     outstandingTitle: "Outstanding — you went beyond the plan!",
@@ -549,6 +550,9 @@ const en = {
     cancelWorkoutTitle: "Cancel this workout?",
     cancelWorkoutBody: (n: number, word: string) =>
       `${n} logged ${word} will be discarded. This can't be undone.`,
+    finishWorkoutTitle: "Finish this workout?",
+    finishWorkoutBody: (n: number, word: string) =>
+      `${n} logged ${word} will be saved to your history.`,
     set: "set",
     sets: "sets",
     keepTraining: "Keep training",
@@ -1111,6 +1115,8 @@ const en = {
     yourFoods: "Your foods",
     foods: "Foods",
     spices: "Spices & salt",
+    addSpices: "Add spices",
+    searchSpices: "Search spices — salt, pepper, paprika…",
     spicesNote:
       "Spice and salt values are typical figures for the dried product (USDA), an addition to NEVO.",
     per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,
@@ -2619,6 +2625,7 @@ const nl: Dict = {
     upNext: "Hierna:",
     restNextSet: (n: number, total: number) => `Set ${n} van ${total}`,
     restNextExercise: (name: string) => name,
+    restNextExerciseSet: (name: string, n: number, total: number) => `${name}, set ${n} / ${total}`,
     addRest: "+30 s",
     undoSet: "Ongedaan maken",
     outstandingTitle: "Uitzonderlijk — je ging verder dan het plan!",
@@ -2650,6 +2657,9 @@ const nl: Dict = {
     cancelWorkoutTitle: "Deze training annuleren?",
     cancelWorkoutBody: (n: number, word: string) =>
       `${n} gelogde ${word} worden verwijderd. Dit kan niet ongedaan worden gemaakt.`,
+    finishWorkoutTitle: "Deze training afronden?",
+    finishWorkoutBody: (n: number, word: string) =>
+      `${n} gelogde ${word} worden opgeslagen in je geschiedenis.`,
     set: "set",
     sets: "sets",
     keepTraining: "Doorgaan met trainen",
@@ -3216,6 +3226,8 @@ const nl: Dict = {
     yourFoods: "Jouw voedsel",
     foods: "Voedingsmiddelen",
     spices: "Kruiden & zout",
+    addSpices: "Kruiden toevoegen",
+    searchSpices: "Zoek kruiden — zout, peper, paprika…",
     spicesNote:
       "Waarden van kruiden en zout zijn gangbare cijfers voor het gedroogde product (USDA), een aanvulling op NEVO.",
     per100kcal: (kcal: number) => `per 100 g · ${kcal} kcal`,

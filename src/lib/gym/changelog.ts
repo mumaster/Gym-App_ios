@@ -264,11 +264,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Als je eten aan een maaltijd toevoegt (lunch, diner, snack), kom je nu terug bij die maaltijd in plaats van bij het dagoverzicht, zodat je door kunt gaan met toevoegen.",
     },
   },
+  {
+    version: 36,
+    text: {
+      en: "Food: new “Add spices” button to pick salt, pepper and other spices from an A–Z list (or search them), and the “Add to” row is gone when adding from a meal’s plus button. Superset: the rest screen now shows what comes next and which set it is, for example “Barbell bench press, set 2 / 3”. Workout: “Finish workout” now asks “Are you sure?” first.",
+      nl: "Eten: nieuwe knop “Kruiden toevoegen” om zout, peper en andere kruiden uit een A–Z-lijst te kiezen (of te zoeken), en de rij “Toevoegen aan” verdwijnt als je via de plusknop van een maaltijd toevoegt. Superset: het rustscherm laat nu zien wat er hierna komt en de hoeveelste set het is, bijvoorbeeld “Barbell bench press, set 2 / 3”. Training: “Training afronden” vraagt nu eerst “Weet je het zeker?”.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 35;
+export const CURRENT_VERSION = 36;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
