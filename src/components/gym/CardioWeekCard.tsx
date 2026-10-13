@@ -85,7 +85,10 @@ export function CardioWeekCard({
           }
         />
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
+          <div
+            className="bar-in-x h-full rounded-full bg-primary"
+            style={{ width: `${pct * 100}%` }}
+          />
         </div>
         {compact || past ? null : (
           <p className="mt-1.5 text-[12px] text-muted-foreground">

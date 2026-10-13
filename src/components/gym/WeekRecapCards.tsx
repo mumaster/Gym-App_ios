@@ -172,7 +172,7 @@ function DayBars({
           <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
             <div className="flex h-28 w-full items-end justify-center" aria-hidden>
               <div
-                className="relative w-5"
+                className="bar-in-y relative w-5"
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
                 <span
@@ -426,7 +426,7 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
       {cardio.whoMinutes > 0 ? (
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+            <div className="bar-in-x h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
           <p className={`${text.meta} mt-1.5`}>
             {t.weekRecap.whoLine(cardio.whoMinutes, cardio.whoTarget)}
@@ -523,7 +523,7 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
         <div className="mt-3">
           <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
             <div
-              className={`h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
+              className={`bar-in-x h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
               style={{
                 width: `${Math.min(100, Math.round((average.calories / calorieGoal) * 100))}%`,
               }}

@@ -51,7 +51,7 @@ function ScoreBars({ months }: { months: { month: Date; score: number | null }[]
           >
             <div className="flex h-28 w-full items-end justify-center" aria-hidden>
               <div
-                className="relative w-5"
+                className="bar-in-y relative w-5"
                 style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
               >
                 <span

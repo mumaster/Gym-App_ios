@@ -25,6 +25,7 @@ import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeekPicker } from "../components/gym/WeekPicker";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { CARDIO_ICONS, cardioName } from "../components/gym/cardioDisplay";
+import { CHART_ANIMATION } from "../lib/gym/chartAnimation";
 import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
 import { RouteThumb } from "../components/gym/RouteMapView";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
@@ -422,7 +423,7 @@ function HistoryScreen() {
                           color: "var(--foreground)",
                         }}
                       />
-                      <Bar dataKey="volume" radius={[8, 8, 0, 0]}>
+                      <Bar dataKey="volume" radius={[8, 8, 0, 0]} {...CHART_ANIMATION}>
                         {volumeByMuscle.map((d) => (
                           <Cell key={d.muscle} fill="var(--primary)" />
                         ))}

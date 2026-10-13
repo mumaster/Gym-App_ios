@@ -133,7 +133,7 @@ export function WeeklySetsCard({ weekOf }: { weekOf?: Date | undefined }) {
               </span>
               <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
-                  className={`h-full rounded-full ${r.done >= r.target ? "bg-primary" : "bg-primary/60"}`}
+                  className={`bar-grow h-full rounded-full ${r.done >= r.target ? "bg-primary" : "bg-primary/60"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>

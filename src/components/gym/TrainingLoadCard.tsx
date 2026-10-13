@@ -139,7 +139,7 @@ export function TrainingLoadCard({ weekOf }: { weekOf?: Date | undefined }) {
                 >
                   <div className="flex min-h-0 flex-1 items-end rounded-t-md bg-foreground/10">
                     <div
-                      className="w-full rounded-t-md bg-primary"
+                      className="bar-in-y w-full rounded-t-md bg-primary"
                       style={{ height: `${d.load ? Math.max(6, (d.load / max) * 100) : 0}%` }}
                       title={`${d.load}`}
                     />

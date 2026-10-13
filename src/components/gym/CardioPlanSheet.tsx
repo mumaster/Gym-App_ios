@@ -78,7 +78,10 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
           {t.cardio.planTotal(total, WHO_WEEKLY_MINUTES)}
         </p>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/10">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${pct * 100}%` }} />
+          <div
+            className="bar-in-x h-full rounded-full bg-primary"
+            style={{ width: `${pct * 100}%` }}
+          />
         </div>
         <p className="mt-2 text-[12px] text-muted-foreground">{t.cardio.explain}</p>
       </div>
