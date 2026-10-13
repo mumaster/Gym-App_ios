@@ -264,11 +264,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Als je eten aan een maaltijd toevoegt (lunch, diner, snack), kom je nu terug bij die maaltijd in plaats van bij het dagoverzicht, zodat je door kunt gaan met toevoegen.",
     },
   },
+  {
+    version: 36,
+    text: {
+      en: "During a superset, the rest screen now shows what comes next and which set it is, for example “Barbell bench press, set 2 / 3”.",
+      nl: "Tijdens een superset laat het rustscherm nu zien wat er hierna komt en de hoeveelste set het is, bijvoorbeeld “Barbell bench press, set 2 / 3”.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 35;
+export const CURRENT_VERSION = 36;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
