@@ -180,7 +180,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: 24,
-    animation: "hack-squat",
+    animation: "db-kickback",
     text: {
       en: "35 more exercise animations, including the hack squat, Smith machine squat and press, Arnold press, dumbbell pullover, incline curl, sumo deadlift, good morning, dragon flag and cable kickback.",
       nl: "35 nieuwe oefeninganimaties, waaronder de hack squat, squat en press in de Smith machine, Arnold press, dumbbell pullover, incline curl, sumo deadlift, good morning, dragon flag en cable kickback.",
