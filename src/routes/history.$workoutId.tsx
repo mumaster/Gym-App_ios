@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { Activity, ChevronLeft, Watch } from "lucide-react";
+import { Activity, BookmarkPlus, ChevronLeft, Watch } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
 import { SessionRpePicker } from "../components/gym/SessionRpePicker";
 import { HistoryExerciseCard } from "../components/gym/HistoryExerciseCard";
 import { RecapShare } from "../components/gym/RecapShare";
+import { SaveDoneWorkoutSheet } from "../components/gym/SaveDoneWorkoutSheet";
 import { WatchDataCard } from "../components/gym/WatchDataCard";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
 import { sessionMinutes } from "../lib/gym/trainingLoad";
@@ -37,6 +38,7 @@ function SessionDetailScreen() {
   const { workoutId } = useParams({ from: "/history/$workoutId" });
   const { workouts, hydrated, rateWorkout, setWorkoutWatch } = useGym();
   const [watchOpen, setWatchOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
   const t = useTranslation();
   const locale = useLocale();
   const workout = workouts.find((w) => w.id === workoutId);
@@ -186,6 +188,13 @@ function SessionDetailScreen() {
           />
         ))}
       </div>
+      <button
+        onClick={() => setSaveOpen(true)}
+        className="glass mt-4 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
+      >
+        <BookmarkPlus className="size-5 text-primary-text" /> {t.workoutTemplates.saveDone}
+      </button>
+      <SaveDoneWorkoutSheet open={saveOpen} onClose={() => setSaveOpen(false)} workout={workout} />
       <SectionLabel>{t.recap.title}</SectionLabel>
       <RecapShare workout={workout} />
     </Screen>

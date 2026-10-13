@@ -630,6 +630,7 @@ interface Ctx extends GymState {
     plan: PlannedExercise[],
     duration_minutes: number,
     target_muscles: Muscle[],
+    day_id?: string,
   ) => void;
   deleteWorkoutTemplate: (id: string) => void;
   addFoodEntry: (entry: FoodEntry) => void;
@@ -1674,11 +1675,18 @@ export function GymProvider({ children }: { children: ReactNode }) {
       resetScheduledWeek: (kind) =>
         setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 
-      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles) =>
+      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles, day_id) =>
         setState((s) => ({
           ...s,
           workoutTemplates: [
-            { id: crypto.randomUUID(), name, plan, duration_minutes, target_muscles },
+            {
+              id: crypto.randomUUID(),
+              name,
+              plan,
+              duration_minutes,
+              target_muscles,
+              ...(day_id ? { day_id } : {}),
+            },
             ...s.workoutTemplates,
           ],
         })),
