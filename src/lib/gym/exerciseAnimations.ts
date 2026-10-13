@@ -9,6 +9,7 @@ import { ANIMATIONS_W7 } from "./exerciseAnimationW7";
 import { ANIMATIONS_W8 } from "./exerciseAnimationW8";
 import { ANIMATIONS_W9 } from "./exerciseAnimationW9";
 import { ANIMATIONS_W10 } from "./exerciseAnimationW10";
+import { ANIMATIONS_W11 } from "./exerciseAnimationW11";
 
 /** Another catalog exercise with the same movement as an animated one (a
  *  lever leg extension, a bodyweight step-up): its animation with its own
@@ -160,4 +161,5 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
   ...ANIMATIONS_W8,
   ...ANIMATIONS_W9,
   ...ANIMATIONS_W10,
+  ...ANIMATIONS_W11,
 };

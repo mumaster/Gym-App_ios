@@ -28,7 +28,7 @@ const SMITH_X = 60;
 
 /** Front: two vertical rails and the top beam. Side: one rail at `z`, a brace
  *  at the top and a floor foot. */
-const smithFrame = (top: number, z: number): FigureExtra => ({
+export const smithFrame = (top: number, z: number): FigureExtra => ({
   front: {
     behind: ({ p, s }) => (
       <g>

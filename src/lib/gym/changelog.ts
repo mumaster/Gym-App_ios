@@ -186,11 +186,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "35 nieuwe oefeninganimaties, waaronder de hack squat, squat en press in de Smith machine, Arnold press, dumbbell pullover, incline curl, sumo deadlift, good morning, dragon flag en cable kickback.",
     },
   },
+  {
+    version: 25,
+    animation: "single-arm-lat-pulldown",
+    text: {
+      en: "4 more exercise animations for home gym workouts: the single-arm cable rear delt fly, Smith machine shoulder press, half-kneeling single-arm lat pulldown and Smith machine Romanian deadlift.",
+      nl: "4 nieuwe oefeninganimaties voor thuisgymtrainingen: de reverse fly met één arm aan de kabel, schouderpress en Roemeense deadlift in de Smith machine, en de lat pulldown met één arm op één knie.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 24;
+export const CURRENT_VERSION = 25;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
