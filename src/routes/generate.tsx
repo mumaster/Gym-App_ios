@@ -86,7 +86,7 @@ import { track } from "../lib/gym/analytics";
 import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
 import { focusMuscles, muscularCapReached, weeklySets } from "../lib/gym/volume";
-import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
+import type { DayWorkout, Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { badge, button, chip } from "../components/gym/ui";
 
@@ -502,6 +502,51 @@ function WorkoutHome() {
       ? splitDayLabel(weeklyScheme.templateId, scheduledSlot.dayId)
       : "";
 
+  /** A saved day's exercises, ready to start (readyToStart). */
+  const savedPlanOf = (
+    saved: DayWorkout,
+    slot: ScheduleSlot,
+    source: "program" | "weeklyScheme",
+  ): PlannedExercise[] => {
+    const week = source === "program" && program ? currentProgramWeek(program) : null;
+    return readyToStart(
+      saved,
+      {
+        history: workouts,
+        knownLifts,
+        profile,
+        bodyKg: latestBodyKg(weightLog, nutritionProfile),
+      },
+      week && program
+        ? { week, preGenerated: hasWeekWorkout(slot, program.currentWeek) }
+        : undefined,
+    );
+  };
+
+  /** "Start planned workout": a day with a saved workout starts it at once. */
+  const startSavedDay = (
+    templateId: SplitTemplateId,
+    slot: ScheduleSlot,
+    saved: DayWorkout,
+    source: "program" | "weeklyScheme",
+  ) => {
+    haptic([20, 40, 20]);
+    const cardio = slotCardio(
+      templateId,
+      slot,
+      source === "program" ? program?.cardio : weeklyScheme?.cardio,
+    );
+    startWorkout({
+      plan: savedPlanOf(saved, slot, source),
+      duration_minutes: saved.duration_minutes,
+      target_muscles: saved.target_muscles,
+      fromScheduledDay: source === "weeklyScheme",
+      fromProgramDay: source === "program",
+      ...(cardio ? { cardio } : {}),
+    });
+    navigate({ to: "/session" });
+  };
+
   /** A split day's button fills in its muscles and builds the plan in the
    *  same tap, then shows it — it used to only tick muscles on the map,
    *  off screen, so "Start Push day" seemed to do nothing. */
@@ -538,20 +583,7 @@ function WorkoutHome() {
       setVariation(0);
       setPlanIsSaved(true);
       setPlanKey(inputKey(savedRegions, [], saved.duration_minutes));
-      setPlan(
-        readyToStart(
-          saved,
-          {
-            history: workouts,
-            knownLifts,
-            profile,
-            bodyKg: latestBodyKg(weightLog, nutritionProfile),
-          },
-          week && program
-            ? { week, preGenerated: hasWeekWorkout(slot, program.currentWeek) }
-            : undefined,
-        ),
-      );
+      setPlan(savedPlanOf(saved, slot, source));
       setScrollToPlan((n) => n + 1);
       return;
     }
@@ -564,6 +596,10 @@ function WorkoutHome() {
     if (!weeklyScheme || !scheduledSlot) return;
     if (scheduledCardio) {
       setCardioLogKind("weeklyScheme");
+      return;
+    }
+    if (scheduledSaved) {
+      startSavedDay(weeklyScheme.templateId, scheduledSlot, scheduledSaved, "weeklyScheme");
       return;
     }
     buildSplitDay(weeklyScheme.templateId, scheduledSlot, "weeklyScheme");
@@ -582,6 +618,10 @@ function WorkoutHome() {
     if (!program || !scheduledProgramSlot) return;
     if (programCardio) {
       setCardioLogKind("program");
+      return;
+    }
+    if (programSaved) {
+      startSavedDay(program.templateId, scheduledProgramSlot, programSaved, "program");
       return;
     }
     buildSplitDay(program.templateId, scheduledProgramSlot, "program");
@@ -858,7 +898,10 @@ function WorkoutHome() {
                   </>
                 )}
                 <button onClick={startProgramDay} className={`${button.primary} mt-3 w-full`}>
-                  <Zap className="size-4" /> {t.generate.startDayType(programDayLabel)}
+                  <Zap className="size-4" />{" "}
+                  {programSaved
+                    ? t.generate.startPlanned
+                    : t.generate.startDayType(programDayLabel)}
                 </button>
               </>
             )}
@@ -922,7 +965,10 @@ function WorkoutHome() {
                   </>
                 )}
                 <button onClick={startScheduledDay} className={`${button.primary} mt-3 w-full`}>
-                  <Zap className="size-4" /> {t.generate.startDayType(scheduledDayLabel)}
+                  <Zap className="size-4" />{" "}
+                  {scheduledSaved
+                    ? t.generate.startPlanned
+                    : t.generate.startDayType(scheduledDayLabel)}
                 </button>
               </>
             )}

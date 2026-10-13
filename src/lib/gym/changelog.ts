@@ -243,11 +243,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De oefeninganimatie laat de pagina niet meer verspringen: de tekst onder de animatie (Zakken, Duwen, ...) houdt nu bij elke stap dezelfde hoogte, zodat scrollen rustig blijft.",
     },
   },
+  {
+    version: 33,
+    text: {
+      en: "Workout tab: when a day already has a saved or pre-generated workout, the main button now says “Start planned workout” and starts it right away instead of building a new one.",
+      nl: "Training-tab: als een dag al een opgeslagen of vooraf gemaakte training heeft, staat er op de hoofdknop nu “Start geplande training” en start die meteen, in plaats van een nieuwe te maken.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 32;
+export const CURRENT_VERSION = 33;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
