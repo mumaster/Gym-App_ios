@@ -3148,7 +3148,7 @@ const nl: Dict = {
       molluscs: "Mosselen, oesters, inktvis, slakken en sint-jakobsschelpen",
     },
     canIEat: "Kan ik dit eten?",
-    canIEatShort: "Kan ik het?",
+    canIEatShort: "Mag ik het?",
     canIEatSub: "Scan een product en check het op je allergieën",
     title: "Kan ik dit eten?",
     scan: "Scan een product",
