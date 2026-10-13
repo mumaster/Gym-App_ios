@@ -147,11 +147,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Scanner: de titel en de camera-knop overlappen niet meer bovenin het camerascherm.",
     },
   },
+  {
+    version: 20,
+    text: {
+      en: "Scanner: starts on the ultra wide camera when your phone has one, until you pick another camera.",
+      nl: "Scanner: start op de ultragroothoekcamera als je telefoon die heeft, totdat je een andere camera kiest.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 19;
+export const CURRENT_VERSION = 20;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

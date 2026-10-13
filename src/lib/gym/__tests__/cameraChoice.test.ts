@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backCameras, shortLensName } from "../cameraChoice";
+import { backCameras, shortLensName, ultraWideCamera } from "../cameraChoice";
 
 const dev = (deviceId: string, label: string, kind = "videoinput") =>
   ({ deviceId, label, kind }) as MediaDeviceInfo;
@@ -21,5 +21,16 @@ describe("shortLensName", () => {
   it("shortens iOS labels", () => {
     expect(shortLensName("Back Ultra Wide Camera")).toBe("Ultra Wide");
     expect(shortLensName("Back Camera")).toBe("Main");
+  });
+});
+
+describe("ultraWideCamera", () => {
+  it("finds the ultra wide lens, or nothing", () => {
+    const cams = [
+      { deviceId: "a", label: "Back Camera" },
+      { deviceId: "c", label: "Back Ultra Wide Camera" },
+    ];
+    expect(ultraWideCamera(cams)?.deviceId).toBe("c");
+    expect(ultraWideCamera([cams[0]!])).toBeUndefined();
   });
 });

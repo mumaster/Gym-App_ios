@@ -16,6 +16,7 @@ import {
   backCameras,
   loadCameraId,
   saveCameraId,
+  ultraWideCamera,
   shortLensName,
   type BackCamera,
 } from "../../lib/gym/cameraChoice";
@@ -164,7 +165,13 @@ export function FoodScanner({
       navigator.mediaDevices
         .enumerateDevices()
         .then((devices) => {
-          if (!cancelled) setCameras(backCameras(devices));
+          if (cancelled) return;
+          const list = backCameras(devices);
+          setCameras(list);
+          // No lens picked yet: start on the ultra wide, which focuses
+          // closest. Not saved, so it stays a default, not a choice.
+          const wide = cameraId ? undefined : ultraWideCamera(list);
+          if (wide) setCameraId(wide.deviceId);
         })
         .catch(() => undefined);
       if (video) {
