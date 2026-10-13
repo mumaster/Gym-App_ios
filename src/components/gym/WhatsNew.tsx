@@ -2,6 +2,7 @@ import { BottomSheet } from "./BottomSheet";
 import { entriesSince, formatVersion, CURRENT_VERSION } from "../../lib/gym/changelog";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
+import { AnimationSnippet } from "./ExerciseAnimation";
 import { button } from "./ui";
 
 /** The changelog in a sheet: everything newer than `since`, newest first
@@ -27,6 +28,11 @@ export function WhatsNewSheet({
                 {formatVersion(entry.version)}
               </p>
               <p className="mt-1 text-[14.5px] leading-snug">{entry.text[language]}</p>
+              {entry.animation && (
+                <div className="mt-3 overflow-hidden rounded-xl bg-background">
+                  <AnimationSnippet exerciseId={entry.animation} label={entry.text[language]} />
+                </div>
+              )}
             </li>
           ))}
         </ul>

@@ -2,7 +2,6 @@ import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   depthAt,
-  EXERCISE_ANIMATIONS,
   phaseAt,
   pressPose,
   REP_SECONDS,
@@ -10,6 +9,7 @@ import {
   type PressRig,
   type V3,
 } from "../../lib/gym/exerciseAnimation";
+import { EXERCISE_ANIMATIONS } from "../../lib/gym/exerciseAnimations";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
 import { FigureFront, FigureSide } from "./ExerciseFigureScene";
@@ -36,6 +36,33 @@ const side = ([, y, z]: V3): P2 => [52 + (z + 30) * K, FLOOR - y * K];
 const f = (n: number) => n.toFixed(1);
 const pt = ([x, y]: P2) => `${f(x)},${f(y)}`;
 const line = (a: P2, b: P2) => `M${pt(a)}L${pt(b)}`;
+
+/**
+ * A small, silent looping side view of one exercise (no controls), for
+ * previews such as What's new. Holds the resting frame under Reduce Motion.
+ */
+export function AnimationSnippet({ exerciseId, label }: { exerciseId: string; label: string }) {
+  const figure = EXERCISE_ANIMATIONS[exerciseId]?.figure;
+  const [phase, setPhase] = useState(REST_T);
+  useEffect(() => {
+    if (!figure) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      setPhase((REST_T + (now - start) / 1000 / REP_SECONDS) % 1);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [figure]);
+  if (!figure) return null;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} className="block w-full">
+      <FigureSide model={figure} pose={figure.pose(depthAt(phase))} />
+    </svg>
+  );
+}
 
 /**
  * A looping front or side drawing of one exercise, driven by the rig in

@@ -41,7 +41,6 @@ import {
   THRUST_BENCH_Y,
   depthAt,
   elbowFlare,
-  EXERCISE_ANIMATIONS,
   gobletPose,
   inclinePressPose,
   latPulldownPose,
@@ -54,6 +53,7 @@ import {
   sumoPose,
   type FigurePose,
 } from "../exerciseAnimation";
+import { EXERCISE_ANIMATIONS } from "../exerciseAnimations";
 import { GymProvider } from "../store";
 
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - (b[i] ?? 0)));
@@ -92,40 +92,75 @@ describe("bench press rig", () => {
 });
 
 const ANIMATED = [
+  "back-extension",
   "bb-bench",
   "bb-curl",
   "bb-deadlift",
+  "bb-incline-bench",
   "bb-row",
   "bb-squat",
+  "bench-dip",
+  "bodyweight-squat",
   "bulgarian-split",
+  "bw-calf-raise",
+  "bw-step-up",
+  "cable-crossover",
   "cable-crunch",
+  "cable-lateral",
   "cable-pushdown",
+  "chest-dip",
+  "chinup",
+  "concentration-curl",
+  "crunch",
+  "db-bench",
   "db-curl",
+  "db-fly",
   "db-hammer-curl",
   "db-overhead-triceps-ext",
   "db-rdl",
+  "db-rear-delt-flye",
   "db-row",
   "db-shoulder-press",
+  "db-shrug",
   "db-single-leg-rdl",
   "db-step-up",
   "db-sumo-deadlift",
   "db-walking-lunge",
+  "diamond-pushup",
   "dips",
+  "face-pull",
   "glute-bridge",
   "goblet-squat",
   "hanging-leg-raise",
   "hip-thrust",
   "incline-db-press",
   "kb-swing",
+  "landmine-t-bar-row",
   "lat-pulldown",
   "lateral-raise",
   "leg-curl",
+  "leg-developer-extension",
   "leg-extension",
   "leg-press",
+  "lying-leg-raise",
+  "machine-row",
+  "nordic-curl",
+  "ohp",
+  "pec-deck",
+  "pike-pushup",
   "pullup",
+  "pushup",
   "rdl",
+  "reverse-crunch",
   "reverse-lunge",
+  "russian-twist",
+  "seated-cable-row",
+  "seated-leg-curl",
+  "seated-rear-lateral-raise",
+  "single-arm-db-bench",
   "skullcrusher",
+  "smith-incline-press",
+  "split-squat",
   "standing-calf",
 ];
 
@@ -383,7 +418,7 @@ describe("ExerciseAnimation render", () => {
   });
   it("shows up in the exercise sheet for the barbell bench press only", () => {
     const bench = EXERCISES.find((e) => e.id === "bb-bench")!;
-    const other = EXERCISES.find((e) => e.id === "db-bench")!;
+    const other = EXERCISES.find((e) => e.id === "plank")!;
     const open = (e: typeof bench) =>
       wrap(createElement(ExerciseDetailSheet, { exercise: e, onClose: () => {} }));
     expect(() => open(bench)).not.toThrow();

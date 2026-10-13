@@ -15,6 +15,7 @@ import {
   type FigurePose,
   type V3,
 } from "../../lib/gym/exerciseAnimation";
+import { drawExtras } from "./ExerciseFigureExtras";
 
 const W = 320;
 const FLOOR = 196;
@@ -56,6 +57,7 @@ export function FigureFront({ model, pose }: Props) {
   const wl = p(pose.wrists[0]);
   const wr = p(pose.wrists[1]);
   const s = (cm: number) => cm * k;
+  const ctx = { model, pose, p, s };
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
       <path
@@ -266,6 +268,7 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {drawExtras("front", "behind", ctx)}
       {/* legs */}
       {SIDES.map((i) => (
         <path
@@ -315,6 +318,7 @@ export function FigureFront({ model, pose }: Props) {
       />
       <path d={line(p([0, pose.shoulders[0][1], 0]), head)} className={body} strokeWidth={s(8)} />
       <circle cx={head[0]} cy={head[1]} r={s(10.5)} className="fill-foreground/55 stroke-none" />
+      {drawExtras("front", "mid", ctx)}
       {/* arms */}
       {SIDES.map((i) => (
         <path
@@ -486,6 +490,7 @@ export function FigureFront({ model, pose }: Props) {
           />
         </g>
       )}
+      {drawExtras("front", "over", ctx)}
     </g>
   );
 }
@@ -494,6 +499,7 @@ export function FigureSide({ model, pose }: Props) {
   const k = model.scale;
   const p = ([, y, z]: V3): P2 => [W / 2 + (z - model.centerZ) * k, FLOOR - y * k];
   const s = (cm: number) => cm * k;
+  const ctx = { model, pose, p, s };
   const near = 1;
   const far = 0;
   const hip = p(pose.hips[near]);
@@ -738,6 +744,7 @@ export function FigureSide({ model, pose }: Props) {
           className={furn}
         />
       )}
+      {drawExtras("side", "behind", ctx)}
       {leg(far, limb, s(9), 0.35)}
       {arms(far, s(6), 0.4)}
       {/* torso, straight and neutral from hips to shoulders, then neck and head */}
@@ -755,6 +762,7 @@ export function FigureSide({ model, pose }: Props) {
           className="fill-foreground/30 stroke-none"
         />
       )}
+      {drawExtras("side", "mid", ctx)}
       {arms(near, s(8))}
       {model.furniture === "rear-bench" && (
         <g>
@@ -981,6 +989,7 @@ export function FigureSide({ model, pose }: Props) {
           <circle cx={bar[0]} cy={bar[1]} r={4} className="fill-foreground stroke-none" />
         </g>
       )}
+      {drawExtras("side", "over", ctx)}
     </g>
   );
 }

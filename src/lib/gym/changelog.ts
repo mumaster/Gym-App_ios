@@ -11,6 +11,8 @@ import type { Language } from "./types";
 export interface ChangelogEntry {
   version: number;
   text: Record<Language, string>;
+  /** An exercise id whose animation plays under the text, as a small preview. */
+  animation?: string;
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
@@ -168,11 +170,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De water- en koffiebalken op Home schuiven nu ook vloeiend naar de nieuwe waarde.",
     },
   },
+  {
+    version: 23,
+    animation: "chinup",
+    text: {
+      en: "35 more exercise animations, including push-ups, crunches, the dumbbell bench press, the overhead press, cable rows, face pulls, chin-ups and the pec deck.",
+      nl: "35 nieuwe oefeninganimaties, waaronder push-ups, crunches, dumbbell bench press, overhead press, kabelroeien, face pulls, chin-ups en de pec deck.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 22;
+export const CURRENT_VERSION = 23;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
