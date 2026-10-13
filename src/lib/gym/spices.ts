@@ -152,9 +152,11 @@ export function searchSpices(query: string, language: "en" | "nl", limit = 10): 
   return scored.slice(0, limit).map((s) => s.spice);
 }
 
-/** Every spice for the "Add spices" picker: with a query the same matches as
- *  `searchSpices` (no cut-off), without one the whole list, salt and pepper
- *  first as in `ROWS`. */
+/** Every spice for the "Add spices" picker, A to Z in the app's language:
+ *  with a query only the matches (as `searchSpices`, no cut-off). */
 export function listSpices(query: string, language: "en" | "nl"): Spice[] {
-  return foldText(query).trim() ? searchSpices(query, language, SPICES.length) : SPICES;
+  const found = foldText(query).trim() ? searchSpices(query, language, SPICES.length) : SPICES;
+  return [...found].sort((a, b) =>
+    spiceName(a, language).localeCompare(spiceName(b, language), language),
+  );
 }

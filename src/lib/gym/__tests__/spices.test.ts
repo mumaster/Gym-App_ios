@@ -29,7 +29,9 @@ describe("spices", () => {
   });
 
   it("lists every spice without a query and filters with one", () => {
-    expect(listSpices("", "en")).toEqual(SPICES);
+    expect(listSpices("", "en")).toHaveLength(SPICES.length);
+    const names = listSpices("", "nl").map((s) => s.nl);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "nl")));
     expect(listSpices("zout", "nl")[0]!.id).toBe("salt");
     expect(listSpices("xyz", "en")).toEqual([]);
   });

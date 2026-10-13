@@ -1001,13 +1001,9 @@ export function AddFoodSheet({
                             t.addFood.typeOrSpeak,
                             () => openBuilder(() => onReadList?.({ start: "text", meal })),
                           ],
-                          [Sprout, t.addFood.addSpices, openSpices],
                           [Keyboard, t.addFood.enterManually, startManual],
                         ] as const)
-                      : ([
-                          [Sprout, t.addFood.addSpices, openSpices],
-                          [Keyboard, t.addFood.enterManually, startManual],
-                        ] as const)
+                      : ([[Keyboard, t.addFood.enterManually, startManual]] as const)
                     ).map(([Icon, label, onClick]) => (
                       <button
                         key={label}
@@ -1109,6 +1105,16 @@ export function AddFoodSheet({
                     }}
                   />
                 ) : null}
+                <button
+                  onClick={openSpices}
+                  className="glass flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-4 text-left active:scale-[0.985]"
+                >
+                  <Sprout className="size-5 shrink-0 text-primary-text" />
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                    {t.addFood.addSpices}
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
               </>
             )}
           </div>

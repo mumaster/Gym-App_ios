@@ -267,8 +267,8 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 36,
     text: {
-      en: "Adding food from a meal’s plus button no longer shows the “Add to” row. New “Add spices” button: pick salt, pepper and other spices from a list, or search them.",
-      nl: "Eten toevoegen via de plusknop van een maaltijd toont niet langer de rij “Toevoegen aan”. Nieuwe knop “Kruiden toevoegen”: kies zout, peper en andere kruiden uit een lijst, of zoek ze.",
+      en: "Adding food from a meal’s plus button no longer shows the “Add to” row. New “Add spices” button at the bottom: pick salt, pepper and other spices from an A–Z list, or search them.",
+      nl: "Eten toevoegen via de plusknop van een maaltijd toont niet langer de rij “Toevoegen aan”. Nieuwe knop “Kruiden toevoegen” onderaan: kies zout, peper en andere kruiden uit een A–Z-lijst, of zoek ze.",
     },
   },
 ];
