@@ -5,6 +5,7 @@ import { BottomSheet } from "./BottomSheet";
 import { estimateMinutes } from "../../lib/gym/generator";
 import { useTranslation } from "../../lib/gym/i18n";
 import { learnPace } from "../../lib/gym/pace";
+import { dayTypeById } from "../../lib/gym/splits";
 import { haptic, useGym } from "../../lib/gym/store";
 import type { Muscle, PlannedExercise } from "../../lib/gym/types";
 
@@ -83,6 +84,7 @@ export function WorkoutTemplatesSheet({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold">{tpl.name}</p>
                 <p className="text-[13px] text-muted-foreground">
+                  {tpl.day_id ? `${dayTypeById(tpl.day_id)?.label ?? tpl.day_id} · ` : ""}
                   {t.workoutTemplates.exerciseSummary(
                     tpl.plan.length,
                     estimateMinutes(tpl.plan, pace),
