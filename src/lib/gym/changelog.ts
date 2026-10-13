@@ -204,8 +204,8 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 27,
     text: {
-      en: "The list of recovering muscles on the muscle map is now always fully shown, instead of collapsing behind \"+N more\".",
-      nl: "De lijst met herstellende spieren op de spierkaart toont nu altijd alles, in plaats van in te klappen achter \"+N meer\".",
+      en: 'The list of recovering muscles on the muscle map is now always fully shown, instead of collapsing behind "+N more".',
+      nl: 'De lijst met herstellende spieren op de spierkaart toont nu altijd alles, in plaats van in te klappen achter "+N meer".',
     },
   },
 ];
