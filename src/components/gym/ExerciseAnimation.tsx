@@ -2,9 +2,11 @@ import { Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   depthAt,
+  PHASES,
   phaseAt,
   pressPose,
   REP_SECONDS,
+  type PhaseId,
   type Pose,
   type PressRig,
   type V3,
@@ -106,7 +108,8 @@ export function ExerciseAnimation({ exerciseId }: { exerciseId: string }) {
   const a = t.exercises.animation;
   const depth = depthAt(phase);
   const current = phaseAt(phase);
-  const caption = spec.phases?.[language][current] ?? a.phase[current];
+  const captionOf = (id: PhaseId) => spec.phases?.[language][id] ?? a.phase[id];
+  const captions = PHASES.map((p) => p.id);
   const names = spec.labels?.[language];
   const figure = spec.figure;
   const benchPose = spec.rig ? pressPose(spec.rig, depth) : null;
@@ -164,11 +167,22 @@ export function ExerciseAnimation({ exerciseId }: { exerciseId: string }) {
           aria-label={a.scrub}
           className="mx-4 block h-8 w-[calc(100%-2rem)] accent-primary"
         />
+        {/* Every phase note sits in the same grid cell and only the current one is
+            visible, so the box is as tall as the longest note and nothing below
+            it moves when the step changes (also in longer languages). */}
         <p
-          className="px-4 pb-3 text-center text-[15px] font-semibold text-primary-text"
+          className="grid px-4 pb-3 text-center text-[15px] font-semibold text-primary-text"
           aria-live="off"
         >
-          {caption}
+          {captions.map((id) => (
+            <span
+              key={id}
+              className={`col-start-1 row-start-1 ${id === current ? "" : "invisible"}`}
+              aria-hidden={id === current ? undefined : true}
+            >
+              {captionOf(id)}
+            </span>
+          ))}
         </p>
       </div>
       <ul className="space-y-1.5">

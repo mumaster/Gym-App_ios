@@ -222,11 +222,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Tik op een balk voor de cijfers: de dagen in een weekoverzicht, de maanden van de krachtscore en de trainingsbelasting tonen nu de dag of maand met de waarde boven de grafiek. Balken en grafieken groeien ook pas in als je ze in beeld scrolt, zodat de animatie niet meer buiten beeld afspeelt (bijvoorbeeld Geschiedenis → een week).",
     },
   },
+  {
+    version: 30,
+    text: {
+      en: "The exercise animation no longer makes the page jump: the note under the animation (Lower, Press, ...) now keeps the same height on every step, so scrolling stays smooth.",
+      nl: "De oefeninganimatie laat de pagina niet meer verspringen: de tekst onder de animatie (Zakken, Duwen, ...) houdt nu bij elke stap dezelfde hoogte, zodat scrollen rustig blijft.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 29;
+export const CURRENT_VERSION = 30;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
