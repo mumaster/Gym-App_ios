@@ -246,6 +246,13 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 33,
     text: {
+      en: "Workout tab: when a day already has a saved or pre-generated workout, the main button now says “Start planned workout” and starts it right away instead of building a new one.",
+      nl: "Training-tab: als een dag al een opgeslagen of vooraf gemaakte training heeft, staat er op de hoofdknop nu “Start geplande training” en start die meteen, in plaats van een nieuwe te maken.",
+    },
+  },
+  {
+    version: 34,
+    text: {
       en: "Save a finished workout: open it in History and tap “Save this workout” to keep it as a workout or as a template for a kind of day (Upper Body, Lower Body...). Find it under Saved templates on the Workout tab.",
       nl: "Een afgeronde training opslaan: open hem in Geschiedenis en tik op “Deze training opslaan” om hem te bewaren als training of als sjabloon voor een soort dag (Bovenlichaam, Onderlichaam...). Je vindt hem onder Opgeslagen sjablonen in de Training-tab.",
     },
@@ -254,7 +261,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 33;
+export const CURRENT_VERSION = 34;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
