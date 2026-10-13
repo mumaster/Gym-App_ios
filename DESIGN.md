@@ -184,6 +184,7 @@ Reuse these before building anything new. A new pattern that will appear twice g
   Each cell has an `aria-label` that says it in words.
 
 - **Progress bars:** `h-2` on a card, `h-1.5` compact, `rounded-full`, with a `bg-foreground/10` track. The fill is `bg-primary`, or `bg-warning`/`bg-destructive` by status.
+- **Bars glide.** A goal-vs-actual fill animates its width to a new value (`bar-grow`: 500 ms ease-out, none under Reduce Motion), so adding or removing an entry moves it rather than snapping.
 - **All bars share one style** (Max's spec, from the weekly recap): every bar, fill and stacked segment has a rounded top, never squared off, and the app draws bars, not circles or rings. The goal or limit is the grey track (`bg-foreground/10`), the intake is the card header's tint (`intake-fill`), and only the part over the goal is the solid accent. An over-goal bar reads as one whole pill: a solid-accent pill as tall as the total with an opaque `intake-solid` level pill (rounded top) over it up to the goal. Never overlap translucent layers, leave a notch where the accent starts, or let the accent show through the level part. Use `intake-solid`, not `intake-fill`, whenever the tint sits over the accent.
 - **Empty states:** one muted line saying what goes here ("Nothing yet"), plus the action that fills it if there is one. No illustrations, no exclamation marks.
 - **Loading:** `DumbbellLoader` (never a spinner of your own). A wait under about 300 ms gets no loader.

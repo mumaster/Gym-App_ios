@@ -89,7 +89,7 @@ export function MealOverviewSheet({
             {dayKcal > 0 ? (
               <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-primary"
+                  className="bar-grow h-full rounded-full bg-primary"
                   style={{ width: `${Math.min(100, (kcal / dayKcal) * 100)}%` }}
                 />
               </div>
@@ -120,7 +120,7 @@ export function MealOverviewSheet({
                     <>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-background/60">
                         <div
-                          className={`h-full rounded-full ${pct > 100 ? "bg-destructive" : "bg-primary"}`}
+                          className={`bar-grow h-full rounded-full ${pct > 100 ? "bg-destructive" : "bg-primary"}`}
                           style={{ width: `${Math.min(100, pct)}%` }}
                         />
                       </div>

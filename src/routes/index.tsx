@@ -622,7 +622,7 @@ function NutritionCard({
         {goal != null ? (
           <span className="mb-3 block h-2 overflow-hidden rounded-full bg-muted">
             <span
-              className={`block h-full rounded-full ${barClass(calStatus)}`}
+              className={`bar-grow block h-full rounded-full ${barClass(calStatus)}`}
               style={{ width: `${Math.min(100, (totals.calories / goal) * 100)}%` }}
             />
           </span>
@@ -650,7 +650,7 @@ function NutritionCard({
                 {limit != null ? (
                   <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-muted">
                     <span
-                      className={`block h-full rounded-full ${barClass(status)}`}
+                      className={`bar-grow block h-full rounded-full ${barClass(status)}`}
                       style={{ width: `${Math.min(100, (totals[key] / limit) * 100)}%` }}
                     />
                   </span>

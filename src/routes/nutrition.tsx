@@ -732,7 +732,7 @@ function DaySummary({
         {goals.calories != null ? (
           <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full transition-all ${barClass(calStatus)}`}
+              className={`bar-grow h-full rounded-full ${barClass(calStatus)}`}
               style={{ width: `${calPct}%` }}
             />
           </div>
@@ -762,7 +762,7 @@ function DaySummary({
               {goal != null ? (
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={`h-full rounded-full ${barClass(status)}`}
+                    className={`bar-grow h-full rounded-full ${barClass(status)}`}
                     style={{ width: `${Math.min(100, (totals[key] / goal) * 100)}%` }}
                   />
                 </div>
