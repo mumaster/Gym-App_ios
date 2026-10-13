@@ -126,11 +126,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Een update van de app geeft geen foutscherm meer: staat de oude versie na een update nog open, dan laadt de nieuwe versie nu netjes.",
     },
   },
+  {
+    version: 17,
+    text: {
+      en: "Scanner: switch between the back cameras of your phone (for example ultra wide) with the new button at the top.",
+      nl: "Scanner: wissel tussen de achtercamera's van je telefoon (bijvoorbeeld ultragroothoek) met de nieuwe knop bovenin.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 16;
+export const CURRENT_VERSION = 17;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
