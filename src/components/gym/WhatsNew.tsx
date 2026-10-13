@@ -1,5 +1,5 @@
 import { BottomSheet } from "./BottomSheet";
-import { entriesSince, formatVersion, CURRENT_VERSION } from "../../lib/gym/changelog";
+import { entriesSince, entryTexts, formatVersion, CURRENT_VERSION } from "../../lib/gym/changelog";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic, useGym } from "../../lib/gym/store";
 import { AnimationSnippet } from "./ExerciseAnimation";
@@ -27,10 +27,26 @@ export function WhatsNewSheet({
               <p className="text-[12px] font-semibold tabular-nums text-primary">
                 {formatVersion(entry.version)}
               </p>
-              <p className="mt-1 text-[14.5px] leading-snug">{entry.text[language]}</p>
+              {entry.items ? (
+                <ul className="mt-2 space-y-2">
+                  {entryTexts(entry, language).map((text) => (
+                    <li key={text} className="flex items-start gap-2 text-[14.5px] leading-snug">
+                      <span className="mt-[2px] shrink-0 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold leading-none text-primary-foreground">
+                        {t.whatsNew.newPill}
+                      </span>
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-[14.5px] leading-snug">{entryTexts(entry, language)[0]}</p>
+              )}
               {entry.animation && (
                 <div className="mt-3 overflow-hidden rounded-xl bg-background">
-                  <AnimationSnippet exerciseId={entry.animation} label={entry.text[language]} />
+                  <AnimationSnippet
+                    exerciseId={entry.animation}
+                    label={entryTexts(entry, language)[0] ?? ""}
+                  />
                 </div>
               )}
             </li>
