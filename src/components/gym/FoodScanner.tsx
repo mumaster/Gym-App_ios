@@ -272,9 +272,11 @@ export function FoodScanner({
     <div className="fixed inset-0 z-[60] flex flex-col bg-black">
       <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
 
-      <div className="safe-top relative flex items-center justify-between bg-gradient-to-b from-black/75 to-transparent px-5 pb-6 pt-3">
-        <p className="text-[15px] font-semibold text-white">{copy.titleFor[mode]}</p>
-        <div className="flex items-center gap-2">
+      <div className="safe-top relative flex items-center justify-between gap-3 bg-gradient-to-b from-black/75 to-transparent px-5 pb-6 pt-3">
+        <p className="min-w-0 flex-1 text-[15px] font-semibold leading-tight text-white">
+          {copy.titleFor[mode]}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
           {cameras.length > 1 ? (
             <div className="relative">
               <button
@@ -282,11 +284,11 @@ export function FoodScanner({
                 aria-label={`${copy.switchCamera}: ${activeName}`}
                 aria-haspopup="listbox"
                 aria-expanded={menuOpen}
-                className="glass flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-white active:scale-95"
+                className="glass flex h-9 max-w-36 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-white active:scale-95"
               >
-                <SwitchCamera className="size-4" />
-                {activeName}
-                <ChevronDown className="size-3.5" />
+                <SwitchCamera className="size-4 shrink-0" />
+                <span className="truncate">{activeName}</span>
+                <ChevronDown className="size-3.5 shrink-0" />
               </button>
               {menuOpen ? (
                 <>
