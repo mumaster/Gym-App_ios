@@ -151,3 +151,12 @@ export function searchSpices(query: string, language: "en" | "nl", limit = 10): 
   scored.sort((a, b) => a.score - b.score);
   return scored.slice(0, limit).map((s) => s.spice);
 }
+
+/** Every spice for the "Add spices" picker, A to Z in the app's language:
+ *  with a query only the matches (as `searchSpices`, no cut-off). */
+export function listSpices(query: string, language: "en" | "nl"): Spice[] {
+  const found = foldText(query).trim() ? searchSpices(query, language, SPICES.length) : SPICES;
+  return [...found].sort((a, b) =>
+    spiceName(a, language).localeCompare(spiceName(b, language), language),
+  );
+}

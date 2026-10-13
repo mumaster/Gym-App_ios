@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SPICES, searchSpices } from "../spices";
+import { SPICES, listSpices, searchSpices } from "../spices";
 
 describe("spices", () => {
   it("has unique ids and names, in both languages", () => {
@@ -26,5 +26,13 @@ describe("spices", () => {
     expect(searchSpices("pepper", "en")[0]!.id).toBe("black-pepper");
     expect(searchSpices("kaneel", "en")[0]!.id).toBe("cinnamon");
     expect(searchSpices("", "en")).toEqual([]);
+  });
+
+  it("lists every spice without a query and filters with one", () => {
+    expect(listSpices("", "en")).toHaveLength(SPICES.length);
+    const names = listSpices("", "nl").map((s) => s.nl);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "nl")));
+    expect(listSpices("zout", "nl")[0]!.id).toBe("salt");
+    expect(listSpices("xyz", "en")).toEqual([]);
   });
 });

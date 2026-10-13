@@ -264,11 +264,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Als je eten aan een maaltijd toevoegt (lunch, diner, snack), kom je nu terug bij die maaltijd in plaats van bij het dagoverzicht, zodat je door kunt gaan met toevoegen.",
     },
   },
+  {
+    version: 36,
+    text: {
+      en: "Adding food from a meal’s plus button no longer shows the “Add to” row. New “Add spices” button at the bottom: pick salt, pepper and other spices from an A–Z list, or search them.",
+      nl: "Eten toevoegen via de plusknop van een maaltijd toont niet langer de rij “Toevoegen aan”. Nieuwe knop “Kruiden toevoegen” onderaan: kies zout, peper en andere kruiden uit een A–Z-lijst, of zoek ze.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 35;
+export const CURRENT_VERSION = 36;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

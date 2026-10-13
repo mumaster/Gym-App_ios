@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Check,
+  ChevronLeft,
   ChevronRight,
   CookingPot,
   History,
   Keyboard,
   Leaf,
   Pencil,
+  Sprout,
   Mic,
   Plus,
   ScanBarcode,
@@ -40,7 +42,7 @@ import {
   searchNevoFoods,
   type NevoFood,
 } from "../../lib/gym/nevoFoods";
-import { searchSpices, spiceName, type Spice } from "../../lib/gym/spices";
+import { listSpices, searchSpices, spiceName, type Spice } from "../../lib/gym/spices";
 import {
   MEAL_ORDER,
   dailyTotals,
@@ -213,6 +215,9 @@ export function AddFoodSheet({
   const [editingMine, setEditingMine] = useState(false);
   /** Edit mode of the Favourites card: its rows' "+" becomes unfavourite. */
   const [editingFavs, setEditingFavs] = useState(false);
+  /** "Add spices": the start step shows the spice list, the search field
+   *  searches spices only. */
+  const [spicesOpen, setSpicesOpen] = useState(false);
 
   // The NEVO table is a separate chunk, loaded the first time the sheet opens.
   useEffect(() => {
@@ -258,6 +263,7 @@ export function AddFoodSheet({
     unknownBarcode.current = null;
     setEditingMine(false);
     setEditingFavs(false);
+    setSpicesOpen(false);
   };
 
   const close = () => {
@@ -369,6 +375,12 @@ export function AddFoodSheet({
     return [...favorites, ...mine, ...recent].sort((a, b) => here(a) - here(b));
   }, [q, favoriteFoods, myFoods, favoriteKeys, recentAll, inMeal]);
   const libraryKeys = useMemo(() => new Set(myFoods.map(myFoodKey)), [myFoods]);
+  const spiceList = useMemo(
+    () => (spicesOpen ? listSpices(q, language) : []),
+    [spicesOpen, q, language],
+  );
+  /** Opened from a meal's "+": the meal is fixed, so no "Add to" row. */
+  const mealPreset = initialMeal !== undefined && !editEntry;
   const spiceMatches = useMemo(() => (q ? searchSpices(q, language) : []), [q, language]);
   const nevoMatches = useMemo(
     () => (q && nevoFoods ? searchNevoFoods(nevoFoods, q, language) : []),
@@ -450,6 +462,12 @@ export function AddFoodSheet({
     haptic(15);
     setQuery("");
     applyScanResult(hit.label, hit.barcode);
+  };
+
+  const openSpices = () => {
+    haptic(10);
+    setQuery("");
+    setSpicesOpen(true);
   };
 
   /** A spice or salt: the app's own values, so no NEVO mark. */
@@ -687,7 +705,7 @@ export function AddFoodSheet({
       // keyboard or other focus.
       {...searchTap}
       onFocus={() => setSearchMode(true)}
-      placeholder={t.addFood.searchFoods}
+      placeholder={spicesOpen ? t.addFood.searchSpices : t.addFood.searchFoods}
     />
   );
 
@@ -746,10 +764,52 @@ export function AddFoodSheet({
             ) : null}
             {/* While searching, the meal moves under the results so they
                 start right below the search field, above the keyboard. */}
-            {onIngredientCaptured || searching ? null : (
+            {onIngredientCaptured || searching || mealPreset || spicesOpen ? null : (
               <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
             )}
-            {searching ? (
+            {spicesOpen ? (
+              <div className="space-y-4">
+                <button
+                  onClick={() => {
+                    setSpicesOpen(false);
+                    setQuery("");
+                  }}
+                  className="flex min-h-[44px] items-center gap-1 text-[15px] font-semibold text-primary-text"
+                >
+                  <ChevronLeft className="size-5" /> {t.common.back}
+                </button>
+                {spiceList.length ? (
+                  <ListCard
+                    icon={Sprout}
+                    title={t.addFood.spices}
+                    subtitle={t.mealOverview.foods(spiceList.length)}
+                    filled
+                  >
+                    <div className="divide-y divide-border border-t border-border">
+                      {spiceList.map((spice) => (
+                        <button
+                          key={spice.id}
+                          onClick={() => startFromSpice(spice)}
+                          className="block w-full px-4 py-2.5 text-left active:bg-foreground/5"
+                        >
+                          <p className="text-[15px] font-semibold leading-snug">
+                            {spiceName(spice, language)}
+                          </p>
+                          <p className="tabular text-[12px] text-muted-foreground">
+                            {t.addFood.per100kcal(spice.per100.calories)}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </ListCard>
+                ) : (
+                  <p className="px-1 text-[14px] text-muted-foreground">{t.addFood.noFoodMatch}</p>
+                )}
+                <p className="px-1 text-[11px] leading-snug text-muted-foreground">
+                  {t.addFood.spicesNote}
+                </p>
+              </div>
+            ) : searching ? (
               <div className="space-y-4">
                 {/* Swapping starts with the written name searched, which
                     used to hide the scan button: a packaged replacement is
@@ -888,7 +948,7 @@ export function AddFoodSheet({
                   </span>
                 </button>
                 {swap ? null : scanButton}
-                {onIngredientCaptured ? null : (
+                {onIngredientCaptured || mealPreset ? null : (
                   <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
                 )}
                 {nevoMatches.length ? (
@@ -1045,6 +1105,16 @@ export function AddFoodSheet({
                     }}
                   />
                 ) : null}
+                <button
+                  onClick={openSpices}
+                  className="glass flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-4 text-left active:scale-[0.985]"
+                >
+                  <Sprout className="size-5 shrink-0 text-primary-text" />
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                    {t.addFood.addSpices}
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
               </>
             )}
           </div>
