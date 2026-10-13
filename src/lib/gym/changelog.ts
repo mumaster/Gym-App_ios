@@ -133,11 +133,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Scanner: wissel tussen de achtercamera's van je telefoon (bijvoorbeeld ultragroothoek) met de nieuwe knop bovenin.",
     },
   },
+  {
+    version: 18,
+    text: {
+      en: "Scanner: the camera button now opens a list of your phone's back cameras, and remembers the one you pick for next time.",
+      nl: "Scanner: de camera-knop opent nu een lijst met de achtercamera's van je telefoon en onthoudt je keuze voor de volgende keer.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 17;
+export const CURRENT_VERSION = 18;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

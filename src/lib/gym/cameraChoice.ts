@@ -27,13 +27,6 @@ export function shortLensName(label: string): string {
   return name || "Main";
 }
 
-/** The camera after `currentId`, wrapping around; the first when unknown. */
-export function nextCamera(cameras: BackCamera[], currentId: string | null): BackCamera | null {
-  if (cameras.length === 0) return null;
-  const i = cameras.findIndex((c) => c.deviceId === currentId);
-  return cameras[(i + 1) % cameras.length] ?? null;
-}
-
 export function loadCameraId(): string | null {
   try {
     return localStorage.getItem(STORAGE_KEY);

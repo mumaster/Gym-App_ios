@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Camera, ImageIcon, SwitchCamera, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Camera,
+  Check,
+  ChevronDown,
+  ImageIcon,
+  SwitchCamera,
+  X,
+} from "lucide-react";
 import { DumbbellLoader } from "./DumbbellLoader";
 import { useTranslation } from "../../lib/gym/i18n";
 import { haptic } from "../../lib/gym/store";
@@ -7,7 +15,6 @@ import { createVideoDecoder, SCAN_INTERVAL_MS } from "../../lib/gym/barcodeDecod
 import {
   backCameras,
   loadCameraId,
-  nextCamera,
   saveCameraId,
   shortLensName,
   type BackCamera,
@@ -94,6 +101,7 @@ export function FoodScanner({
   // back lenses the device offers; a switch shows when there are several.
   const [cameraId, setCameraId] = useState<string | null>(loadCameraId);
   const [cameras, setCameras] = useState<BackCamera[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -116,6 +124,10 @@ export function FoodScanner({
     const hint = setTimeout(() => setShowHint(true), LABEL_HINT_MS);
     return () => clearTimeout(hint);
   }, [open, mode]);
+
+  useEffect(() => {
+    if (!open) setMenuOpen(false);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -215,12 +227,13 @@ export function FoodScanner({
   };
 
   const activeId = cameraId ?? stream_track_id(videoRef.current) ?? cameras[0]?.deviceId ?? null;
-  const switchCamera = () => {
-    const next = nextCamera(cameras, activeId);
-    if (!next) return;
+  const activeName = shortLensName(cameras.find((c) => c.deviceId === activeId)?.label ?? "");
+  const pickCamera = (id: string) => {
+    setMenuOpen(false);
+    if (id === activeId) return;
     haptic(10);
-    saveCameraId(next.deviceId);
-    setCameraId(next.deviceId);
+    saveCameraId(id);
+    setCameraId(id);
   };
 
   const switchMode = (next: ScanMode) => {
@@ -263,16 +276,46 @@ export function FoodScanner({
         <p className="text-[15px] font-semibold text-white">{copy.titleFor[mode]}</p>
         <div className="flex items-center gap-2">
           {cameras.length > 1 ? (
-            <button
-              onClick={switchCamera}
-              aria-label={`${copy.switchCamera}: ${shortLensName(
-                cameras.find((c) => c.deviceId === activeId)?.label ?? "",
-              )}`}
-              className="glass flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-white active:scale-95"
-            >
-              <SwitchCamera className="size-4" />
-              {shortLensName(cameras.find((c) => c.deviceId === activeId)?.label ?? "")}
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-label={`${copy.switchCamera}: ${activeName}`}
+                aria-haspopup="listbox"
+                aria-expanded={menuOpen}
+                className="glass flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-white active:scale-95"
+              >
+                <SwitchCamera className="size-4" />
+                {activeName}
+                <ChevronDown className="size-3.5" />
+              </button>
+              {menuOpen ? (
+                <>
+                  <button
+                    aria-label={t.common.close}
+                    className="fixed inset-0 z-10 cursor-default"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div
+                    role="listbox"
+                    aria-label={copy.switchCamera}
+                    className="glass-strong absolute right-0 top-full z-20 mt-2 min-w-48 overflow-hidden rounded-2xl py-1 text-white"
+                  >
+                    {cameras.map((c) => (
+                      <button
+                        key={c.deviceId}
+                        role="option"
+                        aria-selected={c.deviceId === activeId}
+                        onClick={() => pickCamera(c.deviceId)}
+                        className="flex min-h-[44px] w-full items-center justify-between gap-3 px-4 text-left text-[14px] font-semibold active:bg-white/10"
+                      >
+                        {shortLensName(c.label)}
+                        {c.deviceId === activeId ? <Check className="size-4" /> : null}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
           ) : null}
           <button
             onClick={onClose}
