@@ -178,11 +178,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "35 nieuwe oefeninganimaties, waaronder push-ups, crunches, dumbbell bench press, overhead press, kabelroeien, face pulls, chin-ups en de pec deck.",
     },
   },
+  {
+    version: 24,
+    animation: "db-kickback",
+    text: {
+      en: "35 more exercise animations, including the hack squat, Smith machine squat and press, Arnold press, dumbbell pullover, incline curl, sumo deadlift, good morning, dragon flag and cable kickback.",
+      nl: "35 nieuwe oefeninganimaties, waaronder de hack squat, squat en press in de Smith machine, Arnold press, dumbbell pullover, incline curl, sumo deadlift, good morning, dragon flag en cable kickback.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 23;
+export const CURRENT_VERSION = 24;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
