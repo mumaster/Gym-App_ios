@@ -215,11 +215,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Elke balk, kolom en grafiek groeit nu in zodra hij verschijnt, met dezelfde beweging als de volumegrafiek in Geschiedenis: voortgangs- en doelbalken, het weekoverzicht, records, trainingsbelasting en de gewichts- en oefeninggrafieken. Er beweegt niets als Beweging verminderen aanstaat.",
     },
   },
+  {
+    version: 29,
+    text: {
+      en: "Tap a bar to see its figures: the days in a weekly recap, the strength score months and the training load now show the day or month and its value above the chart. Bars and graphs also wait to grow in until you scroll them into view, so the animation no longer plays off screen (History → a week, for example).",
+      nl: "Tik op een balk voor de cijfers: de dagen in een weekoverzicht, de maanden van de krachtscore en de trainingsbelasting tonen nu de dag of maand met de waarde boven de grafiek. Balken en grafieken groeien ook pas in als je ze in beeld scrolt, zodat de animatie niet meer buiten beeld afspeelt (bijvoorbeeld Geschiedenis → een week).",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 28;
+export const CURRENT_VERSION = 29;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

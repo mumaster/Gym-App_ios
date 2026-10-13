@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { InView } from "./InView";
 import { CHART_ANIMATION } from "../../lib/gym/chartAnimation";
 import { exerciseById } from "../../lib/gym/data";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
@@ -44,7 +45,7 @@ export function ExerciseProgressChart({
       <p className="mb-2 text-[12px] text-muted-foreground">
         {trend.kind === "reps" ? t.history.bestReps : t.history.estimated1rm}
       </p>
-      <div className="w-full" style={{ height }}>
+      <InView className="w-full" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <XAxis dataKey="label" hide />
@@ -96,7 +97,7 @@ export function ExerciseProgressChart({
             />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </InView>
       {showActual ? (
         <div className="mt-2 flex gap-4 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">

@@ -25,6 +25,7 @@ import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeekPicker } from "../components/gym/WeekPicker";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { CARDIO_ICONS, cardioName } from "../components/gym/cardioDisplay";
+import { InView } from "../components/gym/InView";
 import { CHART_ANIMATION } from "../lib/gym/chartAnimation";
 import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
 import { RouteThumb } from "../components/gym/RouteMapView";
@@ -405,7 +406,7 @@ function HistoryScreen() {
             <>
               <Card className="mt-4 overflow-hidden p-4">
                 <CardHead icon={BarChart3} title={t.history.volumePerMuscle} />
-                <div className="h-52 w-full">
+                <InView className="h-52 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={volumeByMuscle}>
                       <XAxis
@@ -430,7 +431,7 @@ function HistoryScreen() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
+                </InView>
               </Card>
             </>
           ) : null}

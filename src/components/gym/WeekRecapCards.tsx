@@ -1,3 +1,4 @@
+import { BarReadout, barColumn, usePickedBar } from "./BarReadout";
 import type { ReactNode } from "react";
 import {
   Beer,
@@ -151,77 +152,89 @@ function DayBars({
   const t = useTranslation();
   const sum = (d: WeekRecapDay) => segments(d).reduce((s, p) => s + p.value, 0);
   const scale = Math.max(1, ...days.map((d) => Math.max(limit?.(d) ?? 0, sum(d))));
+  const { picked, toggle } = usePickedBar();
   return (
-    <ul className="grid grid-cols-7 gap-1">
-      {days.map((d) => {
-        const total = sum(d);
-        const goal = limit?.(d) ?? null;
-        const ref = goal ?? scale;
-        const height = Math.max(ref, total);
-        const over = goal != null && total > goal;
-        const parts: BarSegment[] = overIsBad
-          ? over
-            ? [
-                { value: goal, className: "intake-fill" },
-                { value: total - goal, className: "bg-primary" },
-              ]
-            : [{ value: total, className: "intake-fill" }]
-          : segments(d).filter((p) => p.value > 0);
-        const text = label(d);
-        return (
-          <li key={d.key} aria-label={ariaLabel(d)} className="flex flex-col items-center">
-            <div className="flex h-28 w-full items-end justify-center" aria-hidden>
-              <div
-                className="bar-in-y relative w-5"
-                style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+    <>
+      <BarReadout text={picked == null ? null : ariaLabel(days[picked]!)} />
+      <ul className="grid grid-cols-7 gap-1">
+        {days.map((d, i) => {
+          const total = sum(d);
+          const goal = limit?.(d) ?? null;
+          const ref = goal ?? scale;
+          const height = Math.max(ref, total);
+          const over = goal != null && total > goal;
+          const parts: BarSegment[] = overIsBad
+            ? over
+              ? [
+                  { value: goal, className: "intake-fill" },
+                  { value: total - goal, className: "bg-primary" },
+                ]
+              : [{ value: total, className: "intake-fill" }]
+            : segments(d).filter((p) => p.value > 0);
+          const text = label(d);
+          return (
+            <li key={d.key}>
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                aria-label={ariaLabel(d)}
+                aria-pressed={picked === i}
+                className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
               >
-                <span
-                  className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
-                  style={{ height: `${(ref / height) * 100}%` }}
-                />
-                {total > 0 && over && overIsBad && goal != null && (
-                  <>
-                    <span className="absolute inset-0 rounded-full bg-primary" />
-                    <span
-                      className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
-                      style={{ height: `${(goal / total) * 100}%` }}
-                    />
-                  </>
-                )}
-                {total > 0 && !(over && overIsBad) && (
+                <div className="flex h-28 w-full items-end justify-center" aria-hidden>
                   <div
-                    className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
-                    style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
+                    className="bar-in-y relative w-5"
+                    style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
                   >
-                    {parts.map((p, k) => (
-                      <span
-                        key={k}
-                        className={`${p.className} min-h-1 rounded-full`}
-                        style={{ flex: `${p.value} 1 0%` }}
-                      />
-                    ))}
+                    <span
+                      className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
+                      style={{ height: `${(ref / height) * 100}%` }}
+                    />
+                    {total > 0 && over && overIsBad && goal != null && (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-primary" />
+                        <span
+                          className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
+                          style={{ height: `${(goal / total) * 100}%` }}
+                        />
+                      </>
+                    )}
+                    {total > 0 && !(over && overIsBad) && (
+                      <div
+                        className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
+                        style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
+                      >
+                        {parts.map((p, k) => (
+                          <span
+                            key={k}
+                            className={`${p.className} min-h-1 rounded-full`}
+                            style={{ flex: `${p.value} 1 0%` }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-            <span
-              className={`tabular mt-1.5 h-4 text-[11px] font-semibold leading-4 ${
-                over && overIsBad ? "text-primary-text" : ""
-              }`}
-            >
-              {text}
-            </span>
-            <span
-              className={`text-[10px] font-semibold uppercase ${
-                d.today ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {t.common.dow[d.date.getDay()]}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+                </div>
+                <span
+                  className={`tabular mt-1.5 h-4 text-[11px] font-semibold leading-4 ${
+                    over && overIsBad ? "text-primary-text" : ""
+                  }`}
+                >
+                  {text}
+                </span>
+                <span
+                  className={`text-[10px] font-semibold uppercase ${
+                    d.today ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {t.common.dow[d.date.getDay()]}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
