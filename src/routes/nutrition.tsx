@@ -321,6 +321,28 @@ function NutritionScreen() {
             </button>
           ) : null}
 
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                haptic(12);
+                setCanIEatOpen(true);
+              }}
+              aria-label={t.allergy.canIEat}
+              className={`${button.secondary} min-w-0 px-2`}
+            >
+              <ShieldAlert className="size-4 shrink-0" />
+              <span className="truncate">{t.allergy.canIEatShort}</span>
+            </button>
+            <button
+              onClick={() => setImportOpen(true)}
+              aria-label={t.mealShare.importFrom}
+              className={`${button.secondary} min-w-0 px-2`}
+            >
+              <Download className="size-4 shrink-0" />
+              <span className="truncate">{t.mealShare.importShort}</span>
+            </button>
+          </div>
+
           <SectionLabel>{t.nutrition.log}</SectionLabel>
           {meals.length === 0 ? (
             <Card className="p-6 text-center text-[15px] text-muted-foreground">
@@ -358,20 +380,6 @@ function NutritionScreen() {
               ))}
             </div>
           )}
-
-          <button
-            onClick={() => {
-              haptic(12);
-              setCanIEatOpen(true);
-            }}
-            className={`${button.secondary} mt-4 w-full`}
-          >
-            <ShieldAlert className="size-4" /> {t.allergy.canIEat}
-          </button>
-
-          <button onClick={() => setImportOpen(true)} className={`${button.secondary} mt-2 w-full`}>
-            <Download className="size-4" /> {t.mealShare.importFrom}
-          </button>
 
           {/* RIVM's conditions of use require this reference on nutritional
           output based on NEVO data — shown whenever the day's figures
