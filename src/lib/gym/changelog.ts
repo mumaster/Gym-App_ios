@@ -161,11 +161,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Voortgangsbalken voor water, calorieën, koffie en voedingsstoffen schuiven nu vloeiend naar de nieuwe waarde als je iets toevoegt of verwijdert.",
     },
   },
+  {
+    version: 22,
+    text: {
+      en: "The water and coffee bars on Home now glide to the new value too.",
+      nl: "De water- en koffiebalken op Home schuiven nu ook vloeiend naar de nieuwe waarde.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 21;
+export const CURRENT_VERSION = 22;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
