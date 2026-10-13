@@ -222,11 +222,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "Tik op een balk voor de cijfers: de dagen in een weekoverzicht, de maanden van de krachtscore en de trainingsbelasting tonen nu de dag of maand met de waarde boven de grafiek. Balken en grafieken groeien ook pas in als je ze in beeld scrolt, zodat de animatie niet meer buiten beeld afspeelt (bijvoorbeeld Geschiedenis → een week).",
     },
   },
+  {
+    version: 30,
+    text: {
+      en: "Food tab: “Can I eat it?” and “Import meal” now sit as two buttons right under Add food.",
+      nl: "Voedsel-tab: “Kan ik het?” en “Importeren” staan nu als twee knoppen direct onder Voedsel toevoegen.",
+    },
+  },
 ];
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 29;
+export const CURRENT_VERSION = 30;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
