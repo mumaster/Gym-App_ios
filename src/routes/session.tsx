@@ -862,7 +862,17 @@ function SessionScreen() {
     }
     const nextSlotName =
       nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
-    setRestNext(nextSlotName ? t.session.restNextExercise(nextSlotName) : null);
+    setRestNext(
+      !nextSlotName
+        ? null
+        : nextSlot >= 0
+          ? t.session.restNextExerciseSet(
+              nextSlotName,
+              loggedWorking(block.indices[nextSlot]!) + (nextSlot === loggedSlot ? 1 : 0) + 1,
+              plan[block.indices[nextSlot]!]?.target_sets ?? 0,
+            )
+          : t.session.restNextExercise(nextSlotName),
+    );
     setRestPreview(nextSlot < 0 && blockIndex < blocks.length - 1 ? blockIndex + 1 : null);
     afterRest.current =
       nextSlot >= 0
