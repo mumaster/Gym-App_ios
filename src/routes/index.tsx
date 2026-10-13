@@ -738,7 +738,7 @@ function IntakeBar({ pct, className = "bg-primary" }: { pct: number; className?:
   return (
     <div aria-hidden className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
       <div
-        className={`h-full rounded-full ${className}`}
+        className={`bar-grow h-full rounded-full ${className}`}
         style={{ width: `${Math.min(100, pct)}%` }}
       />
     </div>
