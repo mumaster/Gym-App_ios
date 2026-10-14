@@ -597,7 +597,7 @@ const en = {
     editSet: (n: number) => `Edit set ${n}`,
     warmupSetToggleOn: "Warm-up set — tap for working set",
     warmupSetToggleOff: "Working set — tap for warm-up",
-    lastTime: (load: string, reps: number) => `Last time: ${load} × ${reps}`,
+    lastTime: (load: string, reps: number) => `In previous workout: ${load} × ${reps}`,
     firstTime: "First time on this one",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Suggested ${load} × ${reps} — ${reason}`,
@@ -2779,7 +2779,7 @@ const nl: Dict = {
     editSet: (n: number) => `Set ${n} bewerken`,
     warmupSetToggleOn: "Warming-up set — tik voor werkset",
     warmupSetToggleOff: "Werkset — tik voor warming-up",
-    lastTime: (load: string, reps: number) => `Vorige keer: ${load} × ${reps}`,
+    lastTime: (load: string, reps: number) => `In vorige training: ${load} × ${reps}`,
     firstTime: "Eerste keer met deze oefening",
     suggestedInline: (load: string, reps: number, reason: string) =>
       `Voorgesteld ${load} × ${reps} — ${reason}`,
