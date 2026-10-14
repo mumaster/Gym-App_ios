@@ -1998,7 +1998,7 @@ function ExerciseBlock({
                   {s.set_type === "warmup" ? "W" : s.set_number}
                 </span>
               </span>
-              <span className="tabular flex min-w-0 items-baseline justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
+              <span className="tabular flex min-w-0 items-center justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
                 <span className="text-[18px] font-bold leading-none text-primary-text">
                   {cell(s.weight)}
                 </span>
@@ -2007,7 +2007,7 @@ function ExerciseBlock({
                 )}
               </span>
               <span className="tabular flex min-w-0 items-center justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
-                <span className="flex items-baseline gap-1">
+                <span className="flex items-center gap-1">
                   <span className="text-[18px] font-bold leading-none text-primary-text">
                     {s.reps}
                   </span>
@@ -2021,7 +2021,7 @@ function ExerciseBlock({
               </span>
               {/* A fixed-width column, so every row's RPE lines up. */}
               {s.rpe ? (
-                <span className="tabular flex items-center justify-center rounded-full bg-background/80 py-1.5 text-[12px] font-bold leading-none text-primary-text ring-1 ring-primary/15">
+                <span className="tabular flex items-center justify-center self-stretch rounded-full bg-background/80 text-[12px] font-bold leading-none text-primary-text ring-1 ring-primary/15">
                   RPE {s.rpe}
                 </span>
               ) : s.set_type === "working" ? (
@@ -2029,7 +2029,7 @@ function ExerciseBlock({
                 // editor, which has the RPE picker.
                 <span
                   aria-label={t.session.addRpeAria(s.set_number)}
-                  className="flex items-center justify-center rounded-full border border-dashed border-muted-foreground/60 py-1.5 text-[11px] font-semibold leading-none text-muted-foreground"
+                  className="flex items-center justify-center self-stretch rounded-full border border-dashed border-muted-foreground/60 text-[11px] font-semibold leading-none text-muted-foreground"
                 >
                   {t.session.addRpe}
                 </span>
