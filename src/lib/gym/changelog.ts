@@ -381,6 +381,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "Add to log now takes you back to the list with the same highlight, and the + on a meal opens the same page with that meal already picked.",
         nl: "Toevoegen aan logboek brengt je nu terug naar de lijst met dezelfde markering, en de + bij een maaltijd opent dezelfde pagina met die maaltijd al gekozen.",
       },
+      {
+        en: "In a meal overview, Share is now a small button next to Save as meal, and Add and Copy to are the same width.",
+        nl: "In een maaltijdoverzicht is Delen nu een klein knopje naast Opslaan als maaltijd, en Toevoegen en Kopieer naar zijn even breed.",
+      },
     ],
   },
 ];
