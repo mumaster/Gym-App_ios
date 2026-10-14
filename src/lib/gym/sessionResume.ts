@@ -25,6 +25,8 @@ export interface SessionResume {
   afterRest: SessionPos | null;
   /** The rest bar's "Next: …" line. */
   restNext: string | null;
+  /** The set that comes next, for the progress pills under it. */
+  restSet?: { n: number; total: number } | null;
 }
 
 const KEY = "forge.session.resume.v1";

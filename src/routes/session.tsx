@@ -185,7 +185,13 @@ function SessionScreen() {
     setExtraSetFor((cur) => (cur.includes(index) ? cur : [...cur, index]));
   };
   /** What the rest bar says comes next ("Set 3 of 4", the next exercise). */
-  const [restNext, setRestNext] = useState<string | null>(null);
+  const [restNext, setRestNextName] = useState<string | null>(null);
+  /** Which set comes next ("2 / 3"), shown under the name as progress. */
+  const [restSet, setRestSet] = useState<{ n: number; total: number } | null>(null);
+  const setRestNext = (name: string | null, set: { n: number; total: number } | null = null) => {
+    setRestNextName(name);
+    setRestSet(set);
+  };
   /** The block shown as a preview during the rest, set only on the rest
    *  after an exercise or superset is finished (not between sets or rounds). */
   const [restPreview, setRestPreview] = useState<number | null>(null);
@@ -358,7 +364,7 @@ function SessionScreen() {
     if (!saved) return;
     setPos(saved.pos);
     afterRest.current = saved.afterRest;
-    setRestNext(saved.restNext);
+    setRestNext(saved.restNext, saved.restSet ?? null);
     // A rest that moves to another block was the one after finishing a
     // block, so it had the preview.
     setRestPreview(
@@ -378,8 +384,9 @@ function SessionScreen() {
       rest: rest.endsAt ? { endsAt: rest.endsAt, duration: rest.duration } : null,
       afterRest: rest.endsAt || paused?.restLeftMs != null ? afterRest.current : null,
       restNext,
+      restSet,
     });
-  }, [activeWorkout?.id, pos, rest.endsAt, rest.duration, restNext, paused?.restLeftMs]);
+  }, [activeWorkout?.id, pos, rest.endsAt, rest.duration, restNext, restSet, paused?.restLeftMs]);
 
   const pauseSession = () => {
     haptic(15);
@@ -855,11 +862,16 @@ function SessionScreen() {
       }
       setRestPreview(willComplete && blockIndex < blocks.length - 1 ? blockIndex + 1 : null);
       setRestNext(
-        !willComplete
-          ? t.session.restNextSet(loggedWorking(planIndex) + 2, planned?.target_sets ?? 0)
-          : upNext
+        willComplete
+          ? upNext
             ? t.session.restNextExercise(upNext)
+            : null
+          : planned
+            ? (exerciseById(planned.exercise_id)?.name ?? null)
             : null,
+        !willComplete
+          ? { n: loggedWorking(planIndex) + 2, total: planned?.target_sets ?? 0 }
+          : null,
       );
       startRest(restFor(planIndex));
       return;
@@ -892,15 +904,13 @@ function SessionScreen() {
     const nextSlotName =
       nextSlot >= 0 ? exerciseById(plan[block.indices[nextSlot]!]!.exercise_id)?.name : upNext;
     setRestNext(
-      !nextSlotName
-        ? null
-        : nextSlot >= 0
-          ? t.session.restNextExerciseSet(
-              nextSlotName,
-              loggedWorking(block.indices[nextSlot]!) + (nextSlot === loggedSlot ? 1 : 0) + 1,
-              plan[block.indices[nextSlot]!]?.target_sets ?? 0,
-            )
-          : t.session.restNextExercise(nextSlotName),
+      nextSlotName ? t.session.restNextExercise(nextSlotName) : null,
+      nextSlotName && nextSlot >= 0
+        ? {
+            n: loggedWorking(block.indices[nextSlot]!) + (nextSlot === loggedSlot ? 1 : 0) + 1,
+            total: plan[block.indices[nextSlot]!]?.target_sets ?? 0,
+          }
+        : null,
     );
     setRestPreview(nextSlot < 0 && blockIndex < blocks.length - 1 ? blockIndex + 1 : null);
     afterRest.current =
@@ -1280,6 +1290,7 @@ function SessionScreen() {
               secondsLeft={rest.secondsLeft}
               duration={rest.duration}
               next={restNext}
+              nextSet={restSet}
               onSkip={() => {
                 haptic();
                 rest.skip();
@@ -2533,6 +2544,7 @@ function RestPanel({
   secondsLeft,
   duration,
   next,
+  nextSet,
   onSkip,
   onExtend,
   onUndo,
@@ -2543,6 +2555,7 @@ function RestPanel({
   secondsLeft: number;
   duration: number;
   next: string | null;
+  nextSet: { n: number; total: number } | null;
   onSkip: () => void;
   onExtend: () => void;
   onUndo: () => void;
@@ -2600,18 +2613,21 @@ function RestPanel({
           style={barFill(pct)}
         />
       </div>
-      {next || !done ? (
-        <div className="mt-2 flex items-center gap-2">
-          <p className="flex min-w-0 flex-1 items-baseline gap-1.5 text-[14px]">
+      {next || nextSet || !done ? (
+        <div className="mt-2 flex items-start gap-2">
+          <div className="min-w-0 flex-1">
             {next ? (
-              <>
+              <p className="flex items-baseline gap-1.5 text-[14px]">
                 <span className="shrink-0 font-semibold text-muted-foreground">
                   {t.session.restNextLabel}
                 </span>
                 <span className="line-clamp-2 min-w-0 font-semibold">{next}</span>
-              </>
+              </p>
             ) : null}
-          </p>
+            {nextSet && nextSet.total > 0 ? (
+              <SetProgress n={nextSet.n} total={nextSet.total} />
+            ) : null}
+          </div>
           {!done ? (
             <button
               onClick={onUndo}
@@ -2638,6 +2654,32 @@ function RestPanel({
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** "Set 2 / 3" with one pill per set: the sets done in the solid accent, the
+ *  rest of the goal in a pale accent (same round ends as every bar). */
+function SetProgress({ n, total }: { n: number; total: number }) {
+  const t = useTranslation();
+  const done = Math.max(0, Math.min(total, n - 1));
+  return (
+    <div className="mt-1.5 flex items-center gap-2">
+      <span className="shrink-0 text-[13px] font-semibold tabular-nums">
+        {t.session.restSetCount(n, total)}
+      </span>
+      <div
+        className="flex min-w-0 max-w-40 flex-1 items-center gap-1"
+        role="img"
+        aria-label={t.session.restSetCount(n, total)}
+      >
+        {Array.from({ length: total }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 min-w-1 flex-1 rounded-full ${i < done ? "bg-primary" : "bg-primary/25"}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
