@@ -768,10 +768,10 @@ const en = {
     perDay: "Calories per day",
     carbs: "Carbs",
     carbsTotal: (g: string) => `${g} g carbs this week`,
-    totalCarbs: "Total carbs",
-    totalSugars: "Total sugars",
+    totalCarbs: "Carbs",
+    totalSugars: "Sugars",
     atLeast: "at least",
-    sugarsShare: "Sugars of carbs",
+    sugarsShare: "Sugar %",
     perDayCarbs: "Carbs per day",
     carbsDay: (day: string, carbs: string, sugars: string | null) =>
       sugars == null
@@ -2914,10 +2914,10 @@ const nl: Dict = {
     perDay: "Calorieën per dag",
     carbs: "Koolhydraten",
     carbsTotal: (g: string) => `${g} g koolhydraten deze week`,
-    totalCarbs: "Totaal koolhydraten",
-    totalSugars: "Totaal suikers",
+    totalCarbs: "Koolh.",
+    totalSugars: "Suikers",
     atLeast: "minstens",
-    sugarsShare: "Suikers van koolh.",
+    sugarsShare: "Suiker %",
     perDayCarbs: "Koolhydraten per dag",
     carbsDay: (day: string, carbs: string, sugars: string | null) =>
       sugars == null
@@ -2927,7 +2927,7 @@ const nl: Dict = {
     legendCarbs: "Koolhydraten",
     legendSugars: "Suikers",
     withinSugarGoal: (n: number, of: number) => `Binnen je suikerdoel op ${n} van ${of} dagen`,
-    factMostSugar: (day: string, g: string) => `${day} had de meeste suikers: ${g} g`,
+    factMostSugar: (day: string, g: string) => `${cap(day)} had de meeste suikers: ${g} g`,
     notLogged: "Niet bijgehouden",
     water: "Water",
     waterAvg: "Gemiddeld per dag",

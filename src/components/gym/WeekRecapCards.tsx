@@ -838,9 +838,10 @@ export function CarbsCard({ recap }: { recap: WeekRecap }) {
             ) : (
               <>
                 {!carbs.complete ? (
-                  <span className="mr-1 text-[12px] font-semibold text-muted-foreground">
-                    {t.weekRecap.atLeast}
-                  </span>
+                  <>
+                    <span aria-hidden>≥ </span>
+                    <span className="sr-only">{t.weekRecap.atLeast} </span>
+                  </>
                 ) : null}
                 {g(carbs.totalSugars)}
               </>
