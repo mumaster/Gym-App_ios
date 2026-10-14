@@ -2020,7 +2020,7 @@ function ExerciseBlock({
               {/* A fixed-width column, so every row's RPE lines up. */}
               {s.rpe ? (
                 <span className="tabular flex h-8 items-center justify-center gap-1 rounded-full bg-background/80 ring-1 ring-primary/15">
-                  <span className="text-[12px] font-medium text-muted-foreground">RPE</span>
+                  <span className="text-[12px] font-medium text-muted-foreground">rpe</span>
                   <span className="text-[18px] font-bold leading-none text-primary-text">
                     {s.rpe}
                   </span>
