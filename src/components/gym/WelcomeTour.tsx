@@ -33,6 +33,7 @@ import { CAFFEINE_DAILY_LIMIT_MG, COFFEE_CAFFEINE_MG } from "../../lib/gym/nutri
 import { track } from "../../lib/gym/analytics";
 import { haptic, useGym } from "../../lib/gym/store";
 import { chip } from "./ui";
+import { barFill } from "./bar";
 
 /**
  * First-launch tour: one swipeable step per part of the app, in the order a
@@ -358,11 +359,8 @@ function Eyebrow({ children, className = "" }: { children: ReactNode; className?
 
 function Bar({ pct, className = "" }: { pct: number; className?: string }) {
   return (
-    <div className={`h-1.5 overflow-hidden rounded-full bg-muted ${className}`}>
-      <div
-        className="bar-in-x h-full rounded-full bg-primary"
-        style={{ width: `${Math.min(100, pct)}%` }}
-      />
+    <div className={`h-1.5 bar-track bg-muted ${className}`}>
+      <div className="bar-in-x bar-fill-x bg-primary" style={barFill(Math.min(100, pct))} />
     </div>
   );
 }
@@ -1330,10 +1328,12 @@ function WatchMock() {
           <div className="mt-1 flex h-10 items-end gap-1">
             {zones.map((z) => (
               <div key={z.z} className="flex flex-1 flex-col items-center gap-0.5">
-                <div
-                  className="w-full rounded-sm bg-primary"
-                  style={{ height: `${(z.min / 11) * 28}px`, opacity: 0.45 + z.min / 20 }}
-                />
+                <div className="bar-track h-7 w-full bg-foreground/10">
+                  <div
+                    className="bar-fill-y bg-primary"
+                    style={{ ...barFill((z.min / 11) * 100), opacity: 0.45 + z.min / 20 }}
+                  />
+                </div>
                 <span className="text-[10px] text-muted-foreground">{z.z}</span>
               </div>
             ))}

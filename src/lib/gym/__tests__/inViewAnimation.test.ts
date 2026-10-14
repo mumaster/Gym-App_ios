@@ -5,7 +5,12 @@ import { IN_VIEW_SELECTOR, installInViewAnimations } from "../inViewAnimation";
 describe("in-view animations", () => {
   it("watches every grow-in utility defined in styles.css", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const utilities = [...css.matchAll(/@utility ((?:bar|chart)-[a-z-]+)/g)].map((m) => m[1]!);
+    // Every bar/chart utility that runs an animation (bar-track and the
+    // bar-fill-* shapes don't).
+    const utilities = [...css.matchAll(/@utility ((?:bar|chart)-[a-z-]+) \{([^}]*)/g)]
+      .filter((m) => m[2]!.includes("animation:"))
+      .map((m) => m[1]!);
+    expect(utilities.length).toBeGreaterThan(4);
     for (const u of utilities) {
       expect(IN_VIEW_SELECTOR).toContain(`.${u}`);
     }

@@ -20,6 +20,7 @@ import type { WeekRecap, WeekRecapDay } from "../../lib/gym/weekRecap";
 import { Card } from "./Screen";
 import { CardHead } from "./CardHead";
 import { text } from "./ui";
+import { barFill } from "./bar";
 
 /** The cards of the weekly recap (routes/history.week.$weekStart.tsx). Each one
  *  only draws a slice of the `WeekRecap` that lib/gym/weekRecap.ts builds, and
@@ -131,7 +132,7 @@ interface BarSegment {
  * the accent fills it up to what was reached. Over the goal the bar grows
  * taller than the track and the whole bar turns the solid accent (when
  * `overIsBad`), under it the fill is the card header's tint, so the heights differ by design: a taller bar is a bigger
- * day. The track and the fill are each a rounded pill, so every top is round. The value
+ * day. Every bar is a `bar-track` pill and its fills share its round ends (styles.css). The value
  * and weekday sit under each bar; a day with nothing logged is just its track.
  * `segments` stacks several kinds (coffee, beer and wine) from the bottom.
  */
@@ -184,36 +185,35 @@ function DayBars({
               >
                 <div className="flex h-28 w-full items-end justify-center" aria-hidden>
                   <div
-                    className="bar-in-y relative w-5"
-                    style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+                    data-bar="day"
+                    className={`bar-in-y bar-track w-5 ${
+                      over && overIsBad ? "bg-primary" : "bg-foreground/10"
+                    }`}
+                    style={{ height: `max(1.25rem, ${(height / scale) * 100}%)` }}
                   >
-                    <span
-                      className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
-                      style={{ height: `${(ref / height) * 100}%` }}
-                    />
-                    {total > 0 && over && overIsBad && goal != null && (
-                      <>
-                        <span className="absolute inset-0 rounded-full bg-primary" />
-                        <span
-                          className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
-                          style={{ height: `${(goal / total) * 100}%` }}
-                        />
-                      </>
-                    )}
-                    {total > 0 && !(over && overIsBad) && (
-                      <div
-                        className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
-                        style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
-                      >
-                        {parts.map((p, k) => (
-                          <span
-                            key={k}
-                            className={`${p.className} min-h-1 rounded-full`}
-                            style={{ flex: `${p.value} 1 0%` }}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    {total > 0 && over && overIsBad && goal != null ? (
+                      <span
+                        data-bar="level"
+                        className="intake-solid bar-fill-y"
+                        style={barFill((goal / total) * 100)}
+                      />
+                    ) : null}
+                    {total > 0 && !(over && overIsBad)
+                      ? parts
+                          .map((p, k) => ({
+                            className: p.className,
+                            reach: parts.slice(0, k + 1).reduce((s, q) => s + q.value, 0),
+                          }))
+                          .reverse()
+                          .map((p, k) => (
+                            <span
+                              key={k}
+                              data-bar="part"
+                              className={`${p.className} bar-fill-y`}
+                              style={barFill((p.reach / height) * 100)}
+                            />
+                          ))
+                      : null}
                   </div>
                 </div>
                 <span
@@ -439,8 +439,8 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
       </div>
       {cardio.whoMinutes > 0 ? (
         <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
-            <div className="bar-in-x h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          <div className="h-2 bar-track bg-foreground/10">
+            <div className="bar-in-x bar-fill-x bg-primary" style={barFill(pct)} />
           </div>
           <p className={`${text.meta} mt-1.5`}>
             {t.weekRecap.whoLine(cardio.whoMinutes, cardio.whoTarget)}
@@ -535,12 +535,10 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
       ) : null}
       {calorieGoal != null ? (
         <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
+          <div className="h-2 bar-track bg-foreground/10">
             <div
-              className={`bar-in-x h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
-              style={{
-                width: `${Math.min(100, Math.round((average.calories / calorieGoal) * 100))}%`,
-              }}
+              className={`bar-in-x bar-fill-x ${over ? "bg-destructive" : "bg-primary"}`}
+              style={barFill(Math.min(100, Math.round((average.calories / calorieGoal) * 100)))}
             />
           </div>
           <p className={`${text.meta} mt-1.5`}>
@@ -782,16 +780,14 @@ function CarbsBars({ days }: { days: WeekRecapDay[] }) {
                 {d.carbs > 0 ? (
                   <div
                     data-bar="carbs"
-                    className="bar-in-y intake-fill relative isolate w-5 overflow-hidden rounded-full"
-                    style={{ height: `${Math.max(4, (d.carbs / scale) * 100)}%` }}
+                    className="bar-in-y intake-fill bar-track w-5"
+                    style={{ height: `max(1.25rem, ${(d.carbs / scale) * 100}%)` }}
                   >
                     {d.sugars != null && d.sugars > 0 ? (
                       <span
                         data-bar="sugars"
-                        className="absolute inset-x-0 bottom-0 rounded-t-[50%_6px] bg-primary"
-                        style={{
-                          height: `max(8px, ${Math.min(100, (d.sugars / d.carbs) * 100)}%)`,
-                        }}
+                        className="bar-fill-y bg-primary"
+                        style={barFill((d.sugars / d.carbs) * 100)}
                       />
                     ) : null}
                   </div>

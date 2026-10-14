@@ -367,14 +367,53 @@
   background-color: color-mix(in oklab, var(--primary) 11%, transparent);
 }
 
+/* Every bar is a pill with one radius (DESIGN.md, All bars share one style).
+   `bar-track` is the pill: rounded, clipping, and a size container so its
+   fills know its thickness (100cqh / 100cqw). A fill is a pill of the same
+   thickness, `--bar` (a percentage) long and never shorter than the track is
+   thick; a value smaller than that slides the pill out past the track's start,
+   so what shows is a lens: the track's round end below, the fill's round end
+   above, both with the same radius. Never put a fill outside a `bar-track`:
+   without the container the cq units fall back to the viewport. Stacked parts
+   (coffee kinds, the level under an over-goal bar) are fills up to their
+   running total, drawn biggest first, so every join is the same round end. */
+@property --bar {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+@utility bar-track {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 9999px;
+  container-type: size;
+}
+@utility bar-fill-x {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: min(0px, calc(var(--bar) - 100cqh));
+  width: max(var(--bar), 100cqh);
+  border-radius: 9999px;
+}
+@utility bar-fill-y {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: min(0px, calc(var(--bar) - 100cqw));
+  height: max(var(--bar), 100cqw);
+  border-radius: 9999px;
+}
+
 /* The weekly recap's intake fill: the card header's accent tint, stronger so
    it shows on the grey goal track. Over the goal the bar is the solid accent. */
 /* Goal-vs-actual bar fills glide to a new value (DESIGN.md, Progress bars). */
 @utility bar-grow {
   transition:
-    width 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    --bar 500ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color 300ms ease-out;
-  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) backwards;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
     animation: none;
@@ -383,12 +422,13 @@
 
 /* Every bar and column grows in when it is first drawn (the motion of History's
    Volume per muscle group chart). `bar-in-x` grows a horizontal fill from its
-   left edge, `bar-in-y` a vertical one from its baseline. Animating the size
-   rather than scaling keeps the rounded ends round. Charts from Recharts use
+   left edge (it animates `--bar`, see `bar-fill-x`), `bar-in-y` a vertical
+   column from its baseline. Animating the size rather than scaling keeps the
+   rounded ends round. Charts from Recharts use
    the same timing (`CHART_ANIMATION`, lib/gym/chartAnimation.ts). */
 @keyframes bar-in-x {
   from {
-    width: 0;
+    --bar: 0%;
   }
 }
 @keyframes bar-in-y {
@@ -397,7 +437,14 @@
   }
 }
 @utility bar-in-x {
-  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) both;
+  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+/* The same grow-in for a vertical fill inside a fixed track (`bar-fill-y`). */
+@utility bar-in {
+  animation: bar-in-x 1000ms cubic-bezier(0.25, 0.8, 0.3, 1) backwards;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }

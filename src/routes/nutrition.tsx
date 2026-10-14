@@ -62,6 +62,7 @@ import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { latestBodyKg } from "../lib/gym/load";
 import { mondayOf, parseDayKey } from "../lib/gym/schedule";
 import { haptic, useGym } from "../lib/gym/store";
+import { barFill } from "../components/gym/bar";
 
 /** Food, drinks (water and coffee) and bodyweight, as sub-tabs like
  *  History's. The week strip is on every tab and shows that tab's own
@@ -649,10 +650,10 @@ function WeekStrip({
                   {mark.label ?? "·"}
                 </span>
               ) : (
-                <span className="h-1 w-6 overflow-hidden rounded-full bg-muted">
+                <span className="block h-1 w-6 bar-track bg-muted">
                   <span
-                    className={`bar-in-x block h-full rounded-full ${mark.over ? "bg-destructive" : "bg-primary"}`}
-                    style={{ width: `${mark.pct ?? 0}%` }}
+                    className={`bar-in-x bar-fill-x ${mark.over ? "bg-destructive" : "bg-primary"}`}
+                    style={barFill(mark.pct ?? 0)}
                   />
                 </span>
               )}
@@ -774,11 +775,8 @@ function DaySummary({
           ) : null}
         </div>
         {goals.calories != null ? (
-          <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className={`bar-grow h-full rounded-full ${barClass(calStatus)}`}
-              style={{ width: `${calPct}%` }}
-            />
+          <div className="mt-2.5 h-2 bar-track bg-muted">
+            <div className={`bar-grow bar-fill-x ${barClass(calStatus)}`} style={barFill(calPct)} />
           </div>
         ) : null}
       </div>
@@ -804,27 +802,24 @@ function DaySummary({
                 </span>
               </p>
               {goal != null ? (
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="mt-1.5 h-1.5 bar-track bg-muted">
                   <div
-                    className={`bar-grow relative h-full overflow-hidden rounded-full ${
+                    className={`bar-grow bar-fill-x ${
                       key === "carbs" && sugars != null && status === "ok"
                         ? "intake-solid"
                         : barClass(status)
                     }`}
-                    style={{ width: `${Math.min(100, (totals[key] / goal) * 100)}%` }}
-                  >
-                    {/* The sugars part of the carbs: one solid accent pill
-                        from the left inside the carbs fill, round-ended. */}
-                    {key === "carbs" && sugars != null && totals.carbs > 0 ? (
-                      <div
-                        data-testid="sugars-segment"
-                        className="absolute inset-y-0 left-0 rounded-full bg-primary"
-                        style={{
-                          width: `${Math.min(100, ((totals.sugars ?? 0) / totals.carbs) * 100)}%`,
-                        }}
-                      />
-                    ) : null}
-                  </div>
+                    style={barFill((totals[key] / goal) * 100)}
+                  />
+                  {/* The sugars part of the carbs: a solid accent fill from
+                      the left over the carbs fill, with the same round end. */}
+                  {key === "carbs" && sugars != null && totals.carbs > 0 ? (
+                    <div
+                      data-testid="sugars-segment"
+                      className="bar-grow bar-fill-x bg-primary"
+                      style={barFill((Math.min(totals.sugars ?? 0, totals.carbs) / goal) * 100)}
+                    />
+                  ) : null}
                 </div>
               ) : null}
               {key === "carbs" && sugars != null ? (

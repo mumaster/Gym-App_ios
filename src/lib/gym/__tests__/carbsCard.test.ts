@@ -60,7 +60,7 @@ describe("CarbsCard", () => {
     expect(html).toContain("Pale is carbs, solid is the sugars in them.");
     expect(html).not.toContain("at least");
     const accents = [
-      ...html.matchAll(/data-bar="sugars"[^>]*style="height:max\(8px, ([\d.]+)%\)/g),
+      ...html.matchAll(/data-bar="sugars"[^>]*style="--bar:([\d.]+)%"/g),
     ].map((m) => Number(m[1]));
     expect(accents).toEqual([25, 80]);
     expect(html).toContain("Monday: 200 g carbs, of which 50 g sugars");

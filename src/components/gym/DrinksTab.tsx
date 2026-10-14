@@ -53,6 +53,7 @@ import { parseDayKey } from "../../lib/gym/schedule";
 import { latestBodyKg } from "../../lib/gym/load";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { haptic, useGym } from "../../lib/gym/store";
+import { barFill } from "./bar";
 
 /** Nutrition → Drinks: water, coffee and alcohol for the picked day, at the
  *  Food tab's sizes (card padding, gaps, type, button heights). Everything you do
@@ -237,11 +238,8 @@ function WaterCard({
       />
 
       {waterGoalMl ? (
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="bar-grow h-full rounded-full bg-primary"
-            style={{ width: `${pct}%` }}
-          />
+        <div className="mt-4 h-2 bar-track bg-muted">
+          <div className="bar-grow bar-fill-x bg-primary" style={barFill(pct)} />
         </div>
       ) : isToday ? (
         // No goal yet: the suggestion in one line, or a way to get one.
@@ -385,10 +383,10 @@ function CoffeeCard({ dayKey, canAdd }: { dayKey: string; canAdd: boolean }) {
           </button>
         }
       />
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+      <div className="mt-4 h-2 bar-track bg-muted">
         <div
-          className={`bar-grow h-full rounded-full ${barClass(status)}`}
-          style={{ width: `${Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100)}%` }}
+          className={`bar-grow bar-fill-x ${barClass(status)}`}
+          style={barFill(Math.min(100, (mg / CAFFEINE_DAILY_LIMIT_MG) * 100))}
         />
       </div>
       {canAdd ? (
