@@ -655,10 +655,10 @@
 @keyframes rest-flash {
   0%,
   100% {
-    box-shadow: 0 0 0 0 oklch(0.88 0.24 145 / 0%);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 0%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 6px oklch(0.88 0.24 145 / 45%);
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 45%, transparent);
   }
 }
 
