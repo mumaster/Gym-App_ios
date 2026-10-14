@@ -346,6 +346,13 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 42,
+    text: {
+      en: "When some sugars are unknown, sugar totals now show a ~ in front (like ~20 g) instead of ≥.",
+      nl: "Als sommige suikers onbekend zijn, staat er nu een ~ voor het suikertotaal (zoals ~20 g) in plaats van ≥.",
+    },
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -355,7 +362,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 41;
+export const CURRENT_VERSION = 42;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
