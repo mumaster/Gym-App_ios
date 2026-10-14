@@ -32,8 +32,10 @@ vi.mock("../store", () => ({
 
 import { NutritionGoalsSheet } from "../../../components/gym/NutritionGoalsSheet";
 
-const render = () =>
-  renderToString(createElement(NutritionGoalsSheet, { open: true, onClose: () => {} }));
+const render = (initialPage: "limits" | "options" = "options") =>
+  renderToString(
+    createElement(NutritionGoalsSheet, { open: true, onClose: () => {}, initialPage }),
+  );
 
 describe("NutritionGoalsSheet sugar goal", () => {
   it("shows the switch, off by default, without the shares", () => {
@@ -52,7 +54,6 @@ describe("NutritionGoalsSheet sugar goal", () => {
     expect(html).toContain("50 g a day");
     expect(html).toContain("25 g a day");
     expect(html).toContain("Recommended");
-    expect(html).toContain("A health guide, not a training lever.");
   });
 
   it("asks for a calorie goal when there is none", () => {
@@ -60,5 +61,29 @@ describe("NutritionGoalsSheet sugar goal", () => {
     gym.state.sugarGoalShare = 0.1;
     expect(render()).toContain("Set a calorie goal first");
     gym.state.nutritionGoals = { calories: 2000 };
+  });
+});
+
+describe("NutritionGoalsSheet sub tabs", () => {
+  it("limits tab shows the suggest button and fields, not the options", () => {
+    const html = render("limits");
+    expect(html).toContain("Suggest my limits");
+    expect(html).toContain("No limit");
+    expect(html).not.toContain("Sugar goal");
+    expect(html).not.toContain("Weekend budget");
+  });
+
+  it("options tab shows the three options with an info button each", () => {
+    const html = render("options");
+    expect(html).toContain("Different limits on training and rest days");
+    expect(html).toContain("Sugar goal");
+    expect(html).toContain("Weekend budget");
+    expect(html).not.toContain("Suggest my limits");
+    expect(html).toContain('aria-label="About the sugar goal"');
+    expect(html).toContain('aria-label="About the weekend budget"');
+    expect(html).toContain('aria-label="About training and rest days"');
+    // explanations stay hidden until the (i) is tapped
+    expect(html).not.toContain("health guide");
+    expect(html).not.toContain("weekly average stays");
   });
 });
