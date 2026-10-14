@@ -13,6 +13,7 @@ import {
 import { CardHead } from "./CardHead";
 import { Card } from "./Screen";
 import { chip } from "./ui";
+import { barFill } from "./bar";
 
 /** The "muscles to grow" chips: each group's weekly target goes from 10 to
  *  20 sets (volume.ts), and generated sessions share themselves out by
@@ -131,10 +132,10 @@ export function WeeklySetsCard({ weekOf }: { weekOf?: Date | undefined }) {
                 ) : null}
                 {r.muscle}
               </span>
-              <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
+              <div className="h-2 min-w-0 flex-1 bar-track bg-muted">
                 <div
-                  className={`bar-grow h-full rounded-full ${r.done >= r.target ? "bg-primary" : "bg-primary/60"}`}
-                  style={{ width: `${pct}%` }}
+                  className={`bar-grow bar-fill-x ${r.done >= r.target ? "bg-primary" : "bg-primary/60"}`}
+                  style={barFill(pct)}
                 />
               </div>
               <span

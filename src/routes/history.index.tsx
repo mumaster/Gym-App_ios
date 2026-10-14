@@ -13,7 +13,6 @@ import {
   Watch,
   type LucideIcon,
 } from "lucide-react";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { ExerciseProgressChart } from "../components/gym/ExerciseProgressChart";
 import { Card, Screen } from "../components/gym/Screen";
 import { CardHead } from "../components/gym/CardHead";
@@ -25,8 +24,8 @@ import { TrainingLoadCard } from "../components/gym/TrainingLoadCard";
 import { WeekPicker } from "../components/gym/WeekPicker";
 import { CardioWeekCard } from "../components/gym/CardioWeekCard";
 import { CARDIO_ICONS, cardioName } from "../components/gym/cardioDisplay";
-import { InView } from "../components/gym/InView";
-import { CHART_ANIMATION } from "../lib/gym/chartAnimation";
+import { BarReadout, barColumn, usePickedBar } from "../components/gym/BarReadout";
+import { barFill } from "../components/gym/bar";
 import { GrowthFocusCard, WeeklySetsCard } from "../components/gym/WeeklyVolume";
 import { RouteThumb } from "../components/gym/RouteMapView";
 import { WatchImportSheet } from "../components/gym/WatchImportSheet";
@@ -406,32 +405,7 @@ function HistoryScreen() {
             <>
               <Card className="mt-4 overflow-hidden p-4">
                 <CardHead icon={BarChart3} title={t.history.volumePerMuscle} />
-                <InView className="h-52 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={volumeByMuscle}>
-                      <XAxis
-                        dataKey="muscle"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "var(--muted)" }}
-                        contentStyle={{
-                          background: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 12,
-                          color: "var(--foreground)",
-                        }}
-                      />
-                      <Bar dataKey="volume" radius={[8, 8, 0, 0]} {...CHART_ANIMATION}>
-                        {volumeByMuscle.map((d) => (
-                          <Cell key={d.muscle} fill="var(--primary)" />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </InView>
+                <VolumeBars rows={volumeByMuscle} />
               </Card>
             </>
           ) : null}
@@ -589,5 +563,47 @@ function CardioRow({ cardio }: { cardio: CardioSession }) {
       </div>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </Link>
+  );
+}
+
+/** Volume per muscle group as columns: each a grey pill as tall as the
+ *  biggest group, filled up to its own volume (DESIGN.md, All bars share one
+ *  style). Tap a column for its name and kilos. */
+function VolumeBars({ rows }: { rows: { muscle: Muscle; volume: number }[] }) {
+  const locale = useLocale();
+  const { picked, toggle } = usePickedBar();
+  const max = Math.max(1, ...rows.map((r) => r.volume));
+  const readout = (r: { muscle: Muscle; volume: number }) =>
+    `${r.muscle}: ${Math.round(r.volume).toLocaleString(locale)} kg`;
+  return (
+    <>
+      <BarReadout text={picked == null ? null : readout(rows[picked]!)} />
+      <ul className="flex gap-1">
+        {rows.map((r, i) => (
+          <li key={r.muscle} className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              aria-label={readout(r)}
+              aria-pressed={picked === i}
+              className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
+            >
+              <span aria-hidden className="bar-track block h-36 w-5 bg-foreground/10">
+                <span
+                  className="bar-in bar-fill-y bg-primary"
+                  style={barFill((r.volume / max) * 100)}
+                />
+              </span>
+              <span
+                aria-hidden
+                className="mt-1.5 text-[10px] font-semibold uppercase text-muted-foreground"
+              >
+                {r.muscle.slice(0, 3)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

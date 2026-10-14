@@ -16,6 +16,7 @@ import { BottomSheet } from "./BottomSheet";
 import { ActivityPicker, EffortPicker } from "./CardioControls";
 import { CARDIO_ICONS } from "./cardioDisplay";
 import { chip } from "./ui";
+import { barFill } from "./bar";
 
 /** Monday-first weekdays, as Date#getDay values. */
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
@@ -77,11 +78,8 @@ export function CardioPlanSheet({ open, onClose }: { open: boolean; onClose: () 
         <p className="tabular text-[13.5px] font-semibold">
           {t.cardio.planTotal(total, WHO_WEEKLY_MINUTES)}
         </p>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/10">
-          <div
-            className="bar-in-x h-full rounded-full bg-primary"
-            style={{ width: `${pct * 100}%` }}
-          />
+        <div className="mt-2 h-1.5 bar-track bg-foreground/10">
+          <div className="bar-in-x bar-fill-x bg-primary" style={barFill(pct * 100)} />
         </div>
         <p className="mt-2 text-[12px] text-muted-foreground">{t.cardio.explain}</p>
       </div>

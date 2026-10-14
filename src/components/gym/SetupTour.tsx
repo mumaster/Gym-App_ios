@@ -40,6 +40,7 @@ import { ALLERGIES } from "../../lib/gym/allergens";
 import { splitTemplateById } from "../../lib/gym/splits";
 import { track } from "../../lib/gym/analytics";
 import { haptic, useGym } from "../../lib/gym/store";
+import { barFill } from "./bar";
 
 /**
  * First-run setup: a full-screen, step-by-step flow shown once after the
@@ -360,11 +361,11 @@ export function SetupFlow({
           aria-valuemax={STEPS.length}
           aria-valuenow={idx + 1}
           aria-label={t.setup.stepOf(idx + 1, STEPS.length)}
-          className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10"
+          className="h-1.5 flex-1 bar-track bg-foreground/10"
         >
           <div
-            className="h-full rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
-            style={{ width: `${((idx + 1) / STEPS.length) * 100}%` }}
+            className="bar-fill-x bg-primary transition-[--bar] duration-300 motion-reduce:transition-none"
+            style={barFill(((idx + 1) / STEPS.length) * 100)}
           />
         </div>
         {idx < last ? (

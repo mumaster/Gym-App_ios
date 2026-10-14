@@ -63,6 +63,7 @@ import { LogCardioSheet } from "../components/gym/LogCardioSheet";
 import type { CardioPlanDay, CardioSession } from "../lib/gym/types";
 import { currentWeekStreak, trainingDaysThisWeek } from "../lib/gym/streak";
 import { haptic, useGym, type RotationKind } from "../lib/gym/store";
+import { barFill } from "../components/gym/bar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -620,10 +621,10 @@ function NutritionCard({
           actions={<ChevronRight aria-hidden className="size-5 text-muted-foreground" />}
         />
         {goal != null ? (
-          <span className="mb-3 block h-2 overflow-hidden rounded-full bg-muted">
+          <span className="mb-3 block h-2 bar-track bg-muted">
             <span
-              className={`bar-grow block h-full rounded-full ${barClass(calStatus)}`}
-              style={{ width: `${Math.min(100, (totals.calories / goal) * 100)}%` }}
+              className={`bar-grow bar-fill-x ${barClass(calStatus)}`}
+              style={barFill(Math.min(100, (totals.calories / goal) * 100))}
             />
           </span>
         ) : null}
@@ -648,10 +649,10 @@ function NutritionCard({
                   </span>
                 </span>
                 {limit != null ? (
-                  <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-muted">
+                  <span className="mt-1.5 block h-1.5 bar-track bg-muted">
                     <span
-                      className={`bar-grow block h-full rounded-full ${barClass(status)}`}
-                      style={{ width: `${Math.min(100, (totals[key] / limit) * 100)}%` }}
+                      className={`bar-grow bar-fill-x ${barClass(status)}`}
+                      style={barFill(Math.min(100, (totals[key] / limit) * 100))}
                     />
                   </span>
                 ) : null}
@@ -736,11 +737,8 @@ function NutritionCard({
  *  Drinks tab's bars (accent, or amber/red for caffeine near or over). */
 function IntakeBar({ pct, className = "bg-primary" }: { pct: number; className?: string }) {
   return (
-    <div aria-hidden className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
-      <div
-        className={`bar-grow h-full rounded-full ${className}`}
-        style={{ width: `${Math.min(100, pct)}%` }}
-      />
+    <div aria-hidden className="mt-1.5 h-2 bar-track bg-muted">
+      <div className={`bar-grow bar-fill-x ${className}`} style={barFill(Math.min(100, pct))} />
     </div>
   );
 }

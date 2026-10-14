@@ -15,7 +15,7 @@
  * Without IntersectionObserver or under Reduce Motion nothing is tagged, so
  * the CSS behaves as before.
  */
-export const IN_VIEW_SELECTOR = ".bar-grow, .bar-in-x, .bar-in-y, .chart-draw, .chart-dot";
+export const IN_VIEW_SELECTOR = ".bar-grow, .bar-in, .bar-in-x, .bar-in-y, .chart-draw, .chart-dot";
 
 /** Starts the observers; returns a cleanup. Safe to call on the server. */
 export function installInViewAnimations(): () => void {

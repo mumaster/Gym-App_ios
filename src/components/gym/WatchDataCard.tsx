@@ -23,6 +23,7 @@ import {
   roundWatchNumbers,
   WATCH_DECIMALS,
 } from "../../lib/gym/watch";
+import { barFill } from "./bar";
 
 interface Stat {
   icon: LucideIcon;
@@ -262,10 +263,10 @@ function Zones({ title, zones }: { title: string; zones: { name: string; minutes
                 )}
               </span>
             </p>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="mt-1 h-1.5 bar-track bg-muted">
               <div
-                className="bar-in-x h-full rounded-full bg-primary"
-                style={{ width: `${(z.minutes / max) * 100}%` }}
+                className="bar-in-x bar-fill-x bg-primary"
+                style={barFill((z.minutes / max) * 100)}
               />
             </div>
           </div>
@@ -348,12 +349,9 @@ function SplitRow({
       <span className="tabular min-w-[1.5rem] max-w-[4.5rem] font-semibold leading-tight">
         {split.label}
       </span>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
+      <div className="h-2 bar-track bg-muted">
         {pace && fastest && isWholeSplit(split.label) ? (
-          <div
-            className="bar-in-x h-full rounded-full bg-primary"
-            style={{ width: `${(fastest / pace) * 100}%` }}
-          />
+          <div className="bar-in-x bar-fill-x bg-primary" style={barFill((fastest / pace) * 100)} />
         ) : null}
       </div>
       <span className="tabular text-right">{pace ? formatPace(pace) : "–"}</span>

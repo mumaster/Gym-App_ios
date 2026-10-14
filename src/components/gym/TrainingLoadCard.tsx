@@ -10,6 +10,7 @@ import { CardHead } from "./CardHead";
 import { Card } from "./Screen";
 import { SegmentedTabs } from "./SegmentedTabs";
 import { button } from "./ui";
+import { barFill } from "./bar";
 
 const PERIODS = ["week", "month"] as const;
 type Period = (typeof PERIODS)[number];
@@ -153,10 +154,10 @@ export function TrainingLoadCard({ weekOf }: { weekOf?: Date | undefined }) {
                     aria-label={`${d.date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}: ${d.load} ${t.trainingLoad.units}`}
                     className={`${barColumn(picked === i)} flex h-full min-w-0 flex-1 flex-col justify-end gap-1`}
                   >
-                    <div className="flex min-h-0 flex-1 items-end rounded-t-md bg-foreground/10">
+                    <div className="bar-track min-h-0 w-full flex-1 bg-foreground/10">
                       <div
-                        className="bar-in-y w-full rounded-t-md bg-primary"
-                        style={{ height: `${d.load ? Math.max(6, (d.load / max) * 100) : 0}%` }}
+                        className="bar-in bar-fill-y bg-primary"
+                        style={barFill(d.load ? Math.max(6, (d.load / max) * 100) : 0)}
                       />
                     </div>
                     <span className="h-[14px] text-center text-[11px] leading-[14px] text-muted-foreground">
