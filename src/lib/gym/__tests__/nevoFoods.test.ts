@@ -33,7 +33,17 @@ describe("NEVO data", () => {
     // Bier pils: ALC 4.3 g per 100 g; Banaan has none.
     expect(foods.find((f) => f.code === 390)!.alcohol).toBe(4.3);
     expect(foods.find((f) => f.code === 151)!.alcohol).toBe(0);
-    expect(NEVO_FOODS.find((r) => r[0] === 151)).toHaveLength(11);
+    // A 0 holds alcohol's place in front of the sugars that follow it.
+    expect(NEVO_FOODS.find((r) => r[0] === 151)![11]).toBe(0);
+  });
+
+  it("carries NEVO's total sugars (SUGAR) unchanged", () => {
+    // From the 2025/9.0 file: Banaan 15,5 of 20 g carbs, Aardappelen rauw 1,
+    // Bier pils 0.
+    expect(byCode(151).per100.sugars).toBe(15.5);
+    expect(byCode(1).per100.sugars).toBe(1);
+    expect(byCode(390).per100.sugars).toBe(0);
+    expect(NEVO_FOODS.filter((r) => r[12] != null).length).toBeGreaterThan(1400);
   });
 
   it("keeps NEVO's values unchanged (spot checks against the 2025/9.0 file)", () => {

@@ -7,9 +7,7 @@
  *
  *  1. NEVO: an entry, favourite or ingredient carrying exactly one NEVO code
  *     (a plain NEVO food, not a recipe) gets that food's sugars, but only
- *     while its values still equal NEVO's carbs (it wasn't edited). NEVO
- *     sugars aren't in the bundled data yet, so this does nothing until the
- *     table is rebuilt with them (scripts/build-nevo-foods.mjs).
+ *     while its values still equal NEVO's carbs (it wasn't edited).
  *  2. Your foods with a barcode and no sugars: Open Food Facts is asked once
  *     (fetchBarcodeSugars); the sugars are kept only if OFF's carbs equal the
  *     food's (so an edited food isn't given the label's sugars). Entries,
@@ -21,9 +19,9 @@ import { nameKey, type MyFood } from "./myFoods";
 import { cleanSugars, withSugars } from "./nutrition";
 import type { FoodEntry, Macros, MealIngredient, MealTemplate, Recipe } from "./nutrition";
 
-/** Bump to run the backfill again on every device (e.g. after the NEVO
- *  table gains sugars). */
-export const SUGARS_BACKFILL_VERSION = 1;
+/** Bump to run the backfill again on every device. 2: the NEVO table gained
+ *  sugars, so NEVO foods logged before then get them now. */
+export const SUGARS_BACKFILL_VERSION = 2;
 
 /** Most barcode lookups in one run, so a big library can't hammer Open Food
  *  Facts; the rest stay unknown. */

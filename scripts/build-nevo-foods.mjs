@@ -67,10 +67,8 @@ const COLUMNS = {
   alcohol: "ALC (g)",
 };
 
-/** NEVO's total sugars column (the sum of mono- and disaccharides, "SUGAR").
- *  NEVO 2023/2025 headers are probably "SUGAR (g)", but this has NOT been
- *  checked against the file: confirm it when you first run the script. It is
- *  optional on purpose: a file without the column builds the same data as
+/** NEVO's total sugars column (the sum of mono- and disaccharides, "SUGAR"),
+ *  checked against the NEVO 2025/9.0 file. It is optional on purpose: a file without the column builds the same data as
  *  before (no sugars), and a food with no value in it gets none (never 0). */
 const SUGARS_COLUMN = "SUGAR (g)";
 
