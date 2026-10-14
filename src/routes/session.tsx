@@ -1989,7 +1989,7 @@ function ExerciseBlock({
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
               aria-label={t.session.editSet(s.set_number)}
-              className="tap-target grid w-full grid-cols-[2rem_1fr_1fr_3.5rem] items-center gap-1.5 rounded-full bg-primary/10 p-1.5 text-left shadow-sm active:scale-[0.99]"
+              className="tap-target grid w-full grid-cols-[2rem_1fr_1fr_3.75rem] items-center gap-1.5 rounded-full bg-primary/10 p-1.5 text-left shadow-sm active:scale-[0.99]"
             >
               {/* The ball is inset the same on the left, top and bottom, so it
                   follows the row's rounded end (concentric). */}
@@ -2019,8 +2019,11 @@ function ExerciseBlock({
               </span>
               {/* A fixed-width column, so every row's RPE lines up. */}
               {s.rpe ? (
-                <span className="tabular flex h-8 items-center justify-center rounded-full bg-background/80 text-[12px] font-bold leading-none text-primary-text ring-1 ring-primary/15">
-                  RPE {s.rpe}
+                <span className="tabular flex h-8 items-center justify-center gap-1 rounded-full bg-background/80 ring-1 ring-primary/15">
+                  <span className="text-[12px] font-medium text-muted-foreground">RPE</span>
+                  <span className="text-[18px] font-bold leading-none text-primary-text">
+                    {s.rpe}
+                  </span>
                 </span>
               ) : s.set_type === "working" ? (
                 // A reminder that this set has no RPE; the row opens the
