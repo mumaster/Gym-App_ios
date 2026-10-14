@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -23,7 +23,6 @@ import { useDayGoalsResolver } from "../../lib/gym/dayNutrition";
 import { addDays } from "../../lib/gym/date";
 import { mondayOf } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
-import { BottomSheet } from "./BottomSheet";
 import { badge } from "./ui";
 
 const ICONS: Record<AppNotification["kind"], LucideIcon> = {
@@ -113,6 +112,13 @@ export function NotificationBell() {
     resolveDay,
   ]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const unseen = items.filter((n) => !notifSeen.includes(n.id));
 
   const text = (n: AppNotification): { title: string; body: string } => {
@@ -168,64 +174,89 @@ export function NotificationBell() {
           />
         ) : null}
       </button>
-      {/* Portaled out of Home's sticky header: its blur makes `fixed` resolve
-          against the header (sheet at the top of the page) and its stacking
-          context put the tab bar over the sheet. */}
+      {/* A panel that drops down from the top of the screen, portaled out of
+          Home's sticky header (its blur would make `fixed` resolve against the
+          header and its stacking context would put the tab bar on top). */}
       {open &&
         createPortal(
-          <BottomSheet open={open} onClose={() => setOpen(false)} title={t.notifications.title}>
-            {items.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-[17px] font-semibold">{t.notifications.empty}</p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  {t.notifications.emptyHint}
-                </p>
+          <div className="fixed inset-0 z-50 flex flex-col justify-start">
+            <button
+              aria-label={t.bottomSheet.close}
+              onClick={() => setOpen(false)}
+              className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="notifications-title"
+              className="glass-strong safe-top relative flex max-h-[82vh] flex-col overflow-hidden rounded-b-3xl shadow-[var(--shadow-float)] duration-300 animate-in slide-in-from-top motion-reduce:!transition-none"
+            >
+              <div className="mb-3 flex shrink-0 items-center justify-between px-5 pt-3">
+                <h2 id="notifications-title" className="text-[20px] font-bold tracking-tight">
+                  {t.notifications.title}
+                </h2>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="tap-target rounded-full bg-secondary px-4 py-2 text-[14px] font-semibold text-secondary-foreground"
+                >
+                  {t.bottomSheet.done}
+                </button>
               </div>
-            ) : (
-              <ul className="space-y-2 pb-2">
-                {items.map((n) => {
-                  const Icon = ICONS[n.kind];
-                  const { title, body } = text(n);
-                  return (
-                    <li key={n.id}>
-                      <button
-                        onClick={() => {
-                          setOpen(false);
-                          navigate({
-                            to: n.href,
-                            ...(n.search ? { search: n.search } : {}),
-                          } as never);
-                        }}
-                        className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left active:brightness-95"
-                      >
-                        <span aria-hidden className={`${badge.tonal} size-10 shrink-0`}>
-                          <Icon className="size-5" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
-                            {title}
-                            {fresh.has(n.id) ? (
-                              <span
-                                aria-hidden
-                                className="size-2 shrink-0 rounded-full bg-primary"
-                              />
-                            ) : null}
-                          </span>
-                          <span className="mt-0.5 block text-[13px] leading-snug text-foreground/75">
-                            {body}
-                          </span>
-                        </span>
-                        <ChevronRight
-                          aria-hidden
-                          className="size-4 shrink-0 text-muted-foreground"
-                        />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </BottomSheet>,
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
+                {items.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-[17px] font-semibold">{t.notifications.empty}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      {t.notifications.emptyHint}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-2 pb-2">
+                    {items.map((n) => {
+                      const Icon = ICONS[n.kind];
+                      const { title, body } = text(n);
+                      return (
+                        <li key={n.id}>
+                          <button
+                            onClick={() => {
+                              setOpen(false);
+                              navigate({
+                                to: n.href,
+                                ...(n.search ? { search: n.search } : {}),
+                              } as never);
+                            }}
+                            className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left active:brightness-95"
+                          >
+                            <span aria-hidden className={`${badge.tonal} size-10 shrink-0`}>
+                              <Icon className="size-5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
+                                {title}
+                                {fresh.has(n.id) ? (
+                                  <span
+                                    aria-hidden
+                                    className="size-2 shrink-0 rounded-full bg-primary"
+                                  />
+                                ) : null}
+                              </span>
+                              <span className="mt-0.5 block text-[13px] leading-snug text-foreground/75">
+                                {body}
+                              </span>
+                            </span>
+                            <ChevronRight
+                              aria-hidden
+                              className="size-4 shrink-0 text-muted-foreground"
+                            />
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>,
           document.body,
         )}
     </>

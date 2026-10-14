@@ -350,8 +350,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 42,
     items: [
       {
-        en: "The notifications sheet now opens below the top of the screen, and its messages no longer run under the tab bar.",
-        nl: "Het meldingenscherm opent nu onder de bovenkant van het scherm, en de meldingen lopen niet meer onder de tabbalk.",
+        en: "Notifications now drop down from the top of the screen, and nothing overlaps the tab bar anymore.",
+        nl: "Meldingen komen nu van boven het scherm naar beneden, en niets overlapt meer met de tabbalk.",
       },
     ],
   },
