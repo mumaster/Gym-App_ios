@@ -7,6 +7,8 @@ import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
+  SUGAR_GOAL_SHARES,
+  sugarGoalGrams,
   deriveRestDayGoals,
   sessionEnergyKcal,
   trainingDayGoalsFromAverage,
@@ -46,6 +48,8 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     nutritionProfile,
     restDayGoalOverrides,
     setNutritionGoals,
+    sugarGoalShare,
+    setSugarGoalShare,
     update,
     plannedCardio: cardioPlan,
   } = useGym();
@@ -53,25 +57,29 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   const locale = useLocale();
   const session = useSessionEnergy();
   const sessionShape = useSessionShape();
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [draft, setDraft] = useState<Draft>(() => toDraft(nutritionGoals));
   const [restDraft, setRestDraft] = useState<Draft>(emptyDraft);
   const [byDayType, setByDayType] = useState(false);
   const [tab, setTab] = useState<"training" | "rest">("training");
   const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
+  /** The optional sugar goal's share of calories; null is off. */
+  const [sugarShare, setSugarShare] = useState<number | null>(sugarGoalShare);
 
   useEffect(() => {
     if (!open) return;
     setDraft(toDraft(nutritionGoals));
     setRestDraft(toDraft(restDayGoalOverrides));
     setByDayType(nutritionByDayType);
+    setSugarShare(sugarGoalShare);
     setTab("training");
-  }, [open, nutritionGoals, restDayGoalOverrides, nutritionByDayType]);
+  }, [open, nutritionGoals, restDayGoalOverrides, nutritionByDayType, sugarGoalShare]);
 
   // Done (and the backdrop) saves whatever's currently filled in — there's
   // no separate save step to remember, same as editing an existing food.
   const close = () => {
     haptic([20, 30]);
     setNutritionGoals(fromDraft(draft));
+    setSugarGoalShare(sugarShare);
     update({ nutritionByDayType: byDayType, restDayGoalOverrides: fromDraft(restDraft) });
     onClose();
   };
@@ -82,6 +90,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     else setDraft(emptyDraft);
   };
 
+  const calorieGoal = fromDraft(draft).calories ?? null;
   const showingRest = byDayType && tab === "rest";
   const derivedRest = deriveRestDayGoals(fromDraft(draft), session?.kcal ?? 0);
   const activeDraft = showingRest ? restDraft : draft;
@@ -217,6 +226,62 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
                 </span>
               </label>
             ))}
+          </div>
+
+          <div className="space-y-3 rounded-2xl bg-muted px-4 py-3">
+            <SwitchRow
+              className=""
+              label={t.sugarsUi.goal}
+              desc={t.sugarsUi.goalDesc}
+              ariaLabel={t.sugarsUi.goal}
+              on={sugarShare != null}
+              onToggle={() => {
+                haptic(12);
+                setSugarShare((v) => (v == null ? SUGAR_GOAL_SHARES[0] : null));
+              }}
+            />
+            {sugarShare != null ? (
+              <>
+                {calorieGoal == null ? (
+                  <p className="text-[12.5px] text-muted-foreground">
+                    {t.sugarsUi.goalNeedsCalories}
+                  </p>
+                ) : null}
+                <div className="grid grid-cols-2 gap-1 rounded-2xl bg-background/60 p-1">
+                  {SUGAR_GOAL_SHARES.map((share) => (
+                    <button
+                      key={share}
+                      role="radio"
+                      aria-checked={sugarShare === share}
+                      onClick={() => {
+                        haptic(10);
+                        setSugarShare(share);
+                      }}
+                      className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 text-center ${
+                        sugarShare === share ? chip.on : "text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-[14px] font-bold">
+                        {share === SUGAR_GOAL_SHARES[0] ? t.sugarsUi.share10 : t.sugarsUi.share5}
+                      </span>
+                      {calorieGoal != null ? (
+                        <span className="tabular text-[12px]">
+                          {t.sugarsUi.shareGrams(sugarGoalGrams(calorieGoal, share))}
+                        </span>
+                      ) : null}
+                      {share === SUGAR_GOAL_SHARES[0] ? (
+                        <span className="text-[11px] font-semibold opacity-80">
+                          {t.sugarsUi.recommended}
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[12px] leading-snug text-muted-foreground">
+                  {t.sugarsUi.caveat}
+                </p>
+              </>
+            ) : null}
           </div>
 
           <button

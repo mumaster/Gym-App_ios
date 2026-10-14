@@ -10,6 +10,7 @@ import {
   type CoffeeEntry,
   type FoodEntry,
   type Macros,
+  sugarsComplete,
   type WaterEntry,
 } from "./nutrition";
 import { buildRecap } from "./recap";
@@ -39,6 +40,8 @@ export interface WeekRecapInput {
   weightLog: WeightEntry[];
   /** The daily calorie limit that applies to a date, if the user set one. */
   calorieGoalFor?: (date: Date) => number | undefined;
+  /** The daily sugar goal (grams) that applies to a date, if it is on. */
+  sugarGoalFor?: (date: Date) => number | undefined;
   /** Daily water target in ml. */
   waterGoalMl?: number | null;
 }
@@ -56,6 +59,13 @@ export interface WeekRecapDay {
   /** Any food was logged that day. */
   logged: boolean;
   calorieGoal: number | undefined;
+  /** Grams of carbs that day. */
+  carbs: number;
+  /** Grams of sugars among them (the known ones); null when none is known. */
+  sugars: number | null;
+  /** Every food with carbs that day has its sugars known. */
+  sugarsComplete: boolean;
+  sugarGoal: number | undefined;
   waterMl: number;
   /** Cups of coffee, in total and per kind. */
   coffeeCups: number;
@@ -126,6 +136,24 @@ export interface WeekRecap {
     /** The day with the most calories among days that have started; null with
      *  under two logged days. */
     highest: WeekRecapPeak | null;
+  };
+  carbs: {
+    totalCarbs: number;
+    /** Known sugars; null when no food has any. */
+    totalSugars: number | null;
+    /** Every food with carbs this week has its sugars known. */
+    complete: boolean;
+    /** Sugars as a share of carbs (0-100); null without sugars or carbs. */
+    sugarsPct: number | null;
+    /** Per counted day (same rule as nutrition.average); null without sugars. */
+    averageCarbs: number | null;
+    averageSugars: number | null;
+    /** Finished logged days with a sugar goal that stayed within it. */
+    daysWithinSugarGoal: number;
+    /** Finished logged days with known sugars that have a sugar goal. */
+    daysWithSugarGoal: number;
+    /** The day with the most sugars; null with under two days with sugars. */
+    highestSugars: WeekRecapPeak | null;
   };
   water: {
     totalMl: number;
@@ -214,6 +242,7 @@ export function buildWeekRecap(
     const dayCoffee = entriesForDay(coffee, key);
     const byKind = emptyKinds();
     for (const c of dayCoffee) byKind[c.kind] += 1;
+    const dayTotals = dailyTotals(dayFood);
     const dayDrinks = dayFood.filter((e) => drinkOf(e));
     return {
       key,
@@ -222,9 +251,13 @@ export function buildWeekRecap(
       future: key > todayKey,
       workouts: workouts.filter((w) => dayKey(w.date) === key).length,
       cardio: cardio.filter((c) => dayKey(c.date) === key).length,
-      calories: dailyTotals(dayFood).calories,
+      calories: dayTotals.calories,
       logged: dayFood.length > 0,
       calorieGoal: input.calorieGoalFor?.(date),
+      carbs: dayTotals.carbs,
+      sugars: dayTotals.sugars ?? null,
+      sugarsComplete: sugarsComplete(dayFood),
+      sugarGoal: input.sugarGoalFor?.(date),
       waterMl: entriesForDay(water, key).reduce((s, e) => s + e.ml, 0),
       coffeeCups: dayCoffee.length,
       coffeeByKind: byKind,
@@ -263,6 +296,8 @@ export function buildWeekRecap(
   const countedFood = food.filter((e) => counted.some((d) => d.key === dayKey(e.logged_at)));
   const countedTotals = dailyTotals(countedFood);
   const withGoal = counted.filter((d) => d.calorieGoal != null);
+  const sugarDays = finishedLogged.filter((d) => d.sugarGoal != null && d.sugars != null);
+  const weekTotals = dailyTotals(food);
 
   // Water and coffee
   const waterDays = days.filter((d) => d.waterMl > 0);
@@ -357,6 +392,26 @@ export function buildWeekRecap(
       highest: peak(
         started.filter((d) => d.logged),
         (d) => d.calories,
+      ),
+    },
+    carbs: {
+      totalCarbs: Math.round(weekTotals.carbs),
+      totalSugars: weekTotals.sugars != null ? Math.round(weekTotals.sugars) : null,
+      complete: sugarsComplete(food),
+      sugarsPct:
+        weekTotals.sugars != null && weekTotals.carbs > 0
+          ? Math.round((weekTotals.sugars / weekTotals.carbs) * 100)
+          : null,
+      averageCarbs: counted.length ? avg(countedTotals.carbs, counted.length) : null,
+      averageSugars:
+        counted.length && countedTotals.sugars != null
+          ? avg(countedTotals.sugars, counted.length)
+          : null,
+      daysWithinSugarGoal: sugarDays.filter((d) => d.sugars! <= d.sugarGoal!).length,
+      daysWithSugarGoal: sugarDays.length,
+      highestSugars: peak(
+        started.filter((d) => d.sugars != null),
+        (d) => d.sugars ?? 0,
       ),
     },
     water: {

@@ -301,6 +301,23 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 39,
+    items: [
+      {
+        en: "See the sugars in your carbs: food, meals and your day now show “of which sugars”, filled in from barcodes and label photos.",
+        nl: "Zie de suikers in je koolhydraten: voedsel, maaltijden en je dag tonen nu “waarvan suikers”, ingevuld vanuit barcodes en etiketfoto's.",
+      },
+      {
+        en: "Set an optional sugar goal in your nutrition goals: 10% of your calories, or 5% if you want to be stricter.",
+        nl: "Stel een optioneel suikerdoel in bij je voedingsdoelen: 10% van je calorieën, of 5% als je strenger wilt zijn.",
+      },
+      {
+        en: "Your weekly overview has a Carbs card: seven day bars with your carbs, and the sugars in them in your accent colour.",
+        nl: "Je weekoverzicht heeft een kaart Koolhydraten: zeven dagbalken met je koolhydraten, en de suikers daarin in je accentkleur.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -310,7 +327,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 38;
+export const CURRENT_VERSION = 39;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

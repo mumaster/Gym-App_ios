@@ -11,6 +11,7 @@ import {
   Sparkles,
   Target,
   Utensils,
+  Wheat,
 } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { COFFEE_KINDS, formatWaterAmount, type CoffeeKind } from "../../lib/gym/nutrition";
@@ -19,6 +20,7 @@ import type { WeekRecap, WeekRecapDay } from "../../lib/gym/weekRecap";
 import { Card } from "./Screen";
 import { CardHead } from "./CardHead";
 import { text } from "./ui";
+import { barFill } from "./bar";
 
 /** The cards of the weekly recap (routes/history.week.$weekStart.tsx). Each one
  *  only draws a slice of the `WeekRecap` that lib/gym/weekRecap.ts builds, and
@@ -33,7 +35,7 @@ function Stat({
 }: {
   label: string;
   value: ReactNode;
-  unit?: string;
+  unit?: string | undefined;
   /** The same figure a week earlier, shown quietly under the value. */
   last?: string | undefined;
 }) {
@@ -74,7 +76,7 @@ const formatMinutes = (m: number, locale: string) => {
 /** One quiet line about the week, under a card's figures. */
 /** A figure in a fun fact (1,760 kg, 2,100 kcal, 4 cups) gets the accent so it draws the eye. */
 const FACT_FIGURE =
-  /\d[\d.,]*(?:\s?(?:kg|kcal|km|min|ml|L|cups?|kopjes?|drinks?|drankjes|glasses|glazen|beers?|bieren|wines?|wijnen)\b)?/g;
+  /\d[\d.,]*(?:\s?(?:kg|kcal|km|g|min|ml|L|cups?|kopjes?|drinks?|drankjes|glasses|glazen|beers?|bieren|wines?|wijnen)\b)?/g;
 
 function highlightFigures(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -130,7 +132,7 @@ interface BarSegment {
  * the accent fills it up to what was reached. Over the goal the bar grows
  * taller than the track and the whole bar turns the solid accent (when
  * `overIsBad`), under it the fill is the card header's tint, so the heights differ by design: a taller bar is a bigger
- * day. The track and the fill are each a rounded pill, so every top is round. The value
+ * day. Every bar is a `bar-track` pill and its fills share its round ends (styles.css). The value
  * and weekday sit under each bar; a day with nothing logged is just its track.
  * `segments` stacks several kinds (coffee, beer and wine) from the bottom.
  */
@@ -183,36 +185,35 @@ function DayBars({
               >
                 <div className="flex h-28 w-full items-end justify-center" aria-hidden>
                   <div
-                    className="bar-in-y relative w-5"
-                    style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+                    data-bar="day"
+                    className={`bar-in-y bar-track w-5 ${
+                      over && overIsBad ? "bg-primary" : "bg-foreground/10"
+                    }`}
+                    style={{ height: `max(1.25rem, ${(height / scale) * 100}%)` }}
                   >
-                    <span
-                      className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
-                      style={{ height: `${(ref / height) * 100}%` }}
-                    />
-                    {total > 0 && over && overIsBad && goal != null && (
-                      <>
-                        <span className="absolute inset-0 rounded-full bg-primary" />
-                        <span
-                          className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
-                          style={{ height: `${(goal / total) * 100}%` }}
-                        />
-                      </>
-                    )}
-                    {total > 0 && !(over && overIsBad) && (
-                      <div
-                        className="absolute inset-x-0 bottom-0 isolate flex flex-col-reverse gap-0.5"
-                        style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
-                      >
-                        {parts.map((p, k) => (
-                          <span
-                            key={k}
-                            className={`${p.className} min-h-1 rounded-full`}
-                            style={{ flex: `${p.value} 1 0%` }}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    {total > 0 && over && overIsBad && goal != null ? (
+                      <span
+                        data-bar="level"
+                        className="intake-solid bar-fill-y"
+                        style={barFill((goal / total) * 100)}
+                      />
+                    ) : null}
+                    {total > 0 && !(over && overIsBad)
+                      ? parts
+                          .map((p, k) => ({
+                            className: p.className,
+                            reach: parts.slice(0, k + 1).reduce((s, q) => s + q.value, 0),
+                          }))
+                          .reverse()
+                          .map((p, k) => (
+                            <span
+                              key={k}
+                              data-bar="part"
+                              className={`${p.className} bar-fill-y`}
+                              style={barFill((p.reach / height) * 100)}
+                            />
+                          ))
+                      : null}
                   </div>
                 </div>
                 <span
@@ -438,8 +439,8 @@ export function CardioCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap
       </div>
       {cardio.whoMinutes > 0 ? (
         <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
-            <div className="bar-in-x h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+          <div className="h-2 bar-track bg-foreground/10">
+            <div className="bar-in-x bar-fill-x bg-primary" style={barFill(pct)} />
           </div>
           <p className={`${text.meta} mt-1.5`}>
             {t.weekRecap.whoLine(cardio.whoMinutes, cardio.whoTarget)}
@@ -534,12 +535,10 @@ export function FoodCard({ recap, prev }: { recap: WeekRecap; prev?: WeekRecap |
       ) : null}
       {calorieGoal != null ? (
         <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
+          <div className="h-2 bar-track bg-foreground/10">
             <div
-              className={`bar-in-x h-full rounded-full ${over ? "bg-destructive" : "bg-primary"}`}
-              style={{
-                width: `${Math.min(100, Math.round((average.calories / calorieGoal) * 100))}%`,
-              }}
+              className={`bar-in-x bar-fill-x ${over ? "bg-destructive" : "bg-primary"}`}
+              style={barFill(Math.min(100, Math.round((average.calories / calorieGoal) * 100)))}
             />
           </div>
           <p className={`${text.meta} mt-1.5`}>
@@ -739,6 +738,145 @@ export function WeightCard({ recap }: { recap: WeekRecap }) {
           <Stat label={t.weekRecap.weightChange} value={change} unit="kg" />
         ) : null}
       </div>
+    </Card>
+  );
+}
+
+/**
+ * Carbs per day as seven nested bars: one rounded pill as tall as the day's
+ * carbs in the header tint, with a solid accent pill from the bottom up to the
+ * sugars in it (both tops round, no notch, nothing translucent overlapping).
+ * A day whose sugars are unknown is just the pale pill; a day with no food has
+ * no bar. There's no goal for carbs, so no grey track.
+ */
+function CarbsBars({ days }: { days: WeekRecapDay[] }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const { picked, toggle } = usePickedBar();
+  const scale = Math.max(1, ...days.map((d) => d.carbs));
+  const name = (d: WeekRecapDay) => d.date.toLocaleDateString(locale, { weekday: "long" });
+  const aria = (d: WeekRecapDay) =>
+    d.logged
+      ? t.weekRecap.carbsDay(
+          name(d),
+          Math.round(d.carbs).toLocaleString(locale),
+          d.sugars != null ? Math.round(d.sugars).toLocaleString(locale) : null,
+        )
+      : `${name(d)}: ${t.weekRecap.notLogged}`;
+  return (
+    <>
+      <BarReadout text={picked == null ? null : aria(days[picked]!)} />
+      <ul className="grid grid-cols-7 gap-1">
+        {days.map((d, i) => (
+          <li key={d.key}>
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              aria-label={aria(d)}
+              aria-pressed={picked === i}
+              className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
+            >
+              <div className="flex h-28 w-full items-end justify-center" aria-hidden>
+                {d.carbs > 0 ? (
+                  <div
+                    data-bar="carbs"
+                    className="bar-in-y intake-fill bar-track w-5"
+                    style={{ height: `max(1.25rem, ${(d.carbs / scale) * 100}%)` }}
+                  >
+                    {d.sugars != null && d.sugars > 0 ? (
+                      <span
+                        data-bar="sugars"
+                        className="bar-fill-y bg-primary"
+                        style={barFill((d.sugars / d.carbs) * 100)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
+                {d.carbs > 0 ? Math.round(d.carbs).toLocaleString(locale) : null}
+              </span>
+              <span
+                className={`text-[10px] font-semibold uppercase ${
+                  d.today ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {t.common.dow[d.date.getDay()]}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+export function CarbsCard({ recap }: { recap: WeekRecap }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const dayName = useDayName();
+  const { carbs } = recap;
+  if (!recap.nutrition.loggedDays || carbs.totalCarbs <= 0) return null;
+  const g = (n: number) => Math.round(n).toLocaleString(locale);
+  const finished = recap.days.filter((d) => d.logged && !d.today && !d.future).length;
+  return (
+    <Card className="overflow-hidden p-4">
+      <CardHead
+        icon={Wheat}
+        title={t.weekRecap.carbs}
+        subtitle={t.weekRecap.carbsTotal(g(carbs.totalCarbs))}
+      />
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label={t.weekRecap.totalCarbs} value={g(carbs.totalCarbs)} unit="g" />
+        <Stat
+          label={t.weekRecap.totalSugars}
+          value={
+            carbs.totalSugars == null ? (
+              "–"
+            ) : (
+              <>
+                {!carbs.complete ? (
+                  <>
+                    <span aria-hidden>≥ </span>
+                    <span className="sr-only">{t.weekRecap.atLeast} </span>
+                  </>
+                ) : null}
+                {g(carbs.totalSugars)}
+              </>
+            )
+          }
+          unit={carbs.totalSugars == null ? undefined : "g"}
+        />
+        <Stat
+          label={t.weekRecap.sugarsShare}
+          value={carbs.sugarsPct == null ? "–" : carbs.sugarsPct.toLocaleString(locale)}
+          unit={carbs.sugarsPct == null ? undefined : "%"}
+        />
+      </div>
+      <div className="mt-4 border-t border-border pt-4">
+        <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayCarbs}</p>
+        <CarbsBars days={recap.days} />
+        <Legend
+          items={[
+            { dot: "intake-fill", label: t.weekRecap.legendCarbs },
+            { dot: "bg-primary", label: t.weekRecap.legendSugars },
+          ]}
+        />
+        <p className={`${text.meta} mt-3`}>{t.weekRecap.carbsLegend}</p>
+      </div>
+      {carbs.daysWithSugarGoal > 0 && finished > 0 ? (
+        <FunFact icon={Target}>
+          {t.weekRecap.withinSugarGoal(carbs.daysWithinSugarGoal, carbs.daysWithSugarGoal)}
+        </FunFact>
+      ) : null}
+      {carbs.highestSugars ? (
+        <FunFact>
+          {t.weekRecap.factMostSugar(
+            dayName(carbs.highestSugars.key),
+            g(carbs.highestSugars.value),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }

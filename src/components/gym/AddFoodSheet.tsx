@@ -53,6 +53,7 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   scaledMacros,
+  withSugars,
   type FoodEntry,
   type Macros,
   type MealIngredient,
@@ -85,16 +86,19 @@ export type ReadListRequest = { meal: MealType } & (
 );
 type MacroKey = NutrientKey;
 
-const emptyPer100 = Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, ""])) as Record<
-  MacroKey,
-  string
->;
+// Sugars isn't in NUTRIENT_ORDER (it's a part of carbs), so the draft carries
+// it on its own: "" means not known, never 0.
+const emptyPer100 = Object.fromEntries(
+  [...NUTRIENT_ORDER, "sugars" as const].map((key) => [key, ""]),
+) as Record<MacroKey, string>;
 
 const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
-  Object.fromEntries(NUTRIENT_ORDER.map((key) => [key, String(per100[key])])) as Record<
-    MacroKey,
-    string
-  >;
+  Object.fromEntries(
+    [...NUTRIENT_ORDER, "sugars" as const].map((key) => [
+      key,
+      per100[key] == null ? "" : String(per100[key]),
+    ]),
+  ) as Record<MacroKey, string>;
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
 const RECENT_LIMIT = 5;
@@ -519,6 +523,9 @@ export function AddFoodSheet({
       if (v === null) missing.add(key);
       else next[key] = String(v);
     }
+    // Sugars is optional on a scan: absent or null just leaves the field empty.
+    const scannedSugars = (result as { sugars?: number | null }).sugars;
+    if (scannedSugars != null) next.sugars = String(scannedSugars);
     setPer100(next);
     setUnmatched(missing);
     setNevoSource(null);
@@ -607,14 +614,18 @@ export function AddFoodSheet({
   const canSave = name.trim().length > 0 && gramsNum > 0;
 
   /** Writes the current form to the store. Returns whether it actually saved. */
-  const draftPer100 = () => ({
-    calories: parseDecimal(per100.calories) || 0,
-    protein: parseDecimal(per100.protein) || 0,
-    carbs: parseDecimal(per100.carbs) || 0,
-    fat: parseDecimal(per100.fat) || 0,
-    fiber: parseDecimal(per100.fiber) || 0,
-    salt: parseDecimal(per100.salt) || 0,
-  });
+  const draftPer100 = (): Macros =>
+    withSugars(
+      {
+        calories: parseDecimal(per100.calories) || 0,
+        protein: parseDecimal(per100.protein) || 0,
+        carbs: parseDecimal(per100.carbs) || 0,
+        fat: parseDecimal(per100.fat) || 0,
+        fiber: parseDecimal(per100.fiber) || 0,
+        salt: parseDecimal(per100.salt) || 0,
+      },
+      per100.sugars.trim() === "" ? null : parseDecimal(per100.sugars),
+    );
 
   /** NEVO codes to keep on the entry: only while the values are NEVO's. */
   const currentNevo = (): number[] | undefined =>
@@ -1246,7 +1257,7 @@ export function AddFoodSheet({
                 {MACRO_FIELDS.map(({ key, label, unit }) => (
                   <div key={key} className="min-w-0">
                     <p className="tabular truncate text-[20px] font-bold leading-tight">
-                      {preview[key]}
+                      {preview[key as keyof typeof preview]}
                       <span className="ml-0.5 text-[12px] font-semibold text-muted-foreground">
                         {unit}
                       </span>
@@ -1297,6 +1308,25 @@ export function AddFoodSheet({
                   </label>
                 ))}
               </div>
+              <label className="mt-1 flex items-center gap-3 rounded-xl px-2.5 pt-1.5 pb-2">
+                <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-muted-foreground">
+                  {t.addFood.ofWhichSugars}
+                </span>
+                <input
+                  inputMode="decimal"
+                  type="text"
+                  aria-label={t.addFood.ofWhichSugars}
+                  value={per100.sugars}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => {
+                    if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                    setPer100((cur) => ({ ...cur, sugars: e.target.value }));
+                  }}
+                  placeholder={t.addFood.sugarsUnknown}
+                  className="tabular h-7 w-24 min-w-0 bg-transparent text-right text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground placeholder:text-[13px] placeholder:font-normal"
+                />
+                <span className="shrink-0 text-[11px] text-muted-foreground">g</span>
+              </label>
               {/* RIVM's conditions: say the values are NEVO's, and mark the
                   app's own addition (salt from sodium) as one. */}
               {currentNevo() ? (

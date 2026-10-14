@@ -4,6 +4,7 @@ import { cardioDay } from "./cardio";
 import {
   RESISTANCE_TRAINING_MET,
   addDayEnergy,
+  withSugarGoal,
   SUPERSET_TRAINING_MET,
   restDayGoals,
   sessionEnergyKcal,
@@ -73,6 +74,7 @@ export function useDayGoalsResolver(): (date: Date) => {
     nutritionGoals,
     nutritionByDayType,
     restDayGoalOverrides,
+    sugarGoalShare,
     program,
     weeklyScheme,
     workouts,
@@ -96,7 +98,10 @@ export function useDayGoalsResolver(): (date: Date) => {
         nutritionByDayType && dayType === "rest"
           ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
           : nutritionGoals;
-      const goals = nutritionByDayType ? addDayEnergy(base, cardio.kcal) : base;
+      const goals = withSugarGoal(
+        nutritionByDayType ? addDayEnergy(base, cardio.kcal) : base,
+        sugarGoalShare,
+      );
       const dayKind: DayKind = dayType === "training" ? "training" : cardio.any ? "cardio" : "rest";
       return { dayType, dayKind, goals };
     },
@@ -110,6 +115,7 @@ export function useDayGoalsResolver(): (date: Date) => {
       nutritionByDayType,
       nutritionGoals,
       restDayGoalOverrides,
+      sugarGoalShare,
       session,
     ],
   );

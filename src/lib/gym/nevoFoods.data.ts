@@ -10,8 +10,9 @@ export const NEVO_GROUPS: [string, string][] = [["Fruit","Fruits"],["Groente","V
 
 /** [code, Dutch name, English name, Dutch synonyms ("/"-separated), group,
  *  kcal, protein g, available carbohydrate g, fat g, fibre g, sodium mg
- *  (null when NEVO has no value), alcohol g (only present when above 0)] —
- *  all per 100 g. */
+ *  (null when NEVO has no value), alcohol g (only present when above 0, or
+ *  when a sugars value follows, then 0), total sugars g (absent when NEVO
+ *  has none)] — all per 100 g. */
 export type NevoRow = [
   number,
   string,
@@ -24,6 +25,7 @@ export type NevoRow = [
   number,
   number,
   number | null,
+  number?,
   number?,
 ];
 

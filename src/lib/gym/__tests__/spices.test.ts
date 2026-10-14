@@ -19,6 +19,15 @@ describe("spices", () => {
     }
   });
 
+  it("has total sugars per 100 g that fit inside the carbs", () => {
+    for (const s of SPICES) {
+      expect(s.per100.sugars).toBeDefined();
+      expect(s.per100.sugars!).toBeGreaterThanOrEqual(0);
+      expect(s.per100.sugars!).toBeLessThanOrEqual(s.per100.carbs);
+    }
+    expect(SPICES.find((s) => s.id === "cinnamon")!.per100.sugars).toBe(2.2);
+  });
+
   it("finds salt and pepper in both languages", () => {
     expect(searchSpices("zout", "nl")[0]!.id).toBe("salt");
     expect(searchSpices("salt", "en")[0]!.per100.salt).toBe(100);

@@ -33,14 +33,7 @@ export interface FoodEntry {
   /** Grams actually eaten. */
   grams: number;
   /** Macros as labeled per 100g — the source-of-truth a scanned or entered label gives us. */
-  per100: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    fiber: number;
-    salt: number;
-  };
+  per100: Macros;
   /** NEVO codes the values come from (a NEVO food, or a recipe with NEVO
    *  ingredients), so the NEVO reference shows where the day uses it.
    *  Dropped once the user changes a value. */
@@ -56,9 +49,30 @@ export interface Macros {
   calories: number;
   protein: number;
   carbs: number;
+  /** Total sugars, the part of `carbs` that is sugar ("of which sugars" on
+   *  an EU label): sugar from fruit and milk included, since no source gives
+   *  free or added sugars per 100 g. Optional: undefined means not known
+   *  (an old entry, or a food without the figure), never 0. Kept at or
+   *  below `carbs` (see withSugars). */
+  sugars?: number;
   fat: number;
   fiber: number;
   salt: number;
+}
+
+/** `sugars` as a value to store: undefined when unknown (null, NaN or
+ *  negative), never more than `carbs`. */
+export function cleanSugars(sugars: number | null | undefined, carbs: number): number | undefined {
+  if (sugars == null || !Number.isFinite(sugars) || sugars < 0) return undefined;
+  return Math.min(sugars, Math.max(0, carbs));
+}
+
+/** Copies macros with `sugars` cleaned (see cleanSugars), dropping the key
+ *  when it isn't known so saved state never holds `sugars: undefined`. */
+export function withSugars<T extends Macros>(m: T, sugars: number | null | undefined): T {
+  const { sugars: _old, ...rest } = m;
+  const clean = cleanSugars(sugars, m.carbs);
+  return (clean == null ? rest : { ...rest, sugars: clean }) as T;
 }
 
 export type NutrientKey = keyof Macros;
@@ -103,6 +117,9 @@ export function recipePerServing(recipe: Recipe): Macros {
     calories: Math.round(total.calories / servings),
     protein: Number((total.protein / servings).toFixed(1)),
     carbs: Number((total.carbs / servings).toFixed(1)),
+    ...(total.sugars != null && sugarsComplete(recipe.ingredients)
+      ? { sugars: Number((total.sugars / servings).toFixed(1)) }
+      : {}),
     fat: Number((total.fat / servings).toFixed(1)),
     fiber: Number((total.fiber / servings).toFixed(1)),
     salt: Number((total.salt / servings).toFixed(2)),
@@ -246,7 +263,9 @@ export function energySplit(m: Pick<Macros, "protein" | "carbs" | "fat">) {
 /** Trims a fixed-2dp liters string down to whatever precision it actually needs. */
 export const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\.?0+$/, "")}L`;
 
-/** Display order used everywhere a nutrient list is shown. */
+/** Display order used everywhere a nutrient list is shown. Sugars isn't in
+ *  it: it's part of carbs, so it shows as an "of which sugars" line under
+ *  carbs, and its goal is the optional sugar goal (sugarGoalGrams). */
 export const NUTRIENT_ORDER: NutrientKey[] = [
   "calories",
   "protein",
@@ -260,6 +279,7 @@ export const NUTRIENT_LABELS: Record<NutrientKey, string> = {
   calories: "Calories",
   protein: "Protein",
   carbs: "Carbs",
+  sugars: "Sugars",
   fat: "Fat",
   fiber: "Fiber",
   salt: "Salt",
@@ -269,6 +289,7 @@ export const NUTRIENT_UNITS: Record<NutrientKey, string> = {
   calories: "kcal",
   protein: "g",
   carbs: "g",
+  sugars: "g",
   fat: "g",
   fiber: "g",
   salt: "g",
@@ -647,6 +668,9 @@ export function scaledMacros(entry: { grams: number; per100: Macros }): Macros {
     calories: Math.round(entry.per100.calories * factor),
     protein: Number((entry.per100.protein * factor).toFixed(1)),
     carbs: Number((entry.per100.carbs * factor).toFixed(1)),
+    ...(entry.per100.sugars != null
+      ? { sugars: Number((Math.min(entry.per100.sugars, entry.per100.carbs) * factor).toFixed(1)) }
+      : {}),
     fat: Number((entry.per100.fat * factor).toFixed(1)),
     fiber: Number((entry.per100.fiber * factor).toFixed(1)),
     salt: Number((entry.per100.salt * factor).toFixed(2)),
@@ -706,14 +730,22 @@ export function foodKeysInMeal(entries: FoodEntry[], meal: MealType): Set<string
   return new Set(entries.filter((e) => e.meal === meal).map((e) => e.name.trim().toLowerCase()));
 }
 
+/** Totals of a list of foods. `sugars` is the sum of the foods whose sugars
+ *  are known, and is left out when none is; use sugarsComplete to tell
+ *  whether that sum is the whole figure or "at least". */
 export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macros {
   return entries.reduce<Macros>(
     (acc, e) => {
       const m = scaledMacros(e);
+      const sugars =
+        m.sugars != null || acc.sugars != null
+          ? Number(((acc.sugars ?? 0) + (m.sugars ?? 0)).toFixed(1))
+          : undefined;
       return {
         calories: acc.calories + m.calories,
         protein: Number((acc.protein + m.protein).toFixed(1)),
         carbs: Number((acc.carbs + m.carbs).toFixed(1)),
+        ...(sugars != null ? { sugars } : {}),
         fat: Number((acc.fat + m.fat).toFixed(1)),
         fiber: Number((acc.fiber + m.fiber).toFixed(1)),
         salt: Number((acc.salt + m.salt).toFixed(2)),
@@ -721,6 +753,35 @@ export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macro
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, salt: 0 },
   );
+}
+
+/** True when every food that has carbs also has its sugars known, so the
+ *  summed sugars are the real figure; false means show it as "at least". */
+export function sugarsComplete(entries: { grams: number; per100: Macros }[]): boolean {
+  return entries.every((e) => e.per100.sugars != null || e.per100.carbs <= 0 || e.grams <= 0);
+}
+
+/**
+ * The optional sugar goal: a share of the day's calorie goal, at 4 kcal per
+ * gram. WHO (2015) advises free sugars below 10% of total energy (strong
+ * recommendation) and below 5% for extra benefit (conditional); the US
+ * Dietary Guidelines 2025-2030 also use 10% for added sugars. The app only
+ * knows total sugars (fruit and milk included), so this is a soft guide.
+ * Off unless the user picks a share; a sugars value typed into the goals
+ * wins over it.
+ */
+export const SUGAR_GOAL_SHARES = [0.1, 0.05] as const;
+export type SugarGoalShare = (typeof SUGAR_GOAL_SHARES)[number];
+
+export const sugarGoalGrams = (calories: number, share: number): number =>
+  Math.round((calories * share) / 4);
+
+/** A day's limits with the sugar goal filled in from that day's calories
+ *  (so it follows training, rest and cardio days), unless the user set a
+ *  sugars value of their own or the goal is off. */
+export function withSugarGoal(goals: NutritionGoals, share: number | null): NutritionGoals {
+  if (goals.sugars != null || !share || goals.calories == null) return goals;
+  return { ...goals, sugars: sugarGoalGrams(goals.calories, share) };
 }
 
 /**

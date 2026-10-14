@@ -16,6 +16,7 @@ import { CARDIO_ICONS } from "./cardioDisplay";
 import { LogCardioSheet } from "./LogCardioSheet";
 import { Card } from "./Screen";
 import { button, chip } from "./ui";
+import { barFill } from "./bar";
 
 /**
  * This week's cardio: moderate-equivalent minutes against the WHO minimum,
@@ -84,11 +85,8 @@ export function CardioWeekCard({
             )
           }
         />
-        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-          <div
-            className="bar-in-x h-full rounded-full bg-primary"
-            style={{ width: `${pct * 100}%` }}
-          />
+        <div className="h-1.5 bar-track bg-muted">
+          <div className="bar-in-x bar-fill-x bg-primary" style={barFill(pct * 100)} />
         </div>
         {compact || past ? null : (
           <p className="mt-1.5 text-[12px] text-muted-foreground">

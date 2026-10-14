@@ -19,6 +19,7 @@ import { ListCard } from "./ListCard";
 import { Card, SectionLabel } from "./Screen";
 import { BarReadout, barColumn, usePickedBar } from "./BarReadout";
 import { button } from "./ui";
+import { barFill } from "./bar";
 
 /** A record set this recently still gets the "New" pill. */
 const NEW_PR_DAYS = 7;
@@ -68,26 +69,13 @@ function ScoreBars({ months }: { months: { month: Date; score: number | null }[]
               >
                 <div className="flex h-28 w-full items-end justify-center" aria-hidden>
                   <div
-                    className="bar-in-y relative w-5"
-                    style={{ height: `${Math.max(4, (height / scale) * 100)}%` }}
+                    className={`bar-in-y bar-track w-5 ${over ? "bg-primary" : "bg-foreground/10"}`}
+                    style={{ height: `max(1.25rem, ${(height / scale) * 100}%)` }}
                   >
-                    <span
-                      className="absolute inset-x-0 bottom-0 rounded-full bg-foreground/10"
-                      style={{ height: `${(100 / height) * 100}%` }}
-                    />
-                    {total > 0 && over ? (
-                      <>
-                        <span className="absolute inset-0 rounded-full bg-primary" />
-                        <span
-                          className="intake-solid absolute inset-x-0 bottom-0 rounded-full"
-                          style={{ height: `${(100 / total) * 100}%` }}
-                        />
-                      </>
-                    ) : null}
-                    {total > 0 && !over ? (
+                    {total > 0 ? (
                       <span
-                        className="intake-fill absolute inset-x-0 bottom-0 rounded-full"
-                        style={{ height: `${Math.max(4, (total / height) * 100)}%` }}
+                        className={`${over ? "intake-solid" : "intake-fill"} bar-fill-y`}
+                        style={barFill(over ? (100 / total) * 100 : (total / height) * 100)}
                       />
                     ) : null}
                   </div>

@@ -12,7 +12,11 @@ null for it — do not guess.
 Also try to read the product name printed on the packaging; if none is visible, return null.
 
 Return calories in kcal (convert from kJ if that's what's shown: kcal = kJ / 4.184).
-Return protein, carbs, fat, fiber in grams. Return salt in grams (if only sodium is listed,
+Return protein, carbs, fat, fiber in grams. Return sugars in grams: the "of which sugars" line printed
+under carbohydrate on EU labels (total sugars, per 100g like the rest; US labels: "Total Sugars").
+Never use "added sugars" or sugar alcohols (polyols) for it. If that line isn't printed or legible,
+return null for sugars: do not guess, and do not return 0 unless the label itself states 0.
+Return salt in grams (if only sodium is listed,
 convert: salt_g = sodium_mg * 2.5 / 1000).
 
 Also read the serving/portion size the label itself suggests (e.g. "Serving size: 30g",
@@ -31,12 +35,23 @@ const RESPONSE_SCHEMA = {
     calories: { type: "number", nullable: true },
     protein: { type: "number", nullable: true },
     carbs: { type: "number", nullable: true },
+    sugars: { type: "number", nullable: true },
     fat: { type: "number", nullable: true },
     fiber: { type: "number", nullable: true },
     salt: { type: "number", nullable: true },
     servingSizeGrams: { type: "number", nullable: true },
   },
-  required: ["name", "calories", "protein", "carbs", "fat", "fiber", "salt", "servingSizeGrams"],
+  required: [
+    "name",
+    "calories",
+    "protein",
+    "carbs",
+    "sugars",
+    "fat",
+    "fiber",
+    "salt",
+    "servingSizeGrams",
+  ],
 };
 
 export interface ScannedLabel {
@@ -44,6 +59,9 @@ export interface ScannedLabel {
   calories: number | null;
   protein: number | null;
   carbs: number | null;
+  /** Total sugars ("of which sugars" under carbohydrate); null or missing
+   *  when not on the label (or not in the database), never defaulted to 0. */
+  sugars?: number | null;
   fat: number | null;
   fiber: number | null;
   salt: number | null;

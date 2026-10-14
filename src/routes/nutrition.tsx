@@ -34,6 +34,7 @@ import { DrinksTab } from "../components/gym/DrinksTab";
 import {
   addDays,
   dailyTotals,
+  sugarsComplete,
   dayKeyFromDate,
   entriesForDay,
   ingredientsFromEntries,
@@ -61,6 +62,7 @@ import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { latestBodyKg } from "../lib/gym/load";
 import { mondayOf, parseDayKey } from "../lib/gym/schedule";
 import { haptic, useGym } from "../lib/gym/store";
+import { barFill } from "../components/gym/bar";
 
 /** Food, drinks (water and coffee) and bodyweight, as sub-tabs like
  *  History's. The week strip is on every tab and shows that tab's own
@@ -321,6 +323,7 @@ function NutritionScreen() {
             dayLabel={dayLabel}
             dayKind={dayNutrition.byDayType ? dayNutrition.dayKind : null}
             totals={totals}
+            sugarsKnownForAll={sugarsComplete(selectedEntries)}
             goals={dayGoals}
             hasGoals={hasGoals}
             onSetGoals={() => {
@@ -647,10 +650,10 @@ function WeekStrip({
                   {mark.label ?? "·"}
                 </span>
               ) : (
-                <span className="h-1 w-6 overflow-hidden rounded-full bg-muted">
+                <span className="block h-1 w-6 bar-track bg-muted">
                   <span
-                    className={`bar-in-x block h-full rounded-full ${mark.over ? "bg-destructive" : "bg-primary"}`}
-                    style={{ width: `${mark.pct ?? 0}%` }}
+                    className={`bar-in-x bar-fill-x ${mark.over ? "bg-destructive" : "bg-primary"}`}
+                    style={barFill(mark.pct ?? 0)}
                   />
                 </span>
               )}
@@ -670,6 +673,7 @@ function DaySummary({
   dayLabel,
   dayKind,
   totals,
+  sugarsKnownForAll,
   goals,
   hasGoals,
   onSetGoals,
@@ -678,12 +682,25 @@ function DaySummary({
   /** Training, cardio or rest day, while day-type limits are on. */
   dayKind: "training" | "cardio" | "rest" | null;
   totals: Macros;
+  /** False when some food with carbs has no sugars figure: the sugars total
+   *  is then a floor, shown as "at least". */
+  sugarsKnownForAll: boolean;
   goals: NutritionGoals;
   hasGoals: boolean;
   onSetGoals: () => void;
 }) {
   const t = useTranslation();
   const locale = useLocale();
+  const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
+  const sugarGoal = goals.sugars;
+  const sugarsText =
+    sugars == null
+      ? ""
+      : sugarGoal != null
+        ? (sugarsKnownForAll ? t.sugarsUi.ofGoal : t.sugarsUi.atLeastOf)(sugars, sugarGoal)
+        : sugarsKnownForAll
+          ? `${sugars} g`
+          : t.sugarsUi.atLeast(sugars);
   const kcal = Math.round(totals.calories);
   const calStatus = nutrientStatus(kcal, goals.calories);
   const calPct = goals.calories ? Math.min(100, (kcal / goals.calories) * 100) : 0;
@@ -758,11 +775,8 @@ function DaySummary({
           ) : null}
         </div>
         {goals.calories != null ? (
-          <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className={`bar-grow h-full rounded-full ${barClass(calStatus)}`}
-              style={{ width: `${calPct}%` }}
-            />
+          <div className="mt-2.5 h-2 bar-track bg-muted">
+            <div className={`bar-grow bar-fill-x ${barClass(calStatus)}`} style={barFill(calPct)} />
           </div>
         ) : null}
       </div>
@@ -788,12 +802,36 @@ function DaySummary({
                 </span>
               </p>
               {goal != null ? (
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="mt-1.5 h-1.5 bar-track bg-muted">
                   <div
-                    className={`bar-grow h-full rounded-full ${barClass(status)}`}
-                    style={{ width: `${Math.min(100, (totals[key] / goal) * 100)}%` }}
+                    className={`bar-grow bar-fill-x ${
+                      key === "carbs" && sugars != null && status === "ok"
+                        ? "intake-solid"
+                        : barClass(status)
+                    }`}
+                    style={barFill((totals[key] / goal) * 100)}
                   />
+                  {/* The sugars part of the carbs: a solid accent fill from
+                      the left over the carbs fill, with the same round end. */}
+                  {key === "carbs" && sugars != null && totals.carbs > 0 ? (
+                    <div
+                      data-testid="sugars-segment"
+                      className="bar-grow bar-fill-x bg-primary"
+                      style={barFill((Math.min(totals.sugars ?? 0, totals.carbs) / goal) * 100)}
+                    />
+                  ) : null}
                 </div>
+              ) : null}
+              {key === "carbs" && sugars != null ? (
+                <p
+                  className={`tabular mt-1 text-[12px] leading-snug ${
+                    sugarGoal != null && totals.sugars! > sugarGoal
+                      ? "font-semibold text-primary-text"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {t.sugarsUi.ofWhich} {sugarsText}
+                </p>
               ) : null}
             </div>
           );

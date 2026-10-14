@@ -7,11 +7,13 @@ import {
   dailyTotals,
   energySplit,
   scaledMacros,
+  sugarsComplete,
   type FoodEntry,
   type Macros,
   type MealType,
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
+import { barFill } from "./bar";
 
 /**
  * Tapping a meal heading in the food log: what that meal added up to on the
@@ -107,10 +109,10 @@ export function MealOverviewSheet({
                 : ""}
             </p>
             {dayKcal > 0 ? (
-              <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="mt-2.5 h-2 bar-track bg-muted">
                 <div
-                  className="bar-grow h-full rounded-full bg-primary"
-                  style={{ width: `${Math.min(100, (kcal / dayKcal) * 100)}%` }}
+                  className="bar-grow bar-fill-x bg-primary"
+                  style={barFill(Math.min(100, (kcal / dayKcal) * 100))}
                 />
               </div>
             ) : null}
@@ -138,16 +140,26 @@ export function MealOverviewSheet({
                   </div>
                   {pct != null ? (
                     <>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-background/60">
+                      <div className="mt-1.5 h-1.5 bar-track bg-background/60">
                         <div
-                          className={`bar-grow h-full rounded-full ${pct > 100 ? "bg-destructive" : "bg-primary"}`}
-                          style={{ width: `${Math.min(100, pct)}%` }}
+                          className={`bar-grow bar-fill-x ${pct > 100 ? "bg-destructive" : "bg-primary"}`}
+                          style={barFill(Math.min(100, pct))}
                         />
                       </div>
                       <p className="tabular mt-1 text-[12px] text-muted-foreground">
                         {t.mealOverview.ofLimit(pct)}
                       </p>
                     </>
+                  ) : null}
+                  {key === "carbs" && totals.sugars != null ? (
+                    <p className="tabular mt-1 text-[12px] text-muted-foreground">
+                      {t.sugarsUi.ofWhich}{" "}
+                      {sugarsComplete(entries)
+                        ? `${Number(totals.sugars.toFixed(0)).toLocaleString(locale)} g`
+                        : t.sugarsUi.atLeast(
+                            Number(totals.sugars.toFixed(0)).toLocaleString(locale),
+                          )}
+                    </p>
                   ) : null}
                   {key === "protein" && proteinTarget != null ? (
                     <p className="tabular mt-1 flex items-center gap-1.5 text-[12px]">

@@ -86,6 +86,7 @@ import { exerciseVideoUrl } from "../lib/gym/exerciseVideo";
 import { EXERCISE_ANIMATIONS } from "../lib/gym/exerciseAnimations";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { chip, button } from "../components/gym/ui";
+import { barFill } from "../components/gym/bar";
 
 export const Route = createFileRoute("/session")({
   head: () => ({
@@ -974,7 +975,7 @@ function SessionScreen() {
           </button>
         </div>
         <div
-          className="h-[3px] bg-muted"
+          className="bar-track h-[3px] bg-muted"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={totalSets}
@@ -982,8 +983,8 @@ function SessionScreen() {
           aria-label={t.session.setsOfTotal(done, totalSets)}
         >
           <div
-            className="h-full bg-primary transition-[width] duration-300"
-            style={{ width: `${Math.min(100, (done / Math.max(1, totalSets)) * 100)}%` }}
+            className="bar-fill-x bg-primary transition-[--bar] duration-300"
+            style={barFill((done / Math.max(1, totalSets)) * 100)}
           />
         </div>
       </header>
@@ -2534,10 +2535,10 @@ function RestPanel({
           {done ? t.session.restContinue : t.session.skipRest}
         </button>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+      <div className="mt-2 h-1.5 bar-track bg-muted">
         <div
-          className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear"
-          style={{ width: `${pct}%` }}
+          className="bar-fill-x bg-primary transition-[--bar] duration-1000 ease-linear"
+          style={barFill(pct)}
         />
       </div>
       {next || !done ? (

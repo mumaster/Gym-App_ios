@@ -8,6 +8,7 @@ import { formatVersion } from "../lib/gym/changelog";
 import { useTranslation } from "../lib/gym/i18n";
 import { useGym } from "../lib/gym/store";
 import { chip } from "../components/gym/ui";
+import { barFill } from "../components/gym/bar";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({ meta: [{ title: "Usage — Forge" }, { name: "robots", content: "noindex" }] }),
@@ -37,10 +38,10 @@ function Bars({
               {r.note ? ` · ${r.note}` : ""}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
+          <div className="h-2 bar-track bg-foreground/10">
             <div
-              className="bar-in-x h-full rounded-full bg-primary"
-              style={{ width: `${Math.max(3, (r.value / max) * 100)}%` }}
+              className="bar-in-x bar-fill-x bg-primary"
+              style={barFill(Math.max(3, (r.value / max) * 100))}
             />
           </div>
         </li>
