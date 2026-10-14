@@ -377,6 +377,34 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "Pause your workout with the Pause button at the top of a session and pick it up again with Resume. The timer and rest countdown stop, and paused time is not counted.",
         nl: "Pauzeer je training met de knop Pauze bovenin een sessie en ga verder met Hervatten. De timer en rustteller staan stil en de pauzetijd telt niet mee.",
       },
+      {
+        en: "Tap + on a food in Add food and it is logged right away. The row lights up and says how many grams were added to which meal, and you can keep adding. Add to log takes you back to the list with the same highlight, and the + on a meal opens the same page with that meal already picked.",
+        nl: "Tik op + bij een eten in Eten toevoegen en het wordt direct gelogd. De rij licht op en laat zien hoeveel gram aan welke maaltijd is toegevoegd, en je kunt gewoon doorgaan. Toevoegen aan logboek brengt je terug naar de lijst met dezelfde markering, en de + bij een maaltijd opent dezelfde pagina met die maaltijd al gekozen.",
+      },
+      {
+        en: "In a meal overview, Share is now a small button next to Save as meal, and Add and Copy to are the same width.",
+        nl: "In een maaltijdoverzicht is Delen nu een klein knopje naast Opslaan als maaltijd, en Toevoegen en Kopieer naar zijn even breed.",
+      },
+      {
+        en: "On the rest screen the set count (like Set 2 / 3) now sits under Next, with a pill for every set: full accent for the sets you did, pale accent for the rest of your goal.",
+        nl: "Op het rustscherm staat het setnummer (zoals Set 2 / 3) nu onder Hierna, met een streepje per set: volle accentkleur voor de sets die je deed, lichte accentkleur voor de rest van je doel.",
+      },
+      {
+        en: "Your logged sets in a workout look cleaner: each set shows its kilos and reps in their own pill, and the Previous column is gone (last time's numbers still show under the next set).",
+        nl: "Je gelogde sets in een training zien er netter uit: elke set toont kilo's en reps in een eigen pil, en de kolom Vorige is weg (de cijfers van vorige keer staan nog onder de volgende set).",
+      },
+      {
+        en: "The glow around an exercise card when your rest ends now follows your accent colour instead of always being green.",
+        nl: "De gloed rond een oefeningkaart als je rust voorbij is volgt nu je accentkleur in plaats van altijd groen te zijn.",
+      },
+      {
+        en: "When your workout is done, the screen behind the Workout done panel is now blurred and dimmed, just like during a rest.",
+        nl: "Als je training klaar is, is het scherm achter het paneel Training klaar nu wazig en gedimd, net als tijdens een rust.",
+      },
+      {
+        en: "The message pill at the top of a workout now lines up with the exercise card behind it: same side gap, rounded corners that follow the card's curve.",
+        nl: "De melding bovenaan een training sluit nu aan op de oefeningkaart erachter: dezelfde ruimte aan de zijkant en afgeronde hoeken die de bocht van de kaart volgen.",
+      },
     ],
   },
 ];
