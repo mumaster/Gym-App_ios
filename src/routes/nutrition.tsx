@@ -704,29 +704,10 @@ function DaySummary({
   const locale = useLocale();
   const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
   const sugarGoal = goals.sugars;
-  const sugarsText =
-    sugars == null
-      ? ""
-      : sugarGoal != null
-        ? (sugarsKnownForAll ? t.sugarsUi.ofGoal : t.sugarsUi.atLeastOf)(sugars, sugarGoal)
-        : sugarsKnownForAll
-          ? `${sugars} g`
-          : t.sugarsUi.atLeast(sugars);
   const kcal = Math.round(totals.calories);
   const calStatus = nutrientStatus(kcal, goals.calories);
   const calPct = goals.calories ? Math.min(100, (kcal / goals.calories) * 100) : 0;
   const diff = goals.calories != null ? goals.calories - kcal : null;
-  const minor = (["fiber", "salt"] as const).map((key) => {
-    const digits = key === "salt" ? 1 : 0;
-    const value = Number(totals[key].toFixed(digits));
-    const goal = goals[key];
-    return {
-      key,
-      text: `${t.nutrients[key]} ${value.toLocaleString(locale)}${goal != null ? ` / ${goal}` : ""} g`,
-      over: nutrientStatus(totals[key], goal) === "over",
-    };
-  });
-
   const DayIcon =
     dayKind === "training"
       ? Dumbbell
@@ -793,70 +774,38 @@ function DaySummary({
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {(["protein", "carbs", "fat"] as const).map((key) => {
-          const value = Math.round(totals[key]);
-          const goal = goals[key];
-          const status = nutrientStatus(totals[key], goal);
+        {(["protein", "carbs", "fat"] as const).map((key) => (
+          <NutrientCell
+            key={key}
+            label={t.nutrients[key]}
+            value={String(Math.round(totals[key]))}
+            amount={totals[key]}
+            goal={goals[key]}
+          />
+        ))}
+      </div>
+      <div className="h-px bg-border" />
+      <div className="grid grid-cols-3 gap-3">
+        <NutrientCell
+          label={t.nutrients.sugars}
+          value={sugars == null ? "–" : sugarsKnownForAll ? String(sugars) : `~${sugars}`}
+          amount={totals.sugars ?? 0}
+          goal={sugarGoal ?? undefined}
+          overIsAccent
+        />
+        {(["fiber", "salt"] as const).map((key) => {
+          const digits = key === "salt" ? 1 : 0;
           return (
-            <div key={key} className="min-w-0">
-              <p className="truncate text-[12px] font-semibold text-muted-foreground">
-                {t.nutrients[key]}
-              </p>
-              <p className="tabular mt-0.5 truncate leading-tight">
-                <span
-                  className={`text-[16px] font-bold ${status === "over" ? "text-destructive-text" : ""}`}
-                >
-                  {value}
-                </span>
-                <span className="text-[12px] text-muted-foreground">
-                  {goal != null ? ` / ${goal}` : ""} g
-                </span>
-              </p>
-              {goal != null ? (
-                <div className="mt-1.5 h-1.5 bar-track bg-muted">
-                  <div
-                    className={`bar-grow bar-fill-x ${
-                      key === "carbs" && sugars != null && status === "ok"
-                        ? "intake-solid"
-                        : barClass(status)
-                    }`}
-                    style={barFill((totals[key] / goal) * 100)}
-                  />
-                  {/* The sugars part of the carbs: a solid accent fill from
-                      the left over the carbs fill, with the same round end. */}
-                  {key === "carbs" && sugars != null && totals.carbs > 0 ? (
-                    <div
-                      data-testid="sugars-segment"
-                      className="bar-grow bar-fill-x bg-primary"
-                      style={barFill((Math.min(totals.sugars ?? 0, totals.carbs) / goal) * 100)}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-              {key === "carbs" && sugars != null ? (
-                <p
-                  className={`tabular mt-1 text-[12px] leading-snug ${
-                    sugarGoal != null && totals.sugars! > sugarGoal
-                      ? "font-semibold text-primary-text"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {t.sugarsUi.ofWhich} {sugarsText}
-                </p>
-              ) : null}
-            </div>
+            <NutrientCell
+              key={key}
+              label={t.nutrients[key]}
+              value={Number(totals[key].toFixed(digits)).toLocaleString(locale)}
+              amount={totals[key]}
+              goal={goals[key]}
+            />
           );
         })}
       </div>
-
-      <p className="tabular text-[12.5px] text-muted-foreground">
-        {minor.map((m, i) => (
-          <span key={m.key}>
-            {i > 0 ? " · " : ""}
-            <span className={m.over ? "font-semibold text-destructive-text" : ""}>{m.text}</span>
-          </span>
-        ))}
-      </p>
 
       {!hasGoals ? (
         <button
@@ -867,6 +816,52 @@ function DaySummary({
         </button>
       ) : null}
     </Card>
+  );
+}
+
+/** One nutrient of the day card: label, "value / goal g" and a bar. Every
+ *  cell of the two rows (protein, carbs, fat; sugars, fiber, salt) looks the
+ *  same so the columns stay even (asked for, 2026-10-14). */
+function NutrientCell({
+  label,
+  value,
+  amount,
+  goal,
+  overIsAccent,
+}: {
+  label: string;
+  value: string;
+  amount: number;
+  goal: number | undefined;
+  /** Sugars: over the goal is the accent colour, not the red used for limits. */
+  overIsAccent?: boolean;
+}) {
+  const status = nutrientStatus(amount, goal);
+  const over = status === "over";
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
+      <p className="tabular mt-0.5 truncate leading-tight">
+        <span
+          className={`text-[16px] font-bold ${
+            over ? (overIsAccent ? "text-primary-text" : "text-destructive-text") : ""
+          }`}
+        >
+          {value}
+        </span>
+        <span className="text-[12px] text-muted-foreground">
+          {goal != null ? ` / ${goal}` : ""} g
+        </span>
+      </p>
+      {goal != null ? (
+        <div className="mt-1.5 h-1.5 bar-track bg-muted">
+          <div
+            className={`bar-grow bar-fill-x ${overIsAccent ? "bg-primary" : barClass(status)}`}
+            style={barFill((amount / goal) * 100)}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
