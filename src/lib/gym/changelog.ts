@@ -370,6 +370,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De kaart Vandaag op het Voedingstabblad is netter: suikers, vezels en zout staan nu in een tweede rij met dezelfde opmaak als eiwit, koolhydraten en vet.",
     },
   },
+  {
+    version: 44,
+    items: [
+      {
+        en: "Tap + on a food in Add food and it is logged right away. The row lights up and says how many grams were added to which meal, and you can keep adding.",
+        nl: "Tik op + bij een eten in Eten toevoegen en het wordt direct gelogd. De rij licht op en laat zien hoeveel gram aan welke maaltijd is toegevoegd, en je kunt gewoon doorgaan.",
+      },
+      {
+        en: "Add to log now takes you back to the list with the same highlight, and the + on a meal opens the same page with that meal already picked.",
+        nl: "Toevoegen aan logboek brengt je nu terug naar de lijst met dezelfde markering, en de + bij een maaltijd opent dezelfde pagina met die maaltijd al gekozen.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -379,7 +392,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 43;
+export const CURRENT_VERSION = 44;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

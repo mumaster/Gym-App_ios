@@ -82,7 +82,8 @@ export interface ListPhoto {
 
 /** What Add food hands the list reader (FoodListSheet). */
 export type ReadListRequest = { meal: MealType } & (
-  { start: "text" } | ({ start: "photo" } & ListPhoto)
+  | { start: "text" }
+  | ({ start: "photo" } & ListPhoto)
 );
 type MacroKey = NutrientKey;
 
@@ -222,6 +223,15 @@ export function AddFoodSheet({
   /** "Add spices": the start step shows the spice list, the search field
    *  searches spices only. */
   const [spicesOpen, setSpicesOpen] = useState(false);
+  /** The row that was just logged (by food name): it lights up and says what
+   *  was added where. `n` restarts the animation when the same row is added
+   *  again. */
+  const [added, setAdded] = useState<{ key: string; text: string; n: number } | null>(null);
+  useEffect(() => {
+    if (!added) return;
+    const timer = setTimeout(() => setAdded(null), 2600);
+    return () => clearTimeout(timer);
+  }, [added]);
 
   // The NEVO table is a separate chunk, loaded the first time the sheet opens.
   useEffect(() => {
@@ -268,6 +278,7 @@ export function AddFoodSheet({
     setEditingMine(false);
     setEditingFavs(false);
     setSpicesOpen(false);
+    setAdded(null);
   };
 
   const close = () => {
@@ -391,6 +402,14 @@ export function AddFoodSheet({
     [q, nevoFoods, language],
   );
 
+  /** Light up the row of a food just logged, with "Added 150 g to Lunch". */
+  const flashAdded = (foodName: string, foodGrams: number) =>
+    setAdded({
+      key: foodKey(foodName),
+      text: t.addFood.addedTo(foodGrams, t.mealTypes[meal]),
+      n: Date.now(),
+    });
+
   /** The "+" on a favourite/recent row: logs it straight away with its usual
    *  portion (or, in the meal builder, adds it as an ingredient). */
   const quickAdd = (row: ListFood) => {
@@ -414,6 +433,9 @@ export function AddFoodSheet({
         per100: food.per100,
         ...(food.nevo ? { nevo: food.nevo } : {}),
       });
+      // Stay on the list so more can be added: the row says what happened.
+      flashAdded(food.name, food.grams);
+      return;
     }
     close();
   };
@@ -679,6 +701,16 @@ export function AddFoodSheet({
   const save = () => {
     if (!persistEdits()) return;
     haptic([20, 30]);
+    // A new entry goes back to the list (same meal) with its row lit up,
+    // instead of closing the sheet.
+    if (!editEntry && !onIngredientCaptured) {
+      const key = name.trim();
+      const g = gramsNum;
+      reset();
+      setMeal(meal);
+      flashAdded(key, g);
+      return;
+    }
     // Not close(): that saves the open form too (for Done), which logged
     // every "Add to log" twice.
     reset();
@@ -775,7 +807,7 @@ export function AddFoodSheet({
             ) : null}
             {/* While searching, the meal moves under the results so they
                 start right below the search field, above the keyboard. */}
-            {onIngredientCaptured || searching || mealPreset || spicesOpen ? null : (
+            {onIngredientCaptured || searching || spicesOpen ? null : (
               <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
             )}
             {spicesOpen ? (
@@ -837,6 +869,7 @@ export function AddFoodSheet({
                     favoriteKeys={favoriteKeys}
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
+                    added={added}
                     onToggleFavorite={toggleFavoriteFood}
                     removable={(food) =>
                       !favoriteKeys.has(nameKey(food.name)) && libraryKeys.has(myFoodKey(food))
@@ -959,7 +992,7 @@ export function AddFoodSheet({
                   </span>
                 </button>
                 {swap ? null : scanButton}
-                {onIngredientCaptured || mealPreset ? null : (
+                {onIngredientCaptured ? null : (
                   <MealPicker label={t.addFood.addingTo} meal={meal} onPick={setMeal} />
                 )}
                 {nevoMatches.length ? (
@@ -1038,6 +1071,7 @@ export function AddFoodSheet({
                     favoriteKeys={favoriteKeys}
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
+                    added={added}
                     onToggleFavorite={toggleFavoriteFood}
                     favorites
                     editing={editingFavs}
@@ -1059,6 +1093,7 @@ export function AddFoodSheet({
                     favoriteKeys={favoriteKeys}
                     onOpen={startFromRecent}
                     onQuickAdd={quickAdd}
+                    added={added}
                     onToggleFavorite={toggleFavoriteFood}
                   />
                 ) : null}
@@ -1426,6 +1461,7 @@ function FoodList({
   favoriteKeys,
   onOpen,
   onQuickAdd,
+  added = null,
   onToggleFavorite,
   removable,
   editing = false,
@@ -1442,6 +1478,8 @@ function FoodList({
   favoriteKeys: Set<string>;
   onOpen: (food: ListFood) => void;
   onQuickAdd: (food: ListFood) => void;
+  /** The food just logged: its row lights up and shows `text`. */
+  added?: { key: string; text: string; n: number } | null;
   onToggleFavorite: (food: MealIngredient) => void;
   removable?: (food: ListFood) => boolean;
   editing?: boolean;
@@ -1468,11 +1506,16 @@ function FoodList({
         const m = scaledMacros(food);
         const starred = favoriteKeys.has(food.name.trim().toLowerCase());
         const removing = editing && canEdit && (favorites || removable!(food));
+        const lit = added != null && added.key === food.name.trim().toLowerCase();
         return (
           <div
             key={myFoodKey(food)}
-            className="flex items-center gap-1 border-t border-border py-1 pl-4 pr-1.5"
+            data-added={lit ? "true" : undefined}
+            className="relative flex items-center gap-1 border-t border-border py-1 pl-4 pr-1.5"
           >
+            {lit ? (
+              <span key={added!.n} className="row-added pointer-events-none absolute inset-0" />
+            ) : null}
             <button
               onClick={() => onOpen(food)}
               className="min-w-0 flex-1 py-1.5 text-left active:opacity-70"
@@ -1481,12 +1524,23 @@ function FoodList({
                 <span className="min-w-0 truncate text-[15px] font-semibold">{food.name}</span>
                 {sourceLabel ? <SourceBadge label={sourceLabel(food)} /> : null}
               </span>
-              <PortionLine
-                grams={food.grams}
-                macros={m}
-                kcal={m.calories}
-                className="text-[12.5px]"
-              />
+              {lit ? (
+                <span
+                  key={added!.n}
+                  role="status"
+                  className="row-added-text mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-primary-text"
+                >
+                  <Check className="size-3.5 shrink-0" strokeWidth={3} />
+                  <span className="truncate">{added!.text}</span>
+                </span>
+              ) : (
+                <PortionLine
+                  grams={food.grams}
+                  macros={m}
+                  kcal={m.calories}
+                  className="text-[12.5px]"
+                />
+              )}
             </button>
             {favorites ? null : (
               <button
