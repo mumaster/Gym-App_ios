@@ -1989,22 +1989,22 @@ function ExerciseBlock({
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
               aria-label={t.session.editSet(s.set_number)}
-              className="tap-target flex w-full items-center gap-2 rounded-2xl bg-primary/10 py-1.5 pl-1.5 pr-2 text-left shadow-sm active:scale-[0.99]"
+              className="tap-target grid w-full grid-cols-[2.75rem_1fr_1fr_3.5rem] items-center gap-1.5 rounded-2xl bg-primary/10 py-1.5 pl-1.5 pr-1.5 text-left shadow-sm active:scale-[0.99]"
             >
               {/* The badge is as wide as the next set's round button (size-11)
                   so a logged set's number sits right above it. */}
-              <span className="flex w-11 shrink-0 justify-center">
+              <span className="flex justify-center">
                 <span className="tabular flex size-8 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-primary-foreground shadow-sm">
                   {s.set_type === "warmup" ? "W" : s.set_number}
                 </span>
               </span>
-              <span className="tabular flex min-w-0 flex-1 items-baseline justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
+              <span className="tabular flex min-w-0 items-baseline justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
                 <span className="text-[18px] font-bold leading-none">{cell(s.weight)}</span>
                 {bw && s.weight === 0 ? null : (
                   <span className="text-[12px] font-medium text-muted-foreground">kg</span>
                 )}
               </span>
-              <span className="tabular flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
+              <span className="tabular flex min-w-0 items-center justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
                 <span className="flex items-baseline gap-1">
                   <span className="text-[18px] font-bold leading-none">{s.reps}</span>
                   <span className="truncate text-[12px] font-medium text-muted-foreground">
@@ -2015,20 +2015,23 @@ function ExerciseBlock({
                   </span>
                 </span>
               </span>
+              {/* A fixed-width column, so every row's RPE lines up. */}
               {s.rpe ? (
-                <span className="tabular flex shrink-0 items-center gap-1 rounded-full bg-background/80 px-2 py-1 text-[11px] font-bold text-primary-text ring-1 ring-primary/20">
-                  <span className="size-1.5 rounded-full bg-primary" />@{s.rpe}
+                <span className="tabular flex items-center justify-center rounded-full bg-background/80 py-1.5 text-[12px] font-bold leading-none text-primary-text ring-1 ring-primary/15">
+                  RPE {s.rpe}
                 </span>
               ) : s.set_type === "working" ? (
                 // A reminder that this set has no RPE; the row opens the
                 // editor, which has the RPE picker.
                 <span
                   aria-label={t.session.addRpeAria(s.set_number)}
-                  className="shrink-0 rounded-full border border-dashed border-muted-foreground/60 px-1.5 py-px text-[10px] font-semibold text-muted-foreground"
+                  className="flex items-center justify-center rounded-full border border-dashed border-muted-foreground/60 py-1.5 text-[11px] font-semibold leading-none text-muted-foreground"
                 >
                   {t.session.addRpe}
                 </span>
-              ) : null}
+              ) : (
+                <span />
+              )}
             </button>
           );
         })}
