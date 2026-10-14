@@ -316,6 +316,14 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "Your weekly overview has a Carbs card: seven day bars with your carbs, and the sugars in them in your accent colour.",
         nl: "Je weekoverzicht heeft een kaart Koolhydraten: zeven dagbalken met je koolhydraten, en de suikers daarin in je accentkleur.",
       },
+      {
+        en: "Eat more at the weekend with a weekend budget: turn it on in your nutrition goals and pick 5 to 20% extra from Friday evening to Sunday, your weekly average stays the same.",
+        nl: "Eet meer in het weekend met een weekendbudget: zet het aan bij je voedingsdoelen en kies 5 tot 20% extra van vrijdagavond tot zondag, je weekgemiddelde blijft gelijk.",
+      },
+      {
+        en: "Get a nudge in your notifications when the weekend runs well over its budget.",
+        nl: "Krijg een seintje in je meldingen als het weekend ruim boven het budget uitkomt.",
+      },
     ],
   },
 ];

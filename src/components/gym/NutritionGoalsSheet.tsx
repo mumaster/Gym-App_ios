@@ -8,12 +8,17 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   SUGAR_GOAL_SHARES,
+  DEFAULT_WEEKEND_BUDGET,
+  WEEKEND_SHARES,
+  calorieFloor,
+  weekendOffsets,
   sugarGoalGrams,
   deriveRestDayGoals,
   sessionEnergyKcal,
   trainingDayGoalsFromAverage,
   weeklyAverageCalories,
   type NutritionGoals,
+  type WeekendBudget,
 } from "../../lib/gym/nutrition";
 import { useSessionEnergy, useSessionShape } from "../../lib/gym/dayNutrition";
 import { plannedWeeklyCardioKcal } from "../../lib/gym/cardio";
@@ -50,6 +55,7 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     setNutritionGoals,
     sugarGoalShare,
     setSugarGoalShare,
+    weekendBudget,
     update,
     plannedCardio: cardioPlan,
   } = useGym();
@@ -64,6 +70,8 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
   const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
   /** The optional sugar goal's share of calories; null is off. */
   const [sugarShare, setSugarShare] = useState<number | null>(sugarGoalShare);
+  /** The weekend calorie budget; null is off. */
+  const [weekend, setWeekend] = useState<WeekendBudget | null>(weekendBudget);
 
   useEffect(() => {
     if (!open) return;
@@ -71,8 +79,16 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     setRestDraft(toDraft(restDayGoalOverrides));
     setByDayType(nutritionByDayType);
     setSugarShare(sugarGoalShare);
+    setWeekend(weekendBudget);
     setTab("training");
-  }, [open, nutritionGoals, restDayGoalOverrides, nutritionByDayType, sugarGoalShare]);
+  }, [
+    open,
+    nutritionGoals,
+    restDayGoalOverrides,
+    nutritionByDayType,
+    sugarGoalShare,
+    weekendBudget,
+  ]);
 
   // Done (and the backdrop) saves whatever's currently filled in — there's
   // no separate save step to remember, same as editing an existing food.
@@ -80,7 +96,11 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
     haptic([20, 30]);
     setNutritionGoals(fromDraft(draft));
     setSugarGoalShare(sugarShare);
-    update({ nutritionByDayType: byDayType, restDayGoalOverrides: fromDraft(restDraft) });
+    update({
+      nutritionByDayType: byDayType,
+      restDayGoalOverrides: fromDraft(restDraft),
+      weekendBudget: weekend,
+    });
     onClose();
   };
 
@@ -92,6 +112,20 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
 
   const calorieGoal = fromDraft(draft).calories ?? null;
   const showingRest = byDayType && tab === "rest";
+  // What the budget does to a flat week of the calorie goal, for the preview.
+  const weekendPreview =
+    weekend && calorieGoal != null
+      ? weekendOffsets(
+          Array(7).fill(calorieGoal),
+          Array(7).fill(false),
+          weekend,
+          calorieFloor(nutritionProfile?.sex),
+        )
+      : null;
+  const weekendCapped =
+    weekend && weekendPreview
+      ? weekendPreview[5]! < Math.round(weekend.share * calorieGoal!) - 1
+      : false;
   const derivedRest = deriveRestDayGoals(fromDraft(draft), session?.kcal ?? 0);
   const activeDraft = showingRest ? restDraft : draft;
   const setActiveDraft = showingRest ? setRestDraft : setDraft;
@@ -280,6 +314,119 @@ export function NutritionGoalsSheet({ open, onClose }: { open: boolean; onClose:
                 <p className="text-[12px] leading-snug text-muted-foreground">
                   {t.sugarsUi.caveat}
                 </p>
+              </>
+            ) : null}
+          </div>
+
+          <div className="space-y-3 rounded-2xl bg-muted px-4 py-3">
+            <SwitchRow
+              className=""
+              label={t.weekendUi.title}
+              desc={t.weekendUi.desc}
+              ariaLabel={t.weekendUi.title}
+              on={weekend != null}
+              onToggle={() => {
+                haptic(12);
+                setWeekend((v) => (v == null ? DEFAULT_WEEKEND_BUDGET : null));
+              }}
+            />
+            {weekend != null ? (
+              <>
+                {calorieGoal == null ? (
+                  <p className="text-[12.5px] text-muted-foreground">{t.weekendUi.needsCalories}</p>
+                ) : null}
+                <p className="text-[13px] font-semibold text-muted-foreground">
+                  {t.weekendUi.size}
+                </p>
+                <div
+                  role="radiogroup"
+                  aria-label={t.weekendUi.size}
+                  className="grid grid-cols-4 gap-1 rounded-2xl bg-background/60 p-1"
+                >
+                  {WEEKEND_SHARES.map((share) => (
+                    <button
+                      key={share}
+                      role="radio"
+                      aria-checked={weekend.share === share}
+                      onClick={() => {
+                        haptic(10);
+                        setWeekend({ ...weekend, share });
+                      }}
+                      className={`flex min-h-[44px] flex-col items-center justify-center rounded-xl text-center ${
+                        weekend.share === share ? chip.on : "text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-[14px] font-bold">
+                        {t.weekendUi.pct(Math.round(share * 100))}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[13px] font-semibold text-muted-foreground">
+                  {t.weekendUi.from}
+                </p>
+                <div
+                  role="radiogroup"
+                  aria-label={t.weekendUi.from}
+                  className="grid grid-cols-2 gap-1 rounded-2xl bg-background/60 p-1"
+                >
+                  {(["all", "rest"] as const).map((from) => (
+                    <button
+                      key={from}
+                      role="radio"
+                      aria-checked={weekend.from === from}
+                      onClick={() => {
+                        haptic(10);
+                        setWeekend({ ...weekend, from });
+                      }}
+                      className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 text-center ${
+                        weekend.from === from ? chip.on : "text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-[14px] font-bold">
+                        {from === "all" ? t.weekendUi.fromAll : t.weekendUi.fromRest}
+                      </span>
+                      {from === "all" ? (
+                        <span className="text-[11px] font-semibold opacity-80">
+                          {t.weekendUi.recommended}
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[12px] leading-snug text-muted-foreground">
+                  {weekend.from === "all" ? t.weekendUi.fromAllDesc : t.weekendUi.fromRestDesc}
+                </p>
+                {weekendPreview && calorieGoal != null ? (
+                  <div className="tabular space-y-0.5 rounded-xl bg-background/60 px-3 py-2 text-[13px]">
+                    <p className="font-semibold text-primary-text">
+                      {t.weekendUi.previewWeekend(
+                        (calorieGoal + weekendPreview[5]!).toLocaleString(locale),
+                      )}
+                    </p>
+                    <p>
+                      {t.weekendUi.previewFriday(
+                        (calorieGoal + weekendPreview[4]!).toLocaleString(locale),
+                      )}
+                    </p>
+                    {weekend.from === "all" ? (
+                      <p>
+                        {t.weekendUi.previewWeekdays(
+                          (calorieGoal + weekendPreview[0]!).toLocaleString(locale),
+                        )}
+                      </p>
+                    ) : null}
+                    <p className="text-muted-foreground">
+                      {t.weekendUi.previewAverage(calorieGoal.toLocaleString(locale))}
+                    </p>
+                  </div>
+                ) : null}
+                {weekendCapped ? (
+                  <p className="text-[12px] leading-snug text-muted-foreground">
+                    {t.weekendUi.capped}
+                  </p>
+                ) : null}
+                <p className="text-[12px] leading-snug text-muted-foreground">{t.weekendUi.note}</p>
               </>
             ) : null}
           </div>

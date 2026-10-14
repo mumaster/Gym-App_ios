@@ -785,6 +785,102 @@ export function withSugarGoal(goals: NutritionGoals, share: number | null): Nutr
 }
 
 /**
+ * Weekend budget: more calories on the weekend, fewer on the other days, the
+ * week's total unchanged. Friday counts as half a day (Friday evening), so the
+ * weekend is Friday evening, Saturday and Sunday.
+ *
+ * Sizes. Default 10% of the average daily goal, adjustable 5–20%: the Lose It!
+ * cohort (Reynolds et al., JMIR mHealth 2018, 7,007 app users) lost the same
+ * or more with a planned small weekend excess (about 50–250 kcal a day over
+ * Monday) as with none, and less with 500+ kcal, which is what 20% of a
+ * typical goal reaches. The 5/10/15/20 steps and the 15% limit on how far one
+ * weekday may drop (`WEEKDAY_MAX_DROP`) are the app's own choices, no source
+ * gives them. The week's total is held by construction, so a smaller
+ * weekday capacity shrinks the weekend uplift instead of the average moving.
+ * The energy is split between carbs and fat (weekend foods are usually
+ * heavier in fat); protein stays the same on every day.
+ */
+export const WEEKEND_SHARES = [0.05, 0.1, 0.15, 0.2] as const;
+export const WEEKEND_DEFAULT_SHARE = 0.1;
+export const WEEKDAY_MAX_DROP = 0.15;
+/** Fri, Sat, Sun (Monday-first): how much of a full weekend day each gets. */
+export const WEEKEND_WEIGHTS = [0, 0, 0, 0, 0.5, 1, 1] as const;
+/** Where the weekday reduction comes from: every Monday–Thursday, or only the
+ *  rest days among them (falling back to all four when none is a rest day). */
+export type WeekendFrom = "all" | "rest";
+export interface WeekendBudget {
+  share: number;
+  from: WeekendFrom;
+}
+export const DEFAULT_WEEKEND_BUDGET: WeekendBudget = {
+  share: WEEKEND_DEFAULT_SHARE,
+  from: "all",
+};
+/** Share of an offset taken from carbs; the rest comes from fat. */
+export const WEEKEND_CARB_SHARE = 0.5;
+
+/** Calories added to (or taken from) each day of one Monday–Sunday week. The
+ *  offsets sum to zero. `base` is each day's calorie limit before the shift,
+ *  `restDay` flags the days with no training; `floor` is the lowest limit a
+ *  day may be taken to. */
+export function weekendOffsets(
+  base: number[],
+  restDay: boolean[],
+  budget: WeekendBudget,
+  floor: number,
+): number[] {
+  const out = base.map(() => 0);
+  if (base.length !== 7) return out;
+  const avg = base.reduce((a, b) => a + b, 0) / 7;
+  const uplift = WEEKEND_WEIGHTS.map((w) => w * budget.share * avg);
+  const total = uplift.reduce((a, b) => a + b, 0);
+  let from = [0, 1, 2, 3];
+  if (budget.from === "rest") {
+    const rest = from.filter((i) => restDay[i]);
+    if (rest.length) from = rest;
+  }
+  const room = from.map((i) =>
+    Math.max(0, Math.min(WEEKDAY_MAX_DROP * base[i]!, base[i]! - floor)),
+  );
+  const capacity = room.reduce((a, b) => a + b, 0);
+  if (total <= 0 || capacity <= 0) return out;
+  const scale = Math.min(1, capacity / total);
+  uplift.forEach((u, i) => (out[i] = Math.round(u * scale)));
+  const taken = out.reduce((a, b) => a + b, 0);
+  let left = taken;
+  from.forEach((day, k) => {
+    const cut = k === from.length - 1 ? left : Math.round((taken * room[k]!) / capacity);
+    out[day] = -cut;
+    left -= cut;
+  });
+  return out;
+}
+
+/** A day's limits moved by `kcal`, split between carbs and fat. */
+export function withEnergyShift(goals: NutritionGoals, kcal: number): NutritionGoals {
+  if (!kcal || goals.calories == null) return goals;
+  const next: NutritionGoals = { ...goals, calories: Math.max(0, goals.calories + kcal) };
+  if (goals.carbs != null && goals.fat != null) {
+    next.carbs = Math.max(0, Math.round(goals.carbs + (kcal * WEEKEND_CARB_SHARE) / 4));
+    next.fat = Math.max(0, Math.round(goals.fat + (kcal * (1 - WEEKEND_CARB_SHARE)) / 9));
+  } else if (goals.carbs != null) {
+    next.carbs = Math.max(0, Math.round(goals.carbs + kcal / 4));
+  }
+  return next;
+}
+
+/** A saved weekend budget, or null when it's off or isn't one. */
+export function cleanWeekendBudget(raw: unknown): WeekendBudget | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { share, from } = raw as Partial<WeekendBudget>;
+  if (typeof share !== "number" || !(WEEKEND_SHARES as readonly number[]).includes(share))
+    return null;
+  return { share, from: from === "rest" ? "rest" : "all" };
+}
+
+export const calorieFloor = (sex: Sex | null | undefined): number => MIN_CALORIES[sex ?? "male"];
+
+/**
  * Protein per meal: 0.4 g per kg of bodyweight. Schoenfeld & Aragon's review
  * (J Int Soc Sports Nutr 2018) concludes that, to maximise muscle building,
  * protein should be eaten at a target of 0.4 g/kg per meal across at least

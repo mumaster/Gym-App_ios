@@ -13,7 +13,14 @@ import type { Muscle, Workout } from "./types";
  * below are UI choices (when a nudge is useful), not training numbers.
  */
 export type NotificationKind =
-  "resume" | "missed" | "targetReached" | "streakRisk" | "water" | "caffeine" | "weighIn";
+  | "resume"
+  | "missed"
+  | "targetReached"
+  | "streakRisk"
+  | "water"
+  | "caffeine"
+  | "weekendOver"
+  | "weighIn";
 
 export interface AppNotification {
   id: string;
@@ -39,6 +46,9 @@ export interface NotificationInput {
   lastWeighInMs: number | null;
   /** Whether the user tracks weight at all (has at least one weigh-in). */
   weighsIn: boolean;
+  /** Average kcal a day over the limit on the finished, logged weekend days
+   *  (Saturday, Sunday) of the weekend budget; null with it off or none. */
+  weekendOverKcal: number | null;
 }
 
 /** Local hour after which a water goal under half-way is worth a nudge. */
@@ -46,6 +56,11 @@ export const WATER_NUDGE_HOUR = 15;
 /** Days without a weigh-in before the reminder (a weekly weigh-in is what the
  *  trend card asks for). */
 export const WEIGH_IN_AFTER_DAYS = 7;
+/** Calories a day over the weekend budget, on average, that are worth a
+ *  nudge: the Lose It! cohort (Reynolds et al., JMIR mHealth 2018) lost as
+ *  much with a small weekend excess, and less once it passed 250–500 kcal a
+ *  day, so this is the low end of that range. */
+export const WEEKEND_OVER_NUDGE_KCAL = 250;
 /** Weekday (Date#getDay) from which a week short of its training days is at
  *  risk: Friday, with the weekend left. */
 const STREAK_RISK_FROM_DAY = 5;
@@ -112,6 +127,22 @@ export function buildNotifications(i: NotificationInput): AppNotification[] {
       kind: "caffeine",
       href: "/nutrition",
       search: { tab: "drinks" },
+    });
+  }
+
+  // Sunday to Tuesday, once a weekend day is finished: the weekend ran over.
+  if (
+    i.weekendOverKcal != null &&
+    i.weekendOverKcal >= WEEKEND_OVER_NUDGE_KCAL &&
+    [0, 1, 2].includes(i.now.getDay())
+  ) {
+    const saturday = new Date(mondayOf(i.now));
+    saturday.setDate(saturday.getDate() + (i.now.getDay() === 0 ? 5 : -2));
+    out.push({
+      id: `weekend:${dayKeyFromDate(saturday)}`,
+      kind: "weekendOver",
+      href: "/nutrition",
+      count: Math.round(i.weekendOverKcal),
     });
   }
 

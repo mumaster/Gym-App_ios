@@ -34,6 +34,8 @@ import {
   type WaterTap,
   type CoffeeEntry,
   type CoffeeKind,
+  cleanWeekendBudget,
+  type WeekendBudget,
 } from "./nutrition";
 import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
@@ -206,6 +208,10 @@ interface GymState {
    *  0.05, see SUGAR_GOAL_SHARES in nutrition.ts); null while it's off. A
    *  `sugars` value in nutritionGoals overrides it. */
   sugarGoalShare: number | null;
+  /** The weekend calorie budget (nutrition.ts's WeekendBudget): more on
+   *  Friday evening to Sunday, less on the other days, the week's total the
+   *  same. Null while it's off. */
+  weekendBudget: WeekendBudget | null;
   /** Version of the one-time sugars backfill that has run (sugarsBackfill.ts's
    *  SUGARS_BACKFILL_VERSION); 0 = never. */
   sugarsBackfillDone: number;
@@ -292,6 +298,7 @@ const initialState: GymState = {
   nutritionByDayType: false,
   restDayGoalOverrides: {},
   sugarGoalShare: null,
+  weekendBudget: null,
   sugarsBackfillDone: 0,
   nutritionProfile: null,
   mealTemplates: [],
@@ -470,6 +477,7 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
     sugarGoalShare: typeof raw.sugarGoalShare === "number" ? raw.sugarGoalShare : null,
+    weekendBudget: cleanWeekendBudget(raw.weekendBudget),
     sugarsBackfillDone: typeof raw.sugarsBackfillDone === "number" ? raw.sugarsBackfillDone : 0,
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],

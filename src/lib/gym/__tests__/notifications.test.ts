@@ -15,6 +15,7 @@ const base: NotificationInput = {
   caffeineMg: 0,
   lastWeighInMs: null,
   weighsIn: false,
+  weekendOverKcal: null,
 };
 const kinds = (i: Partial<NotificationInput>) =>
   buildNotifications({ ...base, ...i }).map((n) => n.kind);
@@ -65,5 +66,23 @@ describe("notifications", () => {
       now: new Date(2026, 9, 10, 9),
     });
     expect(later?.id).toBe(n?.id);
+  });
+});
+
+describe("weekend over budget", () => {
+  const sunday = new Date(2026, 9, 11, 10, 0);
+  const monday = new Date(2026, 9, 12, 10, 0);
+  it("nudges from Sunday to Tuesday when the weekend ran 250+ kcal a day over", () => {
+    expect(kinds({ now: sunday, weekendOverKcal: 300 })).toEqual(["weekendOver"]);
+    expect(kinds({ now: monday, weekendOverKcal: 250 })).toEqual(["weekendOver"]);
+    expect(kinds({ now: monday, weekendOverKcal: 249 })).toEqual([]);
+    expect(kinds({ now: monday, weekendOverKcal: null })).toEqual([]);
+  });
+  it("is quiet on weekdays after Tuesday and carries the weekend in its id", () => {
+    expect(kinds({ now: new Date(2026, 9, 14, 10, 0), weekendOverKcal: 500 })).toEqual([]);
+    const sun = buildNotifications({ ...base, now: sunday, weekendOverKcal: 400 });
+    const mon = buildNotifications({ ...base, now: monday, weekendOverKcal: 400 });
+    expect(sun[0]!.id).toBe("weekend:2026-10-10");
+    expect(mon[0]!.id).toBe("weekend:2026-10-10");
   });
 });

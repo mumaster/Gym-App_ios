@@ -7,6 +7,7 @@ import {
   Coffee,
   Droplets,
   Flame,
+  PartyPopper,
   Play,
   Scale,
   Target,
@@ -16,7 +17,10 @@ import { useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate } from "../../lib/gym/date";
 import { focusMuscles } from "../../lib/gym/volume";
 import { buildNotifications, type AppNotification } from "../../lib/gym/notifications";
-import { caffeineMg, entriesForDay } from "../../lib/gym/nutrition";
+import { caffeineMg, dailyTotals, entriesForDay } from "../../lib/gym/nutrition";
+import { useDayGoalsResolver } from "../../lib/gym/dayNutrition";
+import { addDays } from "../../lib/gym/date";
+import { mondayOf } from "../../lib/gym/schedule";
 import { haptic, useGym } from "../../lib/gym/store";
 import { BottomSheet } from "./BottomSheet";
 import { badge } from "./ui";
@@ -28,6 +32,7 @@ const ICONS: Record<AppNotification["kind"], LucideIcon> = {
   streakRisk: Flame,
   water: Droplets,
   caffeine: Coffee,
+  weekendOver: PartyPopper,
   weighIn: Scale,
 };
 
@@ -46,9 +51,12 @@ export function NotificationBell() {
     waterGoalMl,
     coffeeEntries,
     weightLog,
+    foodEntries,
+    weekendBudget,
     notifSeen,
     update,
   } = useGym();
+  const resolveDay = useDayGoalsResolver();
   const [open, setOpen] = useState(false);
   // Which messages were new when the sheet opened, so they stay marked while
   // it's open even though opening it marks them seen.
@@ -70,6 +78,24 @@ export function NotificationBell() {
         ? Math.max(...weightLog.map((e) => new Date(e.date).getTime()))
         : null,
       weighsIn: weightLog.length > 0,
+      weekendOverKcal: (() => {
+        if (!weekendBudget) return null;
+        // Saturday and Sunday of the latest weekend, finished and logged.
+        const today = dayKeyFromDate(now);
+        const monday = mondayOf(now);
+        const base = now.getDay() === 0 || now.getDay() >= 3 ? monday : addDays(monday, -7);
+        const over: number[] = [];
+        for (const offset of [5, 6]) {
+          const day = addDays(base, offset);
+          const dk = dayKeyFromDate(day);
+          if (dk >= today) continue;
+          const logged = entriesForDay(foodEntries, dk);
+          const goal = resolveDay(day).goals.calories;
+          if (!logged.length || goal == null) continue;
+          over.push(dailyTotals(logged).calories - goal);
+        }
+        return over.length ? over.reduce((a, b) => a + b, 0) / over.length : null;
+      })(),
     });
   }, [
     workouts,
@@ -81,6 +107,9 @@ export function NotificationBell() {
     waterGoalMl,
     coffeeEntries,
     weightLog,
+    foodEntries,
+    weekendBudget,
+    resolveDay,
   ]);
 
   const unseen = items.filter((n) => !notifSeen.includes(n.id));
@@ -103,6 +132,11 @@ export function NotificationBell() {
         return { title: m.water, body: m.waterText };
       case "caffeine":
         return { title: m.caffeine, body: m.caffeineText };
+      case "weekendOver":
+        return {
+          title: m.weekendOver,
+          body: m.weekendOverText((n.count ?? 0).toLocaleString()),
+        };
       case "weighIn":
         return { title: m.weighIn, body: m.weighInText };
     }

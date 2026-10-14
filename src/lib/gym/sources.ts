@@ -46,6 +46,7 @@ export type SourceId =
   | "calorieFloor"
   | "restDayCarbs"
   | "sugars"
+  | "weekend"
   | "proteinPerMeal"
   | "watchCalories"
   | "caffeine"
@@ -316,6 +317,15 @@ export const SOURCES: SourceEntry[] = [
       "WHO, Guideline: sugars intake for adults and children (2015): free sugars below 10% of total energy (strong recommendation), below 5% for added benefit (conditional) (https://who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children)",
       "US Dietary Guidelines for Americans 2025-2030 (added sugars below 10% of calories)",
       "EFSA Scientific Opinion on the Tolerable Upper Intake Level for dietary sugars (2022): intake of added and free sugars should be as low as possible",
+    ],
+  },
+  {
+    id: "weekend",
+    group: "nutrition",
+    refs: [
+      "Reynolds et al., Relationship between weekly patterns of caloric intake and reported weight loss outcomes, JMIR mHealth uHealth 2018 (7,007 Lose It! users): weight loss was as good or better with a small, planned weekend excess than with a large one (https://mhealth.jmir.org/2018/4/e83)",
+      "Racette et al., Influence of weekend lifestyle patterns on body weight, Obesity 2008: unplanned weekend eating cancelled part of the weekday deficit",
+      "Campbell et al., Intermittent energy restriction attenuates the loss of fat-free mass in resistance trained individuals, J Funct Morphol Kinesiol 2020: same weekly deficit, continuous or with 2 days at maintenance, similar body composition",
     ],
   },
 ];

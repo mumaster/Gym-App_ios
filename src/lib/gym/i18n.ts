@@ -353,6 +353,8 @@ const en = {
       calorieFloor: "Minimum calories (1200 women, 1500 men)",
       restDayCarbs: "Fewer carbs on rest days, more on cardio days; protein and fat unchanged",
       sugars: "Sugar goal: free sugars under 10% of calories (WHO), as low as possible (EFSA)",
+      weekend:
+        "Weekend budget: a planned weekend extra of roughly 50–250 kcal a day did not cost weight loss, 500+ kcal did (observational)",
       proteinPerMeal: "Protein per meal: 0.4 g/kg, over at least 4 meals",
       watchCalories: "Watch calories shown, not used for nutrition (wrist estimates off by 20%+)",
       caffeine: "Caffeine per coffee (espresso 80 mg, filter 90 mg) and the 400 mg daily limit",
@@ -1827,6 +1829,9 @@ const en = {
     waterText: "You're under half of today's water goal.",
     caffeine: "Caffeine limit reached",
     caffeineText: "You've had the daily limit of caffeine. Skip the next coffee.",
+    weekendOver: "The weekend ran over",
+    weekendOverText: (kcal: string) =>
+      `About ${kcal} kcal a day over the weekend budget. Stay on your weekday goals and the week still lands on target.`,
     weighIn: "Time to weigh in",
     weighInText: "It's been a week. A weekly weigh-in keeps your trend reliable.",
   },
@@ -2062,6 +2067,28 @@ const en = {
     shareGrams: (g: number) => `${g} g a day`,
     caveat:
       "Counts all sugars, fruit and milk included. The WHO advises keeping free sugars under 10% of your calories, 5% for extra benefit. A health guide, not a training lever.",
+  },
+  weekendUi: {
+    title: "Weekend budget",
+    desc: "Eat more from Friday evening to Sunday and a little less on the other days. Your weekly average stays exactly the same.",
+    size: "Extra on the weekend",
+    pct: (n: number) => `${n}%`,
+    previewWeekend: (kcal: string) => `Weekend days: ${kcal} kcal`,
+    previewFriday: (kcal: string) => `Friday: ${kcal} kcal (evening counts as half)`,
+    previewWeekdays: (kcal: string) => `Other days: ${kcal} kcal`,
+    previewAverage: (kcal: string) => `Week average: ${kcal} kcal, unchanged`,
+    from: "Take the difference from",
+    fromAll: "Every Mon–Thu",
+    fromRest: "Rest days only",
+    recommended: "Recommended",
+    fromAllDesc:
+      "Spreads it over four days, so each drops only a little. This always delivers the size you picked.",
+    fromRestDesc:
+      "Keeps training days fully fuelled. With few rest days the weekend extra shrinks, so the average stays the same.",
+    needsCalories: "Set a calorie goal first: the weekend budget is a share of it.",
+    capped:
+      "Capped so no weekday drops more than 15%. The extra on the weekend is smaller to match.",
+    note: "Carbs and fat share the extra calories. Protein stays the same every day.",
   },
   recap: {
     eyebrow: "Workout complete",
@@ -2498,6 +2525,8 @@ const nl: Dict = {
       calorieFloor: "Minimum aantal calorieën (1200 vrouwen, 1500 mannen)",
       restDayCarbs: "Minder koolhydraten op rustdagen, meer op cardiodagen; eiwit en vet gelijk",
       sugars: "Suikerdoel: vrije suikers onder 10% van de calorieën (WHO), zo laag mogelijk (EFSA)",
+      weekend:
+        "Weekendbudget: een geplande weekendextra van ongeveer 50–250 kcal per dag kostte geen gewichtsverlies, 500+ kcal wel (observationeel)",
       proteinPerMeal: "Eiwit per maaltijd: 0,4 g/kg, over minstens 4 maaltijden",
       watchCalories:
         "Horlogecalorieën getoond, niet gebruikt voor voeding (polsschattingen 20%+ ernaast)",
@@ -3974,6 +4003,9 @@ const nl: Dict = {
     waterText: "Je zit onder de helft van je waterdoel van vandaag.",
     caffeine: "Cafeïnelimiet bereikt",
     caffeineText: "Je hebt de daglimiet cafeïne gehad. Sla de volgende koffie over.",
+    weekendOver: "Het weekend liep over",
+    weekendOverText: (kcal: string) =>
+      `Gemiddeld ongeveer ${kcal} kcal per dag boven je weekendbudget. Blijf doordeweeks op je doelen en de week komt toch uit.`,
     weighIn: "Tijd om te wegen",
     weighInText: "Het is een week geleden. Wekelijks wegen houdt je trend betrouwbaar.",
   },
@@ -4210,6 +4242,28 @@ const nl: Dict = {
     shareGrams: (g: number) => `${g} g per dag`,
     caveat:
       "Telt alle suikers mee, ook van fruit en melk. De WHO adviseert vrije suikers onder de 10% van je calorieën te houden, 5% voor extra voordeel. Een gezondheidsrichtlijn, geen trainingshefboom.",
+  },
+  weekendUi: {
+    title: "Weekendbudget",
+    desc: "Eet meer van vrijdagavond tot zondag en iets minder op de andere dagen. Je weekgemiddelde blijft precies gelijk.",
+    size: "Extra in het weekend",
+    pct: (n: number) => `${n}%`,
+    previewWeekend: (kcal: string) => `Weekenddagen: ${kcal} kcal`,
+    previewFriday: (kcal: string) => `Vrijdag: ${kcal} kcal (de avond telt voor de helft)`,
+    previewWeekdays: (kcal: string) => `Andere dagen: ${kcal} kcal`,
+    previewAverage: (kcal: string) => `Weekgemiddelde: ${kcal} kcal, ongewijzigd`,
+    from: "Haal het verschil van",
+    fromAll: "Elke ma–do",
+    fromRest: "Alleen rustdagen",
+    recommended: "Aanbevolen",
+    fromAllDesc:
+      "Verdeelt het over vier dagen, dus elke dag zakt maar een beetje. Zo krijg je altijd de gekozen grootte.",
+    fromRestDesc:
+      "Houdt trainingsdagen volledig gevoed. Met weinig rustdagen wordt het weekendextra kleiner, zodat het gemiddelde gelijk blijft.",
+    needsCalories: "Stel eerst een caloriedoel in: het weekendbudget is een deel daarvan.",
+    capped:
+      "Begrensd zodat geen doordeweekse dag meer dan 15% zakt. Het weekendextra is daarom kleiner.",
+    note: "Koolhydraten en vet delen de extra calorieën. Eiwit blijft elke dag gelijk.",
   },
   recap: {
     eyebrow: "Training voltooid",
