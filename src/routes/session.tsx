@@ -1999,14 +1999,18 @@ function ExerciseBlock({
                 </span>
               </span>
               <span className="tabular flex min-w-0 items-baseline justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
-                <span className="text-[18px] font-bold leading-none">{cell(s.weight)}</span>
+                <span className="text-[18px] font-bold leading-none text-primary-text">
+                  {cell(s.weight)}
+                </span>
                 {bw && s.weight === 0 ? null : (
                   <span className="text-[12px] font-medium text-muted-foreground">kg</span>
                 )}
               </span>
               <span className="tabular flex min-w-0 items-center justify-center gap-1 rounded-full bg-background/80 px-3 py-1.5 ring-1 ring-primary/15">
                 <span className="flex items-baseline gap-1">
-                  <span className="text-[18px] font-bold leading-none">{s.reps}</span>
+                  <span className="text-[18px] font-bold leading-none text-primary-text">
+                    {s.reps}
+                  </span>
                   <span className="truncate text-[12px] font-medium text-muted-foreground">
                     {(exercise.unilateral
                       ? t.session.repsColPer(t.exercises.limb[limbOf(exercise)])
