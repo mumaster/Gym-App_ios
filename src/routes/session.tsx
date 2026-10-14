@@ -1041,17 +1041,14 @@ function SessionScreen() {
           data-paused-banner
           className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pt-3"
         >
-          <div className="glass flex min-h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-full py-1.5 pl-4 pr-1.5">
+          <div className="glow flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-full border border-primary/60 bg-primary/20 px-4 py-2">
+            <Pause className="size-5 shrink-0 text-primary-text" />
             <div className="min-w-0">
-              <p className="text-[15px] font-bold leading-tight">{t.session.workoutPaused}</p>
-              <p className="truncate text-[12px] text-muted-foreground">{t.session.pausedHint}</p>
+              <p className="text-[17px] font-bold leading-tight text-primary-text">
+                {t.session.workoutPaused}
+              </p>
+              <p className="truncate text-[12px] text-foreground/80">{t.session.pausedHint}</p>
             </div>
-            <button
-              onClick={resumeSession}
-              className="glow flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-[0.97]"
-            >
-              <Play className="size-4 fill-current" /> {t.session.resumeWorkout}
-            </button>
           </div>
         </div>
       ) : null}
