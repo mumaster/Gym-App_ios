@@ -346,6 +346,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 42,
+    items: [
+      {
+        en: "The notifications sheet now opens below the top of the screen, and its messages no longer run under the tab bar.",
+        nl: "Het meldingenscherm opent nu onder de bovenkant van het scherm, en de meldingen lopen niet meer onder de tabbalk.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -355,7 +364,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 41;
+export const CURRENT_VERSION = 42;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Bell,
@@ -167,48 +168,66 @@ export function NotificationBell() {
           />
         ) : null}
       </button>
-      <BottomSheet open={open} onClose={() => setOpen(false)} title={t.notifications.title}>
-        {items.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-[17px] font-semibold">{t.notifications.empty}</p>
-            <p className="mt-1 text-[13px] text-muted-foreground">{t.notifications.emptyHint}</p>
-          </div>
-        ) : (
-          <ul className="space-y-2 pb-2">
-            {items.map((n) => {
-              const Icon = ICONS[n.kind];
-              const { title, body } = text(n);
-              return (
-                <li key={n.id}>
-                  <button
-                    onClick={() => {
-                      setOpen(false);
-                      navigate({ to: n.href, ...(n.search ? { search: n.search } : {}) } as never);
-                    }}
-                    className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left active:brightness-95"
-                  >
-                    <span aria-hidden className={`${badge.tonal} size-10 shrink-0`}>
-                      <Icon className="size-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
-                        {title}
-                        {fresh.has(n.id) ? (
-                          <span aria-hidden className="size-2 shrink-0 rounded-full bg-primary" />
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block text-[13px] leading-snug text-foreground/75">
-                        {body}
-                      </span>
-                    </span>
-                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+      {/* Portaled out of Home's sticky header: its blur makes `fixed` resolve
+          against the header (sheet at the top of the page) and its stacking
+          context put the tab bar over the sheet. */}
+      {open &&
+        createPortal(
+          <BottomSheet open={open} onClose={() => setOpen(false)} title={t.notifications.title}>
+            {items.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-[17px] font-semibold">{t.notifications.empty}</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {t.notifications.emptyHint}
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-2 pb-2">
+                {items.map((n) => {
+                  const Icon = ICONS[n.kind];
+                  const { title, body } = text(n);
+                  return (
+                    <li key={n.id}>
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                          navigate({
+                            to: n.href,
+                            ...(n.search ? { search: n.search } : {}),
+                          } as never);
+                        }}
+                        className="glass flex w-full items-center gap-3 rounded-2xl p-3 text-left active:brightness-95"
+                      >
+                        <span aria-hidden className={`${badge.tonal} size-10 shrink-0`}>
+                          <Icon className="size-5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
+                            {title}
+                            {fresh.has(n.id) ? (
+                              <span
+                                aria-hidden
+                                className="size-2 shrink-0 rounded-full bg-primary"
+                              />
+                            ) : null}
+                          </span>
+                          <span className="mt-0.5 block text-[13px] leading-snug text-foreground/75">
+                            {body}
+                          </span>
+                        </span>
+                        <ChevronRight
+                          aria-hidden
+                          className="size-4 shrink-0 text-muted-foreground"
+                        />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </BottomSheet>,
+          document.body,
         )}
-      </BottomSheet>
     </>
   );
 }
