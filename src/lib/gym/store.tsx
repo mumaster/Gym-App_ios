@@ -200,6 +200,10 @@ interface GymState {
   /** Rest-day limits the user set by hand; any nutrient missing here is
    *  auto-derived from the training-day limit. */
   restDayGoalOverrides: NutritionGoals;
+  /** The optional sugar goal as a share of each day's calorie goal (0.1 or
+   *  0.05, see SUGAR_GOAL_SHARES in nutrition.ts); null while it's off. A
+   *  `sugars` value in nutritionGoals overrides it. */
+  sugarGoalShare: number | null;
   /** Last questionnaire answers used to suggest nutritionGoals, so reopening
    *  the questionnaire prefills instead of starting blank. Not itself used
    *  for anything besides that — editing nutritionGoals directly doesn't
@@ -282,6 +286,7 @@ const initialState: GymState = {
   nutritionGoals: {},
   nutritionByDayType: false,
   restDayGoalOverrides: {},
+  sugarGoalShare: null,
   nutritionProfile: null,
   mealTemplates: [],
   favoriteFoods: [],
@@ -458,6 +463,7 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionGoals: raw.nutritionGoals ?? {},
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
+    sugarGoalShare: typeof raw.sugarGoalShare === "number" ? raw.sugarGoalShare : null,
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     favoriteFoods: raw.favoriteFoods ?? [],
@@ -643,6 +649,8 @@ interface Ctx extends GymState {
   ) => void;
   removeFoodEntry: (id: string) => void;
   setNutritionGoals: (goals: NutritionGoals) => void;
+  /** Turns the optional sugar goal on at a share of calories, or off (null). */
+  setSugarGoalShare: (share: number | null) => void;
   saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
   /** Stars or un-stars a food, matched by name (case-insensitive). */
   toggleFavoriteFood: (food: MealIngredient) => void;
@@ -1712,6 +1720,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
       removeFoodEntry: (id) =>
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
+      setSugarGoalShare: (share) => setState((s) => ({ ...s, sugarGoalShare: share })),
 
       moveExerciseData: (from, to, workoutIds) =>
         setState((s) => moveExerciseData(s, from, to, workoutIds)),
