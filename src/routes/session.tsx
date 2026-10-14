@@ -1830,9 +1830,6 @@ function ExerciseBlock({
     currentReps > 0 &&
     estimated1RM({ weight: currentWeight, reps: currentReps }) > estimated1RM(best);
 
-  // The set column is as wide as the next set's round button (size-11) and
-  // centred, so a logged set's number sits right above that button's.
-  const GRID = "grid grid-cols-[2.75rem_2.75rem_1fr_minmax(3.5rem,1fr)] items-center gap-1.5";
   const sentence = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
   return (
@@ -1981,19 +1978,6 @@ function ExerciseBlock({
       ) : null}
 
       <div className="mt-4 space-y-1.5">
-        <div
-          className={`${GRID} text-[11px] font-semibold uppercase tracking-widest text-muted-foreground`}
-        >
-          <span className="text-center">{t.session.setCol}</span>
-          <span>{t.session.prevCol}</span>
-          <span className="text-center">{t.session.kgCol}</span>
-          <span className="text-center">
-            {exercise.unilateral
-              ? t.session.repsColPer(t.exercises.limb[limbOf(exercise)])
-              : t.session.repsCol}
-          </span>
-        </div>
-
         {logged.map((s, i) => {
           const abs = (activeWorkout?.completed_sets ?? []).indexOf(s);
           if (editIdx === abs) {
@@ -2075,34 +2059,54 @@ function ExerciseBlock({
               key={`${s.set_number}-${i}`}
               onClick={() => openEdit(abs, s)}
               aria-label={t.session.editSet(s.set_number)}
-              className={`${GRID} tap-target w-full rounded-xl bg-primary/10 py-2 text-left active:scale-[0.99]`}
+              className="tap-target grid w-full grid-cols-[2rem_1fr_1fr_3.75rem] items-center gap-1.5 rounded-full bg-primary/10 p-1.5 text-left shadow-sm active:scale-[0.99]"
             >
-              <span className="tabular text-center text-[15px] font-bold text-primary-text">
+              {/* The ball is inset the same on the left, top and bottom, so it
+                  follows the row's rounded end (concentric). */}
+              <span className="tabular flex size-8 items-center justify-center rounded-full bg-primary text-[14px] font-bold text-primary-foreground shadow-sm">
                 {s.set_type === "warmup" ? "W" : s.set_number}
               </span>
-              <span className="tabular text-[13px] text-muted-foreground">
-                {previousSets[i]
-                  ? `${cell(previousSets[i]!.weight)} × ${previousSets[i]!.reps}`
-                  : "—"}
+              <span className="tabular flex min-w-0 h-8 items-center justify-center gap-1 rounded-full bg-background/80 px-3 ring-1 ring-primary/15">
+                <span className="text-[18px] font-bold leading-none text-primary-text">
+                  {cell(s.weight)}
+                </span>
+                {bw && s.weight === 0 ? null : (
+                  <span className="text-[12px] font-medium text-muted-foreground">kg</span>
+                )}
               </span>
-              <span className="tabular text-center text-[16px] font-semibold">
-                {cell(s.weight)}
-              </span>
-              <span className="tabular text-center text-[16px] font-semibold">
-                {s.reps}
-                {s.rpe ? (
-                  <span className="ml-1 text-[11px] text-primary-text">@{s.rpe}</span>
-                ) : s.set_type === "working" ? (
-                  // A reminder that this set has no RPE; the row opens the
-                  // editor, which has the RPE picker.
-                  <span
-                    aria-label={t.session.addRpeAria(s.set_number)}
-                    className="ml-1 rounded-full border border-dashed border-muted-foreground/60 px-1.5 py-px align-middle text-[10px] font-semibold text-muted-foreground"
-                  >
-                    {t.session.addRpe}
+              <span className="tabular flex min-w-0 h-8 items-center justify-center gap-1 rounded-full bg-background/80 px-3 ring-1 ring-primary/15">
+                <span className="flex items-center gap-1">
+                  <span className="text-[18px] font-bold leading-none text-primary-text">
+                    {s.reps}
                   </span>
-                ) : null}
+                  <span className="truncate text-[12px] font-medium text-muted-foreground">
+                    {(exercise.unilateral
+                      ? t.session.repsColPer(t.exercises.limb[limbOf(exercise)])
+                      : t.session.repsCol
+                    ).toLowerCase()}
+                  </span>
+                </span>
               </span>
+              {/* A fixed-width column, so every row's RPE lines up. */}
+              {s.rpe ? (
+                <span className="tabular flex h-8 items-center justify-center gap-1 rounded-full bg-background/80 ring-1 ring-primary/15">
+                  <span className="text-[12px] font-medium text-muted-foreground">rpe</span>
+                  <span className="text-[18px] font-bold leading-none text-primary-text">
+                    {s.rpe}
+                  </span>
+                </span>
+              ) : s.set_type === "working" ? (
+                // A reminder that this set has no RPE; the row opens the
+                // editor, which has the RPE picker.
+                <span
+                  aria-label={t.session.addRpeAria(s.set_number)}
+                  className="flex h-8 items-center justify-center rounded-full border border-dashed border-muted-foreground/60 text-[11px] font-semibold leading-none text-muted-foreground"
+                >
+                  {t.session.addRpe}
+                </span>
+              ) : (
+                <span />
+              )}
             </button>
           );
         })}
