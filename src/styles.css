@@ -652,6 +652,41 @@
   }
 }
 
+/* A food row just logged from Add food: the accent washes over it and fades,
+   and its "Added 150 g to Lunch" line eases in. */
+@keyframes row-added {
+  0% {
+    background: color-mix(in oklch, var(--color-primary) 35%, transparent);
+  }
+  70% {
+    background: color-mix(in oklch, var(--color-primary) 18%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes row-added-text {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.row-added {
+  animation: row-added 2.6s ease-out both;
+}
+.row-added-text {
+  animation: row-added-text 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-added-text {
+    animation: none;
+  }
+}
+
 @keyframes rest-flash {
   0%,
   100% {

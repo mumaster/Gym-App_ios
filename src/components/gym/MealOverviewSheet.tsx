@@ -71,7 +71,7 @@ export function MealOverviewSheet({
             {canAdd ? (
               <button
                 onClick={onAdd}
-                className={`${button.primary} min-w-0 flex-1 whitespace-nowrap`}
+                className={`${button.primary} w-0 min-w-0 flex-1 basis-0 whitespace-nowrap`}
               >
                 <Plus className="size-4" /> {t.mealOverview.add}
               </button>
@@ -80,18 +80,9 @@ export function MealOverviewSheet({
               <button
                 onClick={onCopy}
                 aria-label={t.mealOverview.copyTo}
-                className="glass flex min-h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
+                className="glass flex min-h-[52px] w-0 min-w-0 flex-1 basis-0 items-center px-5 justify-center gap-1.5 whitespace-nowrap rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
               >
                 <CopyPlus className="size-4 shrink-0" /> {t.mealOverview.copyTo}
-              </button>
-            ) : null}
-            {entries.length ? (
-              <button
-                onClick={onShare}
-                aria-label={t.mealShare.share}
-                className="glass flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
-              >
-                <Share2 className="size-4" /> {t.mealShare.share}
               </button>
             ) : null}
           </div>
@@ -103,13 +94,22 @@ export function MealOverviewSheet({
                 <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
               </p>
               {entries.length ? (
-                <button
-                  onClick={onSaveAsMeal}
-                  aria-label={t.mealOverview.save}
-                  className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
-                >
-                  <BookmarkPlus className="size-[18px]" />
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={onShare}
+                    aria-label={t.mealShare.share}
+                    className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+                  >
+                    <Share2 className="size-[18px]" />
+                  </button>
+                  <button
+                    onClick={onSaveAsMeal}
+                    aria-label={t.mealOverview.save}
+                    className="tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+                  >
+                    <BookmarkPlus className="size-[18px]" />
+                  </button>
+                </div>
               ) : null}
             </div>
             <p className="mt-1.5 text-[13px] text-muted-foreground">

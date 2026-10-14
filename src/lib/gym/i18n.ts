@@ -1162,6 +1162,7 @@ const en = {
     favorite: (name: string) => `Add ${name} to favourites`,
     unfavorite: (name: string) => `Remove ${name} from favourites`,
     quickAdd: (name: string, grams: number) => `Log ${grams}g of ${name} now`,
+    addedTo: (grams: number, meal: string) => `Added ${grams} g to ${meal}`,
     lookingUpProduct: "Looking up that product…",
     readingLabel: "Reading the label…",
     lookingUpProductDesc: "Checking the barcode against Open Food Facts' product database.",
@@ -3353,6 +3354,7 @@ const nl: Dict = {
     favorite: (name: string) => `${name} toevoegen aan favorieten`,
     unfavorite: (name: string) => `${name} verwijderen uit favorieten`,
     quickAdd: (name: string, grams: number) => `Nu ${grams}g ${name} loggen`,
+    addedTo: (grams: number, meal: string) => `${grams} g toegevoegd aan ${meal}`,
     lookingUpProduct: "Product opzoeken…",
     readingLabel: "Label lezen…",
     lookingUpProductDesc:
