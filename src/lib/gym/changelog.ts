@@ -326,6 +326,13 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 40,
+    text: {
+      en: "Unpackaged foods (fruit, vegetables, bread, dairy and more) now show their sugars too, from the Dutch food table NEVO, also for foods you logged before.",
+      nl: "Onverpakt voedsel (fruit, groente, brood, zuivel en meer) toont nu ook de suikers, uit de Nederlandse voedingsmiddelentabel NEVO, ook voor voedsel dat je eerder logde.",
+    },
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -335,7 +342,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 39;
+export const CURRENT_VERSION = 40;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
