@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { dayKeyFromDate } from "./date";
+import { addDays, dayKeyFromDate } from "./date";
 import { cardioDay } from "./cardio";
 import {
   RESISTANCE_TRAINING_MET,
@@ -7,10 +7,13 @@ import {
   withSugarGoal,
   SUPERSET_TRAINING_MET,
   restDayGoals,
+  calorieFloor,
+  weekendOffsets,
+  withEnergyShift,
   sessionEnergyKcal,
   type NutritionGoals,
 } from "./nutrition";
-import { dayTypeFor, parseDayKey, type DayType } from "./schedule";
+import { dayTypeFor, mondayOf, parseDayKey, type DayType } from "./schedule";
 import { useGym } from "./store";
 
 /** Session length assumed before any workout has been logged — the
@@ -75,6 +78,8 @@ export function useDayGoalsResolver(): (date: Date) => {
     nutritionByDayType,
     restDayGoalOverrides,
     sugarGoalShare,
+    weekendBudget,
+    nutritionProfile,
     program,
     weeklyScheme,
     workouts,
@@ -85,23 +90,40 @@ export function useDayGoalsResolver(): (date: Date) => {
   const session = useSessionEnergy();
   return useCallback(
     (date: Date) => {
-      const dayType = dayTypeFor(parseDayKey(dayKeyFromDate(date)), {
-        rotation: program ?? weeklyScheme,
-        workouts,
-        activeWorkout,
-      });
-      // A day's limit: the rest-day base, plus a strength session's energy
-      // on a strength day (which is the training-day limit itself), plus
-      // that day's cardio. Cardio only counts with day-type limits on.
-      const cardio = cardioDay(date, plannedCardio, cardioSessions, session?.weightKg ?? null);
-      const base =
-        nutritionByDayType && dayType === "rest"
-          ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
-          : nutritionGoals;
-      const goals = withSugarGoal(
-        nutritionByDayType ? addDayEnergy(base, cardio.kcal) : base,
-        sugarGoalShare,
-      );
+      const baseFor = (date: Date) => {
+        const dayType = dayTypeFor(parseDayKey(dayKeyFromDate(date)), {
+          rotation: program ?? weeklyScheme,
+          workouts,
+          activeWorkout,
+        });
+        // A day's limit: the rest-day base, plus a strength session's energy
+        // on a strength day (which is the training-day limit itself), plus
+        // that day's cardio. Cardio only counts with day-type limits on.
+        const cardio = cardioDay(date, plannedCardio, cardioSessions, session?.weightKg ?? null);
+        const base =
+          nutritionByDayType && dayType === "rest"
+            ? restDayGoals(nutritionGoals, restDayGoalOverrides, session?.kcal ?? 0)
+            : nutritionGoals;
+        const goals = nutritionByDayType ? addDayEnergy(base, cardio.kcal) : base;
+        return { dayType, cardio, goals };
+      };
+      const { dayType, cardio, goals: dayGoals } = baseFor(date);
+      let shifted = dayGoals;
+      if (weekendBudget && dayGoals.calories != null) {
+        // The week's offsets are worked out from all seven days' limits, so
+        // the shifts add up to zero over the Monday–Sunday week.
+        const monday = mondayOf(date);
+        const week = Array.from({ length: 7 }, (_, i) => baseFor(addDays(monday, i)));
+        const calories = week.map((d) => d.goals.calories ?? dayGoals.calories ?? 0);
+        const offsets = weekendOffsets(
+          calories,
+          week.map((d) => d.dayType === "rest"),
+          weekendBudget,
+          calorieFloor(nutritionProfile?.sex),
+        );
+        shifted = withEnergyShift(dayGoals, offsets[(date.getDay() + 6) % 7] ?? 0);
+      }
+      const goals = withSugarGoal(shifted, sugarGoalShare);
       const dayKind: DayKind = dayType === "training" ? "training" : cardio.any ? "cardio" : "rest";
       return { dayType, dayKind, goals };
     },
@@ -116,6 +138,8 @@ export function useDayGoalsResolver(): (date: Date) => {
       nutritionGoals,
       restDayGoalOverrides,
       sugarGoalShare,
+      weekendBudget,
+      nutritionProfile,
       session,
     ],
   );
