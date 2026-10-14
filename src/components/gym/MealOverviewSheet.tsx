@@ -146,18 +146,18 @@ export function MealOverviewSheet({
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            {(["protein", "carbs", "fat"] as const).map((key) => (
-              <NutrientCell
-                key={key}
-                label={t.nutrients[key]}
-                value={String(Math.round(totals[key]))}
-                amount={totals[key]}
-                goal={goals[key]}
-              />
-            ))}
-          </div>
-          <div className="h-px bg-border" />
-          <div className="grid grid-cols-3 gap-3">
+            <NutrientCell
+              label={t.nutrients.protein}
+              value={String(Math.round(totals.protein))}
+              amount={totals.protein}
+              goal={goals.protein}
+            />
+            <NutrientCell
+              label={t.nutrients.carbs}
+              value={String(Math.round(totals.carbs))}
+              amount={totals.carbs}
+              goal={goals.carbs}
+            />
             <NutrientCell
               label={t.nutrients.sugars}
               value={
@@ -169,7 +169,10 @@ export function MealOverviewSheet({
               goal={goals.sugars ?? undefined}
               overIsAccent
             />
-            {(["fiber", "salt"] as const).map((key) => (
+          </div>
+          <div className="h-px bg-border" />
+          <div className="grid grid-cols-3 gap-3">
+            {(["fat", "fiber", "salt"] as const).map((key) => (
               <NutrientCell
                 key={key}
                 label={t.nutrients[key]}

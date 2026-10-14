@@ -771,7 +771,7 @@ function DaySummary({
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {(["protein", "carbs", "fat"] as const).map((key) => (
+        {(["protein", "carbs"] as const).map((key) => (
           <NutrientCell
             key={key}
             label={t.nutrients[key]}
@@ -780,9 +780,6 @@ function DaySummary({
             goal={goals[key]}
           />
         ))}
-      </div>
-      <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-3">
         <NutrientCell
           label={t.nutrients.sugars}
           value={sugars == null ? "–" : sugarsKnownForAll ? String(sugars) : `~${sugars}`}
@@ -790,7 +787,10 @@ function DaySummary({
           goal={sugarGoal ?? undefined}
           overIsAccent
         />
-        {(["fiber", "salt"] as const).map((key) => {
+      </div>
+      <div className="h-px bg-border" />
+      <div className="grid grid-cols-3 gap-3">
+        {(["fat", "fiber", "salt"] as const).map((key) => {
           const digits = key === "salt" ? 1 : 0;
           return (
             <NutrientCell

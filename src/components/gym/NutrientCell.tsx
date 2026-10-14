@@ -6,7 +6,7 @@ export const barClass = (status: NutrientStatus) =>
   status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
 /** One nutrient of the day card: label, "value / goal g" and a bar. Every
- *  cell of the two rows (protein, carbs, fat; sugars, fiber, salt) looks the
+ *  cell of the two rows (protein, carbs, sugars; fat, fiber, salt) looks the
  *  same so the columns stay even (asked for, 2026-10-14). Shared by the day card and a meal's overview. */
 export function NutrientCell({
   label,
