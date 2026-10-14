@@ -682,7 +682,7 @@ interface Ctx extends GymState {
   /** Logs every ingredient of a saved meal as its own food entry, all at once. */
   logMealTemplate: (id: string, meal: MealType, day?: string) => void;
   /** Logs ingredients (a meal shared by another user) as food entries today. */
-  logIngredients: (ingredients: MealIngredient[], meal: MealType) => void;
+  logIngredients: (ingredients: MealIngredient[], meal: MealType, day?: string) => void;
   saveRecipe: (name: string, servings: number, ingredients: MealIngredient[]) => void;
   deleteRecipe: (id: string) => void;
   /** Logs one food entry for `servings` servings of a saved recipe, scaled from its per-serving macros. */
@@ -1831,9 +1831,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
           return { ...s, foodEntries: [...entries, ...s.foodEntries] };
         }),
 
-      logIngredients: (ingredients, meal) =>
+      logIngredients: (ingredients, meal, day) =>
         setState((s) => {
-          const now = new Date().toISOString();
+          const now = loggedAtForDay(day);
           const entries: FoodEntry[] = ingredients.map((ing) => ({
             id: crypto.randomUUID(),
             name: ing.name,

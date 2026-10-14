@@ -1,4 +1,4 @@
-import { BookmarkPlus, Check, Plus, Share2 } from "lucide-react";
+import { BookmarkPlus, Check, CopyPlus, Plus, Share2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { drinkOf } from "../../lib/gym/alcohol";
@@ -33,6 +33,7 @@ export function MealOverviewSheet({
   onAdd,
   onSaveAsMeal,
   onShare,
+  onCopy,
   onEdit,
 }: {
   meal: MealType | null;
@@ -46,6 +47,7 @@ export function MealOverviewSheet({
   onAdd: () => void;
   onSaveAsMeal: () => void;
   onShare: () => void;
+  onCopy: () => void;
   onEdit: (entry: FoodEntry) => void;
 }) {
   const t = useTranslation();
@@ -72,6 +74,15 @@ export function MealOverviewSheet({
                 className={`${button.primary} min-w-0 flex-1 whitespace-nowrap`}
               >
                 <Plus className="size-4" /> {t.mealOverview.add}
+              </button>
+            ) : null}
+            {entries.length ? (
+              <button
+                onClick={onCopy}
+                aria-label={t.mealOverview.copyTo}
+                className="glass flex min-h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl text-[15px] font-semibold active:scale-[0.985]"
+              >
+                <CopyPlus className="size-4 shrink-0" /> {t.mealOverview.copyTo}
               </button>
             ) : null}
             {entries.length ? (

@@ -346,6 +346,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 42,
+    items: [
+      {
+        en: "Copy all foods of a meal to another meal (or another day) with the Copy to button in your food overview.",
+        nl: "Kopieer alle producten van een maaltijd naar een andere maaltijd (of dag) met de knop Kopieer naar in je voedingsoverzicht.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -355,7 +364,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 41;
+export const CURRENT_VERSION = 42;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

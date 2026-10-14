@@ -1534,6 +1534,11 @@ const en = {
     proteinMeal: (g: number, target: number) => `Protein in this meal: ${g} of ${target} g`,
     add: "Add food",
     save: "Save as meal",
+    copyTo: "Copy to",
+    copyTitle: (meal: string) => `Copy ${meal} to`,
+    copyMeal: "Meal",
+    copyDay: "Day",
+    copyAction: (n: number, meal: string) => `Copy ${n === 1 ? "1 food" : `${n} foods`} to ${meal}`,
   },
   mealShare: {
     share: "Share",
@@ -3712,6 +3717,12 @@ const nl: Dict = {
     proteinMeal: (g: number, target: number) => `Eiwit in deze maaltijd: ${g} van ${target} g`,
     add: "Toevoegen",
     save: "Opslaan als maaltijd",
+    copyTo: "Kopieer naar",
+    copyTitle: (meal: string) => `${meal} kopiëren naar`,
+    copyMeal: "Maaltijd",
+    copyDay: "Dag",
+    copyAction: (n: number, meal: string) =>
+      `${n === 1 ? "1 product" : `${n} producten`} kopiëren naar ${meal}`,
   },
   mealShare: {
     share: "Delen",

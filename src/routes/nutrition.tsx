@@ -21,7 +21,7 @@ import {
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
-import { ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
+import { CopyMealSheet, ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
 import { mealCodeFrom, type SharedMeal } from "../lib/gym/mealShare";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
 import { FoodListSheet } from "../components/gym/FoodListSheet";
@@ -157,6 +157,7 @@ function NutritionScreen() {
   const todayKey = dayKeyFromDate(new Date());
   /** The day shown. Food can be added to today and to days ahead (meal prep). */
   const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [copyMeal, setCopyMeal] = useState<MealType | null>(null);
 
   const selectedDate = useMemo(() => parseDayKey(selectedKey), [selectedKey]);
   const selectedEntries = useMemo(
@@ -505,11 +506,21 @@ function NutritionScreen() {
               ingredients: ingredientsFromEntries(selectedEntries.filter((e) => e.meal === meal)),
             });
         }}
+        onCopy={() => {
+          setCopyMeal(overviewMeal);
+          setOverviewMeal(null);
+        }}
         onEdit={(entry) => {
           haptic(12);
           setOverviewMeal(null);
           setFoodSheet(entry);
         }}
+      />
+      <CopyMealSheet
+        meal={copyMeal}
+        entries={copyMeal ? selectedEntries.filter((e) => e.meal === copyMeal) : []}
+        day={selectedKey}
+        onClose={() => setCopyMeal(null)}
       />
       <ShareMealSheet meal={shareMeal} onClose={() => setShareMeal(null)} />
       <CanIEatSheet open={canIEatOpen} onClose={() => setCanIEatOpen(false)} />
