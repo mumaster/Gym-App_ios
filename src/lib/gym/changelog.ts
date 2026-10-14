@@ -370,6 +370,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De kaart Vandaag op het Voedingstabblad is netter: suikers, vezels en zout staan nu in een tweede rij met dezelfde opmaak als eiwit, koolhydraten en vet.",
     },
   },
+  {
+    version: 44,
+    items: [
+      {
+        en: "On the rest screen the set count (like Set 2 / 3) now sits under Next, with a pill for every set: full accent for the sets you did, pale accent for the rest of your goal.",
+        nl: "Op het rustscherm staat het setnummer (zoals Set 2 / 3) nu onder Hierna, met een streepje per set: volle accentkleur voor de sets die je deed, lichte accentkleur voor de rest van je doel.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -379,7 +388,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 43;
+export const CURRENT_VERSION = 44;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
