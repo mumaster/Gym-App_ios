@@ -99,6 +99,8 @@ import { deleteRouteMap } from "./routeMapStore";
 import { applyAccentIcon } from "./accentIcon";
 import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk";
 import { moveExerciseData } from "./moveExercise";
+import { SUGARS_BACKFILL_VERSION, applySugarsBackfill, fetchBarcodeSugars } from "./sugarsBackfill";
+import { lookupBarcode } from "./barcodeLookup";
 import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
 import {
@@ -111,7 +113,7 @@ import {
 import { manualCardioWatch, sortCardioPlan } from "./cardio";
 import { CURRENT_VERSION } from "./changelog";
 import { configureAnalytics, track, type AnalyticsLevel } from "./analytics";
-import { loadNevoFoods, localizeNevoNames } from "./nevoFoods";
+import { loadNevoFoods, localizeNevoNames, type NevoFood } from "./nevoFoods";
 
 interface GymState {
   profiles: EquipmentProfile[];
@@ -204,6 +206,9 @@ interface GymState {
    *  0.05, see SUGAR_GOAL_SHARES in nutrition.ts); null while it's off. A
    *  `sugars` value in nutritionGoals overrides it. */
   sugarGoalShare: number | null;
+  /** Version of the one-time sugars backfill that has run (sugarsBackfill.ts's
+   *  SUGARS_BACKFILL_VERSION); 0 = never. */
+  sugarsBackfillDone: number;
   /** Last questionnaire answers used to suggest nutritionGoals, so reopening
    *  the questionnaire prefills instead of starting blank. Not itself used
    *  for anything besides that — editing nutritionGoals directly doesn't
@@ -287,6 +292,7 @@ const initialState: GymState = {
   nutritionByDayType: false,
   restDayGoalOverrides: {},
   sugarGoalShare: null,
+  sugarsBackfillDone: 0,
   nutritionProfile: null,
   mealTemplates: [],
   favoriteFoods: [],
@@ -464,6 +470,7 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
     sugarGoalShare: typeof raw.sugarGoalShare === "number" ? raw.sugarGoalShare : null,
+    sugarsBackfillDone: typeof raw.sugarsBackfillDone === "number" ? raw.sugarsBackfillDone : 0,
     nutritionProfile: raw.nutritionProfile ?? null,
     mealTemplates: raw.mealTemplates ?? [],
     favoriteFoods: raw.favoriteFoods ?? [],
@@ -796,6 +803,36 @@ export function GymProvider({ children }: { children: ReactNode }) {
       alive = false;
     };
   }, [hydrated, state.language, nevoItemCount]);
+
+  // One-time fill of sugars into food saved before they existed
+  // (sugarsBackfill.ts): NEVO's, then Open Food Facts' for barcoded "your
+  // foods". Lookups are sequential and a failure just skips that food; the
+  // flag is set at the end so it never repeats (a bump of the version does).
+  const backfillRan = useRef(false);
+  const backfillNeeded = state.sugarsBackfillDone < SUGARS_BACKFILL_VERSION;
+  useEffect(() => {
+    if (!hydrated || !backfillNeeded || backfillRan.current) return;
+    // Offline the lookups would all fail and the flag would stop them for
+    // good, so wait for a launch with a connection.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    backfillRan.current = true;
+    (async () => {
+      const nevoByCode = new Map<number, NevoFood["per100"]>();
+      try {
+        for (const f of await loadNevoFoods()) nevoByCode.set(f.code, f.per100);
+      } catch {
+        /* no NEVO table: only the barcode part runs */
+      }
+      const labels = await fetchBarcodeSugars(stateRef.current.myFoods, lookupBarcode);
+      setState((s) => ({
+        ...s,
+        ...applySugarsBackfill(s, labels, (code) => nevoByCode.get(code)),
+        sugarsBackfillDone: SUGARS_BACKFILL_VERSION,
+      }));
+    })().catch(() => {
+      backfillRan.current = false;
+    });
+  }, [hydrated, backfillNeeded]);
 
   useEffect(() => onAuthStateChange(setSession), []);
 

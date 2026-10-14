@@ -5,6 +5,7 @@ import { Card, Screen } from "../components/gym/Screen";
 import {
   CardioCard,
   DrinksCard,
+  CarbsCard,
   FoodCard,
   StrengthCard,
   WaterCard,
@@ -64,6 +65,7 @@ function WeekRecapScreen() {
               weightLog,
               waterGoalMl,
               calorieGoalFor: (date) => resolveGoals(date).goals.calories,
+              sugarGoalFor: (date) => resolveGoals(date).goals.sugars,
             },
             monday,
           )
@@ -176,6 +178,7 @@ function WeekRecapScreen() {
             <StrengthCard recap={recap} prev={prevRecap} />
             <CardioCard recap={recap} prev={prevRecap} />
             <FoodCard recap={recap} prev={prevRecap} />
+            <CarbsCard recap={recap} />
             <WaterCard recap={recap} />
             <DrinksCard recap={recap} />
             <WeightCard recap={recap} />

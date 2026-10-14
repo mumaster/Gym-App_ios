@@ -7,6 +7,7 @@ import {
   dailyTotals,
   energySplit,
   scaledMacros,
+  sugarsComplete,
   type FoodEntry,
   type Macros,
   type MealType,
@@ -148,6 +149,16 @@ export function MealOverviewSheet({
                         {t.mealOverview.ofLimit(pct)}
                       </p>
                     </>
+                  ) : null}
+                  {key === "carbs" && totals.sugars != null ? (
+                    <p className="tabular mt-1 text-[12px] text-muted-foreground">
+                      {t.sugarsUi.ofWhich}{" "}
+                      {sugarsComplete(entries)
+                        ? `${Number(totals.sugars.toFixed(0)).toLocaleString(locale)} g`
+                        : t.sugarsUi.atLeast(
+                            Number(totals.sugars.toFixed(0)).toLocaleString(locale),
+                          )}
+                    </p>
                   ) : null}
                   {key === "protein" && proteinTarget != null ? (
                     <p className="tabular mt-1 flex items-center gap-1.5 text-[12px]">

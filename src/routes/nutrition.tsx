@@ -34,6 +34,7 @@ import { DrinksTab } from "../components/gym/DrinksTab";
 import {
   addDays,
   dailyTotals,
+  sugarsComplete,
   dayKeyFromDate,
   entriesForDay,
   ingredientsFromEntries,
@@ -321,6 +322,7 @@ function NutritionScreen() {
             dayLabel={dayLabel}
             dayKind={dayNutrition.byDayType ? dayNutrition.dayKind : null}
             totals={totals}
+            sugarsKnownForAll={sugarsComplete(selectedEntries)}
             goals={dayGoals}
             hasGoals={hasGoals}
             onSetGoals={() => {
@@ -670,6 +672,7 @@ function DaySummary({
   dayLabel,
   dayKind,
   totals,
+  sugarsKnownForAll,
   goals,
   hasGoals,
   onSetGoals,
@@ -678,12 +681,25 @@ function DaySummary({
   /** Training, cardio or rest day, while day-type limits are on. */
   dayKind: "training" | "cardio" | "rest" | null;
   totals: Macros;
+  /** False when some food with carbs has no sugars figure: the sugars total
+   *  is then a floor, shown as "at least". */
+  sugarsKnownForAll: boolean;
   goals: NutritionGoals;
   hasGoals: boolean;
   onSetGoals: () => void;
 }) {
   const t = useTranslation();
   const locale = useLocale();
+  const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
+  const sugarGoal = goals.sugars;
+  const sugarsText =
+    sugars == null
+      ? ""
+      : sugarGoal != null
+        ? (sugarsKnownForAll ? t.sugarsUi.ofGoal : t.sugarsUi.atLeastOf)(sugars, sugarGoal)
+        : sugarsKnownForAll
+          ? `${sugars} g`
+          : t.sugarsUi.atLeast(sugars);
   const kcal = Math.round(totals.calories);
   const calStatus = nutrientStatus(kcal, goals.calories);
   const calPct = goals.calories ? Math.min(100, (kcal / goals.calories) * 100) : 0;
@@ -790,10 +806,37 @@ function DaySummary({
               {goal != null ? (
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={`bar-grow h-full rounded-full ${barClass(status)}`}
+                    className={`bar-grow relative h-full overflow-hidden rounded-full ${
+                      key === "carbs" && sugars != null && status === "ok"
+                        ? "intake-solid"
+                        : barClass(status)
+                    }`}
                     style={{ width: `${Math.min(100, (totals[key] / goal) * 100)}%` }}
-                  />
+                  >
+                    {/* The sugars part of the carbs: one solid accent pill
+                        from the left inside the carbs fill, round-ended. */}
+                    {key === "carbs" && sugars != null && totals.carbs > 0 ? (
+                      <div
+                        data-testid="sugars-segment"
+                        className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                        style={{
+                          width: `${Math.min(100, ((totals.sugars ?? 0) / totals.carbs) * 100)}%`,
+                        }}
+                      />
+                    ) : null}
+                  </div>
                 </div>
+              ) : null}
+              {key === "carbs" && sugars != null ? (
+                <p
+                  className={`tabular mt-1 text-[12px] leading-snug ${
+                    sugarGoal != null && totals.sugars! > sugarGoal
+                      ? "font-semibold text-primary-text"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {t.sugarsUi.ofWhich} {sugarsText}
+                </p>
               ) : null}
             </div>
           );

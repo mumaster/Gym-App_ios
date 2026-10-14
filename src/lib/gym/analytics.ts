@@ -35,7 +35,7 @@ const MAX_KEYS = 12;
 
 /** Property keys that must never leave the device. */
 const FORBIDDEN_KEY =
-  /weight|(^|_)kg|reps|kcal|calor|protein|carb|fat|food|meal|ingredient|email|mail|user|name|note|allerg|barcode|password|token|bodyfat|height|(^|_)age($|_)|birth/i;
+  /weight|(^|_)kg|reps|kcal|calor|protein|carb|sugar|fat|food|meal|ingredient|email|mail|user|name|note|allerg|barcode|password|token|bodyfat|height|(^|_)age($|_)|birth/i;
 
 export function sanitizeProps(props: Record<string, unknown> | undefined): EventProps {
   const out: EventProps = {};

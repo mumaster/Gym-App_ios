@@ -67,6 +67,13 @@ const COLUMNS = {
   alcohol: "ALC (g)",
 };
 
+/** NEVO's total sugars column (the sum of mono- and disaccharides, "SUGAR").
+ *  NEVO 2023/2025 headers are probably "SUGAR (g)", but this has NOT been
+ *  checked against the file: confirm it when you first run the script. It is
+ *  optional on purpose: a file without the column builds the same data as
+ *  before (no sugars), and a food with no value in it gets none (never 0). */
+const SUGARS_COLUMN = "SUGAR (g)";
+
 /** Parses NEVO's `|`-separated, double-quoted CSV. */
 function parse(text) {
   const lines = text
@@ -100,6 +107,10 @@ const rows = parse(readFileSync(file, "utf8"));
 for (const key of Object.values(COLUMNS)) {
   if (!(key in rows[0])) throw new Error(`Column missing from the NEVO file: ${key}`);
 }
+const hasSugars = SUGARS_COLUMN in rows[0];
+if (!hasSugars) {
+  console.warn(`No "${SUGARS_COLUMN}" column in the NEVO file: building without sugars.`);
+}
 
 const groups = [];
 const foods = [];
@@ -118,6 +129,7 @@ for (const r of rows) {
     throw new Error(`Missing energy or macronutrient for NEVO code ${r[COLUMNS.code]}`);
   }
   const alcohol = num(r[COLUMNS.alcohol]);
+  const sugars = hasSugars ? num(r[SUGARS_COLUMN]) : null;
   foods.push([
     Number(r[COLUMNS.code]),
     r[COLUMNS.nl],
@@ -130,8 +142,11 @@ for (const r of rows) {
     fat,
     fiber,
     num(r[COLUMNS.sodium]),
-    // Alcohol g per 100 g, only where NEVO has a value above 0.
-    ...(alcohol ? [alcohol] : []),
+    // Alcohol g per 100 g, only where NEVO has a value above 0 (a 0 holds
+    // its place when sugars follow).
+    ...(alcohol || sugars != null ? [alcohol ?? 0] : []),
+    // Total sugars g per 100 g, only where NEVO has a value.
+    ...(sugars != null ? [sugars] : []),
   ]);
 }
 foods.sort((a, b) => a[0] - b[0]);
@@ -148,8 +163,9 @@ export const NEVO_GROUPS: [string, string][] = ${JSON.stringify(groups)};
 
 /** [code, Dutch name, English name, Dutch synonyms ("/"-separated), group,
  *  kcal, protein g, available carbohydrate g, fat g, fibre g, sodium mg
- *  (null when NEVO has no value), alcohol g (only present when above 0)] —
- *  all per 100 g. */
+ *  (null when NEVO has no value), alcohol g (only present when above 0, or
+ *  when a sugars value follows, then 0), total sugars g (absent when NEVO
+ *  has none)] — all per 100 g. */
 export type NevoRow = [
   number,
   string,
@@ -162,6 +178,7 @@ export type NevoRow = [
   number,
   number,
   number | null,
+  number?,
   number?,
 ];
 

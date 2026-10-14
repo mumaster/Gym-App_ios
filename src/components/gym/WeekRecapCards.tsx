@@ -11,6 +11,7 @@ import {
   Sparkles,
   Target,
   Utensils,
+  Wheat,
 } from "lucide-react";
 import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { COFFEE_KINDS, formatWaterAmount, type CoffeeKind } from "../../lib/gym/nutrition";
@@ -33,7 +34,7 @@ function Stat({
 }: {
   label: string;
   value: ReactNode;
-  unit?: string;
+  unit?: string | undefined;
   /** The same figure a week earlier, shown quietly under the value. */
   last?: string | undefined;
 }) {
@@ -74,7 +75,7 @@ const formatMinutes = (m: number, locale: string) => {
 /** One quiet line about the week, under a card's figures. */
 /** A figure in a fun fact (1,760 kg, 2,100 kcal, 4 cups) gets the accent so it draws the eye. */
 const FACT_FIGURE =
-  /\d[\d.,]*(?:\s?(?:kg|kcal|km|min|ml|L|cups?|kopjes?|drinks?|drankjes|glasses|glazen|beers?|bieren|wines?|wijnen)\b)?/g;
+  /\d[\d.,]*(?:\s?(?:kg|kcal|km|g|min|ml|L|cups?|kopjes?|drinks?|drankjes|glasses|glazen|beers?|bieren|wines?|wijnen)\b)?/g;
 
 function highlightFigures(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
@@ -739,6 +740,144 @@ export function WeightCard({ recap }: { recap: WeekRecap }) {
           <Stat label={t.weekRecap.weightChange} value={change} unit="kg" />
         ) : null}
       </div>
+    </Card>
+  );
+}
+
+/**
+ * Carbs per day as seven nested bars: one rounded pill as tall as the day's
+ * carbs in the header tint, with a solid accent pill from the bottom up to the
+ * sugars in it (both tops round, no notch, nothing translucent overlapping).
+ * A day whose sugars are unknown is just the pale pill; a day with no food has
+ * no bar. There's no goal for carbs, so no grey track.
+ */
+function CarbsBars({ days }: { days: WeekRecapDay[] }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const { picked, toggle } = usePickedBar();
+  const scale = Math.max(1, ...days.map((d) => d.carbs));
+  const name = (d: WeekRecapDay) => d.date.toLocaleDateString(locale, { weekday: "long" });
+  const aria = (d: WeekRecapDay) =>
+    d.logged
+      ? t.weekRecap.carbsDay(
+          name(d),
+          Math.round(d.carbs).toLocaleString(locale),
+          d.sugars != null ? Math.round(d.sugars).toLocaleString(locale) : null,
+        )
+      : `${name(d)}: ${t.weekRecap.notLogged}`;
+  return (
+    <>
+      <BarReadout text={picked == null ? null : aria(days[picked]!)} />
+      <ul className="grid grid-cols-7 gap-1">
+        {days.map((d, i) => (
+          <li key={d.key}>
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              aria-label={aria(d)}
+              aria-pressed={picked === i}
+              className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
+            >
+              <div className="flex h-28 w-full items-end justify-center" aria-hidden>
+                {d.carbs > 0 ? (
+                  <div
+                    data-bar="carbs"
+                    className="bar-in-y intake-fill relative w-5 rounded-full"
+                    style={{ height: `${Math.max(4, (d.carbs / scale) * 100)}%` }}
+                  >
+                    {d.sugars != null && d.sugars > 0 ? (
+                      <span
+                        data-bar="sugars"
+                        className="absolute inset-x-0 bottom-0 min-h-1 rounded-full bg-primary"
+                        style={{ height: `${Math.min(100, (d.sugars / d.carbs) * 100)}%` }}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
+                {d.carbs > 0 ? Math.round(d.carbs).toLocaleString(locale) : null}
+              </span>
+              <span
+                className={`text-[10px] font-semibold uppercase ${
+                  d.today ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {t.common.dow[d.date.getDay()]}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+export function CarbsCard({ recap }: { recap: WeekRecap }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const dayName = useDayName();
+  const { carbs } = recap;
+  if (!recap.nutrition.loggedDays || carbs.totalCarbs <= 0) return null;
+  const g = (n: number) => Math.round(n).toLocaleString(locale);
+  const finished = recap.days.filter((d) => d.logged && !d.today && !d.future).length;
+  return (
+    <Card className="overflow-hidden p-4">
+      <CardHead
+        icon={Wheat}
+        title={t.weekRecap.carbs}
+        subtitle={t.weekRecap.carbsTotal(g(carbs.totalCarbs))}
+      />
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label={t.weekRecap.totalCarbs} value={g(carbs.totalCarbs)} unit="g" />
+        <Stat
+          label={t.weekRecap.totalSugars}
+          value={
+            carbs.totalSugars == null ? (
+              "–"
+            ) : (
+              <>
+                {!carbs.complete ? (
+                  <span className="mr-1 text-[12px] font-semibold text-muted-foreground">
+                    {t.weekRecap.atLeast}
+                  </span>
+                ) : null}
+                {g(carbs.totalSugars)}
+              </>
+            )
+          }
+          unit={carbs.totalSugars == null ? undefined : "g"}
+        />
+        <Stat
+          label={t.weekRecap.sugarsShare}
+          value={carbs.sugarsPct == null ? "–" : carbs.sugarsPct.toLocaleString(locale)}
+          unit={carbs.sugarsPct == null ? undefined : "%"}
+        />
+      </div>
+      <div className="mt-4 border-t border-border pt-4">
+        <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayCarbs}</p>
+        <CarbsBars days={recap.days} />
+        <Legend
+          items={[
+            { dot: "intake-fill", label: t.weekRecap.legendCarbs },
+            { dot: "bg-primary", label: t.weekRecap.legendSugars },
+          ]}
+        />
+        <p className={`${text.meta} mt-3`}>{t.weekRecap.carbsLegend}</p>
+      </div>
+      {carbs.daysWithSugarGoal > 0 && finished > 0 ? (
+        <FunFact icon={Target}>
+          {t.weekRecap.withinSugarGoal(carbs.daysWithinSugarGoal, carbs.daysWithSugarGoal)}
+        </FunFact>
+      ) : null}
+      {carbs.highestSugars ? (
+        <FunFact>
+          {t.weekRecap.factMostSugar(
+            dayName(carbs.highestSugars.key),
+            g(carbs.highestSugars.value),
+          )}
+        </FunFact>
+      ) : null}
     </Card>
   );
 }

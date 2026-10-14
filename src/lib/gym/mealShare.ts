@@ -1,4 +1,4 @@
-import type { MealIngredient, Macros } from "./nutrition";
+import { withSugars, type MealIngredient, type Macros } from "./nutrition";
 
 /**
  * Sharing a logged meal with another user: the meal and all its ingredients
@@ -13,7 +13,18 @@ export interface SharedMeal {
 
 const VERSION = 1;
 const MAX_INGREDIENTS = 60;
-const MACRO_KEYS: (keyof Macros)[] = ["calories", "protein", "carbs", "fat", "fiber", "salt"];
+/** The six macros every link carries, in order. Sugars is not one of them:
+ *  it travels as an optional fifth element of an ingredient row (after the
+ *  NEVO codes), so links from before sugars existed still decode, and an
+ *  older app reading a new link just ignores it. */
+const MACRO_KEYS: Exclude<keyof Macros, "sugars">[] = [
+  "calories",
+  "protein",
+  "carbs",
+  "fat",
+  "fiber",
+  "salt",
+];
 
 const round = (n: number) => Math.round(n * 100) / 100;
 
@@ -39,7 +50,11 @@ export function encodeMeal(meal: SharedMeal): string {
         ing.name,
         round(ing.grams),
         MACRO_KEYS.map((k) => round(ing.per100[k])),
-        ...(ing.nevo?.length ? [ing.nevo] : []),
+        ...(ing.per100.sugars != null
+          ? [ing.nevo?.length ? ing.nevo : [], round(ing.per100.sugars)]
+          : ing.nevo?.length
+            ? [ing.nevo]
+            : []),
       ]),
     }),
   );
@@ -56,13 +71,15 @@ export function decodeMeal(code: string): SharedMeal | null {
     const ingredients: MealIngredient[] = [];
     for (const row of raw.i) {
       if (!Array.isArray(row)) return null;
-      const [name, grams, macros, nevo] = row;
+      const [name, grams, macros, nevo, sugars] = row;
       if (typeof name !== "string" || !finite(grams) || grams <= 0) return null;
       if (!Array.isArray(macros) || macros.length !== MACRO_KEYS.length) return null;
       if (!macros.every(finite)) return null;
-      const per100 = Object.fromEntries(
+      const base = Object.fromEntries(
         MACRO_KEYS.map((k, idx) => [k, macros[idx]]),
       ) as unknown as Macros;
+      // Missing in an old link (or not a number): unknown, never 0.
+      const per100 = withSugars(base, finite(sugars) ? sugars : undefined);
       const codes = Array.isArray(nevo) ? nevo.filter((c): c is number => Number.isInteger(c)) : [];
       ingredients.push({
         name: name.slice(0, 120),

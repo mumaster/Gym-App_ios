@@ -45,6 +45,7 @@ export type SourceId =
   | "fiberSalt"
   | "calorieFloor"
   | "restDayCarbs"
+  | "sugars"
   | "proteinPerMeal"
   | "watchCalories"
   | "caffeine"
@@ -306,6 +307,15 @@ export const SOURCES: SourceEntry[] = [
     refs: [
       "ACSM / Academy of Nutrition and Dietetics / Dietitians of Canada (Thomas et al., 2016)",
       "Burke et al., J Sports Sci 2011",
+    ],
+  },
+  {
+    id: "sugars",
+    group: "nutrition",
+    refs: [
+      "WHO, Guideline: sugars intake for adults and children (2015): free sugars below 10% of total energy (strong recommendation), below 5% for added benefit (conditional) (https://who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children)",
+      "US Dietary Guidelines for Americans 2025-2030 (added sugars below 10% of calories)",
+      "EFSA Scientific Opinion on the Tolerable Upper Intake Level for dietary sugars (2022): intake of added and free sugars should be as low as possible",
     ],
   },
 ];
