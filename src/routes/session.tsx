@@ -26,6 +26,8 @@ import {
   CornerDownRight,
   Bandage,
   Trash2,
+  Pause,
+  Play,
 } from "lucide-react";
 import { muscleIcon } from "../lib/gym/muscleIcons";
 import { BottomSheet } from "../components/gym/BottomSheet";
@@ -144,6 +146,8 @@ function SessionScreen() {
     updateActiveCardio,
     setActiveCardio,
     cancelWorkout,
+    pauseWorkout,
+    resumeWorkout,
     restSeconds,
     restOverride,
     soundEnabled,
@@ -211,7 +215,8 @@ function SessionScreen() {
   const afterRest = useRef<SessionPos | null>(null);
 
   // Keep the phone awake for the whole session (lifting benefits too).
-  useWakeLock(true);
+  const paused = activeWorkout?.paused ?? null;
+  useWakeLock(!paused);
 
   // Elapsed time anchored to the real workout start, so leaving and returning
   // to the screen doesn't reset it.
@@ -229,7 +234,9 @@ function SessionScreen() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
-  const elapsed = Math.max(0, Math.floor((nowTs - startedAt) / 1000));
+  // While paused the clock stands at the moment of the pause.
+  const clockTs = paused ? Date.parse(paused.at) : nowTs;
+  const elapsed = Math.max(0, Math.floor((clockTs - startedAt) / 1000));
 
   useEffect(() => {
     if (!toast) return;
@@ -369,10 +376,31 @@ function SessionScreen() {
       workoutId: id,
       pos,
       rest: rest.endsAt ? { endsAt: rest.endsAt, duration: rest.duration } : null,
-      afterRest: rest.endsAt ? afterRest.current : null,
+      afterRest: rest.endsAt || paused?.restLeftMs != null ? afterRest.current : null,
       restNext,
     });
-  }, [activeWorkout?.id, pos, rest.endsAt, rest.duration, restNext]);
+  }, [activeWorkout?.id, pos, rest.endsAt, rest.duration, restNext, paused?.restLeftMs]);
+
+  const pauseSession = () => {
+    haptic(15);
+    const left = rest.phase === "counting" ? rest.endsAt - Date.now() : 0;
+    pauseWorkout(left > 0 ? { leftMs: left, duration: rest.duration } : null);
+    rest.cancel();
+    void cancelRestNotification();
+  };
+  const resumeSession = () => {
+    haptic(15);
+    const restLeft = resumeWorkout();
+    if (restLeft) {
+      rest.resume(Date.now() + restLeft.leftMs, restLeft.duration);
+      pushScheduled.current = false;
+      if (notifyEnabled) {
+        void scheduleRestNotification(Math.ceil(restLeft.leftMs / 1000)).then((result) => {
+          pushScheduled.current = result.ok;
+        });
+      }
+    }
+  };
 
   const plan = useMemo(() => activeWorkout?.plan ?? [], [activeWorkout]);
   const blocks = useMemo(() => buildBlocks(plan), [plan]);
@@ -939,8 +967,8 @@ function SessionScreen() {
     <div className="min-h-[100dvh] bg-background">
       <header
         ref={headerRef}
-        className={`safe-top glass-strong sticky top-0 z-30 border-x-0 border-t-0 border-b-0 transition-[filter] duration-300 ${
-          resting ? "brightness-[0.7]" : ""
+        className={`safe-top glass-strong sticky top-0 border-x-0 border-t-0 border-b-0 transition-[filter] duration-300 ${
+          resting ? "z-[36] brightness-[0.7]" : "z-30"
         }`}
       >
         {/* One compact row: the muscles moved out (the card names the
@@ -963,6 +991,16 @@ function SessionScreen() {
               {t.session.setsOfTotal(done, totalSets)}
             </span>
           </p>
+          <button
+            onClick={paused ? resumeSession : pauseSession}
+            aria-label={paused ? t.session.resumeWorkout : t.session.pauseWorkout}
+            data-pause-toggle
+            className={`tap-target flex size-9 shrink-0 items-center justify-center rounded-full ${
+              paused ? "glow bg-primary text-primary-foreground" : "glass"
+            }`}
+          >
+            {paused ? <Play className="size-4 fill-current" /> : <Pause className="size-4" />}
+          </button>
           <button
             onClick={() => setListOpen(true)}
             aria-label={`${t.session.workoutOverview} · ${t.common.ofTotal(blockIndex + 1, blocks.length)}`}
@@ -997,8 +1035,32 @@ function SessionScreen() {
         </div>
       ) : null}
 
+      {paused ? (
+        <div
+          role="status"
+          data-paused-banner
+          className="mx-auto flex w-full max-w-xl items-center gap-3 px-4 pt-3"
+        >
+          <div className="glass flex min-h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-full py-1.5 pl-4 pr-1.5">
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold leading-tight">{t.session.workoutPaused}</p>
+              <p className="truncate text-[12px] text-muted-foreground">{t.session.pausedHint}</p>
+            </div>
+            <button
+              onClick={resumeSession}
+              className="glow flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] font-bold text-primary-foreground active:scale-[0.97]"
+            >
+              <Play className="size-4 fill-current" /> {t.session.resumeWorkout}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <main
-        className="mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3"
+        inert={paused ? true : undefined}
+        className={`mx-auto w-full max-w-xl space-y-3 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 transition-opacity ${
+          paused ? "opacity-40" : ""
+        }`}
         style={navHeight ? { paddingBottom: navHeight + 24 } : undefined}
       >
         {upNext && blockComplete && !isLastBlock && rest.phase === "idle" ? (

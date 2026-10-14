@@ -346,6 +346,15 @@ export type RotationKind = "program" | "weeklyScheme";
 
 /** Moves a session only when the day changes, so picking the day it's
  *  already planned on leaves no override behind. */
+/** The workout with its pause ended: the start moves forward by the paused
+ *  time, so durations measured from `date` leave it out. */
+export const unpaused = (w: Workout): Workout => {
+  if (!w.paused) return w;
+  const { paused, ...rest } = w;
+  const shifted = Date.now() - Date.parse(paused.at);
+  return { ...rest, date: new Date(Date.parse(w.date) + Math.max(0, shifted)).toISOString() };
+};
+
 const moveIfChanged = <R extends Rotation>(r: R, index: number, date: Date): R =>
   daysBetween(plannedDate(r, index), date) === 0 ? r : moveSession(r, index, date);
 
@@ -547,6 +556,11 @@ interface Ctx extends GymState {
   updateActiveCardio: (patch: Partial<CardioFinisher & { done: boolean }>) => void;
   /** Adds (or replaces) the cardio done after the running workout. */
   setActiveCardio: (cardio: CardioFinisher) => void;
+  /** Pauses the running workout (and the rest counting, if any). */
+  pauseWorkout: (rest: { leftMs: number; duration: number } | null) => void;
+  /** Resumes it: the paused time is cut out of the workout's length. Returns
+   *  the rest that was counting when it was paused, if any. */
+  resumeWorkout: () => { leftMs: number; duration: number } | null;
   logSet: (set: LoggedSet) => void;
   /** `rpe: null` clears a set's RPE. */
   updateSet: (
@@ -1293,6 +1307,32 @@ export function GymProvider({ children }: { children: ReactNode }) {
               }
             : s,
         ),
+      pauseWorkout: (rest) =>
+        setState((s) =>
+          s.activeWorkout && !s.activeWorkout.paused
+            ? {
+                ...s,
+                activeWorkout: {
+                  ...s.activeWorkout,
+                  paused: {
+                    at: new Date().toISOString(),
+                    restLeftMs: rest ? rest.leftMs : null,
+                    restDuration: rest ? rest.duration : 0,
+                  },
+                },
+              }
+            : s,
+        ),
+      resumeWorkout: () => {
+        const paused = stateRef.current.activeWorkout?.paused;
+        if (!paused) return null;
+        setState((s) =>
+          s.activeWorkout?.paused ? { ...s, activeWorkout: unpaused(s.activeWorkout) } : s,
+        );
+        return paused.restLeftMs != null
+          ? { leftMs: paused.restLeftMs, duration: paused.restDuration }
+          : null;
+      },
       logSet: (set) =>
         setState((s) =>
           s.activeWorkout
@@ -1357,7 +1397,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
             ? {
                 ...s,
                 workouts: [
-                  { ...s.activeWorkout, finished: true, finished_at: new Date().toISOString() },
+                  {
+                    ...unpaused(s.activeWorkout),
+                    finished: true,
+                    finished_at: new Date().toISOString(),
+                  },
                   ...s.workouts,
                 ],
                 activeWorkout: null,

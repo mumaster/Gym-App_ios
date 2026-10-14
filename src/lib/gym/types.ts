@@ -125,6 +125,11 @@ export interface Workout {
   /** When the session was finished — with `date` (its start) this gives the
    *  real length. Missing on sessions saved before it was recorded. */
   finished_at?: string;
+  /** Set while the session is paused: when it was paused and the rest that was
+   *  counting down (ms left, length in seconds), so Resume can pick it back up.
+   *  Resuming moves `date` forward by the paused time, so the real length
+   *  (finished_at - date) never counts it. */
+  paused?: { at: string; restLeftMs: number | null; restDuration: number };
   /** Session RPE, 0–10 on Foster's CR-10 scale — see trainingLoad.ts. */
   session_rpe?: number;
   /** What a sports watch recorded for this session, read from screenshots of

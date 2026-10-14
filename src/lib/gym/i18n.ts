@@ -506,6 +506,10 @@ const en = {
     noActiveSession: "No active session",
     buildAWorkout: "Build a workout",
     closeSession: "Close session",
+    pauseWorkout: "Pause workout",
+    resumeWorkout: "Resume",
+    workoutPaused: "Workout paused",
+    pausedHint: "Timer and rest are stopped.",
     workoutOverview: "Workout overview",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
     overviewProgress: (done: number, total: number, reps: string, side?: string) =>
@@ -2688,6 +2692,10 @@ const nl: Dict = {
     noActiveSession: "Geen actieve sessie",
     buildAWorkout: "Stel een training samen",
     closeSession: "Sessie sluiten",
+    pauseWorkout: "Training pauzeren",
+    resumeWorkout: "Hervatten",
+    workoutPaused: "Training gepauzeerd",
+    pausedHint: "De timers staan stil.",
     workoutOverview: "Trainingsoverzicht",
     setsOfTotal: (done: number, total: number) => `${done}/${total} sets`,
     overviewProgress: (done: number, total: number, reps: string, side?: string) =>
