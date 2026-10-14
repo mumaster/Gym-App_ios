@@ -5,7 +5,13 @@ import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { useTranslation } from "../../lib/gym/i18n";
 import { decodeMeal, mealCodeFrom, mealShareUrl, type SharedMeal } from "../../lib/gym/mealShare";
-import { MEAL_ORDER, dailyTotals, type MealType } from "../../lib/gym/nutrition";
+import {
+  MEAL_ORDER,
+  dailyTotals,
+  ingredientsFromEntries,
+  type FoodEntry,
+  type MealType,
+} from "../../lib/gym/nutrition";
 import { haptic, useGym } from "../../lib/gym/store";
 
 /** A QR plus the iOS share sheet for a shared link: the other person scans
@@ -233,6 +239,90 @@ export function ImportMealSheet({
               </div>
             </>
           )}
+        </div>
+      ) : null}
+    </BottomSheet>
+  );
+}
+
+/**
+ * "Copy to" in a meal's overview: logs every ingredient of the meal again
+ * under another meal, on the same day by default (or any other day).
+ */
+export function CopyMealSheet({
+  meal,
+  entries,
+  day,
+  onClose,
+}: {
+  meal: MealType | null;
+  entries: FoodEntry[];
+  day: string;
+  onClose: () => void;
+}) {
+  const t = useTranslation();
+  const { logIngredients } = useGym();
+  const [target, setTarget] = useState<MealType | null>(null);
+  const [targetDay, setTargetDay] = useState(day);
+  useEffect(() => {
+    if (meal) {
+      setTarget(null);
+      setTargetDay(day);
+    }
+  }, [meal, day]);
+
+  return (
+    <BottomSheet
+      open={meal != null}
+      onClose={onClose}
+      title={meal ? t.mealOverview.copyTitle(t.mealTypes[meal]) : ""}
+    >
+      {meal ? (
+        <div className="space-y-4">
+          <div>
+            <p className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground">
+              {t.mealOverview.copyMeal}
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {MEAL_ORDER.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setTarget(m)}
+                  aria-pressed={target === m}
+                  className={`min-h-[40px] rounded-xl text-[13px] font-semibold ${
+                    target === m ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}
+                >
+                  {t.mealTypes[m]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground">
+              {t.mealOverview.copyDay}
+            </p>
+            <input
+              type="date"
+              value={targetDay}
+              onChange={(e) => e.target.value && setTargetDay(e.target.value)}
+              className="min-h-[44px] w-full rounded-xl bg-muted px-3 text-[15px] font-semibold"
+            />
+          </div>
+          <button
+            disabled={!target}
+            onClick={() => {
+              if (!target) return;
+              haptic(15);
+              logIngredients(ingredientsFromEntries(entries), target, targetDay);
+              onClose();
+            }}
+            className={`${button.primary} w-full disabled:opacity-40`}
+          >
+            {target
+              ? t.mealOverview.copyAction(entries.length, t.mealTypes[target])
+              : t.mealOverview.copyTo}
+          </button>
         </div>
       ) : null}
     </BottomSheet>

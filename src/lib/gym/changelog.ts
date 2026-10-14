@@ -353,6 +353,14 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "Notifications now drop down from the top of the screen, and nothing overlaps the tab bar anymore.",
         nl: "Meldingen komen nu van boven het scherm naar beneden, en niets overlapt meer met de tabbalk.",
       },
+      {
+        en: "Copy all foods of a meal to another meal (or another day) with the Copy to button in your food overview.",
+        nl: "Kopieer alle producten van een maaltijd naar een andere maaltijd (of dag) met de knop Kopieer naar in je voedingsoverzicht.",
+      },
+      {
+        en: "When some sugars are unknown, sugar totals now show a ~ in front (like ~20 g) instead of ≥.",
+        nl: "Als sommige suikers onbekend zijn, staat er nu een ~ voor het suikertotaal (zoals ~20 g) in plaats van ≥.",
+      },
     ],
   },
 ];
