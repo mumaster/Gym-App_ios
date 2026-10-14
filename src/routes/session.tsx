@@ -1191,10 +1191,11 @@ function SessionScreen() {
           rest, the overview (header) jumps anywhere, and "Next exercise"
           sits in the page when a finished exercise is showing. The dock only
           appears for the rest timer and the end of the workout. */}
-      {rest.phase !== "idle" ? (
-        // The rest is the one thing to look at: the page and header behind
-        // the rest panel are blurred and dimmed, and taps on them do
-        // nothing until the rest ends (Skip Rest ends it early).
+      {rest.phase !== "idle" || (isLastBlock && blockComplete) ? (
+        // The rest (and the "Workout done" panel) is the one thing to look
+        // at: the page and header behind the panel are blurred and dimmed,
+        // and taps on them do nothing until the rest ends (Skip Rest ends
+        // it early) or the workout is finished or extended from the panel.
         <div
           aria-hidden
           className="animate-in fade-in fixed inset-0 z-[35] bg-background/40 backdrop-blur-md duration-300"

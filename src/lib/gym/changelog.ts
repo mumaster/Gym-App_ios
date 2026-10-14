@@ -370,6 +370,13 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De kaart Vandaag op het Voedingstabblad is netter: suikers, vezels en zout staan nu in een tweede rij met dezelfde opmaak als eiwit, koolhydraten en vet.",
     },
   },
+  {
+    version: 44,
+    text: {
+      en: "When your workout is done, the screen behind the Workout done panel is now blurred and dimmed, just like during a rest.",
+      nl: "Als je training klaar is, is het scherm achter het paneel Training klaar nu wazig en gedimd, net als tijdens een rust.",
+    },
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -379,7 +386,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 43;
+export const CURRENT_VERSION = 44;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
