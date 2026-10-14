@@ -1038,9 +1038,14 @@ function SessionScreen() {
       </header>
 
       {toast ? (
-        <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-5 pt-2">
-          <div className="glass-strong mt-16 rounded-2xl bg-primary/20 px-5 py-3 text-center text-[15px] font-bold text-foreground shadow-[var(--shadow-float)]">
-            {toast}
+        <div className="safe-top pointer-events-none fixed inset-x-0 top-0 z-40 px-4 pt-2">
+          {/* Same column as the cards (max-w-xl, px-4). The pill is inset 8px
+              from the card edge with radius = card radius (rounded-3xl) - 8px,
+              so its curves run concentric with the card behind it. */}
+          <div className="mx-auto mt-16 max-w-xl px-2">
+            <div className="glass-strong rounded-[calc(var(--radius-3xl)-0.5rem)] bg-primary/20 px-5 py-3 text-center text-[15px] font-bold text-foreground shadow-[var(--shadow-float)]">
+              {toast}
+            </div>
           </div>
         </div>
       ) : null}
