@@ -2066,8 +2066,8 @@ const en = {
   sugarsUi: {
     ofWhich: "of which sugars",
     /** A total where some foods have no sugars figure: a floor, not the sum. */
-    atLeast: (g: string | number) => `≥ ${g} g`,
-    atLeastOf: (g: string | number, goal: string | number) => `≥ ${g} / ${goal} g`,
+    atLeast: (g: string | number) => `~ ${g} g`,
+    atLeastOf: (g: string | number, goal: string | number) => `~ ${g} / ${goal} g`,
     ofGoal: (g: string | number, goal: string | number) => `${g} / ${goal} g`,
     goal: "Sugar goal",
     goalDesc: "A limit for the sugars in your food, as a share of your calories.",
@@ -4253,8 +4253,8 @@ const nl: Dict = {
   },
   sugarsUi: {
     ofWhich: "waarvan suikers",
-    atLeast: (g: string | number) => `≥ ${g} g`,
-    atLeastOf: (g: string | number, goal: string | number) => `≥ ${g} / ${goal} g`,
+    atLeast: (g: string | number) => `~ ${g} g`,
+    atLeastOf: (g: string | number, goal: string | number) => `~ ${g} / ${goal} g`,
     ofGoal: (g: string | number, goal: string | number) => `${g} / ${goal} g`,
     goal: "Suikerdoel",
     goalDesc: "Een grens voor de suikers in je eten, als deel van je calorieën.",
