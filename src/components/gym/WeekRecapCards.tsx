@@ -782,14 +782,16 @@ function CarbsBars({ days }: { days: WeekRecapDay[] }) {
                 {d.carbs > 0 ? (
                   <div
                     data-bar="carbs"
-                    className="bar-in-y intake-fill relative w-5 rounded-full"
+                    className="bar-in-y intake-fill relative isolate w-5 overflow-hidden rounded-full"
                     style={{ height: `${Math.max(4, (d.carbs / scale) * 100)}%` }}
                   >
                     {d.sugars != null && d.sugars > 0 ? (
                       <span
                         data-bar="sugars"
-                        className="absolute inset-x-0 bottom-0 min-h-1 rounded-full bg-primary"
-                        style={{ height: `${Math.min(100, (d.sugars / d.carbs) * 100)}%` }}
+                        className="absolute inset-x-0 bottom-0 rounded-t-[50%_6px] bg-primary"
+                        style={{
+                          height: `max(8px, ${Math.min(100, (d.sugars / d.carbs) * 100)}%)`,
+                        }}
                       />
                     ) : null}
                   </div>
