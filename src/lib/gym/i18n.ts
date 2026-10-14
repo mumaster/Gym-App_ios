@@ -1607,7 +1607,13 @@ const en = {
     suggestMyLimitsDesc: "Answer a few quick questions and we'll pre-fill these for you.",
     noLimit: "No limit",
     clearAll: "Clear all",
-    byDayType: "Different limits on rest days",
+    byDayType: "Different limits on training and rest days",
+    tabLimits: "Limits",
+    tabOptions: "More options",
+    infoLimits: "About these limits",
+    infoDayTypes: "About training and rest days",
+    infoSugar: "About the sugar goal",
+    infoWeekend: "About the weekend budget",
     byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
       `Rest days leave out the energy of your usual session — about ${kcal} kcal (${minutes} min at ${met} METs, ${kg} kg), taken from carbs. Protein and fat stay the same.`,
     byDayTypeNeedsWeight:
@@ -3779,7 +3785,13 @@ const nl: Dict = {
     suggestMyLimitsDesc: "Beantwoord een paar korte vragen en wij vullen dit voor je in.",
     noLimit: "Geen limiet",
     clearAll: "Alles wissen",
-    byDayType: "Andere limieten op rustdagen",
+    byDayType: "Andere limieten op trainings- en rustdagen",
+    tabLimits: "Limieten",
+    tabOptions: "Meer opties",
+    infoLimits: "Over deze limieten",
+    infoDayTypes: "Over trainings- en rustdagen",
+    infoSugar: "Over het suikerdoel",
+    infoWeekend: "Over het weekendbudget",
     byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
       `Rustdagen laten de energie van je gebruikelijke training weg — zo'n ${kcal} kcal (${minutes} min bij ${String(met).replace(".", ",")} MET, ${String(kg).replace(".", ",")} kg), uit koolhydraten. Eiwit en vet blijven gelijk.`,
     byDayTypeNeedsWeight:

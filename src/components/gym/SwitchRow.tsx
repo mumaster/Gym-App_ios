@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useInfoTip } from "./InfoTip";
 
 /** One row of a grouped settings card: a label and short description with an
  *  iOS switch. The knob is always white, like the platform's. `disabled`
@@ -13,6 +14,8 @@ export function SwitchRow({
   onToggle,
   disabled = false,
   className = "px-4 py-3",
+  info,
+  infoLabel = "",
 }: {
   label: ReactNode;
   desc?: string;
@@ -21,13 +24,21 @@ export function SwitchRow({
   onToggle: () => void;
   disabled?: boolean;
   className?: string;
+  /** Explanation tucked behind a small (i) next to the label. */
+  info?: ReactNode;
+  infoLabel?: string;
 }) {
+  const tip = useInfoTip(infoLabel, info);
   return (
     <div
       className={`flex items-center justify-between gap-3 ${className} ${disabled ? "opacity-50" : ""}`}
     >
       <div className="min-w-0">
-        <p className="text-[15px] font-semibold">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[15px] font-semibold">{label}</p>
+          {info ? tip.button : null}
+        </div>
+        {info ? <div className="mt-1.5">{tip.panel}</div> : null}
         {desc ? <p className="text-[12px] leading-snug text-muted-foreground">{desc}</p> : null}
       </div>
       <button
