@@ -501,8 +501,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 51,
     items: [
       {
-        en: "Weight suggestions now keep your reps in a sensible range: when you add weight, the suggested reps match what you just did (22.5 kg × 14 now suggests 23.5 kg × 10, not × 6).",
-        nl: "Gewichtsuggesties houden je herhalingen nu op een logisch niveau: voeg je gewicht toe, dan sluiten de voorgestelde herhalingen aan op wat je net deed (22,5 kg × 14 geeft nu 23,5 kg × 10, niet × 6).",
+        en: "Weight suggestions now keep your reps in a sensible range: when you add weight, the suggested reps match what you just did (22.5 kg × 14 now suggests 23.5 kg × 10, not × 6). The suggested weight and reps now sit in a pill, with only the reason as text.",
+        nl: "Gewichtsuggesties houden je herhalingen nu op een logisch niveau: voeg je gewicht toe, dan sluiten de voorgestelde herhalingen aan op wat je net deed (22,5 kg × 14 geeft nu 23,5 kg × 10, niet × 6). Het voorgestelde gewicht en de herhalingen staan nu in een pil, met alleen de reden als tekst.",
       },
     ],
   },
