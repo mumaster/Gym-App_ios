@@ -420,6 +420,27 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 46,
+    items: [
+      {
+        en: "Build your own workouts in the new Custom tab on Workout: add any exercise, set sets, reps and rest, pair two exercises as a superset, and save it.",
+        nl: "Stel je eigen training samen in het nieuwe tabblad Zelf maken onder Training: voeg elke oefening toe, kies sets, herhalingen en rust, koppel twee oefeningen als superset en sla hem op.",
+      },
+      {
+        en: "Every workout you build gets a score out of 100, plus how well each muscle is trained against its weekly target. Tap the (i) to see how it works.",
+        nl: "Elke training die je samenstelt krijgt een score van 100, en per spier zie je hoe goed die getraind wordt tegenover je weekdoel. Tik op de (i) om te zien hoe het werkt.",
+      },
+      {
+        en: "Put a saved workout on a day of your week plan or program with Use a saved workout when you open that day.",
+        nl: "Zet een opgeslagen training op een dag van je weekschema of programma met Opgeslagen training gebruiken als je die dag opent.",
+      },
+      {
+        en: "The old Build your own tab is now called Generator.",
+        nl: "Het oude tabblad Zelf samenstellen heet nu Generator.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -429,7 +450,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 45;
+export const CURRENT_VERSION = 46;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

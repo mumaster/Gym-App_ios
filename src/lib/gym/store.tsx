@@ -666,7 +666,8 @@ interface Ctx extends GymState {
     duration_minutes: number,
     target_muscles: Muscle[],
     day_id?: string,
-  ) => void;
+  ) => string;
+  updateWorkoutTemplate: (id: string, patch: Partial<Omit<WorkoutTemplate, "id">>) => void;
   deleteWorkoutTemplate: (id: string) => void;
   addFoodEntry: (entry: FoodEntry) => void;
   updateFoodEntry: (
@@ -1772,12 +1773,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
       resetScheduledWeek: (kind) =>
         setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 
-      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles, day_id) =>
+      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles, day_id) => {
+        const id = crypto.randomUUID();
         setState((s) => ({
           ...s,
           workoutTemplates: [
             {
-              id: crypto.randomUUID(),
+              id,
               name,
               plan,
               duration_minutes,
@@ -1786,6 +1788,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
             },
             ...s.workoutTemplates,
           ],
+        }));
+        return id;
+      },
+      updateWorkoutTemplate: (id, patch) =>
+        setState((s) => ({
+          ...s,
+          workoutTemplates: s.workoutTemplates.map((t) =>
+            t.id === id ? { ...t, ...patch, id } : t,
+          ),
         })),
       deleteWorkoutTemplate: (id) =>
         setState((s) => ({
