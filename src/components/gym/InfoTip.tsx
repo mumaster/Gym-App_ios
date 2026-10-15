@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 /** The small (i) behind a card's explanation: the text stays hidden until the
  *  user taps. Put `button` next to the card's title and `panel` right under
  *  that row. Shared so every explanation looks and behaves the same. */
-export function useInfoTip(ariaLabel: string, text: ReactNode) {
+export function useInfoTip(ariaLabel: string, text: ReactNode, large = false) {
   const [open, setOpen] = useState(false);
   return {
     button: (
@@ -13,9 +13,9 @@ export function useInfoTip(ariaLabel: string, text: ReactNode) {
         onClick={() => setOpen((v) => !v)}
         aria-label={ariaLabel}
         aria-expanded={open}
-        className="tap-target flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90"
+        className={`tap-target flex shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground active:scale-90 ${large ? "size-9" : "size-6"}`}
       >
-        <Info className="size-3.5" aria-hidden />
+        <Info className={large ? "size-[18px]" : "size-3.5"} aria-hidden />
       </button>
     ),
     panel: open ? (

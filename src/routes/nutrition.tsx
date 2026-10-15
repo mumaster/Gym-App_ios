@@ -21,6 +21,7 @@ import {
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
+import { NutrientCell, barClass } from "../components/gym/NutrientCell";
 import { CopyMealSheet, ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
 import { mealCodeFrom, type SharedMeal } from "../lib/gym/mealShare";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
@@ -94,10 +95,6 @@ export const Route = createFileRoute("/nutrition")({
   }),
   component: NutritionScreen,
 });
-
-/** Colour for a limit's bar — over is red, within 15% of it amber. */
-const barClass = (status: NutrientStatus) =>
-  status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
 /**
  * Three sub-tabs, each with the week strip on top: Food (the day's numbers,
@@ -717,7 +714,7 @@ function DaySummary({
           ? Moon
           : CalendarDays;
   return (
-    <Card className="mt-4 space-y-4 overflow-hidden p-4">
+    <Card className="mt-4 space-y-2.5 overflow-hidden p-4">
       {/* The day and its kind ("Today · Training day") in the card's own
           header band, like a meal's and a drink's card (asked for: it sat
           above the card as a small grey label). */}
@@ -773,8 +770,8 @@ function DaySummary({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {(["protein", "carbs", "fat"] as const).map((key) => (
+      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+        {(["protein", "carbs"] as const).map((key) => (
           <NutrientCell
             key={key}
             label={t.nutrients[key]}
@@ -783,9 +780,6 @@ function DaySummary({
             goal={goals[key]}
           />
         ))}
-      </div>
-      <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-3">
         <NutrientCell
           label={t.nutrients.sugars}
           value={sugars == null ? "–" : sugarsKnownForAll ? String(sugars) : `~${sugars}`}
@@ -793,7 +787,10 @@ function DaySummary({
           goal={sugarGoal ?? undefined}
           overIsAccent
         />
-        {(["fiber", "salt"] as const).map((key) => {
+      </div>
+      <div className="h-px bg-border" />
+      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+        {(["fat", "fiber", "salt"] as const).map((key) => {
           const digits = key === "salt" ? 1 : 0;
           return (
             <NutrientCell
@@ -816,52 +813,6 @@ function DaySummary({
         </button>
       ) : null}
     </Card>
-  );
-}
-
-/** One nutrient of the day card: label, "value / goal g" and a bar. Every
- *  cell of the two rows (protein, carbs, fat; sugars, fiber, salt) looks the
- *  same so the columns stay even (asked for, 2026-10-14). */
-function NutrientCell({
-  label,
-  value,
-  amount,
-  goal,
-  overIsAccent,
-}: {
-  label: string;
-  value: string;
-  amount: number;
-  goal: number | undefined;
-  /** Sugars: over the goal is the accent colour, not the red used for limits. */
-  overIsAccent?: boolean;
-}) {
-  const status = nutrientStatus(amount, goal);
-  const over = status === "over";
-  return (
-    <div className="min-w-0">
-      <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
-      <p className="tabular mt-0.5 truncate leading-tight">
-        <span
-          className={`text-[16px] font-bold ${
-            over ? (overIsAccent ? "text-primary-text" : "text-destructive-text") : ""
-          }`}
-        >
-          {value}
-        </span>
-        <span className="text-[12px] text-muted-foreground">
-          {goal != null ? ` / ${goal}` : ""} g
-        </span>
-      </p>
-      {goal != null ? (
-        <div className="mt-1.5 h-1.5 bar-track bg-muted">
-          <div
-            className={`bar-grow bar-fill-x ${overIsAccent ? "bg-primary" : barClass(status)}`}
-            style={barFill((amount / goal) * 100)}
-          />
-        </div>
-      ) : null}
-    </div>
   );
 }
 

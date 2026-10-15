@@ -14,6 +14,8 @@ import {
   type NutritionGoals,
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
+import { useInfoTip } from "./InfoTip";
+import { NutrientCell } from "./NutrientCell";
 
 /**
  * Tapping a meal heading in the food log: what that meal added up to on the
@@ -58,6 +60,21 @@ export function MealOverviewSheet({
   const split = energySplit(totals);
   const protein = Math.round(totals.protein);
   const proteinOk = proteinTarget != null && protein >= proteinTarget;
+  const info = useInfoTip(
+    t.mealOverview.moreInfo,
+    <p className="tabular">
+      {[
+        dayKcal > 0 ? t.mealOverview.ofDay(Math.round((kcal / dayKcal) * 100)) : null,
+        goals.calories ? t.mealOverview.ofLimit(Math.round((kcal / goals.calories) * 100)) : null,
+        split
+          ? `${t.mealOverview.split} ${t.nutrients.protein} ${split.protein}% · ${t.nutrients.carbs} ${split.carbs}% · ${t.nutrients.fat} ${split.fat}%`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+    </p>,
+    true,
+  );
 
   return (
     <BottomSheet
@@ -66,7 +83,7 @@ export function MealOverviewSheet({
       title={meal ? t.mealOverview.title(t.mealTypes[meal], dayLabel) : ""}
     >
       {meal ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex gap-2">
             {canAdd ? (
               <button
@@ -89,12 +106,13 @@ export function MealOverviewSheet({
 
           <div>
             <div className="flex items-center justify-between gap-3">
-              <p className="tabular leading-none">
+              <p className="tabular min-w-0 leading-none">
                 <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
                 <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
               </p>
               {entries.length ? (
                 <div className="flex shrink-0 items-center gap-2">
+                  {info.button}
                   <button
                     onClick={onShare}
                     aria-label={t.mealShare.share}
@@ -112,15 +130,9 @@ export function MealOverviewSheet({
                 </div>
               ) : null}
             </div>
-            <p className="mt-1.5 text-[13px] text-muted-foreground">
-              {t.mealOverview.foods(entries.length)}
-              {dayKcal > 0 ? ` · ${t.mealOverview.ofDay(Math.round((kcal / dayKcal) * 100))}` : ""}
-              {goals.calories
-                ? ` · ${t.mealOverview.ofLimit(Math.round((kcal / goals.calories) * 100))}`
-                : ""}
-            </p>
+            {info.panel ? <div className="mt-1.5">{info.panel}</div> : null}
             {dayKcal > 0 ? (
-              <div className="mt-2.5 h-2 bar-track bg-muted">
+              <div className="mt-2 h-2 bar-track bg-muted">
                 <div
                   className="bar-grow bar-fill-x bg-primary"
                   style={barFill(Math.min(100, (kcal / dayKcal) * 100))}
@@ -129,102 +141,93 @@ export function MealOverviewSheet({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {(["protein", "carbs", "fat", "fiber", "salt"] as const).map((key) => {
-              const digits = key === "salt" ? 1 : 0;
-              const value = Number(totals[key].toFixed(digits));
-              const goal = goals[key];
-              const pct = goal ? Math.round((totals[key] / goal) * 100) : null;
-              return (
-                <div
+          <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+              <NutrientCell
+                label={t.nutrients.protein}
+                value={String(Math.round(totals.protein))}
+                amount={totals.protein}
+                goal={goals.protein}
+              />
+              <NutrientCell
+                label={t.nutrients.carbs}
+                value={String(Math.round(totals.carbs))}
+                amount={totals.carbs}
+                goal={goals.carbs}
+              />
+              <NutrientCell
+                label={t.nutrients.sugars}
+                value={
+                  totals.sugars == null
+                    ? "–"
+                    : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`
+                }
+                amount={totals.sugars ?? 0}
+                goal={goals.sugars ?? undefined}
+                overIsAccent
+              />
+            </div>
+            <div className="h-px bg-border" />
+            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+              {(["fat", "fiber", "salt"] as const).map((key) => (
+                <NutrientCell
                   key={key}
-                  className={`rounded-2xl bg-muted/60 px-3.5 py-2.5 ${key === "protein" ? "col-span-2" : ""}`}
-                >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-[12.5px] font-semibold text-muted-foreground">
-                      {t.nutrients[key]}
-                    </p>
-                    <p className="tabular text-[16px] font-bold">
-                      {value.toLocaleString(locale)}
-                      <span className="text-[12px] font-medium text-muted-foreground"> g</span>
-                    </p>
-                  </div>
-                  {pct != null ? (
-                    <>
-                      <div className="mt-1.5 h-1.5 bar-track bg-background/60">
-                        <div
-                          className={`bar-grow bar-fill-x ${pct > 100 ? "bg-destructive" : "bg-primary"}`}
-                          style={barFill(Math.min(100, pct))}
-                        />
-                      </div>
-                      <p className="tabular mt-1 text-[12px] text-muted-foreground">
-                        {t.mealOverview.ofLimit(pct)}
-                      </p>
-                    </>
-                  ) : null}
-                  {key === "carbs" && totals.sugars != null ? (
-                    <p className="tabular mt-1 text-[12px] text-muted-foreground">
-                      {t.sugarsUi.ofWhich}{" "}
-                      {sugarsComplete(entries)
-                        ? `${Number(totals.sugars.toFixed(0)).toLocaleString(locale)} g`
-                        : t.sugarsUi.atLeast(
-                            Number(totals.sugars.toFixed(0)).toLocaleString(locale),
-                          )}
-                    </p>
-                  ) : null}
-                  {key === "protein" && proteinTarget != null ? (
-                    <p className="tabular mt-1 flex items-center gap-1.5 text-[12px]">
-                      {proteinOk ? (
-                        <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="size-2.5" strokeWidth={3.5} />
-                        </span>
-                      ) : null}
-                      {t.mealOverview.proteinMeal(protein, proteinTarget)}
-                    </p>
-                  ) : null}
-                </div>
-              );
-            })}
+                  label={t.nutrients[key]}
+                  value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
+                  amount={totals[key]}
+                  goal={goals[key]}
+                />
+              ))}
+            </div>
+            {proteinTarget != null ? (
+              <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
+                {proteinOk ? (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-2.5" strokeWidth={3.5} />
+                  </span>
+                ) : null}
+                {t.mealOverview.proteinMeal(protein, proteinTarget)}
+              </p>
+            ) : null}
           </div>
-
-          {split ? (
-            <p className="tabular px-1 text-[13px]">
-              <span className="text-muted-foreground">{t.mealOverview.split} </span>
-              <span className="font-semibold">
-                {t.nutrients.protein} {split.protein}% · {t.nutrients.carbs} {split.carbs}% ·{" "}
-                {t.nutrients.fat} {split.fat}%
-              </span>
-            </p>
-          ) : null}
-
           {entries.length ? (
-            <div className="overflow-hidden rounded-2xl bg-muted/50">
-              {entries.map((entry, i) => {
-                const m = scaledMacros(entry);
-                return (
-                  <button
-                    key={entry.id}
-                    onClick={() => onEdit(entry)}
-                    aria-label={t.nutrition.editEntry(entry.name)}
-                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${
-                      i > 0 ? "border-t border-border" : ""
-                    }`}
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[15px] font-semibold">{entry.name}</span>
-                      <PortionLine
-                        grams={entry.grams}
-                        unit={drinkOf(entry) ? "ml" : "g"}
-                        macros={m}
-                        className="text-[12px]"
-                      />
-                    </span>
-                    <span className="tabular shrink-0 text-[14px] font-semibold">
-                      {t.nutrition.kcal(m.calories)}
-                    </span>
-                  </button>
-                );
-              })}
+            <div>
+              <div className="flex items-baseline justify-between px-1 pb-1.5">
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t.mealOverview.ingredients(entries.length)}
+                </p>
+                <p className="tabular text-[12px] text-muted-foreground">
+                  {t.nutrition.kcal(totals.calories)}
+                </p>
+              </div>
+              <div className="glass overflow-hidden rounded-2xl">
+                {entries.map((entry, i) => {
+                  const m = scaledMacros(entry);
+                  return (
+                    <button
+                      key={entry.id}
+                      onClick={() => onEdit(entry)}
+                      aria-label={t.nutrition.editEntry(entry.name)}
+                      className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${i > 0 ? "border-t border-border" : ""}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[15px] font-semibold">
+                          {entry.name}
+                        </span>
+                        <PortionLine
+                          grams={entry.grams}
+                          unit={drinkOf(entry) ? "ml" : "g"}
+                          macros={m}
+                          className="text-[12px]"
+                        />
+                      </span>
+                      <span className="tabular shrink-0 text-[14px] font-semibold">
+                        {t.nutrition.kcal(m.calories)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <p className="px-1 text-[14px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
