@@ -1058,7 +1058,7 @@ export function AddFoodSheet({
                         key={full}
                         onClick={onClick}
                         aria-label={full}
-                        className="glass flex min-h-[64px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
+                        className="glass flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
                       >
                         <Icon className="size-5 shrink-0 text-primary-text" />
                         <span className="max-w-full truncate text-[13px] font-semibold">
@@ -1669,14 +1669,14 @@ function SavedList({
       actions={
         <>
           {items.length ? <EditToggle editing={editing} onToggle={onToggleEdit} /> : null}
-          {/* Says "New", not just "+": in a header band "+" means "add to
-              the log" (a meal's card), and this one makes a new meal. */}
+          {/* A round "+" like a meal card's own; the aria-label says it
+              makes a new meal or recipe. */}
           <button
             onClick={onNew}
             aria-label={newLabel}
-            className="tap-target flex items-center gap-1 rounded-full bg-primary/25 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
+            className="tap-target flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
           >
-            <Plus className="size-3.5" /> {t.addFood.newShort}
+            <Plus className="size-4" />
           </button>
         </>
       }
