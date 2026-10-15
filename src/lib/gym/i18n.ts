@@ -1140,6 +1140,9 @@ const en = {
     foods: "Foods",
     spices: "Spices & salt",
     addSpices: "Add spices",
+    tileList: "List",
+    tileManual: "Manual",
+    tileSpices: "Spices",
     searchSpices: "Search spices — salt, pepper, paprika…",
     spicesNote:
       "Spice and salt values are typical figures for the dried product (USDA), an addition to NEVO.",
@@ -3332,6 +3335,9 @@ const nl: Dict = {
     foods: "Voedingsmiddelen",
     spices: "Kruiden & zout",
     addSpices: "Kruiden toevoegen",
+    tileList: "Lijst",
+    tileManual: "Handmatig",
+    tileSpices: "Kruiden",
     searchSpices: "Zoek kruiden — zout, peper, paprika…",
     spicesNote:
       "Waarden van kruiden en zout zijn gangbare cijfers voor het gedroogde product (USDA), een aanvulling op NEVO.",

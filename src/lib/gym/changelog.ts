@@ -410,8 +410,8 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 45,
     text: {
-      en: "In Add food, the “Add spices” button now sits right under “Enter manually”.",
-      nl: "In Voedsel toevoegen staat de knop “Kruiden toevoegen” nu direct onder “Handmatig invoeren”.",
+      en: "In Add food, the List, Manual and Spices buttons now sit in one compact row under Scan, and “Add spices” lets you pick salt and other spices quickly.",
+      nl: "In Voedsel toevoegen staan Lijst, Handmatig en Kruiden nu in één compacte rij onder Scan, en met “Kruiden toevoegen” kies je snel zout en andere kruiden.",
     },
   },
 ];

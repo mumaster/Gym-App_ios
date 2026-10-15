@@ -3,14 +3,13 @@ import {
   AlertTriangle,
   Check,
   ChevronLeft,
-  ChevronRight,
   CookingPot,
   History,
   Keyboard,
   Leaf,
   Pencil,
   Sprout,
-  Mic,
+  ListPlus,
   Plus,
   ScanBarcode,
   ScanLine,
@@ -1034,34 +1033,37 @@ export function AddFoodSheet({
                       ) : null}
                     </span>
                   </button>
-                  {/* The quieter ways in, as one grouped list: full-width
-                      rows keep each label on one line in Dutch too. */}
-                  <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+                  {/* The quieter ways in, as one row of equal tiles (asked
+                      for: three full-width rows took too much room). The
+                      list tile is for typing or speaking a list of foods;
+                      the full name stays in the aria-label. */}
+                  <div className="flex gap-2">
                     {(listModes
                       ? ([
                           [
-                            Mic,
+                            ListPlus,
+                            t.addFood.tileList,
                             t.addFood.typeOrSpeak,
                             () => openBuilder(() => onReadList?.({ start: "text", meal })),
                           ],
-                          [Keyboard, t.addFood.enterManually, startManual],
-                          [Sprout, t.addFood.addSpices, openSpices],
+                          [Keyboard, t.addFood.tileManual, t.addFood.enterManually, startManual],
+                          [Sprout, t.addFood.tileSpices, t.addFood.addSpices, openSpices],
                         ] as const)
                       : ([
-                          [Keyboard, t.addFood.enterManually, startManual],
-                          [Sprout, t.addFood.addSpices, openSpices],
+                          [Keyboard, t.addFood.tileManual, t.addFood.enterManually, startManual],
+                          [Sprout, t.addFood.tileSpices, t.addFood.addSpices, openSpices],
                         ] as const)
-                    ).map(([Icon, label, onClick]) => (
+                    ).map(([Icon, label, full, onClick]) => (
                       <button
-                        key={label}
+                        key={full}
                         onClick={onClick}
-                        className="flex min-h-[48px] w-full items-center gap-3 px-4 text-left active:bg-foreground/5"
+                        aria-label={full}
+                        className="glass flex min-h-[64px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
                       >
                         <Icon className="size-5 shrink-0 text-primary-text" />
-                        <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                        <span className="max-w-full truncate text-[13px] font-semibold">
                           {label}
                         </span>
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                       </button>
                     ))}
                   </div>
