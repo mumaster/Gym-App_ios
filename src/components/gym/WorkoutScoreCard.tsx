@@ -6,6 +6,7 @@ import { useInfoTip } from "./InfoTip";
 import { barFill } from "./bar";
 import { scoreWorkout, type MuscleStatus, type ScorePartId } from "../../lib/gym/diyWorkout";
 import { useTranslation } from "../../lib/gym/i18n";
+import { useGym } from "../../lib/gym/store";
 import type { PlannedExercise } from "../../lib/gym/types";
 
 const STATUS_PILL: Record<MuscleStatus, string> = {
@@ -28,7 +29,11 @@ export function WorkoutScoreCard({
   minutes: number;
 }) {
   const t = useTranslation();
-  const result = useMemo(() => scoreWorkout(plan, { minutes }), [plan, minutes]);
+  const { growthFocus } = useGym();
+  const result = useMemo(
+    () => scoreWorkout(plan, { minutes, focus: growthFocus }),
+    [plan, minutes, growthFocus],
+  );
   const tip = useInfoTip(
     t.workoutScore.infoLabel,
     t.workoutScore.info.map((line) => <p key={line}>{line}</p>),

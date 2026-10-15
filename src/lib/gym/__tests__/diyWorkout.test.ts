@@ -252,6 +252,6 @@ describe("scoreWorkout", () => {
     );
     expect(bad.grade).toBe("weak");
     expect(scoreWorkout(good, opts).grade).toBe("excellent");
-    expect(scoreWorkout(good, opts).score).toBe(87);
+    expect(scoreWorkout(good, opts).score).toBe(100);
   });
 });

@@ -2,7 +2,13 @@ import { exerciseById } from "./data";
 import { estimateMinutes } from "./generator";
 import { planBlocks } from "./planBlocks";
 import type { Exercise, Muscle, PlannedExercise } from "./types";
-import { MAX_SESSION_SETS_PER_MUSCLE, planSets, weeklyTarget as baseWeeklyTarget } from "./volume";
+import {
+  MAX_SESSION_SETS_PER_MUSCLE,
+  mainPlanSets,
+  planSets,
+  weeklyTarget as baseWeeklyTarget,
+  type VolumeMuscle,
+} from "./volume";
 
 /* ---------------- building a plan by hand ---------------- */
 
@@ -196,8 +202,14 @@ export interface WorkoutScore {
 export interface ScoreOptions {
   /** Working sets per muscle for the plan; default volume.ts planSets. */
   muscleSets?: (plan: PlannedExercise[]) => Record<string, number>;
-  /** Weekly set target for a muscle; default volume.ts weeklyTarget with no focus muscles. */
+  /** Sets per muscle that it is the main target of (what the per-session
+   *  cap looks at); default volume.ts mainPlanSets. */
+  mainSets?: (plan: PlannedExercise[]) => Record<string, number>;
+  /** Weekly set target for a muscle; default volume.ts weeklyTarget with
+   *  `focus` as the starred muscles. */
   weeklyTarget?: (muscle: string) => number;
+  /** Starred muscles (growthFocus), for the default weekly target. */
+  focus?: readonly VolumeMuscle[];
   /** Estimated session length in minutes; default generator.ts estimateMinutes(plan). */
   minutes?: number;
 }
@@ -208,14 +220,14 @@ const MIN_EFFECTIVE_SETS = 3;
 
 const defaultMuscleSets = (plan: PlannedExercise[]): Record<string, number> =>
   planSets(plan) as Record<string, number>;
-const defaultWeeklyTarget = (muscle: string): number =>
-  baseWeeklyTarget(muscle as Muscle, new Set());
+const defaultMainSets = (plan: PlannedExercise[]): Record<string, number> =>
+  mainPlanSets(plan) as Record<string, number>;
 
 /**
  * A 0-100 score for a hand-built workout, from five parts. Sources:
  *
  * - volume (40): sets per muscle in the session. Up to
- *   MAX_SESSION_SETS_PER_MUSCLE (11) fractional sets still add growth
+ *   MAX_SESSION_SETS_PER_MUSCLE (11) sets still add growth
  *   (Pelland et al., Sports Med 2024), beyond that there is no detectable
  *   extra gain. Under 3 sets (the app's own floor) the muscle is barely
  *   trained, so it scores sets/3 (min 0.3); over the cap it scores 0.6.
@@ -251,7 +263,10 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
 
   // volume
   const setsBy = (opts.muscleSets ?? defaultMuscleSets)(plan);
-  const target = opts.weeklyTarget ?? defaultWeeklyTarget;
+  const mainBy = (opts.mainSets ?? defaultMainSets)(plan);
+  const focus = new Set(opts.focus ?? []);
+  const target =
+    opts.weeklyTarget ?? ((muscle: string) => baseWeeklyTarget(muscle as VolumeMuscle, focus));
   const muscles: MuscleEffect[] = Object.entries(setsBy)
     .filter(([, n]) => n > 0)
     .sort((a, b) => b[1] - a[1])
@@ -259,7 +274,14 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
       muscle,
       sets: Math.round(n * 10) / 10,
       weeklyTarget: target(muscle),
-      status: n < MIN_EFFECTIVE_SETS ? "low" : n <= MAX_SESSION_SETS_PER_MUSCLE ? "good" : "high",
+      // Too much when the sets it is the main target of pass the cap (the
+      // cap's own counting, volume.ts); helping in other lifts doesn't.
+      status:
+        n < MIN_EFFECTIVE_SETS
+          ? "low"
+          : (mainBy[muscle] ?? 0) <= MAX_SESSION_SETS_PER_MUSCLE
+            ? "good"
+            : "high",
     }));
   const factor = (m: MuscleEffect) =>
     m.status === "low" ? Math.max(0.3, m.sets / MIN_EFFECTIVE_SETS) : m.status === "good" ? 1 : 0.6;
