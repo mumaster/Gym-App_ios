@@ -3,14 +3,13 @@ import {
   AlertTriangle,
   Check,
   ChevronLeft,
-  ChevronRight,
   CookingPot,
   History,
   Keyboard,
   Leaf,
   Pencil,
   Sprout,
-  Mic,
+  ListPlus,
   Plus,
   ScanBarcode,
   ScanLine,
@@ -82,8 +81,7 @@ export interface ListPhoto {
 
 /** What Add food hands the list reader (FoodListSheet). */
 export type ReadListRequest = { meal: MealType } & (
-  | { start: "text" }
-  | ({ start: "photo" } & ListPhoto)
+  { start: "text" } | ({ start: "photo" } & ListPhoto)
 );
 type MacroKey = NutrientKey;
 
@@ -1035,30 +1033,37 @@ export function AddFoodSheet({
                       ) : null}
                     </span>
                   </button>
-                  {/* The quieter ways in, as one grouped list: full-width
-                      rows keep each label on one line in Dutch too. */}
-                  <div className="glass divide-y divide-border overflow-hidden rounded-2xl">
+                  {/* The quieter ways in, as one row of equal tiles (asked
+                      for: three full-width rows took too much room). The
+                      list tile is for typing or speaking a list of foods;
+                      the full name stays in the aria-label. */}
+                  <div className="flex gap-2">
                     {(listModes
                       ? ([
                           [
-                            Mic,
+                            ListPlus,
+                            t.addFood.tileList,
                             t.addFood.typeOrSpeak,
                             () => openBuilder(() => onReadList?.({ start: "text", meal })),
                           ],
-                          [Keyboard, t.addFood.enterManually, startManual],
+                          [Keyboard, t.addFood.tileManual, t.addFood.enterManually, startManual],
+                          [Sprout, t.addFood.tileSpices, t.addFood.addSpices, openSpices],
                         ] as const)
-                      : ([[Keyboard, t.addFood.enterManually, startManual]] as const)
-                    ).map(([Icon, label, onClick]) => (
+                      : ([
+                          [Keyboard, t.addFood.tileManual, t.addFood.enterManually, startManual],
+                          [Sprout, t.addFood.tileSpices, t.addFood.addSpices, openSpices],
+                        ] as const)
+                    ).map(([Icon, label, full, onClick]) => (
                       <button
-                        key={label}
+                        key={full}
                         onClick={onClick}
-                        className="flex min-h-[48px] w-full items-center gap-3 px-4 text-left active:bg-foreground/5"
+                        aria-label={full}
+                        className="tap-target glass-chip flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
                       >
-                        <Icon className="size-5 shrink-0 text-primary-text" />
-                        <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+                        <Icon className="size-4 shrink-0 text-primary-text" />
+                        <span className="min-w-0 truncate text-[13.5px] font-semibold">
                           {label}
                         </span>
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                       </button>
                     ))}
                   </div>
@@ -1151,16 +1156,6 @@ export function AddFoodSheet({
                     }}
                   />
                 ) : null}
-                <button
-                  onClick={openSpices}
-                  className="glass flex min-h-[52px] w-full items-center gap-3 rounded-2xl px-4 text-left active:scale-[0.985]"
-                >
-                  <Sprout className="size-5 shrink-0 text-primary-text" />
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">
-                    {t.addFood.addSpices}
-                  </span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </button>
               </>
             )}
           </div>
@@ -1674,14 +1669,14 @@ function SavedList({
       actions={
         <>
           {items.length ? <EditToggle editing={editing} onToggle={onToggleEdit} /> : null}
-          {/* Says "New", not just "+": in a header band "+" means "add to
-              the log" (a meal's card), and this one makes a new meal. */}
+          {/* A round "+" like a meal card's own; the aria-label says it
+              makes a new meal or recipe. */}
           <button
             onClick={onNew}
             aria-label={newLabel}
-            className="tap-target flex items-center gap-1 rounded-full bg-primary/25 px-2.5 py-1 text-[13px] font-semibold text-foreground active:scale-95"
+            className="tap-target flex size-8 items-center justify-center rounded-full bg-primary/25 text-foreground active:scale-90"
           >
-            <Plus className="size-3.5" /> {t.addFood.newShort}
+            <Plus className="size-4" />
           </button>
         </>
       }

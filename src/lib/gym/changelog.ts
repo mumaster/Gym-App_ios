@@ -450,6 +450,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 48,
+    items: [
+      {
+        en: "Add salt and other spices quickly with the new Add spices button in Add food. Search or scroll the A–Z list.",
+        nl: "Voeg snel zout en andere kruiden toe met de nieuwe knop Kruiden toevoegen in Voedsel toevoegen. Zoek of scrol door de A–Z-lijst.",
+      },
+      {
+        en: "In Add food, List, Manual and Spices now sit in one compact row under Scan, and the new meal and recipe buttons are a plain +. Opening Add food from a meal's + no longer shows the Add to row.",
+        nl: "In Voedsel toevoegen staan Lijst, Handmatig en Kruiden nu in één compacte rij onder Scan, en de knoppen voor een nieuwe maaltijd of nieuw recept zijn een gewone +. Open je Voedsel toevoegen via de + van een maaltijd, dan zie je de rij Toevoegen aan niet meer.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -459,7 +472,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 47;
+export const CURRENT_VERSION = 48;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
