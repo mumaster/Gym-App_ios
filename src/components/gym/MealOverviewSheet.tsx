@@ -82,7 +82,7 @@ export function MealOverviewSheet({
       title={meal ? t.mealOverview.title(t.mealTypes[meal], dayLabel) : ""}
     >
       {meal ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex gap-2">
             {canAdd ? (
               <button
@@ -105,12 +105,17 @@ export function MealOverviewSheet({
 
           <div>
             <div className="flex items-center justify-between gap-3">
-              <p className="tabular leading-none">
+              <p className="tabular min-w-0 leading-none">
                 <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
                 <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
+                <span className="text-[13px] text-muted-foreground">
+                  {" · "}
+                  {t.mealOverview.foods(entries.length)}
+                </span>
               </p>
               {entries.length ? (
                 <div className="flex shrink-0 items-center gap-2">
+                  {info.button}
                   <button
                     onClick={onShare}
                     aria-label={t.mealShare.share}
@@ -128,15 +133,9 @@ export function MealOverviewSheet({
                 </div>
               ) : null}
             </div>
-            <div className="mt-1.5 flex items-center gap-2">
-              <p className="min-w-0 flex-1 text-[13px] text-muted-foreground">
-                {t.mealOverview.foods(entries.length)}
-              </p>
-              {info.button}
-            </div>
             {info.panel ? <div className="mt-1.5">{info.panel}</div> : null}
             {dayKcal > 0 ? (
-              <div className="mt-2.5 h-2 bar-track bg-muted">
+              <div className="mt-2 h-2 bar-track bg-muted">
                 <div
                   className="bar-grow bar-fill-x bg-primary"
                   style={barFill(Math.min(100, (kcal / dayKcal) * 100))}
@@ -145,7 +144,7 @@ export function MealOverviewSheet({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-2">
             <NutrientCell
               label={t.nutrients.protein}
               value={String(Math.round(totals.protein))}
@@ -171,7 +170,7 @@ export function MealOverviewSheet({
             />
           </div>
           <div className="h-px bg-border" />
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-2">
             {(["fat", "fiber", "salt"] as const).map((key) => (
               <NutrientCell
                 key={key}

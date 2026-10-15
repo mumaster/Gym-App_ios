@@ -27,7 +27,7 @@ export function NutrientCell({
   return (
     <div className="min-w-0">
       <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
-      <p className="tabular mt-0.5 truncate leading-tight">
+      <p className="tabular truncate leading-tight">
         <span
           className={`text-[16px] font-bold ${
             over ? (overIsAccent ? "text-primary-text" : "text-destructive-text") : ""
@@ -40,7 +40,7 @@ export function NutrientCell({
         </span>
       </p>
       {goal != null ? (
-        <div className="mt-1.5 h-1.5 bar-track bg-muted">
+        <div className="mt-1 h-1.5 bar-track bg-muted">
           <div
             className={`bar-grow bar-fill-x ${overIsAccent ? "bg-primary" : barClass(status)}`}
             style={barFill((amount / goal) * 100)}

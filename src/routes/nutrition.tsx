@@ -714,7 +714,7 @@ function DaySummary({
           ? Moon
           : CalendarDays;
   return (
-    <Card className="mt-4 space-y-4 overflow-hidden p-4">
+    <Card className="mt-4 space-y-2.5 overflow-hidden p-4">
       {/* The day and its kind ("Today · Training day") in the card's own
           header band, like a meal's and a drink's card (asked for: it sat
           above the card as a small grey label). */}
@@ -770,7 +770,7 @@ function DaySummary({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
         {(["protein", "carbs"] as const).map((key) => (
           <NutrientCell
             key={key}
@@ -789,7 +789,7 @@ function DaySummary({
         />
       </div>
       <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
         {(["fat", "fiber", "salt"] as const).map((key) => {
           const digits = key === "salt" ? 1 : 0;
           return (
