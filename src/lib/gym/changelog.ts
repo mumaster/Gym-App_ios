@@ -483,6 +483,18 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "Add exercise is now the main button in Custom.",
         nl: "Oefening toevoegen is nu de hoofdknop in Zelf maken.",
       },
+      {
+        en: "The score in Custom shows live next to Add exercise, so you see what each change does.",
+        nl: "De score in Zelf maken staat nu live naast Oefening toevoegen, zodat je ziet wat elke wijziging doet.",
+      },
+      {
+        en: "Where the score loses points on order, reps or rest, a button under it fixes that one setting when you tap it.",
+        nl: "Verliest de score punten op volgorde, herhalingen of rust, dan past een knop eronder precies die instelling aan als je erop tikt.",
+      },
+      {
+        en: "The score counts the sets you already trained this week, so a muscle that has had enough counts less.",
+        nl: "De score telt de sets die je deze week al hebt getraind, dus een spier die al genoeg heeft gehad telt minder.",
+      },
     ],
   },
 ];

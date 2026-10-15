@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   addExercise,
+  fixOrder,
+  fixedReps,
+  fixedRest,
   generatedReference,
   linkSuperset,
   newPlanned,
@@ -252,7 +255,9 @@ describe("scoreWorkout", () => {
       muscleSets: () => ({ Biceps: 4 }),
       weeklyTarget: () => 12,
     });
-    expect(s.muscles).toEqual([{ muscle: "Biceps", sets: 4, weeklyTarget: 12, status: "good" }]);
+    expect(s.muscles).toEqual([
+      { muscle: "Biceps", sets: 4, weeklyTarget: 12, weekDone: 0, status: "good" },
+    ]);
   });
   it("grades by score", () => {
     const bad = scoreWorkout(
@@ -345,5 +350,47 @@ describe("scoring against a generated workout", () => {
         reference: ref(thin, 60),
       }).score;
     expect(score(full)).toBeGreaterThan(score(thin));
+  });
+});
+
+describe("one-tap fixes", () => {
+  it("lists the exercises behind order, rep and rest findings", () => {
+    const s = scoreWorkout(
+      [row("cable-crossover", { target_reps: "2-4", rest_seconds: 20 }), row("bb-bench")],
+      { minutes: 30, targetMinutes: 30 },
+    );
+    const items = (id: string) => s.parts.find((p) => p.id === id)!.items;
+    expect(items("order")).toEqual([0]);
+    expect(items("reps")).toEqual([0]);
+    expect(items("rest")).toEqual([0]);
+  });
+  it("moves an isolation exercise after its compound lift", () => {
+    const out = fixOrder([row("cable-crossover"), row("bb-bench"), row("bb-curl")], 0);
+    expect(out.map((p) => p.exercise_id)).toEqual(["bb-bench", "cable-crossover", "bb-curl"]);
+    expect(scoreWorkout(out).parts.find((p) => p.id === "order")!.issues).toEqual([]);
+  });
+  it("suggests the default rep range and rest for the exercise", () => {
+    const plan = [row("bb-bench", { target_reps: "1-3" }), row("bb-curl", { rest_seconds: 20 })];
+    expect(fixedReps(plan, 0)).toBe("6-10");
+    expect(fixedReps(plan, 1)).toBe("10-15");
+    expect(fixedRest(plan, 0)).toBe(120);
+    expect(fixedRest(plan, 1)).toBe(75);
+  });
+  it("uses the longer rest for a superset round", () => {
+    const pair = linkSuperset([row("bb-bench"), row("bb-curl")], 0);
+    expect(fixedRest(pair, 1)).toBe(120);
+  });
+});
+
+describe("this week's training", () => {
+  it("marks a muscle whose weekly target is already reached as done", () => {
+    const s = scoreWorkout([row("bb-bench")], {
+      minutes: 15,
+      targetMinutes: 15,
+      weekDone: { Chest: 12 },
+    });
+    expect(s.muscles[0]).toMatchObject({ muscle: "Chest", status: "done", weekDone: 12 });
+    const fresh = scoreWorkout([row("bb-bench")], { minutes: 15, targetMinutes: 15 });
+    expect(s.score).toBeLessThan(fresh.score);
   });
 });

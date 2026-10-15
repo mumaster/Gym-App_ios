@@ -15,7 +15,7 @@ import {
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import { ListCard } from "./ListCard";
 import { PlannedExerciseSheet } from "./PlannedExerciseSheet";
-import { WorkoutScoreCard } from "./WorkoutScoreCard";
+import { WorkoutScoreCard, useWorkoutScore } from "./WorkoutScoreCard";
 import { button, chip } from "./ui";
 import { readyToStart } from "../../lib/gym/dayWorkouts";
 import { exerciseById } from "../../lib/gym/data";
@@ -155,6 +155,9 @@ export function DiyBuilder({
   }, [restored, editing, name, plan, editingId, duration]);
 
   const minutesOf = (p: PlannedExercise[]) => Math.round(estimateMinutes(p, pace));
+  // One score for the card and the live pill beside Add exercise.
+  const scored = useWorkoutScore(plan, minutesOf(plan), duration);
+  const scoreRef = useRef<HTMLDivElement | null>(null);
 
   /** The plan as the session wants it: the suggested weights worked out again
    *  from the history, like a saved day's workout (dayWorkouts.readyToStart). */
@@ -558,18 +561,46 @@ export function DiyBuilder({
         <p className="text-[14px] text-muted-foreground">{t.diy.emptyPlan}</p>
       )}
 
-      <button
-        onClick={() => {
-          haptic(10);
-          setPickerOpen(true);
-        }}
-        className={`${button.primary} w-full`}
-        data-diy-add
-      >
-        <Plus className="size-5" aria-hidden /> {t.diy.addExercise}
-      </button>
+      <div className="flex items-stretch gap-2">
+        <button
+          onClick={() => {
+            haptic(10);
+            setPickerOpen(true);
+          }}
+          className={`${button.primary} min-w-0 flex-1`}
+          data-diy-add
+        >
+          <Plus className="size-5" aria-hidden /> {t.diy.addExercise}
+        </button>
+        {/* The score as it is now, so each change shows its effect; a tap
+            goes to the card that explains it. */}
+        <button
+          onClick={() => {
+            const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+            scoreRef.current?.scrollIntoView({
+              behavior: reduce ? "auto" : "smooth",
+              block: "start",
+            });
+          }}
+          className="flex shrink-0 flex-col items-center justify-center rounded-full bg-primary/10 px-4 text-primary-text ring-1 ring-inset ring-primary/40"
+          aria-label={t.workoutScore.livePill(scored.result.score)}
+          data-score-pill
+        >
+          <span className="tabular text-[20px] font-bold leading-none">{scored.result.score}</span>
+          <span className="text-[11px] font-semibold leading-tight">
+            {t.workoutScore.liveLabel}
+          </span>
+        </button>
+      </div>
 
-      <WorkoutScoreCard plan={plan} minutes={minutesOf(plan)} targetMinutes={duration} />
+      <div ref={scoreRef} className="scroll-mt-28">
+        <WorkoutScoreCard
+          plan={plan}
+          scored={scored}
+          targetMinutes={duration}
+          onChange={changePlan}
+        />
+      </div>
 
       {editingId ? (
         <div className="space-y-2">
