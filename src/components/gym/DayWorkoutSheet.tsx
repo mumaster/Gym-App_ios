@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { Check, ChevronDown, ClipboardList, Repeat, Shuffle, Trash2, Wand2, X } from "lucide-react";
+import {
+  Bookmark,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ClipboardList,
+  Repeat,
+  Shuffle,
+  Trash2,
+  Wand2,
+  X,
+} from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DayTypePicker } from "./DayTypePicker";
 import { SwapSheet } from "./SwapSheet";
@@ -23,7 +34,7 @@ import { useTranslation } from "../../lib/gym/i18n";
 import { isCardioSlot } from "../../lib/gym/schedule";
 import { splitDayLabel, type ScheduleSlot, type SplitTemplateId } from "../../lib/gym/splits";
 import { haptic, useGym, type RotationKind } from "../../lib/gym/store";
-import type { DayWorkout, PlannedExercise } from "../../lib/gym/types";
+import type { DayWorkout, PlannedExercise, WorkoutTemplate } from "../../lib/gym/types";
 import { button, chip } from "./ui";
 
 const DURATIONS = [30, 45, 60, 75, 90] as const;
@@ -78,6 +89,7 @@ export function DayWorkoutSheet({
     updateScheduleSlotDay,
     updateProgramSlotCardio,
     updateScheduleSlotCardio,
+    workoutTemplates,
   } = useGym();
   const ctx = useDayWorkoutContext();
   const t = useTranslation();
@@ -103,6 +115,8 @@ export function DayWorkoutSheet({
   const [pickedDuration, setPickedDuration] = useState(DEFAULT_DURATION);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [typeOpen, setTypeOpen] = useState(false);
+  /** Showing the list of saved workouts (Workout tab → Build your own). */
+  const [pickingSaved, setPickingSaved] = useState(false);
   // A fresh draft each time the sheet opens (or is pointed at another day):
   // the day's saved workout, else nothing: a day without one opens on the
   // options to generate it (nothing is made until Generate is tapped). Set
@@ -116,6 +130,7 @@ export function DayWorkoutSheet({
       setVariation(0);
       setSwapIndex(null);
       setTypeOpen(false);
+      setPickingSaved(false);
       setPickedDuration(DEFAULT_DURATION);
       setDraft(savedWorkoutFor(slot, week));
     }
@@ -212,6 +227,67 @@ export function DayWorkoutSheet({
       </div>
     </div>
   );
+  /** "Use a saved workout": opens the list, only offered when there are any. */
+  const useSavedButton = workoutTemplates.length ? (
+    <button
+      onClick={() => {
+        haptic(10);
+        setPickingSaved(true);
+      }}
+      className={`${button.secondary} w-full`}
+    >
+      <Bookmark className="size-4" aria-hidden /> {t.diy.useSaved}
+    </button>
+  ) : null;
+  if (pickingSaved) {
+    // A saved workout becomes the draft (the plan of a program week gets that
+    // week's volume); Save workout then puts it on the day as usual.
+    const pickSaved = (tpl: WorkoutTemplate) => {
+      haptic(20);
+      const base: DayWorkout = {
+        plan: tpl.plan.map(({ bonus: _bonus, ...p }) => p),
+        duration_minutes: tpl.duration_minutes,
+        target_muscles: tpl.target_muscles,
+        saved_at: new Date().toISOString(),
+      };
+      setDraft(weekDef ? forWeek(base, weekDef) : base);
+      setPickingSaved(false);
+    };
+    return (
+      <BottomSheet open={open} onClose={onClose} title={sheetTitle}>
+        <div className="space-y-4" data-day-saved-list>
+          <button
+            onClick={() => setPickingSaved(false)}
+            className="tap-target -ml-1 flex min-h-[36px] items-center gap-1 text-[15px] font-semibold text-primary-text active:opacity-70"
+          >
+            <ChevronLeft className="size-5" aria-hidden /> {t.diy.useSavedBack}
+          </button>
+          <div>
+            <p className="text-[17px] font-bold">{t.diy.useSavedTitle}</p>
+            <p className="text-[13px] text-muted-foreground">{t.diy.useSavedHint}</p>
+          </div>
+          <div className="glass overflow-hidden rounded-2xl">
+            {workoutTemplates.map((tpl, i) => (
+              <button
+                key={tpl.id}
+                onClick={() => pickSaved(tpl)}
+                className={`flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-left active:bg-foreground/5 ${
+                  i ? "border-t border-border" : ""
+                }`}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-semibold">{tpl.name}</span>
+                  <span className="block truncate text-[12.5px] text-muted-foreground">
+                    {t.generate.exerciseCount(tpl.plan.length, tpl.duration_minutes)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
+    );
+  }
   if (!draft) {
     // Nothing saved for this day yet: the choices that shape the workout,
     // and Generate. Supersets and warm-ups are the app-wide switches.
@@ -250,6 +326,7 @@ export function DayWorkoutSheet({
           >
             <Wand2 className="size-5" /> {t.generate.generateWorkout}
           </button>
+          {useSavedButton}
         </div>
       </BottomSheet>
     );
@@ -395,6 +472,8 @@ export function DayWorkoutSheet({
           ) : (
             <p className="text-[14px] text-muted-foreground">{t.dayWorkout.empty}</p>
           )}
+
+          {useSavedButton}
 
           <div className="flex flex-col gap-2 pt-1">
             <button onClick={save} disabled={!plan.length} className={`${button.primary} w-full`}>

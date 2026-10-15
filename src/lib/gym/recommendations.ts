@@ -1,6 +1,6 @@
 import { exerciseById } from "./data";
 import type { Muscle, Workout } from "./types";
-import { focusMuscles, weeklySets, weeklyTarget, type FocusGroup } from "./volume";
+import { musclesOfGroup, weeklySets, weeklyTarget, type VolumeMuscle } from "./volume";
 
 function daysAgo(iso: string): number {
   const then = new Date(iso);
@@ -28,29 +28,33 @@ export function daysSinceTrained(muscle: Muscle, workouts: Workout[]): number | 
 export interface MuscleRecommendation {
   muscle: Muscle;
   daysSince: number | null;
-  /** Fractional sets done this week and the weekly target (see volume.ts). */
+  /** Sets done this week and the weekly target across the group's muscles
+   *  (see volume.ts); a muscle past its own target adds nothing to the group. */
   done: number;
   target: number;
 }
 
-/** Muscle groups furthest below their weekly set target first (focus
- *  muscles have a higher target, so they come up more often); ties go to
+/** Muscle groups furthest below their weekly set targets first (starred
+ *  muscles have a higher target, so their group comes up more often); ties go to
  *  whichever was trained least recently. */
 export function recommendedMuscles(
   muscles: Muscle[],
   workouts: Workout[],
   top = 2,
-  focus: FocusGroup[] = [],
+  focus: VolumeMuscle[] = [],
 ): MuscleRecommendation[] {
   const done = weeklySets(workouts, null);
-  const focusSet = focusMuscles(focus);
+  const focusSet = new Set(focus);
   return muscles
-    .map((muscle) => ({
-      muscle,
-      daysSince: daysSinceTrained(muscle, workouts),
-      done: Math.round((done[muscle] ?? 0) * 10) / 10,
-      target: weeklyTarget(muscle, focusSet),
-    }))
+    .map((muscle) => {
+      const parts = musclesOfGroup(muscle);
+      return {
+        muscle,
+        daysSince: daysSinceTrained(muscle, workouts),
+        done: parts.reduce((n, m) => n + Math.min(done[m] ?? 0, weeklyTarget(m, focusSet)), 0),
+        target: parts.reduce((n, m) => n + weeklyTarget(m, focusSet), 0),
+      };
+    })
     .sort(
       (a, b) =>
         a.done / a.target - b.done / b.target ||

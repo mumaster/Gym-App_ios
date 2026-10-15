@@ -411,6 +411,40 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 45,
     items: [
       {
+        en: "Weekly sets are now counted per specific muscle, like Biceps, Triceps, Side Delts and Lats, instead of per group like Arms. Every set counts whole for each muscle it works, with no half sets.",
+        nl: "Wekelijkse sets worden nu per specifieke spier geteld, zoals biceps, triceps, zijkant schouders en lats, in plaats van per groep zoals armen. Elke set telt heel mee voor elke spier die erin werkt, zonder halve sets.",
+      },
+      {
+        en: "Star the specific muscles you want to grow, like only Biceps and not the whole of Arms. Tap a group name to star all its muscles. Your current stars carry over.",
+        nl: "Markeer de specifieke spieren die je wilt laten groeien, bijvoorbeeld alleen biceps en niet alle armen. Tik op een groepsnaam om al haar spieren te markeren. Je huidige markeringen blijven behouden.",
+      },
+    ],
+  },
+  {
+    version: 46,
+    items: [
+      {
+        en: "Build your own workouts in the new Custom tab on Workout: add any exercise, set sets, reps and rest, pair two exercises as a superset, and save it.",
+        nl: "Stel je eigen training samen in het nieuwe tabblad Zelf maken onder Training: voeg elke oefening toe, kies sets, herhalingen en rust, koppel twee oefeningen als superset en sla hem op.",
+      },
+      {
+        en: "Every workout you build gets a score out of 100, plus how well each muscle is trained against its weekly target. Tap the (i) to see how it works.",
+        nl: "Elke training die je samenstelt krijgt een score van 100, en per spier zie je hoe goed die getraind wordt tegenover je weekdoel. Tik op de (i) om te zien hoe het werkt.",
+      },
+      {
+        en: "Put a saved workout on a day of your week plan or program with Use a saved workout when you open that day.",
+        nl: "Zet een opgeslagen training op een dag van je weekschema of programma met Opgeslagen training gebruiken als je die dag opent.",
+      },
+      {
+        en: "The old Build your own tab is now called Generator.",
+        nl: "Het oude tabblad Zelf samenstellen heet nu Generator.",
+      },
+    ],
+  },
+  {
+    version: 47,
+    items: [
+      {
         en: "A meal's overview now looks like your Today card, and sugars now sits next to carbs on both: protein, carbs and sugars on top, fat, fibre and salt below, each with its amount, goal and a bar.",
         nl: "Het overzicht van een maaltijd ziet er nu uit als je kaart Vandaag: eiwit, koolhydraten en suikers bovenaan, vet, vezels en zout eronder, elk met hoeveelheid, doel en een balk. Suikers staat nu naast koolhydraten, ook op je kaart Vandaag.",
       },
@@ -425,7 +459,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 45;
+export const CURRENT_VERSION = 47;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { focusSummary } from "../../lib/gym/volume";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -479,7 +480,7 @@ function useSetupStatus() {
       ? { set: true, text: t.setup.waterSummary(formatWaterAmount(g.waterGoalMl)) }
       : { set: false, text: notSet };
   const focus: StatusInfo = g.growthFocus.length
-    ? { set: true, text: g.growthFocus.map((f) => t.volume.groups[f]).join(", ") }
+    ? { set: true, text: focusSummary(g.growthFocus, (id) => t.volume.groups[id]).join(", ") }
     : { set: false, text: notSet };
   const workout: StatusInfo = {
     set: g.supersetsEnabled || g.warmupsEnabled || g.soundEnabled,
