@@ -1,4 +1,4 @@
-import { BookmarkPlus, Check, CopyPlus, Plus, Share2 } from "lucide-react";
+import { BookmarkPlus, Check, CopyPlus, Plus, Share2, UtensilsCrossed } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { drinkOf } from "../../lib/gym/alcohol";
@@ -15,6 +15,7 @@ import {
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
 import { useInfoTip } from "./InfoTip";
+import { ListCard } from "./ListCard";
 import { NutrientCell } from "./NutrientCell";
 
 /**
@@ -190,12 +191,12 @@ export function MealOverviewSheet({
             ) : null}
           </div>
           {entries.length ? (
-            <div className="overflow-hidden rounded-2xl bg-muted/50">
-              <div className="card-head flex items-center justify-between gap-3 px-3.5 py-2.5">
-                <p className="text-[15px] font-bold leading-none">
-                  {t.mealOverview.foods(entries.length)}
-                </p>
-              </div>
+            <ListCard
+              icon={UtensilsCrossed}
+              title={t.mealOverview.foods(entries.length)}
+              subtitle={t.nutrition.kcal(totals.calories)}
+              filled
+            >
               {entries.map((entry, i) => {
                 const m = scaledMacros(entry);
                 return (
@@ -203,9 +204,7 @@ export function MealOverviewSheet({
                     key={entry.id}
                     onClick={() => onEdit(entry)}
                     aria-label={t.nutrition.editEntry(entry.name)}
-                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${
-                      i > 0 ? "border-t border-border" : ""
-                    }`}
+                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${"border-t border-border"}`}
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-[15px] font-semibold">{entry.name}</span>
@@ -222,7 +221,7 @@ export function MealOverviewSheet({
                   </button>
                 );
               })}
-            </div>
+            </ListCard>
           ) : (
             <p className="px-1 text-[14px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
           )}
