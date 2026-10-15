@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { DayWorkoutSheet } from "../../../components/gym/DayWorkoutSheet";
 import { DiyBuilder, type DiyDraft } from "../../../components/gym/DiyBuilder";
-import { WorkoutScoreCard } from "../../../components/gym/WorkoutScoreCard";
+import { WorkoutScoreCard, useWorkoutScore } from "../../../components/gym/WorkoutScoreCard";
 import { EXERCISES } from "../data";
 import { dictFor } from "../i18n";
 import type { Program } from "../programs";
@@ -75,7 +75,7 @@ describe("DiyBuilder", () => {
 
   it("shows the editor with a superset card, a loose card, the score and no delete for a new draft", () => {
     seed.templates = [];
-    const draft: DiyDraft = { name: "Mine", plan, editingId: null };
+    const draft: DiyDraft = { name: "Mine", plan, editingId: null, duration: 75 };
     const html = render(createElement(DiyBuilder, { initialDraft: draft, onStarted: () => {} }));
     expect(html).toContain("data-diy-editor");
     expect(html).toContain('value="Mine"');
@@ -84,6 +84,13 @@ describe("DiyBuilder", () => {
     expect(html).toContain("3 rounds · 120s rest per round");
     expect(html).toContain("1 warm-up · 3 × 8-12 · 90s");
     expect(html).toContain("Add exercise");
+    // Add exercise is the one solid accent button; Save is tonal.
+    expect(html).toMatch(/bg-primary px-5[^"]*" data-diy-add/);
+    expect(html).toContain("data-score-pill");
+    expect(html.match(/bg-primary px-5/g)).toHaveLength(1);
+    expect(html).toContain("Planned length");
+    expect(html).toContain('value="75"');
+    expect(html).toContain("This plan takes about");
     expect(html).toContain("Workout score");
     expect(html).toContain("Muscles");
     expect(html).toContain("Unlink superset");
@@ -107,13 +114,40 @@ describe("DiyBuilder", () => {
   });
 });
 
+/** The card as the builder renders it: scored by the hook, fixes on when
+ *  `onChange` is given. */
+function ScoreCard(props: {
+  plan: PlannedExercise[];
+  minutes: number;
+  targetMinutes: number;
+  onChange?: (p: PlannedExercise[]) => void;
+}) {
+  const scored = useWorkoutScore(props.plan, props.minutes, props.targetMinutes);
+  return createElement(WorkoutScoreCard, {
+    plan: props.plan,
+    scored,
+    targetMinutes: props.targetMinutes,
+    ...(props.onChange ? { onChange: props.onChange } : {}),
+  });
+}
+const byName = (name: string) => EXERCISES.find((e) => e.name === name)!.id;
+
 describe("WorkoutScoreCard", () => {
-  it("shows the score, the five parts and a bar per muscle", () => {
+  it("shows the score, the comparison, the six parts and a bar per muscle", () => {
     seed.templates = [];
-    const html = render(createElement(WorkoutScoreCard, { plan, minutes: 40 }));
+    const html = render(createElement(ScoreCard, { plan, minutes: 40, targetMinutes: 60 }));
     expect(html).toContain("Workout score");
     expect(html).toContain("out of 100");
-    for (const part of ["Volume", "Exercise order", "Rep ranges", "Rest", "Session length"]) {
+    expect(html).toContain("A generated 60-minute workout scores");
+    expect(html).toContain("Useful sets: yours");
+    for (const part of [
+      "Volume",
+      "Fills your time",
+      "Sets per muscle",
+      "Exercise order",
+      "Rep ranges",
+      "Rest",
+    ]) {
       expect(html).toContain(part);
     }
     expect(html).toContain("bar-fill-x");
@@ -122,8 +156,41 @@ describe("WorkoutScoreCard", () => {
   });
 
   it("asks for exercises when the plan is empty", () => {
-    const html = render(createElement(WorkoutScoreCard, { plan: [], minutes: 0 }));
+    const html = render(createElement(ScoreCard, { plan: [], minutes: 0, targetMinutes: 45 }));
     expect(html).toContain("Add exercises to see which muscles you train");
+  });
+
+  it("offers one-tap fixes only when the plan can be changed", () => {
+    const fixable: PlannedExercise[] = [
+      {
+        exercise_id: byName("Dumbbell Lateral Raise"),
+        target_sets: 3,
+        target_reps: "2-4",
+        rest_seconds: 20,
+        warmup_sets: 0,
+      },
+      {
+        exercise_id: byName("Standing Overhead Press"),
+        target_sets: 3,
+        target_reps: "6-10",
+        rest_seconds: 120,
+        warmup_sets: 0,
+      },
+    ];
+    const withFixes = render(
+      createElement(ScoreCard, {
+        plan: fixable,
+        minutes: 20,
+        targetMinutes: 45,
+        onChange: () => {},
+      }),
+    );
+    expect(withFixes).toContain("data-score-fixes");
+    expect(withFixes).toContain("Dumbbell Lateral Raise");
+    const without = render(
+      createElement(ScoreCard, { plan: fixable, minutes: 20, targetMinutes: 45 }),
+    );
+    expect(without).not.toContain("data-score-fixes");
   });
 });
 

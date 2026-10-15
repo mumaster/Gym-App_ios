@@ -1,7 +1,7 @@
 import { exerciseById } from "./data";
-import { estimateMinutes } from "./generator";
-import { planBlocks } from "./planBlocks";
-import type { Exercise, Muscle, PlannedExercise } from "./types";
+import { estimateMinutes, generateWorkout, type GenerateArgs } from "./generator";
+import { moveBlock, planBlocks } from "./planBlocks";
+import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "./types";
 import {
   MAX_SESSION_SETS_PER_MUSCLE,
   mainPlanSets,
@@ -178,26 +178,50 @@ export function parseReps(targetReps: string): { min: number; max: number } | nu
 
 /* ---------------- scoring ---------------- */
 
-export type ScorePartId = "volume" | "order" | "reps" | "rest" | "length";
+export type ScorePartId = "volume" | "time" | "muscles" | "order" | "reps" | "rest";
 export interface ScorePart {
   id: ScorePartId;
   points: number;
   max: number;
   /** names of the exercises or muscles behind a lost point */
   issues: string[];
+  /** For order, reps and rest: the plan indices behind `issues`, in the
+   *  same order, so each can get its own fix (`fixOrder`, `fixedReps`,
+   *  `fixedRest`). Empty for the other parts. */
+  items: number[];
 }
-export type MuscleStatus = "low" | "good" | "high";
+/** "done": the muscle's weekly target was already reached this week
+ *  before this workout, so its sets here add little. */
+export type MuscleStatus = "low" | "good" | "high" | "done";
 export interface MuscleEffect {
   muscle: string;
   sets: number;
   weeklyTarget: number;
   status: MuscleStatus;
+  /** Working sets already done this Monday-Sunday week. */
+  weekDone: number;
+  /** Sets the generated workout of the same length gives this muscle. */
+  referenceSets?: number;
 }
 export interface WorkoutScore {
   score: number;
   grade: "excellent" | "good" | "ok" | "weak";
   parts: ScorePart[];
   muscles: MuscleEffect[];
+  /** Working sets that count toward growth (each muscle's main sets, up to
+   *  the per-session cap). */
+  usefulSets: number;
+  /** The same for the generated workout, when one was compared. */
+  referenceSets: number | null;
+  /** Estimated length of the plan and the length it was planned for. */
+  minutes: number;
+  targetMinutes: number;
+  /** The generated workout's estimated length, when one was compared. */
+  referenceMinutes: number | null;
+  /** How complete the workout is for the time given (0-1): the share of the
+   *  generated workout's useful sets times the share of the planned time
+   *  filled. Every part is multiplied by it. */
+  completeness: number;
 }
 export interface ScoreOptions {
   /** Working sets per muscle for the plan; default volume.ts planSets. */
@@ -210,123 +234,249 @@ export interface ScoreOptions {
   weeklyTarget?: (muscle: string) => number;
   /** Starred muscles (growthFocus), for the default weekly target. */
   focus?: readonly VolumeMuscle[];
+  /** Working sets per muscle already done this week (volume.ts weeklySets). */
+  weekDone?: Readonly<Record<string, number>>;
   /** Estimated session length in minutes; default generator.ts estimateMinutes(plan). */
   minutes?: number;
+  /** How long the workout is meant to take; default DEFAULT_PLANNED_MINUTES. */
+  targetMinutes?: number;
+  /** The generator's workout for the same muscles and length
+   *  (`generatedReference`). Volume is scored against it; without one the
+   *  plan is its own yardstick. */
+  reference?: PlannedExercise[];
+  /** The generated workout's estimated length (shown when the muscles
+   *  picked can't usefully fill the planned time). */
+  referenceMinutes?: number;
 }
+
+/** Length a new hand-built workout is planned for: the generator's default. */
+export const DEFAULT_PLANNED_MINUTES = 45;
 
 /** Fewest sets of one muscle in a session that still counts as a real
  *  stimulus. The app's own floor, below it the volume factor scales down. */
 const MIN_EFFECTIVE_SETS = 3;
+
+/** The plan's estimate may be this far under or over the planned length and
+ *  still count as filling it (the app's own band: estimates are rough). */
+export const TIME_FIT_LOW = 0.85;
+export const TIME_FIT_HIGH = 1.15;
+/** At this share over the planned length the time part reaches 0 (the
+ *  app's own choice). */
+const TIME_FIT_CEILING = 1.6;
 
 const defaultMuscleSets = (plan: PlannedExercise[]): Record<string, number> =>
   planSets(plan) as Record<string, number>;
 const defaultMainSets = (plan: PlannedExercise[]): Record<string, number> =>
   mainPlanSets(plan) as Record<string, number>;
 
+/** Working sets that count: each muscle's main sets, capped at
+ *  MAX_SESSION_SETS_PER_MUSCLE (more in one session adds nothing). */
+function usefulSetsOf(main: Record<string, number>): number {
+  return Object.values(main).reduce((s, n) => s + Math.min(n, MAX_SESSION_SETS_PER_MUSCLE), 0);
+}
+
+/** How much of the planned time the plan fills: full from 85% of it,
+ *  proportional below (an hour given with 7 minutes of work is 0.14). */
+export function timeFill(minutes: number, targetMinutes: number): number {
+  if (targetMinutes <= 0) return 1;
+  return Math.max(0, Math.min(1, minutes / (TIME_FIT_LOW * targetMinutes)));
+}
+
+/** The time part's own factor: full up to 115% of the planned length,
+ *  sliding to 0 at 160% (running long). */
+export function overtimeFit(minutes: number, targetMinutes: number): number {
+  if (targetMinutes <= 0) return 1;
+  const r = minutes / targetMinutes;
+  if (r <= TIME_FIT_HIGH) return 1;
+  return Math.max(0, (TIME_FIT_CEILING - r) / (TIME_FIT_CEILING - TIME_FIT_HIGH));
+}
+
 /**
- * A 0-100 score for a hand-built workout, from five parts. Sources:
+ * A 0-100 score for a hand-built workout, measured against what the app's
+ * generator would build for the same muscles in the planned time. Parts:
  *
- * - volume (40): sets per muscle in the session. Up to
- *   MAX_SESSION_SETS_PER_MUSCLE (11) sets still add growth
- *   (Pelland et al., Sports Med 2024), beyond that there is no detectable
- *   extra gain. Under 3 sets (the app's own floor) the muscle is barely
- *   trained, so it scores sets/3 (min 0.3); over the cap it scores 0.6.
- * - order (15): compounds before isolation work for the same muscle
- *   (Simao et al. 2012 review on exercise order): the exercise done first
- *   gets the most effort, and the big lifts need it most.
- * - reps (15): a rep target whose middle is 5-30 (Schoenfeld et al. 2017,
- *   2021: similar growth across roughly 6-30+ reps taken near failure,
- *   heavier for strength). Time-based targets count as in range.
- * - rest (15): compounds 90 s or more, isolation 60 s or more
+ * - volume (35): working sets that count (each muscle's main sets, capped at
+ *   MAX_SESSION_SETS_PER_MUSCLE, 11: Pelland et al., Sports Med 2024, no
+ *   detectable extra growth beyond it in one session) as a share of the
+ *   generated workout's. Matching or beating it is full marks.
+ * - time (20): the plan fills the planned length (`timeFill`) without
+ *   running long (`overtimeFit`). The band is the app's own choice.
+ * - muscles (15): each trained muscle gets 3 to 11 sets. Under 3 sets (the
+ *   app's own floor) it scores sets/3 (min 0.3); over the cap 0.6.
+ * - order (10): compounds before isolation work for the same muscle
+ *   (Simao et al. 2012 review on exercise order).
+ * - reps (10): a rep target whose middle is 5-30 (Schoenfeld et al. 2017,
+ *   2021: similar growth across roughly 6-30+ reps taken near failure).
+ *   Time-based targets count as in range.
+ * - rest (10): compounds 90 s or more, isolation 60 s or more
  *   (Schoenfeld et al. 2016; Singer et al. 2024 meta-analysis: rests over
  *   60 s grew muscle slightly better). In a superset the round rest counts.
- * - length (15): up to 75 min full marks, sliding to 6 points at 120 min.
- *   This band is the app's own choice, not a published number.
+ *
+ * Every part is multiplied by `completeness`: the share of the generated
+ * workout's useful sets times the share of the planned time filled. So the
+ * score falls with an empty hour whatever is in it (one set of bench press
+ * in an hour scores close to 0), and a muscle choice that can't fill the
+ * time scores the same for the plan and for the generated workout.
  */
 export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): WorkoutScore {
-  const empty = (id: ScorePartId, max: number): ScorePart => ({ id, points: 0, max, issues: [] });
+  const targetMinutes = opts.targetMinutes ?? DEFAULT_PLANNED_MINUTES;
+  const mainOf = opts.mainSets ?? defaultMainSets;
+  const ref = opts.reference;
+  const referenceSets = ref && ref.length ? usefulSetsOf(mainOf(ref)) : null;
+  const referenceMinutes =
+    opts.referenceMinutes !== undefined && ref && ref.length ? opts.referenceMinutes : null;
+  const empty = (id: ScorePartId, max: number): ScorePart => ({
+    id,
+    points: 0,
+    max,
+    issues: [],
+    items: [],
+  });
   if (plan.length === 0) {
     return {
       score: 0,
       grade: "weak",
       parts: [
-        empty("volume", 40),
-        empty("order", 15),
-        empty("reps", 15),
-        empty("rest", 15),
-        empty("length", 15),
+        empty("volume", 35),
+        empty("time", 20),
+        empty("muscles", 15),
+        empty("order", 10),
+        empty("reps", 10),
+        empty("rest", 10),
       ],
       muscles: [],
+      usefulSets: 0,
+      referenceSets,
+      minutes: 0,
+      targetMinutes,
+      referenceMinutes,
+      completeness: 0,
     };
   }
   const nameOf = (p: PlannedExercise) => exerciseById(p.exercise_id)?.name ?? p.exercise_id;
 
-  // volume
+  // volume, against the generated workout
   const setsBy = (opts.muscleSets ?? defaultMuscleSets)(plan);
-  const mainBy = (opts.mainSets ?? defaultMainSets)(plan);
+  const mainBy = mainOf(plan);
+  const useful = usefulSetsOf(mainBy);
+  const share = referenceSets ? Math.min(1, useful / referenceSets) : 1;
+  const minutes = opts.minutes ?? estimateMinutes(plan);
+  const c = share * timeFill(minutes, targetMinutes);
+  const volume: ScorePart = {
+    id: "volume",
+    max: 35,
+    points: 35 * c,
+    issues: [],
+    items: [],
+  };
+
+  // time
+  const time: ScorePart = {
+    id: "time",
+    max: 20,
+    points: 20 * c * overtimeFit(minutes, targetMinutes),
+    issues: [],
+    items: [],
+  };
+
+  // sets per muscle
+  const refSets = ref && ref.length ? (opts.muscleSets ?? defaultMuscleSets)(ref) : null;
   const focus = new Set(opts.focus ?? []);
   const target =
     opts.weeklyTarget ?? ((muscle: string) => baseWeeklyTarget(muscle as VolumeMuscle, focus));
+  const week = opts.weekDone ?? {};
   const muscles: MuscleEffect[] = Object.entries(setsBy)
     .filter(([, n]) => n > 0)
     .sort((a, b) => b[1] - a[1])
-    .map(([muscle, n]) => ({
-      muscle,
-      sets: Math.round(n * 10) / 10,
-      weeklyTarget: target(muscle),
+    .map(([muscle, n]) => {
+      const weekly = target(muscle);
+      const weekDone = Math.round((week[muscle] ?? 0) * 10) / 10;
       // Too much when the sets it is the main target of pass the cap (the
       // cap's own counting, volume.ts); helping in other lifts doesn't.
-      status:
-        n < MIN_EFFECTIVE_SETS
-          ? "low"
-          : (mainBy[muscle] ?? 0) <= MAX_SESSION_SETS_PER_MUSCLE
-            ? "good"
-            : "high",
-    }));
+      // Done when this week already reached the weekly target: more sets
+      // there add little (Schoenfeld et al. 2017's ~10 a week is near
+      // the top of the benefit; the 20 for starred muscles, Baz-Valle
+      // et al. 2022, see volume.ts).
+      const status: MuscleStatus =
+        (mainBy[muscle] ?? 0) > MAX_SESSION_SETS_PER_MUSCLE
+          ? "high"
+          : weekly > 0 && weekDone >= weekly
+            ? "done"
+            : n < MIN_EFFECTIVE_SETS
+              ? "low"
+              : "good";
+      return {
+        muscle,
+        sets: Math.round(n * 10) / 10,
+        weeklyTarget: weekly,
+        status,
+        weekDone,
+        ...(refSets ? { referenceSets: Math.round((refSets[muscle] ?? 0) * 10) / 10 } : {}),
+      };
+    });
+  /** "done" scores half: the app's own weighting, between "low" and full. */
   const factor = (m: MuscleEffect) =>
-    m.status === "low" ? Math.max(0.3, m.sets / MIN_EFFECTIVE_SETS) : m.status === "good" ? 1 : 0.6;
-  const volume: ScorePart = {
-    id: "volume",
-    max: 40,
-    points: muscles.length ? 40 * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length) : 0,
+    m.status === "low"
+      ? Math.max(0.3, m.sets / MIN_EFFECTIVE_SETS)
+      : m.status === "good"
+        ? 1
+        : m.status === "done"
+          ? 0.5
+          : 0.6;
+  const musclePart: ScorePart = {
+    id: "muscles",
+    max: 15,
+    points: muscles.length
+      ? 15 * c * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length)
+      : 0,
     issues: muscles.filter((m) => m.status !== "good").map((m) => m.muscle),
+    items: [],
   };
 
   // order
   const exs = plan.map((p) => exerciseById(p.exercise_id));
   const inverted: string[] = [];
+  const invertedAt: number[] = [];
   let isolations = 0;
   exs.forEach((ex, i) => {
     if (!ex || ex.compound) return;
     isolations++;
     if (exs.slice(i + 1).some((o) => o && o.compound && o.primary_muscle === ex.primary_muscle)) {
       inverted.push(ex.name);
+      invertedAt.push(i);
     }
   });
   const order: ScorePart = {
     id: "order",
-    max: 15,
-    points: 15 * (1 - inverted.length / Math.max(1, isolations)),
+    max: 10,
+    points: 10 * c * (1 - inverted.length / Math.max(1, isolations)),
     issues: inverted,
+    items: invertedAt,
   };
 
   // reps
-  const badReps = plan.filter((p) => {
-    const r = parseReps(p.target_reps);
-    if (!r) return false;
-    const mid = (r.min + r.max) / 2;
-    return mid < 5 || mid > 30;
-  });
+  const badRepsAt = plan
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => {
+      const r = parseReps(p.target_reps);
+      if (!r) return false;
+      const mid = (r.min + r.max) / 2;
+      return mid < 5 || mid > 30;
+    })
+    .map(({ i }) => i);
+  const badReps = badRepsAt.map((i) => plan[i]!);
   const reps: ScorePart = {
     id: "reps",
-    max: 15,
-    points: 15 * (1 - badReps.length / plan.length),
+    max: 10,
+    points: 10 * c * (1 - badReps.length / plan.length),
     issues: badReps.map(nameOf),
+    items: badRepsAt,
   };
 
   // rest: a superset's round rest is stored on B and counts for both halves
   const restFactors: number[] = [];
   const shortRest: string[] = [];
+  const shortRestAt: number[] = [];
   for (const block of planBlocks(plan)) {
     const roundRest = block.length === 2 ? plan[block[1]!]!.rest_seconds : undefined;
     for (const i of block) {
@@ -335,31 +485,110 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
       const compound = exs[i]?.compound ?? false;
       const f = compound ? (rest >= 90 ? 1 : rest >= 60 ? 0.6 : 0.2) : rest >= 60 ? 1 : 0.5;
       restFactors.push(f);
-      if (f < 1) shortRest.push(nameOf(p));
+      if (f < 1) {
+        shortRest.push(nameOf(p));
+        shortRestAt.push(i);
+      }
     }
   }
   const rest: ScorePart = {
     id: "rest",
-    max: 15,
-    points: 15 * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
+    max: 10,
+    points: 10 * c * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
     issues: shortRest,
+    items: shortRestAt,
   };
 
-  // length
-  const minutes = opts.minutes ?? estimateMinutes(plan);
-  const length: ScorePart = {
-    id: "length",
-    max: 15,
-    points: minutes <= 75 ? 15 : minutes >= 120 ? 6 : 15 - (9 * (minutes - 75)) / 45,
-    issues: [],
-  };
-
-  const parts = [volume, order, reps, rest, length];
+  const parts = [volume, time, musclePart, order, reps, rest];
   const score = Math.round(parts.reduce((s, p) => s + p.points, 0));
   return {
     score,
     grade: score >= 85 ? "excellent" : score >= 70 ? "good" : score >= 50 ? "ok" : "weak",
     parts,
     muscles,
+    usefulSets: useful,
+    referenceSets,
+    minutes,
+    targetMinutes,
+    referenceMinutes,
+    completeness: c,
   };
+}
+
+/** The muscle heads a hand-built plan is built around: each exercise's main
+ *  target, in plan order. What the generated comparison is asked for. */
+export function planTargets(plan: PlannedExercise[]): TargetMuscle[] {
+  const out: TargetMuscle[] = [];
+  for (const p of plan) {
+    const t = exerciseById(p.exercise_id)?.muscle_targets[0];
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
+/** What the app's generator builds for the same muscles in `duration`
+ *  minutes: the yardstick `scoreWorkout` measures a hand-built plan
+ *  against. Supersets only when the plan has them, so a plan of straight
+ *  sets isn't compared with one that fits more work by pairing. No loved
+ *  exercises (they'd add muscles). Pass `weekDone` so it shares the
+ *  session the way the generator would this week. */
+export function generatedReference(
+  plan: PlannedExercise[],
+  duration: number,
+  args: Omit<GenerateArgs, "duration" | "targets" | "supersets" | "loved" | "variation">,
+): PlannedExercise[] {
+  const targets = planTargets(plan);
+  if (!targets.length) return [];
+  return generateWorkout({
+    ...args,
+    duration,
+    targets,
+    supersets: plan.some((p) => p.superset_group !== undefined),
+  });
+}
+
+/* ---------------- one-tap fixes for the score's findings ---------------- */
+
+/** Moves the block holding `index` (an isolation exercise) to just after
+ *  the last block with a compound lift for the same muscle, so the big lift
+ *  comes first. Supersets move as a pair; nothing else changes order. */
+export function fixOrder(plan: PlannedExercise[], index: number): PlannedExercise[] {
+  const ex = exerciseById(plan[index]?.exercise_id ?? "");
+  if (!ex) return plan;
+  const blocks = planBlocks(plan);
+  const from = blocks.findIndex((b) => b.includes(index));
+  let to = -1;
+  blocks.forEach((b, k) => {
+    if (
+      b.some((i) => {
+        const o = exerciseById(plan[i]!.exercise_id);
+        return o?.compound && o.primary_muscle === ex.primary_muscle;
+      })
+    ) {
+      to = k;
+    }
+  });
+  let out = plan;
+  for (let k = from; k < to; k++) out = moveBlock(out, k, 1);
+  return out;
+}
+
+/** The rest that earns full rest points: the new-exercise default for its
+ *  kind (compound 120 s, isolation 75 s; see `newPlanned`). In a superset
+ *  the round rest has to suit both halves, so the longer of the two. */
+export function fixedRest(plan: PlannedExercise[], index: number): number {
+  const block = planBlocks(plan).find((b) => b.includes(index)) ?? [index];
+  return Math.max(
+    ...block.map((i) => {
+      const ex = exerciseById(plan[i]!.exercise_id);
+      return ex ? newPlanned(ex).rest_seconds : 75;
+    }),
+  );
+}
+
+/** A rep range inside the scored 5-30: the new-exercise default for its
+ *  kind (compound "6-10", isolation "10-15"). */
+export function fixedReps(plan: PlannedExercise[], index: number): string {
+  const ex = exerciseById(plan[index]?.exercise_id ?? "");
+  return ex ? newPlanned(ex).target_reps : "8-12";
 }

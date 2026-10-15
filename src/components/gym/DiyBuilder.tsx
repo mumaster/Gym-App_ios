@@ -15,11 +15,12 @@ import {
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import { ListCard } from "./ListCard";
 import { PlannedExerciseSheet } from "./PlannedExerciseSheet";
-import { WorkoutScoreCard } from "./WorkoutScoreCard";
-import { button } from "./ui";
+import { WorkoutScoreCard, useWorkoutScore } from "./WorkoutScoreCard";
+import { button, chip } from "./ui";
 import { readyToStart } from "../../lib/gym/dayWorkouts";
 import { exerciseById } from "../../lib/gym/data";
 import {
+  DEFAULT_PLANNED_MINUTES,
   addExercise,
   linkSuperset,
   planMuscles,
@@ -29,6 +30,7 @@ import {
 import { estimateMinutes } from "../../lib/gym/generator";
 import { useTranslation } from "../../lib/gym/i18n";
 import { latestBodyKg } from "../../lib/gym/load";
+import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../../lib/gym/numericInput";
 import { learnPace } from "../../lib/gym/pace";
 import { moveBlock, planBlocks } from "../../lib/gym/planBlocks";
 import { haptic, useGym } from "../../lib/gym/store";
@@ -41,9 +43,14 @@ export interface DiyDraft {
   plan: PlannedExercise[];
   /** The saved workout being edited, if any. */
   editingId: string | null;
+  /** How long the workout is meant to take, in minutes. */
+  duration?: number;
 }
 
 const DRAFT_KEY = "forge.diy.draft.v1";
+
+/** The planned-length chips, the same as the generator's. */
+const SHORTCUTS = [30, 45, 60];
 
 function readDraft(): DiyDraft | null {
   try {
@@ -51,7 +58,12 @@ function readDraft(): DiyDraft | null {
     if (!raw) return null;
     const d = JSON.parse(raw) as Partial<DiyDraft>;
     if (typeof d.name !== "string" || !Array.isArray(d.plan)) return null;
-    return { name: d.name, plan: d.plan, editingId: d.editingId ?? null };
+    return {
+      name: d.name,
+      plan: d.plan,
+      editingId: d.editingId ?? null,
+      duration: typeof d.duration === "number" ? d.duration : DEFAULT_PLANNED_MINUTES,
+    };
   } catch {
     return null;
   }
@@ -103,6 +115,18 @@ export function DiyBuilder({
   const [name, setName] = useState(initialDraft?.name ?? "");
   const [plan, setPlan] = useState<PlannedExercise[]>(initialDraft?.plan ?? []);
   const [editingId, setEditingId] = useState<string | null>(initialDraft?.editingId ?? null);
+  const [duration, setDuration] = useState(initialDraft?.duration ?? DEFAULT_PLANNED_MINUTES);
+  const [customInput, setCustomInput] = useState(
+    initialDraft?.duration && !SHORTCUTS.includes(initialDraft.duration)
+      ? String(initialDraft.duration)
+      : "",
+  );
+  /** Sets the planned length, showing it in the own-minutes field when it
+   *  isn't one of the chips. */
+  const setDurationTo = (min: number) => {
+    setDuration(min);
+    setCustomInput(SHORTCUTS.includes(min) ? "" : String(min));
+  };
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -120,23 +144,26 @@ export function DiyBuilder({
       setName(d.name);
       setPlan(d.plan);
       setEditingId(d.editingId);
+      setDurationTo(d.duration ?? DEFAULT_PLANNED_MINUTES);
       setEditing(true);
     }
     setRestored(true);
   }, [restored]);
   useEffect(() => {
     if (!restored) return;
-    writeDraft(editing ? { name, plan, editingId } : null);
-  }, [restored, editing, name, plan, editingId]);
+    writeDraft(editing ? { name, plan, editingId, duration } : null);
+  }, [restored, editing, name, plan, editingId, duration]);
 
   const minutesOf = (p: PlannedExercise[]) => Math.round(estimateMinutes(p, pace));
+  // One score for the card and the live pill beside Add exercise.
+  const scored = useWorkoutScore(plan, minutesOf(plan), duration);
+  const scoreRef = useRef<HTMLDivElement | null>(null);
 
   /** The plan as the session wants it: the suggested weights worked out again
    *  from the history, like a saved day's workout (dayWorkouts.readyToStart). */
-  const start = (startPlan: PlannedExercise[]) => {
+  const start = (startPlan: PlannedExercise[], duration: number) => {
     if (!startPlan.length) return;
     haptic([20, 40, 20]);
-    const duration = minutesOf(startPlan);
     const muscles = planMuscles(startPlan);
     startWorkout({
       plan: readyToStart(
@@ -164,6 +191,7 @@ export function DiyBuilder({
     setName("");
     setPlan([]);
     setEditingId(null);
+    setDurationTo(DEFAULT_PLANNED_MINUTES);
     setConfirmDelete(false);
     setJustSaved(false);
     setEditing(true);
@@ -175,6 +203,7 @@ export function DiyBuilder({
     setName(tpl.name);
     setPlan(tpl.plan);
     setEditingId(tpl.id);
+    setDurationTo(tpl.duration_minutes || DEFAULT_PLANNED_MINUTES);
     setConfirmDelete(false);
     setJustSaved(false);
     setEditing(true);
@@ -193,7 +222,7 @@ export function DiyBuilder({
     const patch = {
       name: finalName,
       plan,
-      duration_minutes: minutesOf(plan),
+      duration_minutes: duration,
       target_muscles: planMuscles(plan) as Muscle[],
     };
     if (editingId && workoutTemplates.some((x) => x.id === editingId)) {
@@ -251,11 +280,14 @@ export function DiyBuilder({
                 >
                   <span className="block truncate text-[15px] font-semibold">{tpl.name}</span>
                   <span className="block truncate text-[12.5px] text-muted-foreground">
-                    {t.generate.exerciseCount(tpl.plan.length, minutesOf(tpl.plan))}
+                    {t.generate.exerciseCount(
+                      tpl.plan.length,
+                      tpl.duration_minutes || minutesOf(tpl.plan),
+                    )}
                   </span>
                 </button>
                 <button
-                  onClick={() => start(tpl.plan)}
+                  onClick={() => start(tpl.plan, tpl.duration_minutes || minutesOf(tpl.plan))}
                   aria-label={t.diy.startNamed(tpl.name)}
                   className={button.edit}
                 >
@@ -358,8 +390,71 @@ export function DiyBuilder({
         className="glass-chip h-12 w-full rounded-2xl px-4 text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
       />
 
+      <div className="space-y-2">
+        <p className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {t.diy.duration}
+        </p>
+        <div className="flex items-center gap-2" data-diy-duration>
+          {SHORTCUTS.map((d) => (
+            <button
+              key={d}
+              onClick={() => {
+                haptic(12);
+                setJustSaved(false);
+                setDurationTo(d);
+              }}
+              aria-pressed={duration === d}
+              className={`tap-target min-h-[40px] flex-1 rounded-full text-[15px] font-semibold transition-colors ${
+                duration === d ? chip.on : chip.off
+              }`}
+            >
+              {d}m
+            </button>
+          ))}
+          <label
+            className={`tap-target flex min-h-[40px] w-[5.5rem] shrink-0 items-center gap-1 rounded-full px-3 ${
+              SHORTCUTS.includes(duration) ? chip.off : chip.on
+            }`}
+          >
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label={t.generate.minutes}
+              value={customInput}
+              placeholder="–"
+              onFocus={selectOnFocus}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (!DECIMAL_INPUT_RE.test(raw)) return;
+                setCustomInput(raw);
+                const n = Math.round(parseDecimal(raw));
+                if (raw !== "" && Number.isFinite(n) && n > 0) {
+                  setJustSaved(false);
+                  setDuration(Math.min(180, n));
+                }
+              }}
+              onBlur={() => {
+                if (customInput === "") return;
+                const clamped = Math.max(
+                  5,
+                  Math.min(180, Math.round(parseDecimal(customInput) || DEFAULT_PLANNED_MINUTES)),
+                );
+                setDurationTo(clamped);
+              }}
+              className="tabular w-full min-w-0 bg-transparent text-center text-[16px] font-bold text-foreground outline-none"
+            />
+            <span className="text-[12px] font-semibold text-muted-foreground">min</span>
+          </label>
+        </div>
+        {plan.length ? (
+          <p className="tabular text-[13px] text-muted-foreground">
+            {t.diy.durationEstimate(minutesOf(plan))}
+          </p>
+        ) : null}
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={save} disabled={!plan.length} className={button.primary}>
+        <button onClick={save} disabled={!plan.length} className={button.tonal}>
           {justSaved ? (
             <Check className="size-5" aria-hidden />
           ) : (
@@ -368,9 +463,9 @@ export function DiyBuilder({
           <span aria-live="polite">{justSaved ? t.diy.saved : t.diy.save}</span>
         </button>
         <button
-          onClick={() => start(plan)}
+          onClick={() => start(plan, duration)}
           disabled={!plan.length}
-          className={`${button.secondary} min-h-[52px] text-[16px]`}
+          className={button.secondary}
         >
           <Play className="size-5" aria-hidden /> {t.diy.start}
         </button>
@@ -466,17 +561,46 @@ export function DiyBuilder({
         <p className="text-[14px] text-muted-foreground">{t.diy.emptyPlan}</p>
       )}
 
-      <button
-        onClick={() => {
-          haptic(10);
-          setPickerOpen(true);
-        }}
-        className={`${button.secondary} w-full`}
-      >
-        <Plus className="size-4" aria-hidden /> {t.diy.addExercise}
-      </button>
+      <div className="flex items-stretch gap-2">
+        <button
+          onClick={() => {
+            haptic(10);
+            setPickerOpen(true);
+          }}
+          className={`${button.primary} min-w-0 flex-1`}
+          data-diy-add
+        >
+          <Plus className="size-5" aria-hidden /> {t.diy.addExercise}
+        </button>
+        {/* The score as it is now, so each change shows its effect; a tap
+            goes to the card that explains it. */}
+        <button
+          onClick={() => {
+            const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+            scoreRef.current?.scrollIntoView({
+              behavior: reduce ? "auto" : "smooth",
+              block: "start",
+            });
+          }}
+          className="flex shrink-0 flex-col items-center justify-center rounded-full bg-primary/10 px-4 text-primary-text ring-1 ring-inset ring-primary/40"
+          aria-label={t.workoutScore.livePill(scored.result.score)}
+          data-score-pill
+        >
+          <span className="tabular text-[20px] font-bold leading-none">{scored.result.score}</span>
+          <span className="text-[11px] font-semibold leading-tight">
+            {t.workoutScore.liveLabel}
+          </span>
+        </button>
+      </div>
 
-      <WorkoutScoreCard plan={plan} minutes={minutesOf(plan)} />
+      <div ref={scoreRef} className="scroll-mt-28">
+        <WorkoutScoreCard
+          plan={plan}
+          scored={scored}
+          targetMinutes={duration}
+          onChange={changePlan}
+        />
+      </div>
 
       {editingId ? (
         <div className="space-y-2">
