@@ -208,9 +208,12 @@ export interface WorkoutScore {
   /** Estimated length of the plan and the length it was planned for. */
   minutes: number;
   targetMinutes: number;
-  /** The length the plan is scored for filling: the planned length, or
-   *  the generated workout's when that is shorter. */
-  expectedMinutes: number;
+  /** The generated workout's estimated length, when one was compared. */
+  referenceMinutes: number | null;
+  /** How complete the workout is for the time given (0-1): the share of the
+   *  generated workout's useful sets times the share of the planned time
+   *  filled. Every part is multiplied by it. */
+  completeness: number;
 }
 export interface ScoreOptions {
   /** Working sets per muscle for the plan; default volume.ts planSets. */
@@ -231,9 +234,8 @@ export interface ScoreOptions {
    *  (`generatedReference`). Volume is scored against it; without one the
    *  plan is its own yardstick. */
   reference?: PlannedExercise[];
-  /** The generated workout's estimated length. When it's shorter than the
-   *  planned length (the muscles picked don't need more), that's the
-   *  length the plan should fill. */
+  /** The generated workout's estimated length (shown when the muscles
+   *  picked can't usefully fill the planned time). */
   referenceMinutes?: number;
 }
 
@@ -247,10 +249,9 @@ const MIN_EFFECTIVE_SETS = 3;
 /** The plan's estimate may be this far under or over the planned length and
  *  still count as filling it (the app's own band: estimates are rough). */
 export const TIME_FIT_LOW = 0.85;
-const TIME_FIT_HIGH = 1.15;
-/** At or under this share of the planned length the time part is 0, and
- *  at this share over it too (the app's own choice). */
-const TIME_FIT_FLOOR = 0.3;
+export const TIME_FIT_HIGH = 1.15;
+/** At this share over the planned length the time part reaches 0 (the
+ *  app's own choice). */
 const TIME_FIT_CEILING = 1.6;
 
 const defaultMuscleSets = (plan: PlannedExercise[]): Record<string, number> =>
@@ -264,13 +265,19 @@ function usefulSetsOf(main: Record<string, number>): number {
   return Object.values(main).reduce((s, n) => s + Math.min(n, MAX_SESSION_SETS_PER_MUSCLE), 0);
 }
 
-/** Share of the time part: full when the estimate is within 85-115% of the
- *  planned length, sliding to 0 at 30% and at 160%. */
-export function timeFit(minutes: number, targetMinutes: number): number {
+/** How much of the planned time the plan fills: full from 85% of it,
+ *  proportional below (an hour given with 7 minutes of work is 0.14). */
+export function timeFill(minutes: number, targetMinutes: number): number {
+  if (targetMinutes <= 0) return 1;
+  return Math.max(0, Math.min(1, minutes / (TIME_FIT_LOW * targetMinutes)));
+}
+
+/** The time part's own factor: full up to 115% of the planned length,
+ *  sliding to 0 at 160% (running long). */
+export function overtimeFit(minutes: number, targetMinutes: number): number {
   if (targetMinutes <= 0) return 1;
   const r = minutes / targetMinutes;
-  if (r >= TIME_FIT_LOW && r <= TIME_FIT_HIGH) return 1;
-  if (r < TIME_FIT_LOW) return Math.max(0, (r - TIME_FIT_FLOOR) / (TIME_FIT_LOW - TIME_FIT_FLOOR));
+  if (r <= TIME_FIT_HIGH) return 1;
   return Math.max(0, (TIME_FIT_CEILING - r) / (TIME_FIT_CEILING - TIME_FIT_HIGH));
 }
 
@@ -282,9 +289,8 @@ export function timeFit(minutes: number, targetMinutes: number): number {
  *   MAX_SESSION_SETS_PER_MUSCLE, 11: Pelland et al., Sports Med 2024, no
  *   detectable extra growth beyond it in one session) as a share of the
  *   generated workout's. Matching or beating it is full marks.
- * - time (20): does the plan fill the planned length (`timeFit`), or the
- *   generated workout's length when the muscles picked don't need the whole
- *   time. The band is the app's own choice.
+ * - time (20): the plan fills the planned length (`timeFill`) without
+ *   running long (`overtimeFit`). The band is the app's own choice.
  * - muscles (15): each trained muscle gets 3 to 11 sets. Under 3 sets (the
  *   app's own floor) it scores sets/3 (min 0.3); over the cap 0.6.
  * - order (10): compounds before isolation work for the same muscle
@@ -296,21 +302,19 @@ export function timeFit(minutes: number, targetMinutes: number): number {
  *   (Schoenfeld et al. 2016; Singer et al. 2024 meta-analysis: rests over
  *   60 s grew muscle slightly better). In a superset the round rest counts.
  *
- * Muscles, order, reps and rest only count in full once the workout holds
- * as many useful sets as the generated one: they are multiplied by the
- * volume share, so one well-built exercise can't score high on its own.
+ * Every part is multiplied by `completeness`: the share of the generated
+ * workout's useful sets times the share of the planned time filled. So the
+ * score falls with an empty hour whatever is in it (one set of bench press
+ * in an hour scores close to 0), and a muscle choice that can't fill the
+ * time scores the same for the plan and for the generated workout.
  */
 export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): WorkoutScore {
   const targetMinutes = opts.targetMinutes ?? DEFAULT_PLANNED_MINUTES;
   const mainOf = opts.mainSets ?? defaultMainSets;
   const ref = opts.reference;
   const referenceSets = ref && ref.length ? usefulSetsOf(mainOf(ref)) : null;
-  // The generator stops a muscle at the per-session cap, so a few muscles
-  // can't usefully fill a long session: then its length is the yardstick.
-  const expectedMinutes =
-    opts.referenceMinutes !== undefined && opts.referenceMinutes > 0
-      ? Math.min(targetMinutes, opts.referenceMinutes)
-      : targetMinutes;
+  const referenceMinutes =
+    opts.referenceMinutes !== undefined && ref && ref.length ? opts.referenceMinutes : null;
   const empty = (id: ScorePartId, max: number): ScorePart => ({ id, points: 0, max, issues: [] });
   if (plan.length === 0) {
     return {
@@ -329,7 +333,8 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
       referenceSets,
       minutes: 0,
       targetMinutes,
-      expectedMinutes,
+      referenceMinutes,
+      completeness: 0,
     };
   }
   const nameOf = (p: PlannedExercise) => exerciseById(p.exercise_id)?.name ?? p.exercise_id;
@@ -339,19 +344,20 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   const mainBy = mainOf(plan);
   const useful = usefulSetsOf(mainBy);
   const share = referenceSets ? Math.min(1, useful / referenceSets) : 1;
+  const minutes = opts.minutes ?? estimateMinutes(plan);
+  const c = share * timeFill(minutes, targetMinutes);
   const volume: ScorePart = {
     id: "volume",
     max: 35,
-    points: 35 * share,
+    points: 35 * c,
     issues: [],
   };
 
   // time
-  const minutes = opts.minutes ?? estimateMinutes(plan);
   const time: ScorePart = {
     id: "time",
     max: 20,
-    points: 20 * timeFit(minutes, expectedMinutes),
+    points: 20 * c * overtimeFit(minutes, targetMinutes),
     issues: [],
   };
 
@@ -383,7 +389,7 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
     id: "muscles",
     max: 15,
     points: muscles.length
-      ? 15 * share * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length)
+      ? 15 * c * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length)
       : 0,
     issues: muscles.filter((m) => m.status !== "good").map((m) => m.muscle),
   };
@@ -402,7 +408,7 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   const order: ScorePart = {
     id: "order",
     max: 10,
-    points: 10 * share * (1 - inverted.length / Math.max(1, isolations)),
+    points: 10 * c * (1 - inverted.length / Math.max(1, isolations)),
     issues: inverted,
   };
 
@@ -416,7 +422,7 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   const reps: ScorePart = {
     id: "reps",
     max: 10,
-    points: 10 * share * (1 - badReps.length / plan.length),
+    points: 10 * c * (1 - badReps.length / plan.length),
     issues: badReps.map(nameOf),
   };
 
@@ -437,7 +443,7 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   const rest: ScorePart = {
     id: "rest",
     max: 10,
-    points: 10 * share * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
+    points: 10 * c * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
     issues: shortRest,
   };
 
@@ -452,7 +458,8 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
     referenceSets,
     minutes,
     targetMinutes,
-    expectedMinutes,
+    referenceMinutes,
+    completeness: c,
   };
 }
 

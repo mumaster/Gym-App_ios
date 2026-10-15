@@ -9,7 +9,8 @@ import {
   planTargets,
   removeExercise,
   scoreWorkout,
-  timeFit,
+  overtimeFit,
+  timeFill,
   unlinkSuperset,
   updateExercise,
 } from "../diyWorkout";
@@ -236,12 +237,14 @@ describe("scoreWorkout", () => {
     expect(part(s, "reps").issues).toEqual([ex("bb-bench").name]);
   });
   it("scores filling the planned time", () => {
-    expect(timeFit(45, 50)).toBe(1);
-    expect(timeFit(57, 50)).toBe(1);
-    expect(timeFit(15, 50)).toBe(0);
-    expect(timeFit(80, 50)).toBe(0);
-    expect(timeFit(29, 50)).toBeCloseTo((0.58 - 0.3) / 0.55);
-    expect(part(scoreWorkout(good, { minutes: 10, targetMinutes: 60 }), "time").points).toBe(0);
+    expect(timeFill(45, 50)).toBe(1);
+    expect(timeFill(7, 60)).toBeCloseTo(7 / 51);
+    expect(overtimeFit(57, 50)).toBe(1);
+    expect(overtimeFit(80, 50)).toBe(0);
+    // An empty hour drags every part down, not only the time part.
+    const s = scoreWorkout(good, { minutes: 10, targetMinutes: 60 });
+    expect(s.completeness).toBeCloseTo(10 / 51);
+    for (const p of s.parts) expect(p.points).toBeLessThan(p.max * 0.2);
   });
   it("uses injected volume functions", () => {
     const s = scoreWorkout(good, {
@@ -282,34 +285,49 @@ describe("scoring against a generated workout", () => {
     expect(ref(linkSuperset(plan, 0), 60).some((p) => p.superset_group !== undefined)).toBe(true);
     expect(ref([], 60)).toEqual([]);
   });
+  it("one set of bench press in an hour scores close to 0", () => {
+    const one = [row("bb-bench", { target_sets: 1, warmup_sets: 0 })];
+    const s1 = scoreWorkout(one, {
+      minutes: estimateMinutes(one),
+      targetMinutes: 60,
+      reference: ref(one, 60),
+    });
+    expect(s1.score).toBeLessThanOrEqual(3);
+  });
   it("one exercise in a 60-minute plan scores low, not 100", () => {
     const plan = [row("bb-bench")];
     const reference = ref(plan, 60);
     const s = scoreWorkout(plan, { minutes: estimateMinutes(plan), targetMinutes: 60, reference });
     expect(s.referenceSets).toBeGreaterThan(s.usefulSets);
-    expect(s.score).toBeLessThan(30);
+    expect(s.score).toBeLessThan(10);
     expect(s.grade).toBe("weak");
   });
   it("the generated workout itself scores high against itself", () => {
-    for (const plan of [[row("bb-bench"), row("bb-row")], [row("bb-bench")]]) {
-      const reference = ref(plan, 75);
+    for (const plan of [
+      [row("bb-bench"), row("bb-row")],
+      [row("bb-bench"), row("bb-row"), row("bb-squat")],
+    ]) {
+      const reference = ref(plan, 45);
       const s = scoreWorkout(reference, {
         minutes: estimateMinutes(reference),
-        targetMinutes: 75,
+        targetMinutes: 45,
         reference,
         referenceMinutes: estimateMinutes(reference),
       });
       expect(s.score).toBeGreaterThanOrEqual(85);
     }
   });
-  it("only asks to fill the time the muscles need", () => {
-    const s = scoreWorkout([row("bb-bench")], {
-      minutes: 20,
+  it("scores the generated workout the same when its muscles can't fill the time", () => {
+    const reference = ref([row("bb-bench")], 75);
+    const refMin = estimateMinutes(reference);
+    const s = scoreWorkout(reference, {
+      minutes: refMin,
       targetMinutes: 75,
-      referenceMinutes: 22,
+      reference,
+      referenceMinutes: refMin,
     });
-    expect(s.expectedMinutes).toBe(22);
-    expect(s.parts.find((p) => p.id === "time")!.points).toBe(20);
+    expect(s.referenceMinutes).toBe(refMin);
+    expect(s.completeness).toBeCloseTo(Math.min(1, refMin / (0.85 * 75)));
   });
   it("a fuller plan scores higher than a thinner one for the same length", () => {
     const thin = [row("bb-bench"), row("bb-row")];

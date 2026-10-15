@@ -5,6 +5,7 @@ import { Card } from "./Screen";
 import { useInfoTip } from "./InfoTip";
 import { barFill } from "./bar";
 import {
+  TIME_FIT_HIGH,
   TIME_FIT_LOW,
   generatedReference,
   scoreWorkout,
@@ -140,9 +141,10 @@ export function WorkoutScoreCard({
             {t.workoutScore.compareSets(result.usefulSets, result.referenceSets ?? 0)}
           </p>
           {/* Only when it changes what counts as full (the time part's own band). */}
-          {result.expectedMinutes < targetMinutes * TIME_FIT_LOW ? (
+          {result.referenceMinutes !== null &&
+          result.referenceMinutes < targetMinutes * TIME_FIT_LOW ? (
             <p className="text-[12.5px] text-muted-foreground">
-              {t.workoutScore.compareShort(result.expectedMinutes, targetMinutes)}
+              {t.workoutScore.compareShort(result.referenceMinutes, targetMinutes)}
             </p>
           ) : null}
         </div>
@@ -152,13 +154,17 @@ export function WorkoutScoreCard({
         {result.parts.map((part) => {
           const lost = part.points < part.max;
           const names = part.issues.join(", ");
+          const fewerSets = (result.referenceSets ?? 0) > result.usefulSets;
+          const timeOff =
+            result.minutes < targetMinutes * TIME_FIT_LOW ||
+            result.minutes > targetMinutes * TIME_FIT_HIGH;
           const line =
             !lost || plan.length === 0
               ? ""
-              : part.id === "volume"
+              : part.id === "volume" && fewerSets
                 ? t.workoutScore.issues.volume(result.usefulSets, result.referenceSets ?? 0)
-                : part.id === "time"
-                  ? t.workoutScore.issues.time(result.minutes, result.expectedMinutes)
+                : part.id === "time" && timeOff
+                  ? t.workoutScore.issues.time(result.minutes, targetMinutes)
                   : part.issues.length
                     ? t.workoutScore.issues[part.id as Exclude<ScorePartId, "volume" | "time">](
                         names,

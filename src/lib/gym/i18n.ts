@@ -1829,15 +1829,15 @@ const en = {
     infoLabel: "How the score works",
     info: [
       "Your workout is compared with the one the app would generate for the same muscles and the length you planned.",
-      "Volume (35) counts your working sets that help growth (up to 11 per muscle in one session) against the generated workout's. Filling your time (20) checks the workout roughly matches the length you planned, or the generated one's when your muscles need less time.",
-      "Sets per muscle (15), order (10), reps (10) and rest (10) check how it's built. They count in full once your workout holds as many useful sets as the generated one, so one exercise can't score high on its own.",
+      "Volume (35) counts your working sets that help growth (up to 11 per muscle in one session) against the generated workout's. Fills your time (20) checks it roughly matches the length you planned without running long. Sets per muscle (15), order (10), reps (10) and rest (10) check how it's built.",
+      "Every part is multiplied by how full the workout is: your share of the generated workout's useful sets times the share of your time you use. One set in an hour scores close to 0, however well it's built. If the muscles you picked can't fill the time, the generated workout loses the same points, so add other muscles or plan a shorter session.",
       "Bars show each muscle's sets against its weekly target. Low means too few sets to count much, Effective is a solid dose, Too much means more than one session can use.",
     ],
     compare: (min: number, score: number) => `A generated ${min}-minute workout scores ${score}`,
     compareSets: (yours: number, generated: number) =>
       `Useful sets: yours ${yours}, generated ${generated}`,
     compareShort: (min: number, planned: number) =>
-      `These muscles need about ${min} of your ${planned} minutes. Add other muscles to use the rest.`,
+      `These muscles only need about ${min} of your ${planned} minutes, so even the generated workout leaves time unused. Add other muscles or plan a shorter session.`,
     parts: {
       volume: "Volume",
       time: "Fills your time",
@@ -1853,12 +1853,12 @@ const en = {
       time: (min: number, planned: number) =>
         min < planned
           ? `About ${min} of ${planned} minutes are used. Add exercises or sets.`
-          : `About ${min} minutes, longer than the ${planned} this needs.`,
+          : `About ${min} minutes, longer than the ${planned} you planned.`,
       muscles: (names: string) => `Sets per muscle are off for: ${names}.`,
       order: (names: string) => `Do the big lifts first. Move later: ${names}.`,
       reps: (names: string) => `Reps outside 5 to 30: ${names}.`,
       rest: (names: string) => `Rest is short for: ${names}.`,
-      fill: "Counts in full once the workout is as full as the generated one.",
+      fill: "Counts in full once your workout fills its time with as many useful sets as the generated one.",
     },
     muscles: "Muscles",
     musclesEmpty: "Add exercises to see which muscles you train.",
@@ -4124,8 +4124,8 @@ const nl: Dict = {
     infoLabel: "Zo werkt de score",
     info: [
       "Je training wordt vergeleken met de training die de app automatisch maakt voor dezelfde spieren en de tijd die je hebt gepland.",
-      "Volume (35) telt je sets die bijdragen aan spiergroei (tot 11 per spier in één training) tegenover die van de automatische training. Tijd benut (20) kijkt of je training ongeveer zo lang duurt als gepland, of als de automatische als jouw spieren minder tijd nodig hebben.",
-      "Sets per spier (15), volgorde (10), herhalingen (10) en rust (10) kijken hoe hij in elkaar zit. Die tellen volledig mee zodra je training net zoveel nuttige sets heeft als de automatische, dus één oefening kan niet alleen hoog scoren.",
+      "Volume (35) telt je sets die bijdragen aan spiergroei (tot 11 per spier in één training) tegenover die van de automatische training. Tijd benut (20) kijkt of hij ongeveer zo lang duurt als gepland zonder uit te lopen. Sets per spier (15), volgorde (10), herhalingen (10) en rust (10) kijken hoe hij in elkaar zit.",
+      "Elk onderdeel wordt vermenigvuldigd met hoe vol je training is: jouw deel van de nuttige sets van de automatische training keer het deel van je tijd dat je gebruikt. Eén set in een uur scoort bijna 0, hoe goed die ook is. Kunnen je gekozen spieren de tijd niet vullen, dan verliest de automatische training dezelfde punten: voeg andere spieren toe of plan een kortere training.",
       "De balken tonen de sets per spier tegenover het weekdoel. Laag betekent te weinig sets om veel te doen, Effectief is een goede dosis, Te veel is meer dan één training aankan.",
     ],
     compare: (min: number, score: number) =>
@@ -4133,7 +4133,7 @@ const nl: Dict = {
     compareSets: (yours: number, generated: number) =>
       `Nuttige sets: jij ${yours}, automatisch ${generated}`,
     compareShort: (min: number, planned: number) =>
-      `Voor deze spieren is ongeveer ${min} van je ${planned} minuten genoeg. Voeg andere spieren toe om de rest te benutten.`,
+      `Deze spieren hebben maar ongeveer ${min} van je ${planned} minuten nodig, dus ook de automatische training laat tijd over. Voeg andere spieren toe of plan een kortere training.`,
     parts: {
       volume: "Volume",
       time: "Tijd benut",
@@ -4149,12 +4149,12 @@ const nl: Dict = {
       time: (min: number, planned: number) =>
         min < planned
           ? `Ongeveer ${min} van ${planned} minuten gebruikt. Voeg oefeningen of sets toe.`
-          : `Ongeveer ${min} minuten, langer dan de ${planned} die dit nodig heeft.`,
+          : `Ongeveer ${min} minuten, langer dan de ${planned} die je had gepland.`,
       muscles: (names: string) => `Het aantal sets klopt niet voor: ${names}.`,
       order: (names: string) => `Doe de zware oefeningen eerst. Zet later: ${names}.`,
       reps: (names: string) => `Herhalingen buiten 5 tot 30: ${names}.`,
       rest: (names: string) => `De rust is kort bij: ${names}.`,
-      fill: "Telt volledig mee zodra je training net zo vol is als de automatische.",
+      fill: "Telt volledig mee zodra je training de tijd vult met net zoveel nuttige sets als de automatische.",
     },
     muscles: "Spieren",
     musclesEmpty: "Voeg oefeningen toe om te zien welke spieren je traint.",
