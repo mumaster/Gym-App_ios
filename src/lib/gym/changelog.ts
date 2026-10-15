@@ -441,6 +441,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 47,
+    items: [
+      {
+        en: "A meal's overview now looks like your Today card, and sugars now sits next to carbs on both: protein, carbs and sugars on top, fat, fibre and salt below, each with its amount, goal and a bar.",
+        nl: "Het overzicht van een maaltijd ziet er nu uit als je kaart Vandaag: eiwit, koolhydraten en suikers bovenaan, vet, vezels en zout eronder, elk met hoeveelheid, doel en een balk. Suikers staat nu naast koolhydraten, ook op je kaart Vandaag.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -450,7 +459,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 46;
+export const CURRENT_VERSION = 47;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
