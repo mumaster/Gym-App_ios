@@ -1794,7 +1794,9 @@ export function GymProvider({ children }: { children: ReactNode }) {
       updateWorkoutTemplate: (id, patch) =>
         setState((s) => ({
           ...s,
-          workoutTemplates: s.workoutTemplates.map((t) => (t.id === id ? { ...t, ...patch, id } : t)),
+          workoutTemplates: s.workoutTemplates.map((t) =>
+            t.id === id ? { ...t, ...patch, id } : t,
+          ),
         })),
       deleteWorkoutTemplate: (id) =>
         setState((s) => ({
