@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EQUIPMENT, TARGET_MUSCLE_GROUP, exerciseById } from "../data";
+import { EQUIPMENT, EXERCISES, TARGET_MUSCLE_GROUP, exerciseById } from "../data";
 import { estimateMinutes, generateWorkout } from "../generator";
 import { regionsForMuscles, targetsFromRegions } from "../anatomy";
 import { recommendedMuscles } from "../recommendations";
@@ -8,10 +8,15 @@ import {
   BASE_WEEKLY_SETS,
   FOCUS_WEEKLY_SETS,
   MAX_SESSION_SETS_PER_MUSCLE,
-  focusMuscles,
+  mainPlanSets,
+  migrateFocus,
+  musclesInGroups,
   planSets,
   setContribution,
+  volumeMuscleOf,
   weeklySets,
+  weeklyTarget,
+  type VolumeMuscle,
 } from "../volume";
 
 const workout = (date: string, exercise: string, sets: number): Workout => ({
@@ -32,12 +37,21 @@ const workout = (date: string, exercise: string, sets: number): Workout => ({
   })),
 });
 
-describe("fractional set counting (Pelland et al. 2024)", () => {
-  it("counts 1 for the main muscle and 0.5 for each helper", () => {
-    const bench = exerciseById("bb-bench")!;
-    const c = setContribution("bb-bench");
-    expect(c[bench.primary_muscle]).toBe(1);
-    for (const m of bench.secondary_muscles) expect(c[m]).toBe(0.5);
+describe("whole set counting by specific muscle", () => {
+  it("counts one whole set for every muscle the exercise lists, no halves", () => {
+    expect(setContribution("bb-bench")).toEqual({ Chest: 1, Triceps: 1, "Front Delts": 1 });
+    expect(setContribution("db-curl")).toEqual({ Biceps: 1, Forearms: 1 });
+    expect(setContribution("seated-cable-row")).toEqual({ Lats: 1, Traps: 1, Biceps: 1 });
+    for (const ex of EXERCISES) {
+      for (const n of Object.values(setContribution(ex.id))) expect(n).toBe(1);
+    }
+  });
+
+  it("counts the three chest heads as one muscle", () => {
+    expect(volumeMuscleOf("Upper Chest")).toBe("Chest");
+    expect(volumeMuscleOf("Lower Chest")).toBe("Chest");
+    const flat = EXERCISES.find((e) => e.muscle_targets.includes("Upper Chest"))!;
+    expect(setContribution(flat.id).Chest).toBe(1);
   });
 
   it("only counts this Monday–Sunday week's working sets", () => {
@@ -50,6 +64,34 @@ describe("fractional set counting (Pelland et al. 2024)", () => {
       new Date(2026, 8, 24),
     );
     expect(done.Chest).toBe(3);
+    expect(done.Triceps).toBe(3);
+  });
+
+  it("keeps biceps and triceps apart: Max's week of 13 and 14 October", () => {
+    // Tuesday and Wednesday, from the finished sessions' screenshots.
+    const sets: [string, number][] = [
+      ["db-curl", 4],
+      ["bench-dip", 4],
+      ["bb-bench", 3],
+      ["seated-cable-row", 3],
+      ["cable-rear-delt-fly", 4],
+      ["db-shrug", 4],
+      ["bb-bench", 3],
+      ["seated-cable-row", 3],
+      ["db-curl", 4],
+      ["face-pull", 4],
+      ["pushup", 4],
+      ["db-overhead-triceps-ext", 4],
+      ["cable-lateral", 3],
+    ];
+    const done = weeklySets(
+      sets.map(([id, n], i) => workout(`2026-10-1${i < 6 ? 3 : 4}T18:00:00`, id, n)),
+      null,
+      new Date(2026, 9, 15),
+    );
+    expect(done.Biceps).toBe(14);
+    expect(done.Triceps).toBe(18);
+    expect(done.Chest).toBe(10);
   });
 });
 
@@ -57,11 +99,25 @@ describe("targets (Schoenfeld 2017, Baz-Valle 2022)", () => {
   it("uses 10 sets normally and 20 for muscles to grow", () => {
     expect(BASE_WEEKLY_SETS).toBe(10);
     expect(FOCUS_WEEKLY_SETS).toBe(20);
-    expect([...focusMuscles(["legs"])]).toEqual(["Quads", "Hamstrings", "Calves"]);
-    expect([...focusMuscles(["glutes"])]).toEqual(["Glutes"]);
+    const focus = new Set(musclesInGroups(["arms"]));
+    expect(weeklyTarget("Biceps", focus)).toBe(20);
+    expect(weeklyTarget("Chest", focus)).toBe(10);
+    expect(musclesInGroups(["legs"])).toEqual(["Quads", "Adductors", "Hamstrings", "Calves"]);
   });
 
-  it("recommends the muscle furthest below target, which a focus changes", () => {
+  it("stars one muscle without the rest of its group", () => {
+    const focus = new Set<VolumeMuscle>(["Biceps"]);
+    expect(weeklyTarget("Biceps", focus)).toBe(20);
+    expect(weeklyTarget("Triceps", focus)).toBe(10);
+  });
+
+  it("carries an older save's starred groups over to their muscles", () => {
+    expect(migrateFocus(["arms", "chest"])).toEqual(["Chest", "Biceps", "Triceps", "Forearms"]);
+    expect(migrateFocus(["Biceps"])).toEqual(["Biceps"]);
+    expect(migrateFocus(undefined)).toEqual([]);
+  });
+
+  it("recommends the group furthest below its targets, which a focus changes", () => {
     const history = [workout(new Date().toISOString(), "bb-bench", 6)];
     const none = recommendedMuscles(["Chest", "Arms"], history, 1);
     expect(none[0]!.muscle).toBe("Arms");
@@ -73,23 +129,38 @@ describe("generator focus", () => {
   const upper = targetsFromRegions(
     regionsForMuscles(["Chest", "Back", "Shoulders", "Arms"], "upper"),
   );
+  const ARMS = musclesInGroups(["arms"]);
+  const armSets = (n: ReturnType<typeof planSets>) => (n.Biceps ?? 0) + (n.Triceps ?? 0);
   const sets = (args: Partial<Parameters<typeof generateWorkout>[0]>, duration = 45) =>
     planSets(generateWorkout({ duration, equipment, targets: upper, ...args }));
 
   it("plans more sets for a muscle to grow", () => {
     for (const supersets of [false, true]) {
-      const focus = sets({ supersets, focusMuscles: ["Arms"] }).Arms ?? 0;
-      const plain = sets({ supersets }).Arms ?? 0;
+      const focus = armSets(sets({ supersets, focusMuscles: ARMS }, 60));
+      const plain = armSets(sets({ supersets }, 60));
       expect(focus).toBeGreaterThan(plain);
     }
   });
 
   it("gives a muscle that's behind on this week's target more than one that's done", () => {
-    const fresh = sets({ focusMuscles: ["Arms"] }).Arms ?? 0;
-    const done = sets({ focusMuscles: ["Arms"], weekDone: { Arms: 20 } }).Arms ?? 0;
+    const fresh = armSets(sets({ focusMuscles: ARMS }));
+    const done = armSets(
+      sets({ focusMuscles: ARMS, weekDone: { Biceps: 20, Triceps: 20, Forearms: 20 } }),
+    );
     expect(done).toBeLessThan(fresh);
-    const behind = sets({ weekDone: { Chest: 10, Back: 10, Shoulders: 10 } }).Arms ?? 0;
-    expect(behind).toBeGreaterThan(sets({}).Arms ?? 0);
+    const behind = armSets(
+      sets({
+        weekDone: {
+          Chest: 10,
+          Lats: 10,
+          Traps: 10,
+          "Front Delts": 10,
+          "Side Delts": 10,
+          "Rear Delts": 10,
+        },
+      }),
+    );
+    expect(behind).toBeGreaterThan(armSets(sets({})));
   });
 
   it("trains a prioritised group with its own exercises, not only other groups' lifts", () => {
@@ -97,7 +168,7 @@ describe("generator focus", () => {
       duration: 60,
       equipment,
       targets: upper,
-      focusMuscles: ["Arms"],
+      focusMuscles: ARMS,
     });
     expect(plan.some((p) => exerciseById(p.exercise_id)?.primary_muscle === "Arms")).toBe(true);
   });
@@ -107,7 +178,7 @@ describe("generator focus", () => {
       duration: 60,
       equipment,
       targets: upper,
-      focusMuscles: ["Arms"],
+      focusMuscles: ARMS,
     });
     const firstIsolation = plan.findIndex((p) => !exerciseById(p.exercise_id)?.compound);
     const lastCompound = plan.map((p) => exerciseById(p.exercise_id)?.compound).lastIndexOf(true);
@@ -136,9 +207,9 @@ describe("generator focus", () => {
             equipment,
             targets,
             supersets,
-            focusMuscles: ["Arms"],
+            focusMuscles: ARMS,
           });
-          for (const n of Object.values(planSets(plan))) {
+          for (const n of Object.values(mainPlanSets(plan))) {
             expect(n).toBeLessThanOrEqual(MAX_SESSION_SETS_PER_MUSCLE);
           }
         }
