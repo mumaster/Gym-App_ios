@@ -74,6 +74,7 @@ export function MealOverviewSheet({
         .filter(Boolean)
         .join(" · ")}
     </p>,
+    true,
   );
 
   return (
