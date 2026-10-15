@@ -83,16 +83,33 @@ describe("learnPace", () => {
     expect(pace.workPerSide["db-fly"]).toBe(60);
   });
 
-  it("ignores superset rounds and superset exercises", () => {
+  it("times superset rounds per round, not per set", () => {
     const plan = [
       entry("bb-bench"),
-      entry("db-fly", { superset_group: 1, superset_slot: "A" }),
-      entry("db-curl", { superset_group: 1, superset_slot: "B" }),
+      entry("db-fly", { superset_group: 1, superset_slot: "A", rest_seconds: 0 }),
+      entry("db-curl", { superset_group: 1, superset_slot: "B", rest_seconds: 100 }),
     ];
     const sets: LoggedSet[] = [set("bb-bench", 0)];
     for (let r = 0; r < 5; r++) {
       sets.push(set("db-fly", 1000 + r * 400, { round: r + 1 }));
       sets.push(set("db-curl", 1100 + r * 400, { round: r + 1 }));
+    }
+    // 400 s per round - 100 s round rest - 15 s shuttle = 285 s for two sets
+    const pace = learnPace([workout(plan, sets)])!;
+    expect(pace.workPerSide["db-fly"]).toBe(142.5);
+    expect(pace.workPerSide["db-curl"]).toBe(142.5);
+    expect(pace.defaultWorkPerSide).toBe(142.5);
+  });
+
+  it("skips a superset in the first block, where the user is setting up", () => {
+    const plan = [
+      entry("db-fly", { superset_group: 1, superset_slot: "A", rest_seconds: 0 }),
+      entry("db-curl", { superset_group: 1, superset_slot: "B", rest_seconds: 100 }),
+    ];
+    const sets: LoggedSet[] = [];
+    for (let r = 0; r < 5; r++) {
+      sets.push(set("db-fly", r * 400, { round: r + 1 }));
+      sets.push(set("db-curl", 100 + r * 400, { round: r + 1 }));
     }
     expect(learnPace([workout(plan, sets)])).toBeNull();
   });
