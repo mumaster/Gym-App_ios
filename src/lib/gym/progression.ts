@@ -77,6 +77,19 @@ const UPPER_BODY_INCREASE = 0.025;
 const LOWER_BODY_INCREASE = 0.05;
 const LOWER_BODY: ReadonlySet<Muscle> = new Set(["Quads", "Hamstrings", "Glutes", "Calves"]);
 
+/**
+ * Reps to aim for after a load increase. Dropping to the bottom of the range
+ * (6 after 14 reps) threw away the strength just shown, so the target is the
+ * reps that carry the same estimated effort at the heavier load (Epley:
+ * 1RM = w × (1 + reps/30)), kept inside the target range. Built from the
+ * worst set last time, so the target stays reachable on every set.
+ */
+function repsAtHeavier(reps: number, from: number, to: number, bottom: number, top: number) {
+  if (from <= 0 || to <= from) return bottom;
+  const equivalent = Math.round(30 * ((from * (1 + reps / 30)) / to - 1));
+  return Math.min(top, Math.max(bottom, equivalent));
+}
+
 const workingSets = (w: Workout, exerciseId: string) =>
   w.completed_sets.filter((s) => s.exercise_id === exerciseId && s.set_type === "working");
 
@@ -84,7 +97,7 @@ const workingSets = (w: Workout, exerciseId: string) =>
  * Progressive-overload suggestion for an exercise, using double progression:
  * once every working set reached the top of the target rep range in the last
  * two sessions that included it, suggest a load increase (see the constants
- * above) and reset the rep target to the bottom of the range; otherwise
+ * above) with the reps that match the same effort at the heavier load; otherwise
  * repeat the same weight and aim for one more rep than the worst set last
  * time (capped at the top of the range).
  *
@@ -128,14 +141,20 @@ export function suggestWeight(
   const primary = exercise?.primary_muscle;
   const increase = primary && LOWER_BODY.has(primary) ? LOWER_BODY_INCREASE : UPPER_BODY_INCREASE;
 
+  const bumpedWeight = hitTopTwice
+    ? raised(lastWeight, Math.max(roundStep, roundToStep(moved * increase, roundStep)), roundStep)
+    : lastWeight;
+
   const base = hitTopTwice
     ? {
-        weight: raised(
-          lastWeight,
-          Math.max(roundStep, roundToStep(moved * increase, roundStep)),
-          roundStep,
+        weight: bumpedWeight,
+        reps: repsAtHeavier(
+          minRepsLastTime,
+          moved,
+          moved + (bumpedWeight - lastWeight),
+          bottom,
+          top,
         ),
-        reps: bottom,
         reason: bodyweight ? copy.hitTopBodyweight(top) : copy.hitTop(top),
       }
     : hitTopLast
