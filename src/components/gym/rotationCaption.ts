@@ -9,7 +9,7 @@ import {
 type Dict = ReturnType<typeof import("../../lib/gym/i18n").useTranslation>;
 
 /** The line under a day's name in a plan editor: the real date this cycle
- *  (with "moved" and the usual weekday when pushed), or just its place in the
+ *  (with "moved" when pushed), or just its place in the
  *  order in flexible mode. */
 export function rotationCaption(r: Rotation, i: number, t: Dict, locale: string): string {
   const m = t.common.scheduleMode;
@@ -27,5 +27,5 @@ export function rotationCaption(r: Rotation, i: number, t: Dict, locale: string)
   }
   const moved = slotOffset(r, i) !== weekIndex(slot.dow);
   const base = m.plannedOn(fmt(plannedDate(r, i)));
-  return moved ? `${base} · ${m.moved} · ${m.usual(t.common.dow[slot.dow] ?? "")}` : base;
+  return moved ? `${base} · ${m.moved}` : base;
 }

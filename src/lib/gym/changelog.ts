@@ -508,6 +508,14 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "New Fixed days / Flexible switch for your plan: Flexible hides weekdays and just follows the order, with nothing counted as missed.",
         nl: "Nieuwe schakelaar Vaste dagen / Flexibel voor je schema: Flexibel verbergt weekdagen en volgt alleen de volgorde, zonder dat iets als gemist telt.",
       },
+      {
+        en: "The days in your plan card now read D1 - Mon, D2 - Wed… with the day each is planned on.",
+        nl: "De dagen in je schemakaart tonen nu D1 - ma, D2 - wo… met de dag waarop ze gepland staan.",
+      },
+      {
+        en: "If you keep doing a session on another weekday, the app now asks 'Change your standard day?'.",
+        nl: "Doe je een training steeds op een andere weekdag, dan vraagt de app nu 'Je standaarddag aanpassen?'.",
+      },
     ],
   },
 ];

@@ -58,7 +58,9 @@ export function RotationWeekStrip({
               }`}
             >
               {doneOn ? <Check className="size-2.5" strokeWidth={3} /> : null}
-              {rotation.flexible ? t.common.dayShort(i + 1) : t.common.dow[dow]}
+              {rotation.flexible
+                ? t.common.dayShort(i + 1)
+                : `${t.common.dayShort(i + 1)} - ${t.common.dow[dow]}`}
               {moved ? <span className="size-1 rounded-full bg-primary" aria-hidden /> : null}
             </p>
             <p

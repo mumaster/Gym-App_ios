@@ -66,7 +66,6 @@ const en = {
       doneOn: (date: string) => `Done ${date}`,
       plannedOn: (date: string) => date,
       moved: "moved",
-      usual: (dow: string) => `usual ${dow}`,
       afterDay: (n: number) => `After day ${n}`,
       upNext: "Up next",
       usualDay: "Usual day (permanent)",
@@ -2012,6 +2011,10 @@ const en = {
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `You missed ${day} on ${weekday}`,
+    usualDayTitle: (day: string, weekday: string) =>
+      `You usually do ${day} on ${weekday}. Change your standard day?`,
+    usualDayChange: (weekday: string) => `Change to ${weekday}`,
+    usualDayNotNow: "Not now",
     behindTitle: (day: string, n: number) => `${day} is ${n} days overdue`,
     missedDesc: "Nothing's lost — your rotation waits until you do it or skip it.",
     doItToday: "Do it today",
@@ -2386,7 +2389,6 @@ const nl: Dict = {
       doneOn: (date: string) => `Gedaan ${date}`,
       plannedOn: (date: string) => date,
       moved: "verschoven",
-      usual: (dow: string) => `gebruikelijk ${dow}`,
       afterDay: (n: number) => `Na dag ${n}`,
       upNext: "Hierna",
       usualDay: "Gebruikelijke dag (blijvend)",
@@ -4339,6 +4341,10 @@ const nl: Dict = {
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `Je hebt ${day} gemist op ${weekday}`,
+    usualDayTitle: (day: string, weekday: string) =>
+      `Je doet ${day} meestal op ${weekday}. Je standaarddag aanpassen?`,
+    usualDayChange: (weekday: string) => `Wijzig naar ${weekday}`,
+    usualDayNotNow: "Niet nu",
     behindTitle: (day: string, n: number) => `${day} is ${n} dagen te laat`,
     missedDesc: "Je bent niets kwijt — je schema wacht tot je de training doet of overslaat.",
     doItToday: "Vandaag doen",
