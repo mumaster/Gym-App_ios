@@ -1058,10 +1058,10 @@ export function AddFoodSheet({
                         key={full}
                         onClick={onClick}
                         aria-label={full}
-                        className="glass flex min-h-[60px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
+                        className="tap-target glass-chip flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-1 rounded-2xl px-1 active:bg-foreground/5"
                       >
-                        <Icon className="size-5 shrink-0 text-primary-text" />
-                        <span className="max-w-full truncate text-[13px] font-semibold">
+                        <Icon className="size-4 shrink-0 text-primary-text" />
+                        <span className="min-w-0 truncate text-[13.5px] font-semibold">
                           {label}
                         </span>
                       </button>
