@@ -36,6 +36,7 @@ import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { DayWorkoutSheet } from "../components/gym/DayWorkoutSheet";
+import { DiyBuilder } from "../components/gym/DiyBuilder";
 import { ListCard } from "../components/gym/ListCard";
 import { Card, Screen } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
@@ -90,15 +91,17 @@ import type { DayWorkout, Exercise, Muscle, PlannedExercise, TargetMuscle } from
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { badge, button, chip } from "../components/gym/ui";
 
-/** With a program or weekly plan the tab has two sub-tabs: the plan (the
- *  default) and building your own. Without one there are no tabs and the
- *  page is the builder. */
-const WORKOUT_TABS = ["plan", "build"] as const;
+/** The tab's sub-tabs: My plan (only with a program or weekly plan, and then
+ *  the default), the Generator (`build`, the id old links use) and the DIY
+ *  builder (`diy`, "Build your own"). Dutch labels are kept short enough for
+ *  three tabs at 375 wide: "Zelf maken", not "Zelf samenstellen", which got
+ *  cut off (i18n.ts, generate.tabs). */
+const WORKOUT_TABS = ["plan", "build", "diy"] as const;
 type WorkoutTab = (typeof WORKOUT_TABS)[number];
 
 export const Route = createFileRoute("/generate")({
-  validateSearch: (search: Record<string, unknown>): { tab?: "build" } =>
-    search["tab"] === "build" ? { tab: "build" } : {},
+  validateSearch: (search: Record<string, unknown>): { tab?: "build" | "diy" } =>
+    search["tab"] === "build" || search["tab"] === "diy" ? { tab: search["tab"] } : {},
   head: () => ({
     meta: [
       { title: "Generate Workout — Forge" },
@@ -121,7 +124,7 @@ const SHORTCUTS = [30, 45, 60];
 
 function WorkoutHome() {
   const navigate = useNavigate();
-  const { tab = "plan" } = Route.useSearch();
+  const { tab: searchTab } = Route.useSearch();
   const navigateTab = Route.useNavigate();
   const t = useTranslation();
   const locale = useLocale();
@@ -741,18 +744,26 @@ function WorkoutHome() {
       start: () => startTemplate(tpl.plan, tpl.duration_minutes, tpl.target_muscles),
     })),
   ];
-  /** Sub-tabs only once there's a plan to put on the first one. */
-  const tabbed = hydrated && hasPlan;
+  /** Sub-tabs once the store is loaded. Without a plan there's no My plan
+   *  tab and the Generator is the default (no query), so old links and the
+   *  first screen of someone without a plan are unchanged. */
+  const tabbed = hydrated;
+  const tabs: readonly WorkoutTab[] = hasPlan ? WORKOUT_TABS : ["build", "diy"];
+  const defaultTab: WorkoutTab = hasPlan ? "plan" : "build";
+  const tab: WorkoutTab = searchTab ?? defaultTab;
   const setTab = (next: WorkoutTab) => {
     setProposal(null);
-    void navigateTab({ search: next === "plan" ? {} : { tab: next }, replace: true });
+    void navigateTab({
+      search: next === defaultTab ? {} : { tab: next as "build" | "diy" },
+      replace: true,
+    });
     window.scrollTo({ top: 0 });
   };
-  const showBuilder = !tabbed || tab === "build";
+  const showBuilder = tab === "build";
   /** A plan shows on the tab it was built from: a split day's on My plan,
    *  the builder's on Build your own. */
   const planOrigin: WorkoutTab = followingProgram || followingSchedule ? "plan" : "build";
-  const planHere = shownPlan && (!tabbed || planOrigin === tab) ? shownPlan : null;
+  const planHere = shownPlan && planOrigin === tab ? shownPlan : null;
 
   /** Session length: the builder's first row, and on My plan right above
    *  "Build {day} day", since the time you have differs from day to day.
@@ -1016,15 +1027,10 @@ function WorkoutHome() {
     <>
       <Screen
         title={t.generate.title}
-        fitWhenShort={tabbed && tab === "plan" && !planHere}
+        fitWhenShort={tab === "plan" && !planHere}
         toolbar={
           tabbed ? (
-            <SegmentedTabs
-              tabs={WORKOUT_TABS}
-              value={tab}
-              onChange={setTab}
-              labels={t.generate.tabs}
-            />
+            <SegmentedTabs tabs={tabs} value={tab} onChange={setTab} labels={t.generate.tabs} />
           ) : undefined
         }
       >
@@ -1050,14 +1056,17 @@ function WorkoutHome() {
         {/* My plan: the program or weekly plan, then this week's cardio (hidden
           while a split day's plan shows under the card, so its Start bar
           stays last on the page). */}
-        {tabbed && tab === "plan" ? (
+        {tab === "plan" ? (
           <>
             {planCard}
             {planHere ? null : <CardioWeekCard compact />}
           </>
         ) : null}
 
-        {/* Build your own: one-tap starts, then the builder, each a card with
+        {/* Build your own (DIY): saved workouts, and the editor. */}
+        {tab === "diy" ? <DiyBuilder onStarted={() => navigate({ to: "/session" })} /> : null}
+
+        {/* Generator: one-tap starts, then the builder, each a card with
           its own band (they were small-caps labels over loose blocks). */}
         {showBuilder ? (
           <>
@@ -1578,7 +1587,7 @@ function WorkoutHome() {
         {/* Without a plan, the offer to set one up and this week's cardio
           come after the builder, and not while a generated plan is showing
           above its Start bar. */}
-        {hydrated && !hasPlan && !shownPlan ? (
+        {hydrated && tab === "build" && !hasPlan && !shownPlan ? (
           <div className="mt-3">
             {planCard}
             <CardioWeekCard compact />
