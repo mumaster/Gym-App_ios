@@ -20,6 +20,7 @@ export function ListCard({
   actions,
   fold,
   bandLink,
+  compact,
   children,
 }: {
   icon: LucideIcon;
@@ -32,10 +33,23 @@ export function ListCard({
    *  their recap): the caller draws the `Link` with the className and
    *  children it's handed, and a chevron closes the band. */
   bandLink?: (band: { className: string; children: ReactNode }) => ReactNode;
+  /** A one-line band (smaller badge, the count beside the title) for a list
+   *  under other content, like a meal's overview (asked for: too tall). */
+  compact?: boolean;
   children: ReactNode;
 }) {
   const bodyId = useId();
-  const heading = (
+  const heading = compact ? (
+    <>
+      <span aria-hidden className={`${filled ? badge.tonal : badge.off} size-7`}>
+        <Icon className="size-[15px]" />
+      </span>
+      <span className="flex min-w-0 flex-1 items-baseline gap-2">
+        <span className="truncate text-[15px] font-bold leading-tight">{title}</span>
+        <span className="tabular truncate text-[12.5px] text-foreground/75">{subtitle}</span>
+      </span>
+    </>
+  ) : (
     <>
       <span aria-hidden className={`${filled ? badge.tonal : badge.off} size-9`}>
         <Icon className="size-[18px]" />
@@ -79,7 +93,11 @@ export function ListCard({
           ),
         })
       ) : (
-        <div className="card-head flex min-h-[56px] items-center gap-3 px-4 py-2">
+        <div
+          className={`card-head flex items-center gap-3 px-4 ${
+            compact ? "min-h-[44px] py-1.5" : "min-h-[56px] py-2"
+          }`}
+        >
           {heading}
           {actions ? <span className="flex shrink-0 items-center gap-2">{actions}</span> : null}
         </div>

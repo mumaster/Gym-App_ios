@@ -196,6 +196,7 @@ export function MealOverviewSheet({
               title={t.mealOverview.foods(entries.length)}
               subtitle={t.nutrition.kcal(totals.calories)}
               filled
+              compact
             >
               {entries.map((entry, i) => {
                 const m = scaledMacros(entry);
