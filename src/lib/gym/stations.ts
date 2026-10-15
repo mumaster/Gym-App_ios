@@ -26,7 +26,7 @@ const LOADED: EquipmentId[] = [
   "leg_developer",
 ];
 
-/** The low/mid and the high pulley count as one station: a home cable tower
+/** The low and the high pulley count as one station: a home cable tower
  *  (the user's) has both on a single weight stack. */
 const SAME_STATION: Partial<Record<EquipmentId, string>> = { cable_high: "cable" };
 

@@ -6,8 +6,8 @@ export const EQUIPMENT: { id: EquipmentId; label: string }[] = [
   { id: "bodyweight", label: "Bodyweight" },
   { id: "barbell", label: "Barbells" },
   { id: "dumbbell", label: "Dumbbells" },
-  { id: "cable", label: "Low / Mid Cable" },
-  { id: "cable_high", label: "High Cable Pulley (Lat Station)" },
+  { id: "cable", label: "Low Cable" },
+  { id: "cable_high", label: "High Cable" },
   { id: "smith", label: "Smith Machine (Guided Barbell)" },
   { id: "bench", label: "Adjustable Bench (Flat / Incline / Decline)" },
   { id: "leg_developer", label: "Leg Developer (Extension & Lying Curl)" },
@@ -18,6 +18,17 @@ export const EQUIPMENT: { id: EquipmentId; label: string }[] = [
   { id: "leg_press", label: "Leg Press" },
   { id: "machine", label: "Pin-Loaded Machines" },
 ];
+
+/** Dutch names for the equipment that has one; the rest keep their English label. */
+const EQUIPMENT_NL: Partial<Record<EquipmentId, string>> = {
+  cable: "Lage kabel",
+  cable_high: "Hoge kabel",
+};
+
+export const equipmentLabel = (id: EquipmentId, language: "en" | "nl"): string => {
+  const base = EQUIPMENT.find((e) => e.id === id)?.label ?? id;
+  return language === "nl" ? (EQUIPMENT_NL[id] ?? base) : base;
+};
 
 export const MUSCLES: Muscle[] = [
   "Chest",
@@ -138,7 +149,7 @@ export const EXERCISES: Exercise[] = [
     primary_muscle: "Chest",
     secondary_muscles: [],
     muscle_targets: ["Mid Chest", "Lower Chest"],
-    equipment_required: ["cable"],
+    equipment_required: ["cable_high"],
     movement_pattern: "push",
     compound: false,
     instructions: "Sweep handles together in front of the sternum with a soft elbow bend.",
