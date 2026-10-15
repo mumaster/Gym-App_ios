@@ -501,6 +501,15 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 51,
     items: [
       {
+        en: "Weight suggestions now keep your reps in a sensible range: when you add weight, the suggested reps match what you just did (22.5 kg × 14 now suggests 23.5 kg × 10, not × 6). The suggested weight and reps now sit in a pill, with only the reason as text.",
+        nl: "Gewichtsuggesties houden je herhalingen nu op een logisch niveau: voeg je gewicht toe, dan sluiten de voorgestelde herhalingen aan op wat je net deed (22,5 kg × 14 geeft nu 23,5 kg × 10, niet × 6). Het voorgestelde gewicht en de herhalingen staan nu in een pil, met alleen de reden als tekst.",
+      },
+    ],
+  },
+  {
+    version: 52,
+    items: [
+      {
         en: "Your program editor now shows Day 1, Day 2… with the real date of each session this week, so it matches the Training tab when a day was pushed.",
         nl: "In de programma-editor zie je nu Dag 1, Dag 2… met de echte datum van elke training deze week, dus het klopt met het Training-tabblad als een dag is opgeschoven.",
       },
@@ -527,7 +536,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 51;
+export const CURRENT_VERSION = 52;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

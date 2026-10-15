@@ -1757,11 +1757,7 @@ function ExerciseBlock({
           ? {
               weight: progression.weight,
               reps: progression.reps,
-              text: t.session.suggestedInline(
-                load(progression.weight),
-                progression.reps,
-                progression.reason,
-              ),
+              text: progression.reason,
             }
           : null;
   const prefillWeight =
@@ -2226,14 +2222,15 @@ function ExerciseBlock({
                 ) : (
                   <TrendingDown className="size-4 shrink-0 text-primary-text" />
                 )}
-                <p className="min-w-0 flex-1 text-[12.5px] font-semibold leading-snug text-primary-text">
-                  <span className="tabular text-[14px] font-bold">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <span className="tabular inline-block rounded-full bg-primary px-3 py-1 text-[14px] font-bold text-primary-foreground">
                     {load(offer.weight)}
                     {offer.reps != null ? ` × ${offer.reps}` : ""}
                   </span>
-                  <br />
-                  {offer.text}
-                </p>
+                  <p className="text-[12.5px] font-semibold leading-snug text-primary-text">
+                    {offer.text}
+                  </p>
+                </div>
                 <button
                   onClick={() => {
                     haptic(12);
