@@ -1,4 +1,4 @@
-import { BookmarkPlus, Check, CopyPlus, Plus, Share2, UtensilsCrossed } from "lucide-react";
+import { BookmarkPlus, Check, CopyPlus, Plus, Share2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
 import { drinkOf } from "../../lib/gym/alcohol";
@@ -15,7 +15,6 @@ import {
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
 import { useInfoTip } from "./InfoTip";
-import { ListCard } from "./ListCard";
 import { NutrientCell } from "./NutrientCell";
 
 /**
@@ -192,38 +191,44 @@ export function MealOverviewSheet({
             ) : null}
           </div>
           {entries.length ? (
-            <ListCard
-              icon={UtensilsCrossed}
-              title={t.mealOverview.foods(entries.length)}
-              subtitle={t.nutrition.kcal(totals.calories)}
-              filled
-              compact
-            >
-              {entries.map((entry, i) => {
-                const m = scaledMacros(entry);
-                return (
-                  <button
-                    key={entry.id}
-                    onClick={() => onEdit(entry)}
-                    aria-label={t.nutrition.editEntry(entry.name)}
-                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${"border-t border-border"}`}
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[15px] font-semibold">{entry.name}</span>
-                      <PortionLine
-                        grams={entry.grams}
-                        unit={drinkOf(entry) ? "ml" : "g"}
-                        macros={m}
-                        className="text-[12px]"
-                      />
-                    </span>
-                    <span className="tabular shrink-0 text-[14px] font-semibold">
-                      {t.nutrition.kcal(m.calories)}
-                    </span>
-                  </button>
-                );
-              })}
-            </ListCard>
+            <div>
+              <div className="flex items-baseline justify-between px-1 pb-1.5">
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t.mealOverview.ingredients(entries.length)}
+                </p>
+                <p className="tabular text-[12px] text-muted-foreground">
+                  {t.nutrition.kcal(totals.calories)}
+                </p>
+              </div>
+              <div className="glass overflow-hidden rounded-2xl">
+                {entries.map((entry, i) => {
+                  const m = scaledMacros(entry);
+                  return (
+                    <button
+                      key={entry.id}
+                      onClick={() => onEdit(entry)}
+                      aria-label={t.nutrition.editEntry(entry.name)}
+                      className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left active:bg-foreground/5 ${i > 0 ? "border-t border-border" : ""}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-[15px] font-semibold">
+                          {entry.name}
+                        </span>
+                        <PortionLine
+                          grams={entry.grams}
+                          unit={drinkOf(entry) ? "ml" : "g"}
+                          macros={m}
+                          className="text-[12px]"
+                        />
+                      </span>
+                      <span className="tabular shrink-0 text-[14px] font-semibold">
+                        {t.nutrition.kcal(m.calories)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ) : (
             <p className="px-1 text-[14px] text-muted-foreground">{t.nutrition.nothingInMeal}</p>
           )}
