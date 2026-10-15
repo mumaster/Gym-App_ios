@@ -4,8 +4,17 @@ import { CardHead } from "./CardHead";
 import { Card } from "./Screen";
 import { useInfoTip } from "./InfoTip";
 import { barFill } from "./bar";
-import { scoreWorkout, type MuscleStatus, type ScorePartId } from "../../lib/gym/diyWorkout";
+import {
+  TIME_FIT_LOW,
+  generatedReference,
+  scoreWorkout,
+  type MuscleStatus,
+  type ScorePartId,
+} from "../../lib/gym/diyWorkout";
+import { estimateMinutes } from "../../lib/gym/generator";
 import { useTranslation } from "../../lib/gym/i18n";
+import { latestBodyKg } from "../../lib/gym/load";
+import { learnPace } from "../../lib/gym/pace";
 import { useGym } from "../../lib/gym/store";
 import type { PlannedExercise } from "../../lib/gym/types";
 
@@ -23,16 +32,80 @@ const STATUS_PILL: Record<MuscleStatus, string> = {
 export function WorkoutScoreCard({
   plan,
   minutes,
+  targetMinutes,
 }: {
   plan: PlannedExercise[];
   /** Estimated session length (generator.estimateMinutes). */
   minutes: number;
+  /** The length the user plans the workout for. */
+  targetMinutes: number;
 }) {
   const t = useTranslation();
-  const { growthFocus } = useGym();
+  const {
+    growthFocus,
+    workouts,
+    profiles,
+    activeProfileId,
+    avoidedExerciseIds,
+    warmupsEnabled,
+    knownLifts,
+    weightLog,
+    nutritionProfile,
+  } = useGym();
+  const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0];
+  const pace = useMemo(() => learnPace(workouts), [workouts]);
+  // The generator's workout for the same muscles and length: the yardstick.
+  const reference = useMemo(
+    () =>
+      generatedReference(plan, targetMinutes, {
+        equipment: profile?.active_equipment_ids ?? [],
+        avoided: avoidedExerciseIds,
+        warmups: warmupsEnabled,
+        focusMuscles: growthFocus,
+        history: workouts,
+        knownLifts,
+        ...(profile ? { profile } : {}),
+        bodyKg: latestBodyKg(weightLog, nutritionProfile),
+        pace,
+      }),
+    [
+      plan,
+      targetMinutes,
+      profile,
+      avoidedExerciseIds,
+      warmupsEnabled,
+      growthFocus,
+      workouts,
+      knownLifts,
+      weightLog,
+      nutritionProfile,
+      pace,
+    ],
+  );
+  const refMinutes = useMemo(() => estimateMinutes(reference, pace), [reference, pace]);
   const result = useMemo(
-    () => scoreWorkout(plan, { minutes, focus: growthFocus }),
-    [plan, minutes, growthFocus],
+    () =>
+      scoreWorkout(plan, {
+        minutes,
+        targetMinutes,
+        reference,
+        referenceMinutes: refMinutes,
+        focus: growthFocus,
+      }),
+    [plan, minutes, targetMinutes, reference, refMinutes, growthFocus],
+  );
+  const refScore = useMemo(
+    () =>
+      reference.length
+        ? scoreWorkout(reference, {
+            minutes: refMinutes,
+            targetMinutes,
+            reference,
+            referenceMinutes: refMinutes,
+            focus: growthFocus,
+          }).score
+        : null,
+    [reference, refMinutes, targetMinutes, growthFocus],
   );
   const tip = useInfoTip(
     t.workoutScore.infoLabel,
@@ -58,6 +131,23 @@ export function WorkoutScoreCard({
         </span>
       </div>
 
+      {refScore !== null && plan.length ? (
+        <div className="mt-3 rounded-xl bg-foreground/5 px-3 py-2" data-score-compare>
+          <p className="text-[13px] font-semibold">
+            {t.workoutScore.compare(targetMinutes, refScore)}
+          </p>
+          <p className="tabular text-[12.5px] text-muted-foreground">
+            {t.workoutScore.compareSets(result.usefulSets, result.referenceSets ?? 0)}
+          </p>
+          {/* Only when it changes what counts as full (the time part's own band). */}
+          {result.expectedMinutes < targetMinutes * TIME_FIT_LOW ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              {t.workoutScore.compareShort(result.expectedMinutes, targetMinutes)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="mt-3 divide-y divide-border">
         {result.parts.map((part) => {
           const lost = part.points < part.max;
@@ -65,11 +155,15 @@ export function WorkoutScoreCard({
           const line =
             !lost || plan.length === 0
               ? ""
-              : part.id === "length"
-                ? t.workoutScore.issues.length
-                : part.issues.length
-                  ? t.workoutScore.issues[part.id as Exclude<ScorePartId, "length">](names)
-                  : "";
+              : part.id === "volume"
+                ? t.workoutScore.issues.volume(result.usefulSets, result.referenceSets ?? 0)
+                : part.id === "time"
+                  ? t.workoutScore.issues.time(result.minutes, result.expectedMinutes)
+                  : part.issues.length
+                    ? t.workoutScore.issues[part.id as Exclude<ScorePartId, "volume" | "time">](
+                        names,
+                      )
+                    : t.workoutScore.issues.fill;
           return (
             <div key={part.id} className="py-2 first:pt-0">
               <div className="flex items-center justify-between gap-2">
@@ -114,6 +208,9 @@ export function WorkoutScoreCard({
                     m.weeklyTarget,
                   )}
                   {m.status === "high" ? ` · ${t.workoutScore.status.high}` : ""}
+                  {m.referenceSets !== undefined
+                    ? ` · ${t.workoutScore.generatedSets(m.referenceSets)}`
+                    : ""}
                 </p>
               </div>
             );

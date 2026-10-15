@@ -472,6 +472,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 50,
+    items: [
+      {
+        en: "In Custom, set how long your workout should take. The score now compares your workout with the one the app would generate for the same muscles and length, so one exercise no longer scores 100.",
+        nl: "In Zelf maken kies je nu hoe lang je training moet duren. De score vergelijkt je training nu met de training die de app automatisch maakt voor dezelfde spieren en duur, dus één oefening scoort geen 100 meer.",
+      },
+      {
+        en: "Add exercise is now the main button in Custom.",
+        nl: "Oefening toevoegen is nu de hoofdknop in Zelf maken.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -481,7 +494,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 49;
+export const CURRENT_VERSION = 50;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

@@ -1819,6 +1819,8 @@ const en = {
     useSavedTitle: "Saved workouts",
     useSavedHint: "Pick one to put it on this day. You can still change it before you save.",
     useSavedBack: "Back",
+    duration: "Planned length",
+    durationEstimate: (min: number) => `This plan takes about ${min} min`,
   },
   workoutScore: {
     title: "Workout score",
@@ -1826,29 +1828,43 @@ const en = {
     grades: { excellent: "Excellent", good: "Good", ok: "Okay", weak: "Needs work" },
     infoLabel: "How the score works",
     info: [
-      "The score is out of 100 and checks five things: volume (40), exercise order (15), rep ranges (15), rest (15) and session length (15).",
-      "Volume looks at each muscle: 3 to 11 hard sets in one session is the sweet spot. Fewer counts for less, more than that gets little extra.",
+      "Your workout is compared with the one the app would generate for the same muscles and the length you planned.",
+      "Volume (35) counts your working sets that help growth (up to 11 per muscle in one session) against the generated workout's. Filling your time (20) checks the workout roughly matches the length you planned, or the generated one's when your muscles need less time.",
+      "Sets per muscle (15), order (10), reps (10) and rest (10) check how it's built. They count in full once your workout holds as many useful sets as the generated one, so one exercise can't score high on its own.",
       "Bars show each muscle's sets against its weekly target. Low means too few sets to count much, Effective is a solid dose, Too much means more than one session can use.",
     ],
+    compare: (min: number, score: number) => `A generated ${min}-minute workout scores ${score}`,
+    compareSets: (yours: number, generated: number) =>
+      `Useful sets: yours ${yours}, generated ${generated}`,
+    compareShort: (min: number, planned: number) =>
+      `These muscles need about ${min} of your ${planned} minutes. Add other muscles to use the rest.`,
     parts: {
       volume: "Volume",
+      time: "Fills your time",
+      muscles: "Sets per muscle",
       order: "Exercise order",
       reps: "Rep ranges",
       rest: "Rest",
-      length: "Session length",
     },
     points: (p: number, max: number) => `${p}/${max}`,
     issues: {
-      volume: (names: string) => `Sets per muscle are off for: ${names}.`,
+      volume: (yours: number, generated: number) =>
+        `${yours} useful ${yours === 1 ? "set" : "sets"} against ${generated} in the generated workout. Add exercises or sets.`,
+      time: (min: number, planned: number) =>
+        min < planned
+          ? `About ${min} of ${planned} minutes are used. Add exercises or sets.`
+          : `About ${min} minutes, longer than the ${planned} this needs.`,
+      muscles: (names: string) => `Sets per muscle are off for: ${names}.`,
       order: (names: string) => `Do the big lifts first. Move later: ${names}.`,
       reps: (names: string) => `Reps outside 5 to 30: ${names}.`,
       rest: (names: string) => `Rest is short for: ${names}.`,
-      length: "This session runs long. Under 75 minutes keeps the quality up.",
+      fill: "Counts in full once the workout is as full as the generated one.",
     },
     muscles: "Muscles",
     musclesEmpty: "Add exercises to see which muscles you train.",
     muscleLine: (sets: number, pct: number, weekly: number) =>
       `${sets} ${sets === 1 ? "set" : "sets"} · ${pct}% of your weekly ${weekly}`,
+    generatedSets: (sets: number) => `generated ${sets}`,
     status: { low: "Low", good: "Effective", high: "Too much for one session" },
     statusShort: { low: "Low", good: "Effective", high: "Too much" },
   },
@@ -4098,6 +4114,8 @@ const nl: Dict = {
     useSavedTitle: "Opgeslagen trainingen",
     useSavedHint: "Kies er een voor deze dag. Je kunt hem nog aanpassen voordat je opslaat.",
     useSavedBack: "Terug",
+    duration: "Geplande duur",
+    durationEstimate: (min: number) => `Dit schema duurt ongeveer ${min} min`,
   },
   workoutScore: {
     title: "Trainingsscore",
@@ -4105,29 +4123,44 @@ const nl: Dict = {
     grades: { excellent: "Uitstekend", good: "Goed", ok: "Redelijk", weak: "Kan beter" },
     infoLabel: "Zo werkt de score",
     info: [
-      "De score is uit 100 en kijkt naar vijf dingen: volume (40), volgorde van oefeningen (15), herhalingen (15), rust (15) en lengte van de training (15).",
-      "Bij volume telt per spier: 3 tot 11 zware sets in één training is de sweet spot. Minder telt minder mee, meer levert weinig extra op.",
+      "Je training wordt vergeleken met de training die de app automatisch maakt voor dezelfde spieren en de tijd die je hebt gepland.",
+      "Volume (35) telt je sets die bijdragen aan spiergroei (tot 11 per spier in één training) tegenover die van de automatische training. Tijd benut (20) kijkt of je training ongeveer zo lang duurt als gepland, of als de automatische als jouw spieren minder tijd nodig hebben.",
+      "Sets per spier (15), volgorde (10), herhalingen (10) en rust (10) kijken hoe hij in elkaar zit. Die tellen volledig mee zodra je training net zoveel nuttige sets heeft als de automatische, dus één oefening kan niet alleen hoog scoren.",
       "De balken tonen de sets per spier tegenover het weekdoel. Laag betekent te weinig sets om veel te doen, Effectief is een goede dosis, Te veel is meer dan één training aankan.",
     ],
+    compare: (min: number, score: number) =>
+      `Een automatische training van ${min} minuten scoort ${score}`,
+    compareSets: (yours: number, generated: number) =>
+      `Nuttige sets: jij ${yours}, automatisch ${generated}`,
+    compareShort: (min: number, planned: number) =>
+      `Voor deze spieren is ongeveer ${min} van je ${planned} minuten genoeg. Voeg andere spieren toe om de rest te benutten.`,
     parts: {
       volume: "Volume",
+      time: "Tijd benut",
+      muscles: "Sets per spier",
       order: "Volgorde",
       reps: "Herhalingen",
       rest: "Rust",
-      length: "Lengte",
     },
     points: (p: number, max: number) => `${p}/${max}`,
     issues: {
-      volume: (names: string) => `Het aantal sets klopt niet voor: ${names}.`,
+      volume: (yours: number, generated: number) =>
+        `${yours} nuttige ${yours === 1 ? "set" : "sets"} tegenover ${generated} in de automatische training. Voeg oefeningen of sets toe.`,
+      time: (min: number, planned: number) =>
+        min < planned
+          ? `Ongeveer ${min} van ${planned} minuten gebruikt. Voeg oefeningen of sets toe.`
+          : `Ongeveer ${min} minuten, langer dan de ${planned} die dit nodig heeft.`,
+      muscles: (names: string) => `Het aantal sets klopt niet voor: ${names}.`,
       order: (names: string) => `Doe de zware oefeningen eerst. Zet later: ${names}.`,
       reps: (names: string) => `Herhalingen buiten 5 tot 30: ${names}.`,
       rest: (names: string) => `De rust is kort bij: ${names}.`,
-      length: "Deze training duurt lang. Onder de 75 minuten blijft de kwaliteit hoog.",
+      fill: "Telt volledig mee zodra je training net zo vol is als de automatische.",
     },
     muscles: "Spieren",
     musclesEmpty: "Voeg oefeningen toe om te zien welke spieren je traint.",
     muscleLine: (sets: number, pct: number, weekly: number) =>
       `${sets} ${sets === 1 ? "set" : "sets"} · ${pct}% van je week van ${weekly}`,
+    generatedSets: (sets: number) => `automatisch ${sets}`,
     status: { low: "Laag", good: "Effectief", high: "Te veel voor één training" },
     statusShort: { low: "Laag", good: "Effectief", high: "Te veel" },
   },

@@ -1,7 +1,7 @@
 import { exerciseById } from "./data";
-import { estimateMinutes } from "./generator";
+import { estimateMinutes, generateWorkout, type GenerateArgs } from "./generator";
 import { planBlocks } from "./planBlocks";
-import type { Exercise, Muscle, PlannedExercise } from "./types";
+import type { Exercise, Muscle, PlannedExercise, TargetMuscle } from "./types";
 import {
   MAX_SESSION_SETS_PER_MUSCLE,
   mainPlanSets,
@@ -178,7 +178,7 @@ export function parseReps(targetReps: string): { min: number; max: number } | nu
 
 /* ---------------- scoring ---------------- */
 
-export type ScorePartId = "volume" | "order" | "reps" | "rest" | "length";
+export type ScorePartId = "volume" | "time" | "muscles" | "order" | "reps" | "rest";
 export interface ScorePart {
   id: ScorePartId;
   points: number;
@@ -192,12 +192,25 @@ export interface MuscleEffect {
   sets: number;
   weeklyTarget: number;
   status: MuscleStatus;
+  /** Sets the generated workout of the same length gives this muscle. */
+  referenceSets?: number;
 }
 export interface WorkoutScore {
   score: number;
   grade: "excellent" | "good" | "ok" | "weak";
   parts: ScorePart[];
   muscles: MuscleEffect[];
+  /** Working sets that count toward growth (each muscle's main sets, up to
+   *  the per-session cap). */
+  usefulSets: number;
+  /** The same for the generated workout, when one was compared. */
+  referenceSets: number | null;
+  /** Estimated length of the plan and the length it was planned for. */
+  minutes: number;
+  targetMinutes: number;
+  /** The length the plan is scored for filling: the planned length, or
+   *  the generated workout's when that is shorter. */
+  expectedMinutes: number;
 }
 export interface ScoreOptions {
   /** Working sets per muscle for the plan; default volume.ts planSets. */
@@ -212,58 +225,138 @@ export interface ScoreOptions {
   focus?: readonly VolumeMuscle[];
   /** Estimated session length in minutes; default generator.ts estimateMinutes(plan). */
   minutes?: number;
+  /** How long the workout is meant to take; default DEFAULT_PLANNED_MINUTES. */
+  targetMinutes?: number;
+  /** The generator's workout for the same muscles and length
+   *  (`generatedReference`). Volume is scored against it; without one the
+   *  plan is its own yardstick. */
+  reference?: PlannedExercise[];
+  /** The generated workout's estimated length. When it's shorter than the
+   *  planned length (the muscles picked don't need more), that's the
+   *  length the plan should fill. */
+  referenceMinutes?: number;
 }
+
+/** Length a new hand-built workout is planned for: the generator's default. */
+export const DEFAULT_PLANNED_MINUTES = 45;
 
 /** Fewest sets of one muscle in a session that still counts as a real
  *  stimulus. The app's own floor, below it the volume factor scales down. */
 const MIN_EFFECTIVE_SETS = 3;
+
+/** The plan's estimate may be this far under or over the planned length and
+ *  still count as filling it (the app's own band: estimates are rough). */
+export const TIME_FIT_LOW = 0.85;
+const TIME_FIT_HIGH = 1.15;
+/** At or under this share of the planned length the time part is 0, and
+ *  at this share over it too (the app's own choice). */
+const TIME_FIT_FLOOR = 0.3;
+const TIME_FIT_CEILING = 1.6;
 
 const defaultMuscleSets = (plan: PlannedExercise[]): Record<string, number> =>
   planSets(plan) as Record<string, number>;
 const defaultMainSets = (plan: PlannedExercise[]): Record<string, number> =>
   mainPlanSets(plan) as Record<string, number>;
 
+/** Working sets that count: each muscle's main sets, capped at
+ *  MAX_SESSION_SETS_PER_MUSCLE (more in one session adds nothing). */
+function usefulSetsOf(main: Record<string, number>): number {
+  return Object.values(main).reduce((s, n) => s + Math.min(n, MAX_SESSION_SETS_PER_MUSCLE), 0);
+}
+
+/** Share of the time part: full when the estimate is within 85-115% of the
+ *  planned length, sliding to 0 at 30% and at 160%. */
+export function timeFit(minutes: number, targetMinutes: number): number {
+  if (targetMinutes <= 0) return 1;
+  const r = minutes / targetMinutes;
+  if (r >= TIME_FIT_LOW && r <= TIME_FIT_HIGH) return 1;
+  if (r < TIME_FIT_LOW) return Math.max(0, (r - TIME_FIT_FLOOR) / (TIME_FIT_LOW - TIME_FIT_FLOOR));
+  return Math.max(0, (TIME_FIT_CEILING - r) / (TIME_FIT_CEILING - TIME_FIT_HIGH));
+}
+
 /**
- * A 0-100 score for a hand-built workout, from five parts. Sources:
+ * A 0-100 score for a hand-built workout, measured against what the app's
+ * generator would build for the same muscles in the planned time. Parts:
  *
- * - volume (40): sets per muscle in the session. Up to
- *   MAX_SESSION_SETS_PER_MUSCLE (11) sets still add growth
- *   (Pelland et al., Sports Med 2024), beyond that there is no detectable
- *   extra gain. Under 3 sets (the app's own floor) the muscle is barely
- *   trained, so it scores sets/3 (min 0.3); over the cap it scores 0.6.
- * - order (15): compounds before isolation work for the same muscle
- *   (Simao et al. 2012 review on exercise order): the exercise done first
- *   gets the most effort, and the big lifts need it most.
- * - reps (15): a rep target whose middle is 5-30 (Schoenfeld et al. 2017,
- *   2021: similar growth across roughly 6-30+ reps taken near failure,
- *   heavier for strength). Time-based targets count as in range.
- * - rest (15): compounds 90 s or more, isolation 60 s or more
+ * - volume (35): working sets that count (each muscle's main sets, capped at
+ *   MAX_SESSION_SETS_PER_MUSCLE, 11: Pelland et al., Sports Med 2024, no
+ *   detectable extra growth beyond it in one session) as a share of the
+ *   generated workout's. Matching or beating it is full marks.
+ * - time (20): does the plan fill the planned length (`timeFit`), or the
+ *   generated workout's length when the muscles picked don't need the whole
+ *   time. The band is the app's own choice.
+ * - muscles (15): each trained muscle gets 3 to 11 sets. Under 3 sets (the
+ *   app's own floor) it scores sets/3 (min 0.3); over the cap 0.6.
+ * - order (10): compounds before isolation work for the same muscle
+ *   (Simao et al. 2012 review on exercise order).
+ * - reps (10): a rep target whose middle is 5-30 (Schoenfeld et al. 2017,
+ *   2021: similar growth across roughly 6-30+ reps taken near failure).
+ *   Time-based targets count as in range.
+ * - rest (10): compounds 90 s or more, isolation 60 s or more
  *   (Schoenfeld et al. 2016; Singer et al. 2024 meta-analysis: rests over
  *   60 s grew muscle slightly better). In a superset the round rest counts.
- * - length (15): up to 75 min full marks, sliding to 6 points at 120 min.
- *   This band is the app's own choice, not a published number.
+ *
+ * Muscles, order, reps and rest only count in full once the workout holds
+ * as many useful sets as the generated one: they are multiplied by the
+ * volume share, so one well-built exercise can't score high on its own.
  */
 export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): WorkoutScore {
+  const targetMinutes = opts.targetMinutes ?? DEFAULT_PLANNED_MINUTES;
+  const mainOf = opts.mainSets ?? defaultMainSets;
+  const ref = opts.reference;
+  const referenceSets = ref && ref.length ? usefulSetsOf(mainOf(ref)) : null;
+  // The generator stops a muscle at the per-session cap, so a few muscles
+  // can't usefully fill a long session: then its length is the yardstick.
+  const expectedMinutes =
+    opts.referenceMinutes !== undefined && opts.referenceMinutes > 0
+      ? Math.min(targetMinutes, opts.referenceMinutes)
+      : targetMinutes;
   const empty = (id: ScorePartId, max: number): ScorePart => ({ id, points: 0, max, issues: [] });
   if (plan.length === 0) {
     return {
       score: 0,
       grade: "weak",
       parts: [
-        empty("volume", 40),
-        empty("order", 15),
-        empty("reps", 15),
-        empty("rest", 15),
-        empty("length", 15),
+        empty("volume", 35),
+        empty("time", 20),
+        empty("muscles", 15),
+        empty("order", 10),
+        empty("reps", 10),
+        empty("rest", 10),
       ],
       muscles: [],
+      usefulSets: 0,
+      referenceSets,
+      minutes: 0,
+      targetMinutes,
+      expectedMinutes,
     };
   }
   const nameOf = (p: PlannedExercise) => exerciseById(p.exercise_id)?.name ?? p.exercise_id;
 
-  // volume
+  // volume, against the generated workout
   const setsBy = (opts.muscleSets ?? defaultMuscleSets)(plan);
-  const mainBy = (opts.mainSets ?? defaultMainSets)(plan);
+  const mainBy = mainOf(plan);
+  const useful = usefulSetsOf(mainBy);
+  const share = referenceSets ? Math.min(1, useful / referenceSets) : 1;
+  const volume: ScorePart = {
+    id: "volume",
+    max: 35,
+    points: 35 * share,
+    issues: [],
+  };
+
+  // time
+  const minutes = opts.minutes ?? estimateMinutes(plan);
+  const time: ScorePart = {
+    id: "time",
+    max: 20,
+    points: 20 * timeFit(minutes, expectedMinutes),
+    issues: [],
+  };
+
+  // sets per muscle
+  const refSets = ref && ref.length ? (opts.muscleSets ?? defaultMuscleSets)(ref) : null;
   const focus = new Set(opts.focus ?? []);
   const target =
     opts.weeklyTarget ?? ((muscle: string) => baseWeeklyTarget(muscle as VolumeMuscle, focus));
@@ -282,13 +375,16 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
           : (mainBy[muscle] ?? 0) <= MAX_SESSION_SETS_PER_MUSCLE
             ? "good"
             : "high",
+      ...(refSets ? { referenceSets: Math.round((refSets[muscle] ?? 0) * 10) / 10 } : {}),
     }));
   const factor = (m: MuscleEffect) =>
     m.status === "low" ? Math.max(0.3, m.sets / MIN_EFFECTIVE_SETS) : m.status === "good" ? 1 : 0.6;
-  const volume: ScorePart = {
-    id: "volume",
-    max: 40,
-    points: muscles.length ? 40 * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length) : 0,
+  const musclePart: ScorePart = {
+    id: "muscles",
+    max: 15,
+    points: muscles.length
+      ? 15 * share * (muscles.reduce((s, m) => s + factor(m), 0) / muscles.length)
+      : 0,
     issues: muscles.filter((m) => m.status !== "good").map((m) => m.muscle),
   };
 
@@ -305,8 +401,8 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   });
   const order: ScorePart = {
     id: "order",
-    max: 15,
-    points: 15 * (1 - inverted.length / Math.max(1, isolations)),
+    max: 10,
+    points: 10 * share * (1 - inverted.length / Math.max(1, isolations)),
     issues: inverted,
   };
 
@@ -319,8 +415,8 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   });
   const reps: ScorePart = {
     id: "reps",
-    max: 15,
-    points: 15 * (1 - badReps.length / plan.length),
+    max: 10,
+    points: 10 * share * (1 - badReps.length / plan.length),
     issues: badReps.map(nameOf),
   };
 
@@ -340,26 +436,57 @@ export function scoreWorkout(plan: PlannedExercise[], opts: ScoreOptions = {}): 
   }
   const rest: ScorePart = {
     id: "rest",
-    max: 15,
-    points: 15 * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
+    max: 10,
+    points: 10 * share * (restFactors.reduce((s, f) => s + f, 0) / restFactors.length),
     issues: shortRest,
   };
 
-  // length
-  const minutes = opts.minutes ?? estimateMinutes(plan);
-  const length: ScorePart = {
-    id: "length",
-    max: 15,
-    points: minutes <= 75 ? 15 : minutes >= 120 ? 6 : 15 - (9 * (minutes - 75)) / 45,
-    issues: [],
-  };
-
-  const parts = [volume, order, reps, rest, length];
+  const parts = [volume, time, musclePart, order, reps, rest];
   const score = Math.round(parts.reduce((s, p) => s + p.points, 0));
   return {
     score,
     grade: score >= 85 ? "excellent" : score >= 70 ? "good" : score >= 50 ? "ok" : "weak",
     parts,
     muscles,
+    usefulSets: useful,
+    referenceSets,
+    minutes,
+    targetMinutes,
+    expectedMinutes,
   };
+}
+
+/** The muscle heads a hand-built plan is built around: each exercise's main
+ *  target, in plan order. What the generated comparison is asked for. */
+export function planTargets(plan: PlannedExercise[]): TargetMuscle[] {
+  const out: TargetMuscle[] = [];
+  for (const p of plan) {
+    const t = exerciseById(p.exercise_id)?.muscle_targets[0];
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
+/** What the app's generator builds for the same muscles in `duration`
+ *  minutes: the yardstick `scoreWorkout` measures a hand-built plan
+ *  against. Supersets only when the plan has them, so a plan of straight
+ *  sets isn't compared with one that fits more work by pairing. No loved
+ *  exercises (they'd add muscles) and a fresh week (so the comparison
+ *  doesn't move with what was trained the last few days). */
+export function generatedReference(
+  plan: PlannedExercise[],
+  duration: number,
+  args: Omit<
+    GenerateArgs,
+    "duration" | "targets" | "supersets" | "loved" | "weekDone" | "variation"
+  >,
+): PlannedExercise[] {
+  const targets = planTargets(plan);
+  if (!targets.length) return [];
+  return generateWorkout({
+    ...args,
+    duration,
+    targets,
+    supersets: plan.some((p) => p.superset_group !== undefined),
+  });
 }
