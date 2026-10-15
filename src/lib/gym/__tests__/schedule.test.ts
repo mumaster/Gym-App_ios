@@ -292,3 +292,16 @@ describe("done days", () => {
     });
   });
 });
+
+describe("flexible rotation", () => {
+  it("never reports a late session as missed", () => {
+    const r = {
+      schedule: [{ dow: 1, dayId: "upper" }],
+      cyclePosition: 0,
+      anchor: "2026-09-21",
+      flexible: true,
+    } as Rotation;
+    expect(overdueDays(r, new Date(2026, 8, 30))).toBe(0);
+    expect(overdueDays({ ...r, flexible: false }, new Date(2026, 8, 30))).toBeGreaterThan(0);
+  });
+});

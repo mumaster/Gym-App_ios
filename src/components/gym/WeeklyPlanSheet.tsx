@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Check, Pencil, Trash2 } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { DayTypePicker } from "./DayTypePicker";
-import { useTranslation } from "../../lib/gym/i18n";
+import { useLocale, useTranslation } from "../../lib/gym/i18n";
+import { RotationModeSwitch } from "./RotationModeSwitch";
+import { rotationCaption } from "./rotationCaption";
 import { cardioPlanLine } from "./cardioDisplay";
 import {
   DOW_DISPLAY_ORDER,
@@ -59,9 +61,11 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
     cardioPlan,
     setCardioPlan,
     setRotationSlots,
+    setRotationFlexible,
     update,
   } = useGym();
   const t = useTranslation();
+  const locale = useLocale();
   const [mode, setMode] = useState<Mode>("template");
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
   const [dows, setDows] = useState<number[]>(EVEN_SPREAD[4]!);
@@ -151,6 +155,11 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
               {t.weeklyPlan.subtitle(activeTemplate.label, weeklyScheme.schedule.length)}
             </p>
 
+            <RotationModeSwitch
+              flexible={!!weeklyScheme.flexible}
+              onChange={(flexible) => setRotationFlexible("weeklyScheme", flexible)}
+            />
+
             <DayWorkoutSettings kind="weeklyScheme" />
 
             <CreateAllWorkoutsButton
@@ -170,14 +179,16 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0">
-                        <span className="text-[15px] font-semibold">{dayLabel}</span>
+                        <span className="text-[15px] font-semibold">
+                          {t.common.dayN(i + 1)} · {dayLabel}
+                        </span>
                         {isNext ? (
                           <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
                             {t.weeklyPlan.nextUp}
                           </span>
                         ) : null}
                         <p className="text-[13px] text-muted-foreground">
-                          {t.common.dow[slot.dow]}
+                          {rotationCaption(weeklyScheme, i, t, locale)}
                           {cardioDayPlan(slot)
                             ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}`
                             : ""}
@@ -206,27 +217,34 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
                           cardio={slot.cardio}
                           onCardioChange={(cardio) => updateScheduleSlotCardio(i, cardio)}
                         />
-                        <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                          {DOW_DISPLAY_ORDER.map((dow) => {
-                            const taken = usedDows.has(dow) && dow !== slot.dow;
-                            return (
-                              <button
-                                key={dow}
-                                disabled={taken}
-                                onClick={() => setSlotDow(i, dow)}
-                                className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                                  dow === slot.dow
-                                    ? chip.on
-                                    : taken
-                                      ? "bg-secondary text-muted-foreground opacity-40"
-                                      : chip.off
-                                }`}
-                              >
-                                {t.common.dow[dow]}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {weeklyScheme.flexible ? null : (
+                          <>
+                            <p className="text-[12px] font-semibold text-muted-foreground">
+                              {t.common.scheduleMode.usualDay}
+                            </p>
+                            <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                              {DOW_DISPLAY_ORDER.map((dow) => {
+                                const taken = usedDows.has(dow) && dow !== slot.dow;
+                                return (
+                                  <button
+                                    key={dow}
+                                    disabled={taken}
+                                    onClick={() => setSlotDow(i, dow)}
+                                    className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                      dow === slot.dow
+                                        ? chip.on
+                                        : taken
+                                          ? "bg-secondary text-muted-foreground opacity-40"
+                                          : chip.off
+                                    }`}
+                                  >
+                                    {t.common.dow[dow]}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
                       </div>
                     ) : null}
                   </div>

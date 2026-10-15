@@ -15,7 +15,9 @@ import {
   withSeparateCardioDays,
   type SplitTemplateId,
 } from "../../lib/gym/splits";
-import { useTranslation } from "../../lib/gym/i18n";
+import { useLocale, useTranslation } from "../../lib/gym/i18n";
+import { RotationModeSwitch } from "./RotationModeSwitch";
+import { rotationCaption } from "./rotationCaption";
 import { cardioPlanLine } from "./cardioDisplay";
 import { PROGRAM_PRESETS, programPresetById, type Program } from "../../lib/gym/programs";
 import { anchorFor, isCardioSlot } from "../../lib/gym/schedule";
@@ -68,10 +70,12 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
     cardioPlan,
     setCardioPlan,
     setRotationSlots,
+    setRotationFlexible,
     update,
   } = useGym();
   const dayCtx = useDayWorkoutContext();
   const t = useTranslation();
+  const locale = useLocale();
   const [mode, setMode] = useState<Mode>("template");
   const [name, setName] = useState("Program");
   const [templateId, setTemplateId] = useState<SplitTemplateId>("upper_lower");
@@ -239,6 +243,11 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
               })}
             </div>
 
+            <RotationModeSwitch
+              flexible={!!program.flexible}
+              onChange={(flexible) => setRotationFlexible("program", flexible)}
+            />
+
             <DayWorkoutSettings kind="program" />
 
             <CreateAllWorkoutsButton
@@ -258,14 +267,16 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                   >
                     <div className="flex items-center justify-between">
                       <div className="min-w-0">
-                        <span className="text-[15px] font-semibold">{dayLabel}</span>
+                        <span className="text-[15px] font-semibold">
+                          {t.common.dayN(i + 1)} · {dayLabel}
+                        </span>
                         {isNext ? (
                           <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary-text">
                             {t.programBuilder.nextUp}
                           </span>
                         ) : null}
                         <p className="text-[13px] text-muted-foreground">
-                          {t.common.dow[slot.dow]}
+                          {rotationCaption(program, i, t, locale)}
                           {cardioDayPlan(slot)
                             ? ` · ${cardioPlanLine(cardioDayPlan(slot)!, t)}`
                             : ""}
@@ -294,27 +305,34 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
                           cardio={slot.cardio}
                           onCardioChange={(cardio) => updateProgramSlotCardio(i, cardio)}
                         />
-                        <div className="flex flex-wrap gap-x-1.5 gap-y-2">
-                          {DOW_DISPLAY_ORDER.map((dow) => {
-                            const taken = usedDows.has(dow) && dow !== slot.dow;
-                            return (
-                              <button
-                                key={dow}
-                                disabled={taken}
-                                onClick={() => setSlotDow(i, dow)}
-                                className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
-                                  dow === slot.dow
-                                    ? chip.on
-                                    : taken
-                                      ? "bg-secondary text-muted-foreground opacity-40"
-                                      : chip.off
-                                }`}
-                              >
-                                {t.common.dow[dow]}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {program.flexible ? null : (
+                          <>
+                            <p className="text-[12px] font-semibold text-muted-foreground">
+                              {t.common.scheduleMode.usualDay}
+                            </p>
+                            <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+                              {DOW_DISPLAY_ORDER.map((dow) => {
+                                const taken = usedDows.has(dow) && dow !== slot.dow;
+                                return (
+                                  <button
+                                    key={dow}
+                                    disabled={taken}
+                                    onClick={() => setSlotDow(i, dow)}
+                                    className={`tap-target min-h-[36px] flex-1 rounded-xl text-[13px] font-semibold ${
+                                      dow === slot.dow
+                                        ? chip.on
+                                        : taken
+                                          ? "bg-secondary text-muted-foreground opacity-40"
+                                          : chip.off
+                                    }`}
+                                  >
+                                    {t.common.dow[dow]}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
                       </div>
                     ) : null}
                   </div>

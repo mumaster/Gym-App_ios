@@ -104,7 +104,7 @@ describe.each([
     expect(html).toContain("Upper Body");
     expect(html).toContain("Cardio");
     expect(html).toContain("Push");
-    expect(html).toContain("Wed · Swim · Hard · 45 min");
+    expect(html).toContain("Wed, Sep 23 · Swim · Hard · 45 min");
     // The editor is closed: no cardio controls yet.
     expect(html).not.toContain("Cardio on this day");
   });
@@ -132,7 +132,7 @@ describe.each([
       key === "weeklyScheme" ? { ...scheme, schedule: bare, cyclePosition: 0 } : null;
     const { activity, effort, minutes } = DEFAULT_CARDIO_DAY;
     expect(activity).toBe("run");
-    expect(text(render(sheet, null))).toContain(`Tue · Run · Moderate · ${minutes} min`);
+    expect(text(render(sheet, null))).toContain(`Tue, Sep 22 · Run · Moderate · ${minutes} min`);
     expect(effort).toBe("moderate");
   });
 });

@@ -22,6 +22,9 @@ export interface Rotation {
    *  A finished session is shown on this day rather than its planned one; a
    *  skipped session has no entry. */
   doneOn?: Record<number, string> | undefined;
+  /** Flexible mode: sessions are "Day 1, Day 2…" in order with no weekdays
+   *  shown, and a late session is never reported as missed. */
+  flexible?: boolean | undefined;
 }
 
 /** The day-type id of a cardio day (splits.ts's day-type catalog): a session
@@ -182,7 +185,7 @@ export function backfillDoneOn(
 
 /** Days the next session is overdue by (0 when it's today or still ahead). */
 export function overdueDays(r: Rotation, today = new Date()): number {
-  if (!r.schedule.length) return 0;
+  if (!r.schedule.length || r.flexible) return 0;
   return Math.max(0, daysBetween(plannedDate(r, r.cyclePosition), today));
 }
 

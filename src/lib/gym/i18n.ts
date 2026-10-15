@@ -54,6 +54,23 @@ const en = {
     dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as string[],
     tapBarHint: "Tap a bar to see its figures",
     customColor: "Custom color",
+    dayN: (n: number) => `Day ${n}`,
+    dayShort: (n: number) => `D${n}`,
+    scheduleMode: {
+      label: "Schedule",
+      fixed: "Fixed days",
+      flexible: "Flexible",
+      fixedHint: "Sessions are planned on weekdays. Dates below are this week's real dates.",
+      flexibleHint:
+        "No weekdays: train the next day in order whenever you can. Nothing counts as missed.",
+      doneOn: (date: string) => `Done ${date}`,
+      plannedOn: (date: string) => date,
+      moved: "moved",
+      usual: (dow: string) => `usual ${dow}`,
+      afterDay: (n: number) => `After day ${n}`,
+      upNext: "Up next",
+      usualDay: "Usual day (permanent)",
+    },
   },
   tabbar: {
     workout: "Workout",
@@ -2356,6 +2373,24 @@ const nl: Dict = {
     dow: ["zo", "ma", "di", "wo", "do", "vr", "za"] as string[],
     tapBarHint: "Tik op een balk voor de cijfers",
     customColor: "Aangepaste kleur",
+    dayN: (n: number) => `Dag ${n}`,
+    dayShort: (n: number) => `D${n}`,
+    scheduleMode: {
+      label: "Schema",
+      fixed: "Vaste dagen",
+      flexible: "Flexibel",
+      fixedHint:
+        "Trainingen staan op weekdagen. De datums hieronder zijn de echte datums van deze week.",
+      flexibleHint:
+        "Geen weekdagen: train de volgende dag in volgorde wanneer het uitkomt. Niets telt als gemist.",
+      doneOn: (date: string) => `Gedaan ${date}`,
+      plannedOn: (date: string) => date,
+      moved: "verschoven",
+      usual: (dow: string) => `gebruikelijk ${dow}`,
+      afterDay: (n: number) => `Na dag ${n}`,
+      upNext: "Hierna",
+      usualDay: "Gebruikelijke dag (blijvend)",
+    },
   },
   tabbar: {
     workout: "Training",
