@@ -41,7 +41,7 @@ import { estimated1RM } from "./progress";
 import type { ReadinessCheckIn, ReadinessScore } from "./readiness";
 import { dayKey, loggedAtForDay } from "./date";
 import { DELOAD_WEEK, advanceProgram, programRirTarget, type Program } from "./programs";
-import type { FocusGroup } from "./volume";
+import { migrateFocus, type VolumeMuscle } from "./volume";
 import type { WeightEntry } from "./bodyweight";
 import { withWeighIn, type ScaleWeighIn } from "./scale";
 import { canVibrate, markHaptic, pulseTappedControl, switchTick } from "./tapFeedback";
@@ -168,7 +168,7 @@ interface GymState {
   allergies: AllergyId[];
   /** Muscle groups the user wants to grow — they get the higher weekly set
    *  target (see lib/gym/volume.ts). Empty = every muscle at the baseline. */
-  growthFocus: FocusGroup[];
+  growthFocus: VolumeMuscle[];
   /** Set once the old "legs" focus (which then included glutes) has been split into legs + glutes. */
   glutesFocusSplit: boolean;
   supersetRounds: number;
@@ -369,7 +369,7 @@ function updateRotation(
 
 /** Older saves may lack warmup_sets or carry a non-kg unit. */
 /** "Legs" used to include the glutes; keep that for saves made before Glutes was its own focus. */
-function splitLegsFocus(focus: FocusGroup[], alreadySplit: boolean | undefined): FocusGroup[] {
+function splitLegsFocus(focus: unknown[], alreadySplit: boolean | undefined): unknown[] {
   if (alreadySplit || !focus.includes("legs") || focus.includes("glutes")) return focus;
   return [...focus, "glutes"];
 }
@@ -471,7 +471,7 @@ function migrate(raw: Partial<GymState>): GymState {
     alcoholEnabled: raw.alcoholEnabled ?? true,
     alcoholWeekdays: raw.alcoholWeekdays ?? false,
     allergies: (raw.allergies ?? []).filter((a): a is AllergyId => ALLERGIES.includes(a)),
-    growthFocus: splitLegsFocus(raw.growthFocus ?? [], raw.glutesFocusSplit),
+    growthFocus: migrateFocus(splitLegsFocus(raw.growthFocus ?? [], raw.glutesFocusSplit)),
     glutesFocusSplit: true,
     supersetRounds: raw.supersetRounds ?? 3,
     lovedExerciseIds: raw.lovedExerciseIds ?? [],
@@ -666,7 +666,8 @@ interface Ctx extends GymState {
     duration_minutes: number,
     target_muscles: Muscle[],
     day_id?: string,
-  ) => void;
+  ) => string;
+  updateWorkoutTemplate: (id: string, patch: Partial<Omit<WorkoutTemplate, "id">>) => void;
   deleteWorkoutTemplate: (id: string) => void;
   addFoodEntry: (entry: FoodEntry) => void;
   updateFoodEntry: (
@@ -1772,12 +1773,13 @@ export function GymProvider({ children }: { children: ReactNode }) {
       resetScheduledWeek: (kind) =>
         setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 
-      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles, day_id) =>
+      saveWorkoutTemplate: (name, plan, duration_minutes, target_muscles, day_id) => {
+        const id = crypto.randomUUID();
         setState((s) => ({
           ...s,
           workoutTemplates: [
             {
-              id: crypto.randomUUID(),
+              id,
               name,
               plan,
               duration_minutes,
@@ -1786,6 +1788,15 @@ export function GymProvider({ children }: { children: ReactNode }) {
             },
             ...s.workoutTemplates,
           ],
+        }));
+        return id;
+      },
+      updateWorkoutTemplate: (id, patch) =>
+        setState((s) => ({
+          ...s,
+          workoutTemplates: s.workoutTemplates.map((t) =>
+            t.id === id ? { ...t, ...patch, id } : t,
+          ),
         })),
       deleteWorkoutTemplate: (id) =>
         setState((s) => ({

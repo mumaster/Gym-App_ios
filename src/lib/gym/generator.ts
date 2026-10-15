@@ -8,7 +8,15 @@ import { roundToStep, suggestWeight } from "./progression";
 import type { Pace } from "./pace";
 import { isNearDuplicate } from "./similar";
 import { sharesLoadStation } from "./stations";
-import { MAX_SESSION_SETS_PER_MUSCLE, planSets, setContribution, weeklyTarget } from "./volume";
+import {
+  MAX_SESSION_SETS_PER_MUSCLE,
+  mainMuscleOf,
+  mainPlanSets,
+  planSets,
+  volumeMuscleOf,
+  weeklyTarget,
+  type VolumeMuscle,
+} from "./volume";
 import type {
   EquipmentId,
   EquipmentProfile,
@@ -66,10 +74,10 @@ const WARMUP_REST_SECONDS = 40;
 /** Walking to the next station, adjusting the machine, etc. */
 const TRANSITION_SECONDS = 45;
 
-/** True when any muscle's fractional sets in `plan` pass the per-session
- *  point of no detectable extra benefit (see volume.ts). */
+/** True when any muscle's main sets in `plan` pass the per-session point of
+ *  no detectable extra benefit (see volume.ts). */
 const overSessionCap = (plan: PlannedExercise[]) =>
-  Object.values(planSets(plan)).some((n) => n > MAX_SESSION_SETS_PER_MUSCLE);
+  Object.values(mainPlanSets(plan)).some((n) => n > MAX_SESSION_SETS_PER_MUSCLE);
 
 /** A one-sided exercise (split squat, one-arm row) does every set once per
  *  side, so its set time counts twice; rest stays once per set. All of
@@ -270,12 +278,12 @@ export interface GenerateArgs {
   volumeMultiplier?: number;
   /** Muscles the user wants to grow (see volume.ts): their weekly target is
    *  20 sets instead of 10, so they get a bigger share of the session. */
-  focusMuscles?: Muscle[];
-  /** Fractional working sets already done this Monday–Sunday week
+  focusMuscles?: VolumeMuscle[];
+  /** Working sets already done this Monday–Sunday week
    *  (volume.ts's `weeklySets`). A session is split by what's still missing
    *  from each muscle's weekly target, so a muscle that's behind gets more
    *  and one that's done gets least. Empty = a fresh week. */
-  weekDone?: Partial<Record<Muscle, number>>;
+  weekDone?: Partial<Record<VolumeMuscle, number>>;
   /** The user's own set pace and transition time (pace.ts), learned from
    *  their finished workouts. The plan is fitted to the time budget with
    *  it, so a slower lifter gets fewer sets for the same minutes. Omitted
@@ -492,9 +500,12 @@ export function generateWorkout({
    *  muscle you want to grow: volume.ts), at least 1 so a muscle you picked
    *  that already reached it still gets a little. The floor is the app's
    *  own choice, not a published number. */
-  const need = (m: Muscle) => Math.max(1, weeklyTarget(m, focus) - (weekDone[m] ?? 0));
+  const need = (m: VolumeMuscle) => Math.max(1, weeklyTarget(m, focus) - (weekDone[m] ?? 0));
   const exOf = (p: PlannedExercise) => EXERCISES.find((e) => e.id === p.exercise_id);
-  const primaryOf = (p: PlannedExercise) => exOf(p)?.primary_muscle;
+  const mainOf = (p: PlannedExercise) => {
+    const ex = exOf(p);
+    return ex ? mainMuscleOf(ex) : undefined;
+  };
   const withVolume = (list: PlannedExercise[]) =>
     volumeMultiplier === 1
       ? list
@@ -561,9 +572,9 @@ export function generateWorkout({
     const free = pool.filter((e) => !taken(e) && accept(e));
     const group = TARGET_MUSCLE_GROUP[target];
     // An exercise that trains this head as part of another muscle group
-    // (a row for the biceps, a bench press for the front delts) only counts
-    // half a set towards it (volume.ts), so the group's own exercises come
-    // first; the others only when it has none.
+    // (a row for the biceps, a bench press for the front delts) is mainly
+    // for that other muscle, so the group's own exercises come first; the
+    // others only when it has none.
     const hitsTarget = free.filter((e) => e.muscle_targets.includes(target));
     const ownGroup = hitsTarget.filter((e) => e.primary_muscle === group);
     // Another group's lift only comes in when the group has nothing left at
@@ -606,27 +617,45 @@ export function generateWorkout({
     return candidates[variation % candidates.length];
   };
 
-  // Each muscle group gets a share of the session in proportion to what's
-  // still missing from its weekly target (`need`): planned fractional sets
-  // over that need, lowest first. Within a group, its least-served head.
+  // Each muscle gets a share of the session in proportion to what's still
+  // missing from its weekly target (`need`): planned sets over that need,
+  // lowest first. Within a chest, its least-served head.
   const hits = new Map<TargetMuscle, number>(targets.map((m) => [m, 0]));
   for (const ex of lovedExercises) {
     const t = ex.muscle_targets.find((m) => hits.has(m));
     if (t) hits.set(t, hits.get(t)! + 1);
   }
   const dry = new Set<TargetMuscle>(); // targets with no remaining candidates
-  const groupLoad = (g: Muscle, list: PlannedExercise[]) => (planSets(list)[g] ?? 0) / need(g);
   const load = (m: TargetMuscle, list: PlannedExercise[]) =>
-    groupLoad(TARGET_MUSCLE_GROUP[m], list);
+    (planSets(list)[volumeMuscleOf(m)] ?? 0) / need(volumeMuscleOf(m));
+  // The muscles asked for in each group. Groups share the session evenly
+  // (a day with one chest muscle and three delt muscles doesn't spend three
+  // exercises on delts for each on chest), then a group's own muscles share
+  // its part by their own need.
+  const membersOf = new Map<Muscle, VolumeMuscle[]>();
+  for (const t of targets) {
+    const g = TARGET_MUSCLE_GROUP[t];
+    const list = membersOf.get(g) ?? [];
+    if (!list.includes(volumeMuscleOf(t))) list.push(volumeMuscleOf(t));
+    membersOf.set(g, list);
+  }
+  const groupLoad = (g: Muscle, list: PlannedExercise[]) => {
+    const members = membersOf.get(g) ?? [];
+    const sets = planSets(list);
+    return (
+      members.reduce((n, m) => n + (sets[m] ?? 0), 0) / members.reduce((n, m) => n + need(m), 0)
+    );
+  };
   /** Targets from the one to serve next: the group furthest behind its
-   *  share first (ties to the bigger need, then the order picked), then
-   *  that group's least-served head. */
+   *  share first, then its muscle furthest behind (ties to the bigger need,
+   *  then the order picked). */
   const byPriority = (list: PlannedExercise[]) =>
     targets
       .filter((m) => !dry.has(m))
-      .map((m, order) => ({ m, order, g: TARGET_MUSCLE_GROUP[m] }))
+      .map((m, order) => ({ m, order, g: volumeMuscleOf(m), group: TARGET_MUSCLE_GROUP[m] }))
       .sort(
         (a, b) =>
+          groupLoad(a.group, list) - groupLoad(b.group, list) ||
           load(a.m, list) - load(b.m, list) ||
           need(b.g) - need(a.g) ||
           hits.get(a.m)! - hits.get(b.m)! ||
@@ -652,7 +681,7 @@ export function generateWorkout({
     const target = pickTarget(plan);
     if (!target) break;
     const wantCompound = plan.length < compoundQuota;
-    // Past ~11 fractional sets for one muscle in a session Pelland et al.
+    // Past ~11 sets for one muscle in a session Pelland et al.
     // found no detectable extra benefit (volume.ts): only exercises that stay
     // under it. (A pick that went over used to end the target, so a pull day
     // whose rows had used up the back ended after two exercises.)
@@ -687,7 +716,7 @@ export function generateWorkout({
   // week; no muscle goes past the per-session point Pelland et al. found no
   // detectable extra benefit (volume.ts).
   const needOf = (p: PlannedExercise) => {
-    const m = primaryOf(p);
+    const m = mainOf(p);
     return m ? need(m) : 0;
   };
   const order = plan
@@ -898,16 +927,15 @@ export function generateWorkout({
 function trimToCap(plan: PlannedExercise[]): PlannedExercise[] {
   const out = plan.map((p) => ({ ...p }));
   for (let guard = 0; guard < 40 && overSessionCap(out); guard++) {
-    const sets = planSets(out);
+    const sets = mainPlanSets(out);
     const over = new Set(
-      (Object.keys(sets) as Muscle[]).filter((m) => sets[m]! > MAX_SESSION_SETS_PER_MUSCLE),
+      (Object.keys(sets) as VolumeMuscle[]).filter((m) => sets[m]! > MAX_SESSION_SETS_PER_MUSCLE),
     );
     let i = out.length - 1;
     for (; i >= 0; i--) {
       const p = out[i]!;
-      const hitsOver = Object.keys(setContribution(p.exercise_id)).some((m) =>
-        over.has(m as Muscle),
-      );
+      const pEx = EXERCISES.find((e) => e.id === p.exercise_id);
+      const hitsOver = pEx ? over.has(mainMuscleOf(pEx)) : false;
       if (hitsOver && p.target_sets > 2) break;
     }
     if (i < 0) break;

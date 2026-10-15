@@ -3,8 +3,7 @@ import { EQUIPMENT } from "../data";
 import { regionsForMuscles, REGION_TARGETS } from "../anatomy";
 import { generateWorkout } from "../generator";
 import { buildSchedule, musclesForSlot, SPLIT_TEMPLATES } from "../splits";
-import { focusMuscles } from "../volume";
-import type { FocusGroup } from "../volume";
+import { musclesInGroups, type FocusGroup, type VolumeMuscle } from "../volume";
 import { exerciseById } from "../data";
 
 const equipment = EQUIPMENT.map((e) => e.id);
@@ -12,7 +11,7 @@ const equipment = EQUIPMENT.map((e) => e.id);
 function planFor(
   templateId: Parameters<typeof buildSchedule>[0],
   dayIdx: number,
-  focus: FocusGroup[],
+  focus: VolumeMuscle[],
 ) {
   const slot = buildSchedule(templateId, [1, 2, 3, 4, 5, 6, 0].slice(0, 7))[dayIdx];
   if (!slot) return null;
@@ -24,7 +23,7 @@ function planFor(
     duration: 60,
     equipment,
     targets,
-    focusMuscles: [...focusMuscles(focus)],
+    focusMuscles: focus,
   });
   return { muscles, plan };
 }
@@ -36,7 +35,8 @@ describe("a chosen day type drives the session", () => {
       for (let i = 0; i < days.length; i++) {
         const day = t.days.find((d) => d.id === days[i]!.dayId);
         if (!day || !day.muscles.length) continue;
-        for (const focus of [[], ["arms", "shoulders"], ["glutes", "legs"]] as FocusGroup[][]) {
+        for (const groups of [[], ["arms", "shoulders"], ["glutes", "legs"]] as FocusGroup[][]) {
+          const focus = musclesInGroups(groups);
           const r = planFor(t.id, i, focus)!;
           expect(r.muscles).toEqual(day.muscles);
           const total = r.plan.reduce((n, p) => n + p.target_sets, 0);
@@ -52,7 +52,7 @@ describe("a chosen day type drives the session", () => {
   });
 
   it("a full-body day with glutes + legs focus is mostly lower body", () => {
-    const r = planFor("full_body", 0, ["glutes", "legs"])!;
+    const r = planFor("full_body", 0, musclesInGroups(["glutes", "legs"]))!;
     const lower = ["Glutes", "Quads", "Hamstrings", "Calves"];
     const sets = (pred: (m: string) => boolean) =>
       r.plan

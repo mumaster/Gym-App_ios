@@ -29,7 +29,7 @@ import {
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
-import type { FocusGroup } from "../../lib/gym/volume";
+import type { VolumeMuscle } from "../../lib/gym/volume";
 import type { CardioFinisher } from "../../lib/gym/types";
 import { HybridCardioSection } from "./HybridCardioSection";
 import { MinDaysNotice } from "./MinDaysNotice";
@@ -69,7 +69,7 @@ export function WeeklyPlanSheet({ open, onClose }: { open: boolean; onClose: () 
   // Day type picked per weekday while building (overrides the split's own order).
   const [dayPicks, setDayPicks] = useState<Record<number, string>>({});
   // Muscles to grow, picked while setting up a plan and saved with it.
-  const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  const [focusDraft, setFocusDraft] = useState<VolumeMuscle[]>(growthFocus);
   // Cardio after the lifting, per day, for a hybrid split.
   const [cardioDraft, setCardioDraft] = useState<Record<string, CardioFinisher>>({});
   // Read through a ref so the draft resets when the sheet opens, not on

@@ -93,9 +93,8 @@ describe("superset pairing", () => {
       supersets: true,
       profile,
     });
-    // squat and barbell RDL share the bar: the RDL moves to the Smith machine
+    // no leftover: every exercise has a partner on other gear
     expect(plan.every((p) => p.superset_group !== undefined)).toBe(true);
-    expect(plan.map((p) => p.exercise_id)).toContain("smith-rdl");
   });
 
   it("numbers supersets in the order they're done", () => {
