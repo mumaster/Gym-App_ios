@@ -40,6 +40,9 @@ const MAX_TRANSITION_SECONDS = 300;
 /** Same constants as the time model's warm-up and working-set fallbacks. */
 const WARMUP_SET_SECONDS = 30;
 const FALLBACK_WORK_SECONDS = 45;
+/** Shuttle between a superset's two stations; the time model adds the same
+ *  15 s per round (generator.ts), so it is taken out of a round's length. */
+const SUPERSET_SHUTTLE_SECONDS = 15;
 
 const median = (values: number[]): number => {
   const sorted = [...values].sort((a, b) => a - b);
@@ -62,8 +65,8 @@ interface TransitionRaw {
  *
  * The first exercise of every workout is ignored — the sets in it and the
  * move out of it — because users are probably still setting things up
- * (reported). Superset rounds interleave two exercises, so their sets are
- * ignored too.
+ * (reported). Superset sets can't be timed one by one, so they are timed
+ * per round instead (see below) and left out of the set-to-set gaps.
  */
 export function learnPace(history: Workout[]): Pace | null {
   const ordered = [...history].sort((a, b) => a.date.localeCompare(b.date));
@@ -88,6 +91,36 @@ export function learnPace(history: Workout[]): Pace | null {
       const plan = planOf(s.exercise_id);
       return plan !== undefined && plan.superset_group === undefined;
     };
+
+    // Superset rounds: the time from one round's B to the next round's B is
+    // the round rest, both exercises' work and the shuttle, so the work per
+    // side follows from it. Without this a lifter who mostly supersets never
+    // gets a learned pace and every estimate stays on the 45 s default.
+    for (let i = 0; i + 1 < workout.plan.length; i++) {
+      const pa = workout.plan[i]!;
+      const pb = workout.plan[i + 1]!;
+      if (pa.superset_group === undefined || pa.superset_group !== pb.superset_group) continue;
+      if (pa.exercise_id === firstExercise || pb.exercise_id === firstExercise) continue;
+      const roundOf = (id: string, round: number) =>
+        timed.find(
+          (x) => x.s.exercise_id === id && x.s.round === round && x.s.set_type === "working",
+        );
+      for (let round = 1; ; round++) {
+        const a1 = roundOf(pa.exercise_id, round);
+        const b1 = roundOf(pb.exercise_id, round);
+        const a2 = roundOf(pa.exercise_id, round + 1);
+        const b2 = roundOf(pb.exercise_id, round + 1);
+        if (!a1 || !b1 || !a2 || !b2) break;
+        if (!(b1.t < a2.t && a2.t < b2.t)) continue;
+        const gap = (b2.t - b1.t) / 1000;
+        if (gap > MAX_SET_GAP_SECONDS * 2) continue;
+        const sides = sidesOfId(pa.exercise_id) + sidesOfId(pb.exercise_id);
+        const value = (gap - pb.rest_seconds - SUPERSET_SHUTTLE_SECONDS) / sides;
+        if (value < MIN_SET_GAP_SECONDS / 2) continue;
+        setSamples.push({ exerciseId: pa.exercise_id, value });
+        setSamples.push({ exerciseId: pb.exercise_id, value });
+      }
+    }
 
     for (let i = 1; i < timed.length; i++) {
       const a = timed[i - 1]!;
