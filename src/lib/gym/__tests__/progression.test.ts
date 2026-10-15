@@ -46,7 +46,22 @@ describe("suggestWeight (double progression, ACSM 2009 / NSCA 2-for-2)", () => {
       "6-10",
       2.5,
     );
-    expect(s).toMatchObject({ weight: 102.5, reps: 6, bumped: true });
+    expect(s).toMatchObject({ weight: 102.5, reps: 9, bumped: true });
+  });
+
+  it("keeps reps in a sensible range after a bump (22.5 kg × 14 → 23.5 kg, not × 6)", () => {
+    const s = suggestWeight(
+      "goblet-squat",
+      [
+        session("2", "goblet-squat", [14, 14, 14], 22.5),
+        session("1", "goblet-squat", [12, 11, 10], 22.5),
+      ],
+      "6-10",
+      0.5,
+    );
+    expect(s).toMatchObject({ weight: 23.5, bumped: true });
+    expect(s!.reps).toBeGreaterThanOrEqual(9);
+    expect(s!.reps).toBeLessThanOrEqual(10);
   });
 
   it("adds 5% to a lower-body lift after two sessions at the top", () => {
@@ -111,7 +126,7 @@ describe("bodyweight exercises (external load: 0 = bodyweight, − = assistance)
   it("progresses from plain bodyweight, sizing the increase on bodyweight + load", () => {
     // 80 kg body: 2.5% of 80 = 2 kg, rounded to the 2.5 kg step.
     const s = suggestWeight("pullup", twice(0), "8-12", 2.5, undefined, 80);
-    expect(s).toMatchObject({ weight: 2.5, reps: 8, bumped: true });
+    expect(s).toMatchObject({ weight: 2.5, reps: 11, bumped: true });
   });
 
   it("takes assistance off rather than suggesting nothing", () => {

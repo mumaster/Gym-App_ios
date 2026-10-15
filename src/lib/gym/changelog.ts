@@ -497,6 +497,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 51,
+    items: [
+      {
+        en: "Weight suggestions now keep your reps in a sensible range: when you add weight, the suggested reps match what you just did (22.5 kg × 14 now suggests 23.5 kg × 10, not × 6).",
+        nl: "Gewichtsuggesties houden je herhalingen nu op een logisch niveau: voeg je gewicht toe, dan sluiten de voorgestelde herhalingen aan op wat je net deed (22,5 kg × 14 geeft nu 23,5 kg × 10, niet × 6).",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -506,7 +515,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 50;
+export const CURRENT_VERSION = 51;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
