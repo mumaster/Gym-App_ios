@@ -189,9 +189,9 @@ export function WorkoutScoreCard({
               haptic(12);
               onChange(c.apply());
             }}
-            className={`${chip.base} ${chip.off} h-auto min-h-9 max-w-full py-1.5 text-left`}
+            className={`${chip.base} ${chip.on} h-auto min-h-9 max-w-full py-1.5 text-left`}
           >
-            <Wrench className="size-3.5 shrink-0" aria-hidden />
+            <Wrench className="size-4 shrink-0" aria-hidden />
             <span className="min-w-0">{c.label}</span>
           </button>
         ))}
