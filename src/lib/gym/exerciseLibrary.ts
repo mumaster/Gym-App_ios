@@ -163,7 +163,7 @@ export const EXERCISE_LIBRARY: Exercise[] = [
     primary_muscle: "Chest",
     secondary_muscles: ["Arms", "Shoulders"],
     muscle_targets: ["Mid Chest", "Triceps", "Front Delts"],
-    equipment_required: ["cable"],
+    equipment_required: ["cable_high"],
     movement_pattern: "push",
     compound: true,
     instructions: "In a split stance facing away from the pulleys, press both handles forward.",

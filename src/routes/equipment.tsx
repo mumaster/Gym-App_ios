@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SwitchRow } from "../components/gym/SwitchRow";
-import { EQUIPMENT, exerciseById } from "../lib/gym/data";
+import { EQUIPMENT, equipmentLabel, exerciseById } from "../lib/gym/data";
 import { availableExercises } from "../lib/gym/generator";
 import { DECIMAL_INPUT_RE, parseDecimal, selectOnFocus } from "../lib/gym/numericInput";
 import { useTranslation } from "../lib/gym/i18n";
@@ -53,7 +53,8 @@ export const Route = createFileRoute("/equipment")({
 });
 
 function EquipmentScreen() {
-  const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise } = useGym();
+  const { profiles, activeProfileId, update, avoidedExerciseIds, toggleAvoidedExercise, language } =
+    useGym();
   const t = useTranslation();
   const { from } = Route.useSearch();
   // Null until a profile is picked here: the saved state loads after the
@@ -195,7 +196,7 @@ function EquipmentScreen() {
               aria-pressed={on}
               className="flex min-h-[56px] w-full items-center justify-between px-4 text-left"
             >
-              <span className="text-[17px] font-medium">{e.label}</span>
+              <span className="text-[17px] font-medium">{equipmentLabel(e.id, language)}</span>
               <span
                 className={`flex size-7 items-center justify-center rounded-full ${
                   on ? "bg-primary text-primary-foreground" : "bg-muted"

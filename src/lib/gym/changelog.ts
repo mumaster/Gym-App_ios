@@ -463,6 +463,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 49,
+    items: [
+      {
+        en: "Equipment now has a Low Cable and a High Cable option instead of one combined Low / Mid Cable. Cable crossover and the standing cable chest press now need the High Cable.",
+        nl: "Bij Apparatuur kies je nu Lage kabel en Hoge kabel in plaats van één gecombineerde lage/middelste kabel. Kabel crossover en de staande kabel borstpress hebben nu de Hoge kabel nodig.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -472,7 +481,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 48;
+export const CURRENT_VERSION = 49;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
