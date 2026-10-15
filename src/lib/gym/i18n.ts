@@ -416,7 +416,7 @@ const en = {
   },
   generate: {
     title: "Workout",
-    tabs: { plan: "My plan", build: "Generator", diy: "Build your own" },
+    tabs: { plan: "My plan", build: "Generator", diy: "Custom" },
     sessionInProgress: "Session in progress",
     sessionTitle: (exercises: number, sets: number) =>
       `${exercises} exercises · ${sets} sets logged`,
