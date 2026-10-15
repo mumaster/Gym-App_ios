@@ -327,7 +327,8 @@ const en = {
       repRanges: "Rep ranges",
       rpe: "Target effort RPE 7–9, and adjusting weight 4% per RPE point",
       warmup: "Warm-up sets of 6 at 40% and 80% of your working weight",
-      volume: "Weekly sets per muscle (10, or 20 for muscles to grow), and at most 11 per session",
+      volume:
+        "Weekly sets per muscle (10, or 20 for muscles to grow), each set counted whole for every muscle it works, and at most 11 per session",
       deload: "A deload week every 4–6 weeks: half the sets at 90% of the weight",
       sessionRpe: "Session effort (0–10) × minutes as training load, for strength and cardio alike",
       loadSpike: "The hint when a week's load is over 1.5× your usual — a link that's disputed",
@@ -1935,11 +1936,13 @@ const en = {
     growTitle: "Muscles to grow",
     growReadOnly: "Shown from your weekly plan. Change them there.",
     growCount: (n: number) => (n ? `${n} picked` : "None picked"),
+    all: "All",
+    allOf: (group: string) => `Star all ${group.toLowerCase()} muscles`,
     onTarget: (n: number, of: number) => `${n} of ${of} on target`,
     growPlanDesc:
-      "Optional. These aim for 20 sets a week instead of 10, so your sessions give them a bigger share. You can change it later.",
+      "Optional. Starred muscles aim for 20 sets a week instead of 10, so your sessions give them a bigger share. Tap a group to star all its muscles. You can change it later.",
     growDesc:
-      "Picked groups aim for 20 sets a week instead of 10. Generated workouts give each muscle a share of the session by what's still missing from its target this week.",
+      "Starred muscles aim for 20 sets a week instead of 10. Generated workouts give each muscle a share of the session by what's still missing from its target this week.",
     groups: {
       chest: "Chest",
       back: "Back",
@@ -2593,7 +2596,7 @@ const nl: Dict = {
       rpe: "Doelinspanning RPE 7–9, en het gewicht 4% per RPE-punt aanpassen",
       warmup: "Opwarmsets van 6 op 40% en 80% van je werkgewicht",
       volume:
-        "Sets per spier per week (10, of 20 voor spieren om te laten groeien), en maximaal 11 per sessie",
+        "Sets per spier per week (10, of 20 voor spieren om te laten groeien), elke set heel geteld voor elke spier die erin werkt, en maximaal 11 per sessie",
       deload: "Elke 4–6 weken een deloadweek: de helft van de sets op 90% van het gewicht",
       sessionRpe:
         "Sessie-inspanning (0–10) × minuten als trainingsbelasting, voor kracht en cardio",
@@ -4207,11 +4210,13 @@ const nl: Dict = {
     growTitle: "Spieren om te laten groeien",
     growReadOnly: "Overgenomen uit je weekplan. Pas ze daar aan.",
     growCount: (n: number) => (n ? `${n} gekozen` : "Niets gekozen"),
+    all: "Alle",
+    allOf: (group: string) => `Markeer alle spieren van ${group.toLowerCase()}`,
     onTarget: (n: number, of: number) => `${n} van ${of} op doel`,
     growPlanDesc:
-      "Optioneel. Deze mikken op 20 sets per week in plaats van 10, dus je trainingen geven ze een groter deel. Later aan te passen.",
+      "Optioneel. Gemarkeerde spieren mikken op 20 sets per week in plaats van 10, dus je trainingen geven ze een groter deel. Tik op een groep om al haar spieren te markeren. Later aan te passen.",
     growDesc:
-      "Gekozen groepen mikken op 20 sets per week in plaats van 10. Gegenereerde trainingen verdelen elke sessie naar wat elke spier deze week nog mist.",
+      "Gemarkeerde spieren mikken op 20 sets per week in plaats van 10. Gegenereerde trainingen verdelen elke sessie naar wat elke spier deze week nog mist.",
     groups: {
       chest: "Borst",
       back: "Rug",

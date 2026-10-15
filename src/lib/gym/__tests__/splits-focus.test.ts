@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSchedule, splitDayLabel } from "../splits";
+import { musclesInGroups } from "../volume";
 
 describe("3:1 focus splits", () => {
   it("upper focus gives three upper days per lower day", () => {
@@ -39,7 +40,7 @@ describe("full-body day with a glutes + legs focus", () => {
   it("trains the focus muscles instead of defaulting to upper body", async () => {
     const { musclesForSlot } = await import("../splits");
     const slot = buildSchedule("full_body", [1])[0]!;
-    const picked = musclesForSlot("full_body", slot, [], ["glutes", "legs"]);
+    const picked = musclesForSlot("full_body", slot, [], musclesInGroups(["glutes", "legs"]));
     expect(picked).toHaveLength(3);
     expect(
       picked.filter((m) => ["Glutes", "Quads", "Hamstrings", "Calves"].includes(m)),

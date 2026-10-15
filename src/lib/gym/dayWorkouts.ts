@@ -6,7 +6,7 @@ import { dayKey, dayKeyFromDate } from "./date";
 import { doneDate, isCardioSlot, type Rotation } from "./schedule";
 import { musclesForSlot, type ScheduleSlot, type SplitTemplateId } from "./splits";
 import type { CardioSession, DayWorkout, PlannedExercise, Workout } from "./types";
-import { focusMuscles, type FocusGroup } from "./volume";
+import type { VolumeMuscle } from "./volume";
 
 /**
  * Workouts saved per day of a weekly plan or program, so the week repeats as
@@ -26,7 +26,7 @@ import { focusMuscles, type FocusGroup } from "./volume";
 export type DayWorkoutContext = Omit<
   GenerateArgs,
   "duration" | "targets" | "variation" | "weekDone" | "intensityMultiplier" | "volumeMultiplier"
-> & { growthFocus: FocusGroup[] };
+> & { growthFocus: VolumeMuscle[] };
 
 /** The workout to use for a slot: its week's pre-generated one (programs),
  *  else the one saved for the day, else null (generate as before). */
@@ -58,7 +58,7 @@ export function generateDayWorkout(
   const targets = targetsFromRegions(regionsForMuscles(muscles, slot.dayId));
   const plan = generateWorkout({
     ...args,
-    focusMuscles: args.focusMuscles ?? [...focusMuscles(growthFocus)],
+    focusMuscles: args.focusMuscles ?? growthFocus,
     duration,
     targets,
     variation,
