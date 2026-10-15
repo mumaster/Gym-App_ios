@@ -2,7 +2,7 @@ import { dayKeyFromDate } from "./date";
 import { CAFFEINE_DAILY_LIMIT_MG } from "./nutrition";
 import { overdueDays, mondayOf, type Rotation } from "./schedule";
 import { currentWeekStreak, MIN_TRAINING_DAYS_PER_WEEK, trainingDaysThisWeek } from "./streak";
-import { weeklyTarget, weeklySets } from "./volume";
+import { weeklyTarget, weeklySets, type VolumeMuscle } from "./volume";
 import type { Muscle, Workout } from "./types";
 
 /**
@@ -30,7 +30,7 @@ export interface AppNotification {
   /** Search for `href`, when it needs one. */
   search?: Record<string, string>;
   /** Values the message text is built from. */
-  muscles?: Muscle[];
+  muscles?: VolumeMuscle[];
   count?: number;
 }
 
@@ -39,7 +39,7 @@ export interface NotificationInput {
   workouts: Workout[];
   activeWorkout: Workout | null;
   rotation: Rotation | null;
-  focus: Set<Muscle>;
+  focus: Set<VolumeMuscle>;
   waterMl: number;
   waterGoalMl: number | null;
   caffeineMg: number;
@@ -85,7 +85,7 @@ export function buildNotifications(i: NotificationInput): AppNotification[] {
   }
 
   const done = weeklySets(i.workouts, i.activeWorkout, i.now);
-  const reached = (Object.keys(done) as Muscle[]).filter(
+  const reached = (Object.keys(done) as VolumeMuscle[]).filter(
     (m) => (done[m] ?? 0) >= weeklyTarget(m, i.focus),
   );
   if (reached.length) {

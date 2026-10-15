@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "../../lib/gym/i18n";
 import { dayKeyFromDate } from "../../lib/gym/date";
-import { focusMuscles } from "../../lib/gym/volume";
 import { buildNotifications, type AppNotification } from "../../lib/gym/notifications";
 import { caffeineMg, dailyTotals, entriesForDay } from "../../lib/gym/nutrition";
 import { useDayGoalsResolver } from "../../lib/gym/dayNutrition";
@@ -70,7 +69,7 @@ export function NotificationBell() {
       workouts,
       activeWorkout,
       rotation: program ?? weeklyScheme,
-      focus: focusMuscles(growthFocus),
+      focus: new Set(growthFocus),
       waterMl: entriesForDay(waterEntries, key).reduce((sum, e) => sum + e.ml, 0),
       waterGoalMl,
       caffeineMg: caffeineMg(entriesForDay(coffeeEntries, key)),

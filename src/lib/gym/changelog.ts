@@ -407,6 +407,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 45,
+    items: [
+      {
+        en: "Weekly sets are now counted per specific muscle, like Biceps, Triceps, Side Delts and Lats, instead of per group like Arms. Every set counts whole for each muscle it works, with no half sets.",
+        nl: "Wekelijkse sets worden nu per specifieke spier geteld, zoals biceps, triceps, zijkant schouders en lats, in plaats van per groep zoals armen. Elke set telt heel mee voor elke spier die erin werkt, zonder halve sets.",
+      },
+      {
+        en: "Star the specific muscles you want to grow, like only Biceps and not the whole of Arms. Tap a group name to star all its muscles. Your current stars carry over.",
+        nl: "Markeer de specifieke spieren die je wilt laten groeien, bijvoorbeeld alleen biceps en niet alle armen. Tik op een groepsnaam om al haar spieren te markeren. Je huidige markeringen blijven behouden.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -416,7 +429,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 44;
+export const CURRENT_VERSION = 45;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

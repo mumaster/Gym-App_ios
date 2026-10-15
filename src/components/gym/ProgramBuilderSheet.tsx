@@ -35,7 +35,7 @@ import { useDayWorkoutContext } from "./useDayWorkoutContext";
 import { haptic, useGym } from "../../lib/gym/store";
 import { button, chip } from "./ui";
 import { GrowthFocusSection } from "./WeeklyVolume";
-import type { FocusGroup } from "../../lib/gym/volume";
+import type { VolumeMuscle } from "../../lib/gym/volume";
 import type { CardioFinisher } from "../../lib/gym/types";
 import { HybridCardioSection } from "./HybridCardioSection";
 import { MinDaysNotice } from "./MinDaysNotice";
@@ -84,7 +84,7 @@ export function ProgramBuilderSheet({ open, onClose }: { open: boolean; onClose:
   // weeks and current week) rather than building a new one from scratch.
   const [editingExisting, setEditingExisting] = useState(false);
   // Muscles to grow, picked while building or re-planning and saved with it.
-  const [focusDraft, setFocusDraft] = useState<FocusGroup[]>(growthFocus);
+  const [focusDraft, setFocusDraft] = useState<VolumeMuscle[]>(growthFocus);
   // Cardio after the lifting, per day, for a hybrid split.
   const [cardioDraft, setCardioDraft] = useState<Record<string, CardioFinisher>>({});
   // Read through a ref so the draft resets when the sheet opens, not on

@@ -85,7 +85,7 @@ import {
 import { track } from "../lib/gym/analytics";
 import { haptic, useGym, type RotationKind } from "../lib/gym/store";
 import { formatLoad, isBodyweightExercise, latestBodyKg } from "../lib/gym/load";
-import { focusMuscles, muscularCapReached, weeklySets } from "../lib/gym/volume";
+import { muscularCapReached, weeklySets } from "../lib/gym/volume";
 import type { DayWorkout, Exercise, Muscle, PlannedExercise, TargetMuscle } from "../lib/gym/types";
 import { ExerciseDetailSheet } from "../components/gym/ExerciseDetailSheet";
 import { badge, button, chip } from "../components/gym/ui";
@@ -338,7 +338,7 @@ function WorkoutHome() {
       variation: nextVariation,
       supersets: supersetsEnabled,
       warmups: warmupsEnabled,
-      focusMuscles: [...focusMuscles(growthFocus)],
+      focusMuscles: growthFocus,
       // What this week already did, so a session tops up what's behind.
       weekDone: weeklySets(workouts, null),
       loved: lovedExerciseIds,
