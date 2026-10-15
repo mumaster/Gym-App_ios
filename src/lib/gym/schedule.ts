@@ -22,7 +22,49 @@ export interface Rotation {
    *  A finished session is shown on this day rather than its planned one; a
    *  skipped session has no entry. */
   doneOn?: Record<number, string> | undefined;
+  /** Flexible mode: sessions are "Day 1, Day 2…" in order with no weekdays
+   *  shown, and a late session is never reported as missed. */
+  flexible?: boolean | undefined;
+  /** slot index → the weekdays (Date#getDay) its last sessions were really
+   *  done on, newest last. Feeds `usualDayFor`. Dropped when the schedule's
+   *  slots change. */
+  habit?: Record<number, number[]> | undefined;
 }
+
+/** Sessions in a row on the same other weekday before suggesting it. */
+export const HABIT_RUN = 3;
+
+/** The weekday a session is usually really done on, when its last
+ *  `HABIT_RUN` sessions were all on the same weekday and that isn't its
+ *  standard day (and no other session already has that day). The run length
+ *  is the app's own choice: one moved day is a one-off, three is a habit. */
+export function usualDayFor(r: Rotation, i: number): number | null {
+  const slot = r.schedule[i];
+  const days = r.habit?.[i];
+  if (!slot || !days || days.length < HABIT_RUN) return null;
+  const last = days.slice(-HABIT_RUN);
+  const dow = last[0]!;
+  if (dow === slot.dow || last.some((d) => d !== dow)) return null;
+  return r.schedule.some((s) => s.dow === dow) ? null : dow;
+}
+
+/** First session with a usual-day suggestion, if any. */
+export function firstUsualDay(r: Rotation): { index: number; dow: number } | null {
+  for (let i = 0; i < r.schedule.length; i++) {
+    const dow = usualDayFor(r, i);
+    if (dow !== null) return { index: i, dow };
+  }
+  return null;
+}
+
+const withHabit = <R extends Rotation>(
+  r: R,
+  index: number,
+  doneOn: Date | undefined,
+): R["habit"] =>
+  doneOn
+    ? { ...r.habit, [index]: [...(r.habit?.[index] ?? []), doneOn.getDay()].slice(-6) }
+    : r.habit;
 
 /** The day-type id of a cardio day (splits.ts's day-type catalog): a session
  *  that is logged as cardio instead of generated as a lifting plan. */
@@ -120,13 +162,28 @@ export function advanceRotation<R extends Rotation>(
   const next = r.cyclePosition + 1;
   if (next < r.schedule.length) {
     const done = doneOn ? { ...r.doneOn, [r.cyclePosition]: dayKeyFromDate(doneOn) } : r.doneOn;
-    return { rotation: { ...r, cyclePosition: next, doneOn: done }, wrapped: false };
+    return {
+      rotation: {
+        ...r,
+        cyclePosition: next,
+        doneOn: done,
+        habit: withHabit(r, r.cyclePosition, doneOn),
+      },
+      wrapped: false,
+    };
   }
   const planned = plannedDate(r, r.schedule.length - 1);
   const taken = startOfDay(doneOn ?? addDays(startOfDay(today), -1));
   const { anchor, dayOverrides } = nextCycle(r, taken > planned ? taken : planned);
   return {
-    rotation: { ...r, cyclePosition: 0, anchor, dayOverrides, doneOn: undefined },
+    rotation: {
+      ...r,
+      cyclePosition: 0,
+      anchor,
+      dayOverrides,
+      doneOn: undefined,
+      habit: withHabit(r, r.cyclePosition, doneOn),
+    },
     wrapped: true,
   };
 }
@@ -182,7 +239,7 @@ export function backfillDoneOn(
 
 /** Days the next session is overdue by (0 when it's today or still ahead). */
 export function overdueDays(r: Rotation, today = new Date()): number {
-  if (!r.schedule.length) return 0;
+  if (!r.schedule.length || r.flexible) return 0;
   return Math.max(0, daysBetween(plannedDate(r, r.cyclePosition), today));
 }
 
@@ -238,7 +295,7 @@ export function resortRotation<R extends Rotation>(r: R, today = new Date()): R 
     const j = schedule.indexOf(slot);
     if (key && j < cyclePosition) doneOn = { ...doneOn, [j]: key };
   });
-  const next = { ...r, schedule, cyclePosition, dayOverrides: undefined, doneOn };
+  const next = { ...r, schedule, cyclePosition, dayOverrides: undefined, doneOn, habit: undefined };
   return overdueDays(next, today) > 0
     ? { ...next, anchor: anchorFor(schedule, cyclePosition, today) }
     : next;

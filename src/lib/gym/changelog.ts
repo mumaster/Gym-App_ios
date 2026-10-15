@@ -506,6 +506,27 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 52,
+    items: [
+      {
+        en: "Your program editor now shows Day 1, Day 2… with the real date of each session this week, so it matches the Training tab when a day was pushed.",
+        nl: "In de programma-editor zie je nu Dag 1, Dag 2… met de echte datum van elke training deze week, dus het klopt met het Training-tabblad als een dag is opgeschoven.",
+      },
+      {
+        en: "New Fixed days / Flexible switch for your plan: Flexible hides weekdays and just follows the order, with nothing counted as missed.",
+        nl: "Nieuwe schakelaar Vaste dagen / Flexibel voor je schema: Flexibel verbergt weekdagen en volgt alleen de volgorde, zonder dat iets als gemist telt.",
+      },
+      {
+        en: "The days in your plan card now read D1 - Mon, D2 - Wed… with the day each is planned on.",
+        nl: "De dagen in je schemakaart tonen nu D1 - ma, D2 - wo… met de dag waarop ze gepland staan.",
+      },
+      {
+        en: "If you keep doing a session on another weekday, the app now asks 'Change your standard day?'.",
+        nl: "Doe je een training steeds op een andere weekdag, dan vraagt de app nu 'Je standaarddag aanpassen?'.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -515,7 +536,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 51;
+export const CURRENT_VERSION = 52;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

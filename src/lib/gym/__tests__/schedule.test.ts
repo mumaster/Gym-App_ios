@@ -9,6 +9,8 @@ import {
   dayTypeFor,
   doneDate,
   overdueDays,
+  usualDayFor,
+  firstUsualDay,
   parseDayKey,
   plannedDate,
   resortRotation,
@@ -290,5 +292,53 @@ describe("done days", () => {
     expect(backfillDoneOn(r, workouts, (x) => Boolean(x.fromProgramDay))).toEqual({
       1: "2026-09-23",
     });
+  });
+});
+
+describe("flexible rotation", () => {
+  it("never reports a late session as missed", () => {
+    const r = {
+      schedule: [{ dow: 1, dayId: "upper" }],
+      cyclePosition: 0,
+      anchor: "2026-09-21",
+      flexible: true,
+    } as Rotation;
+    expect(overdueDays(r, new Date(2026, 8, 30))).toBe(0);
+    expect(overdueDays({ ...r, flexible: false }, new Date(2026, 8, 30))).toBeGreaterThan(0);
+  });
+});
+
+describe("usual day habit", () => {
+  const r: Rotation = {
+    schedule: [
+      { dow: 1, dayId: "upper" },
+      { dow: 3, dayId: "lower" },
+    ],
+    cyclePosition: 0,
+    anchor: "2026-09-21",
+  };
+  // Wednesday 23 Sep, Thursday 24 Sep, Thursday 1 Oct, Thursday 8 Oct.
+  const doneThu = [new Date(2026, 8, 24), new Date(2026, 9, 1), new Date(2026, 9, 8)];
+  const doSession = (x: Rotation, d: Date) => {
+    // Finish the first session, then the second, wrapping the cycle.
+    let cur = advanceRotation(x, d, d).rotation;
+    cur = advanceRotation({ ...cur, cyclePosition: 1 }, d, d).rotation;
+    return cur;
+  };
+  it("suggests a weekday after three sessions in a row on it", () => {
+    let cur = r;
+    for (const d of doneThu.slice(0, 2)) cur = doSession(cur, d);
+    expect(usualDayFor(cur, 0)).toBeNull();
+    cur = doSession(cur, doneThu[2]!);
+    expect(usualDayFor(cur, 0)).toBe(4);
+    expect(firstUsualDay(cur)?.index).toBe(0);
+  });
+  it("is dropped by a permanent day change and never suggests the standard day", () => {
+    let cur = r;
+    for (const d of doneThu) cur = doSession(cur, d);
+    expect(resortRotation(cur).habit).toBeUndefined();
+    expect(
+      usualDayFor({ ...cur, schedule: [{ dow: 4, dayId: "upper" }, cur.schedule[1]!] }, 0),
+    ).toBeNull();
   });
 });

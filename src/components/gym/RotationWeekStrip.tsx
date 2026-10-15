@@ -32,7 +32,8 @@ export function RotationWeekStrip({
         const doneOn = doneDate(rotation, i);
         const skipped = done && !doneOn;
         const isNext = i === rotation.cyclePosition;
-        const moved = !done && slotOffset(rotation, i) !== weekIndex(slot.dow);
+        const moved =
+          !rotation.flexible && !done && slotOffset(rotation, i) !== weekIndex(slot.dow);
         const dow = (doneOn ?? plannedDate(rotation, i)).getDay();
         const open = onDay?.(i) ?? null;
         const Cell = open ? "button" : "div";
@@ -57,7 +58,9 @@ export function RotationWeekStrip({
               }`}
             >
               {doneOn ? <Check className="size-2.5" strokeWidth={3} /> : null}
-              {t.common.dow[dow]}
+              {rotation.flexible
+                ? t.common.dayShort(i + 1)
+                : `${t.common.dayShort(i + 1)} - ${t.common.dow[dow]}`}
               {moved ? <span className="size-1 rounded-full bg-primary" aria-hidden /> : null}
             </p>
             <p

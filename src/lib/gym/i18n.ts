@@ -54,6 +54,22 @@ const en = {
     dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as string[],
     tapBarHint: "Tap a bar to see its figures",
     customColor: "Custom color",
+    dayN: (n: number) => `Day ${n}`,
+    dayShort: (n: number) => `D${n}`,
+    scheduleMode: {
+      label: "Schedule",
+      fixed: "Fixed days",
+      flexible: "Flexible",
+      fixedHint: "Sessions are planned on weekdays. Dates below are this week's real dates.",
+      flexibleHint:
+        "No weekdays: train the next day in order whenever you can. Nothing counts as missed.",
+      doneOn: (date: string) => `Done ${date}`,
+      plannedOn: (date: string) => date,
+      moved: "moved",
+      afterDay: (n: number) => `After day ${n}`,
+      upNext: "Up next",
+      usualDay: "Usual day (permanent)",
+    },
   },
   tabbar: {
     workout: "Workout",
@@ -1995,6 +2011,10 @@ const en = {
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `You missed ${day} on ${weekday}`,
+    usualDayTitle: (day: string, weekday: string) =>
+      `You usually do ${day} on ${weekday}. Change your standard day?`,
+    usualDayChange: (weekday: string) => `Change to ${weekday}`,
+    usualDayNotNow: "Not now",
     behindTitle: (day: string, n: number) => `${day} is ${n} days overdue`,
     missedDesc: "Nothing's lost — your rotation waits until you do it or skip it.",
     doItToday: "Do it today",
@@ -2356,6 +2376,23 @@ const nl: Dict = {
     dow: ["zo", "ma", "di", "wo", "do", "vr", "za"] as string[],
     tapBarHint: "Tik op een balk voor de cijfers",
     customColor: "Aangepaste kleur",
+    dayN: (n: number) => `Dag ${n}`,
+    dayShort: (n: number) => `D${n}`,
+    scheduleMode: {
+      label: "Schema",
+      fixed: "Vaste dagen",
+      flexible: "Flexibel",
+      fixedHint:
+        "Trainingen staan op weekdagen. De datums hieronder zijn de echte datums van deze week.",
+      flexibleHint:
+        "Geen weekdagen: train de volgende dag in volgorde wanneer het uitkomt. Niets telt als gemist.",
+      doneOn: (date: string) => `Gedaan ${date}`,
+      plannedOn: (date: string) => date,
+      moved: "verschoven",
+      afterDay: (n: number) => `Na dag ${n}`,
+      upNext: "Hierna",
+      usualDay: "Gebruikelijke dag (blijvend)",
+    },
   },
   tabbar: {
     workout: "Training",
@@ -4304,6 +4341,10 @@ const nl: Dict = {
   },
   schedule: {
     missedTitle: (day: string, weekday: string) => `Je hebt ${day} gemist op ${weekday}`,
+    usualDayTitle: (day: string, weekday: string) =>
+      `Je doet ${day} meestal op ${weekday}. Je standaarddag aanpassen?`,
+    usualDayChange: (weekday: string) => `Wijzig naar ${weekday}`,
+    usualDayNotNow: "Niet nu",
     behindTitle: (day: string, n: number) => `${day} is ${n} dagen te laat`,
     missedDesc: "Je bent niets kwijt — je schema wacht tot je de training doet of overslaat.",
     doItToday: "Vandaag doen",

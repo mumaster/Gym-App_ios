@@ -650,6 +650,11 @@ interface Ctx extends GymState {
    *  names — see lib/gym/schedule.ts. Skipping advances the rotation (and a
    *  program's week, on wrap) exactly like finishing the session would. */
   skipScheduledSession: (kind: RotationKind) => void;
+  /** Fixed days (weekdays) or flexible (Day 1, Day 2… in order). */
+  setRotationFlexible: (kind: RotationKind, flexible: boolean) => void;
+  /** "Not now" on a usual-day suggestion: forget that session's habit so it
+   *  has to build up again. */
+  dismissUsualDay: (kind: RotationKind, index: number) => void;
   /** Logging the next session's cardio (a cardio slot) finishes it: advances
    *  the rotation like a finished scheduled workout, with `doneOn` the day
    *  the cardio was done. Does nothing when the next session isn't cardio. */
@@ -1680,6 +1685,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
               anchor: anchorFor(schedule, cyclePosition),
               dayOverrides: undefined,
               doneOn: undefined,
+              habit: undefined,
             },
           };
         }),
@@ -1770,6 +1776,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
             weeklyScheme: moveIfChanged(skipRestOfCycle(s.weeklyScheme, today), index, date),
           };
         }),
+      dismissUsualDay: (kind, index) =>
+        setState((s) =>
+          updateRotation(s, kind, (r) => ({ ...r, habit: { ...r.habit, [index]: [] } })),
+        ),
+      setRotationFlexible: (kind, flexible) =>
+        setState((s) => updateRotation(s, kind, (r) => ({ ...r, flexible }))),
       resetScheduledWeek: (kind) =>
         setState((s) => updateRotation(s, kind, (r) => ({ ...r, dayOverrides: undefined }))),
 

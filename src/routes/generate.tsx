@@ -33,6 +33,7 @@ import { CARDIO_ICONS } from "../components/gym/cardioDisplay";
 import { AnatomyMap, SUGGESTED_COLOR } from "../components/gym/AnatomyMap";
 import { DumbbellLoader } from "../components/gym/DumbbellLoader";
 import { MissedSessionBanner } from "../components/gym/MissedSessionBanner";
+import { UsualDayBanner } from "../components/gym/UsualDayBanner";
 import { ProgramBuilderSheet } from "../components/gym/ProgramBuilderSheet";
 import { RotationWeekStrip } from "../components/gym/RotationWeekStrip";
 import { DayWorkoutSheet } from "../components/gym/DayWorkoutSheet";
@@ -889,6 +890,7 @@ function WorkoutHome() {
               templateId={program.templateId}
               onDay={openDay("program")}
             />
+            <UsualDayBanner kind="program" rotation={program} />
             <MissedSessionBanner
               kind="program"
               rotation={program}
@@ -956,6 +958,7 @@ function WorkoutHome() {
               templateId={weeklyScheme.templateId}
               onDay={openDay("weeklyScheme")}
             />
+            <UsualDayBanner kind="weeklyScheme" rotation={weeklyScheme} />
             <MissedSessionBanner
               kind="weeklyScheme"
               rotation={weeklyScheme}
