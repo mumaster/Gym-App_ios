@@ -108,10 +108,6 @@ export function MealOverviewSheet({
               <p className="tabular min-w-0 leading-none">
                 <span className="text-[30px] font-bold">{kcal.toLocaleString(locale)}</span>
                 <span className="text-[15px] font-medium text-muted-foreground"> kcal</span>
-                <span className="text-[13px] text-muted-foreground">
-                  {" · "}
-                  {t.mealOverview.foods(entries.length)}
-                </span>
               </p>
               {entries.length ? (
                 <div className="flex shrink-0 items-center gap-2">
@@ -144,56 +140,62 @@ export function MealOverviewSheet({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-            <NutrientCell
-              label={t.nutrients.protein}
-              value={String(Math.round(totals.protein))}
-              amount={totals.protein}
-              goal={goals.protein}
-            />
-            <NutrientCell
-              label={t.nutrients.carbs}
-              value={String(Math.round(totals.carbs))}
-              amount={totals.carbs}
-              goal={goals.carbs}
-            />
-            <NutrientCell
-              label={t.nutrients.sugars}
-              value={
-                totals.sugars == null
-                  ? "–"
-                  : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`
-              }
-              amount={totals.sugars ?? 0}
-              goal={goals.sugars ?? undefined}
-              overIsAccent
-            />
-          </div>
-          <div className="h-px bg-border" />
-          <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-            {(["fat", "fiber", "salt"] as const).map((key) => (
+          <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
               <NutrientCell
-                key={key}
-                label={t.nutrients[key]}
-                value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
-                amount={totals[key]}
-                goal={goals[key]}
+                label={t.nutrients.protein}
+                value={String(Math.round(totals.protein))}
+                amount={totals.protein}
+                goal={goals.protein}
               />
-            ))}
+              <NutrientCell
+                label={t.nutrients.carbs}
+                value={String(Math.round(totals.carbs))}
+                amount={totals.carbs}
+                goal={goals.carbs}
+              />
+              <NutrientCell
+                label={t.nutrients.sugars}
+                value={
+                  totals.sugars == null
+                    ? "–"
+                    : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`
+                }
+                amount={totals.sugars ?? 0}
+                goal={goals.sugars ?? undefined}
+                overIsAccent
+              />
+            </div>
+            <div className="h-px bg-border" />
+            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+              {(["fat", "fiber", "salt"] as const).map((key) => (
+                <NutrientCell
+                  key={key}
+                  label={t.nutrients[key]}
+                  value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
+                  amount={totals[key]}
+                  goal={goals[key]}
+                />
+              ))}
+            </div>
+            {proteinTarget != null ? (
+              <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
+                {proteinOk ? (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-2.5" strokeWidth={3.5} />
+                  </span>
+                ) : null}
+                {t.mealOverview.proteinMeal(protein, proteinTarget)}
+              </p>
+            ) : null}
           </div>
-          {proteinTarget != null ? (
-            <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
-              {proteinOk ? (
-                <span className="flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Check className="size-2.5" strokeWidth={3.5} />
-                </span>
-              ) : null}
-              {t.mealOverview.proteinMeal(protein, proteinTarget)}
-            </p>
-          ) : null}
-
           {entries.length ? (
             <div className="overflow-hidden rounded-2xl bg-muted/50">
+              <div className="card-head flex items-center justify-between gap-3 px-3.5 py-2.5">
+                <p className="text-[15px] font-bold leading-none">
+                  {t.mealOverview.foods(entries.length)}
+                </p>
+              </div>
               {entries.map((entry, i) => {
                 const m = scaledMacros(entry);
                 return (
