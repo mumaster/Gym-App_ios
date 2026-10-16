@@ -11,9 +11,11 @@ import {
   weekendOffsets,
   withEnergyShift,
   sessionEnergyKcal,
+  weeklyAverageCalories,
   type NutritionGoals,
 } from "./nutrition";
-import { dayTypeFor, mondayOf, parseDayKey, type DayType } from "./schedule";
+import { plannedWeeklyCardioKcal } from "./cardio";
+import { dayTypeFor, isLiftingSlot, mondayOf, parseDayKey, type DayType } from "./schedule";
 import { useGym } from "./store";
 
 /** Session length assumed before any workout has been logged — the
@@ -159,4 +161,43 @@ export function useDayNutrition(date: Date): {
     () => ({ ...resolve(parseDayKey(key)), byDayType: nutritionByDayType }),
     [resolve, key, nutritionByDayType],
   );
+}
+
+/** The daily calorie limit averaged over the week as the program (else the
+ *  weekly plan) plans it: its lifting sessions are the training days, the
+ *  rest are rest days, plus the planned cardio. Null when day-type limits are
+ *  off, no program or plan exists, or there's no bodyweight to size a session
+ *  from — the caller then falls back to the days' own limits. Not tied to
+ *  what was actually trained, so a missed session doesn't change it. */
+export function usePlannedWeekCalories(): number | null {
+  const {
+    nutritionByDayType,
+    nutritionGoals,
+    restDayGoalOverrides,
+    program,
+    weeklyScheme,
+    plannedCardio,
+  } = useGym();
+  const session = useSessionEnergy();
+  return useMemo(() => {
+    const rotation = program ?? weeklyScheme;
+    if (!nutritionByDayType || !rotation || !session) return null;
+    const n = rotation.schedule.filter(isLiftingSlot).length;
+    if (n <= 0 || n >= 7) return null;
+    return weeklyAverageCalories(
+      nutritionGoals,
+      restDayGoalOverrides,
+      n,
+      session.kcal,
+      plannedWeeklyCardioKcal(plannedCardio, session.weightKg),
+    );
+  }, [
+    nutritionByDayType,
+    nutritionGoals,
+    restDayGoalOverrides,
+    program,
+    weeklyScheme,
+    plannedCardio,
+    session,
+  ]);
 }

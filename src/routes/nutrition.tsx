@@ -57,7 +57,11 @@ import { BodyCompositionCard } from "../components/gym/BodyCompositionCard";
 import { BodyweightCard } from "../components/gym/BodyweightCard";
 import { HapticSwitch } from "../components/gym/HapticSwitch";
 import { badge, button } from "../components/gym/ui";
-import { useDayGoalsResolver, useDayNutrition } from "../lib/gym/dayNutrition";
+import {
+  useDayGoalsResolver,
+  useDayNutrition,
+  usePlannedWeekCalories,
+} from "../lib/gym/dayNutrition";
 import { drinkOf } from "../lib/gym/alcohol";
 import { useLocale, useTranslation } from "../lib/gym/i18n";
 import { latestBodyKg } from "../lib/gym/load";
@@ -112,6 +116,7 @@ function NutritionScreen() {
     window.scrollTo({ top: 0 });
   };
   const resolveGoals = useDayGoalsResolver();
+  const plannedWeekKcal = usePlannedWeekCalories();
   const {
     foodEntries,
     waterEntries,
@@ -286,7 +291,11 @@ function NutritionScreen() {
     return avg
       ? t.nutrition.weekAvg(
           avg.calories.toLocaleString(locale),
-          avg.goal != null ? avg.goal.toLocaleString(locale) : null,
+          // The goal is the week as planned (e.g. 4 training days), not the
+          // limits of the days that happen to be logged.
+          (plannedWeekKcal ?? avg.goal) != null
+            ? (plannedWeekKcal ?? avg.goal)!.toLocaleString(locale)
+            : null,
           avg.days,
         )
       : t.nutrition.weekAvgNone;

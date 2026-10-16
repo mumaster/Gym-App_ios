@@ -536,6 +536,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 54,
+    items: [
+      {
+        en: "The daily goal under the week on the Food tab is now the average of your planned week, so with 4 training days planned it uses those 4.",
+        nl: "Het dagdoel onder de week op het Voeding-tabblad is nu het gemiddelde van je geplande week, dus met 4 geplande trainingsdagen gebruikt het die 4.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -545,7 +554,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 53;
+export const CURRENT_VERSION = 54;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
