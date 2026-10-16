@@ -951,8 +951,6 @@ const en = {
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: nothing logged` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} left`,
-    proteinLeft: (n: string) => `${n} g to go`,
-    proteinReached: "Goal reached",
     kcalOver: (n: string) => `${n} over`,
     addToMeal: (meal: string) => `Add food to ${meal}`,
     saveAsMeal: (meal: string) => `Save ${meal} as a meal`,
@@ -3324,8 +3322,6 @@ const nl: Dict = {
     dayAria: (day: string, kcal: number | null) =>
       kcal == null ? `${day}: niets gelogd` : `${day}: ${kcal} kcal`,
     kcalLeft: (n: string) => `${n} over`,
-    proteinLeft: (n: string) => `nog ${n} g`,
-    proteinReached: "Doel gehaald",
     kcalOver: (n: string) => `${n} te veel`,
     addToMeal: (meal: string) => `Voeding toevoegen aan ${meal}`,
     saveAsMeal: (meal: string) => `${meal} opslaan als maaltijd`,

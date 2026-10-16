@@ -81,15 +81,11 @@ describe("NutrientPanel", () => {
       ),
     );
 
-  it("puts protein first with a solid bar and what's left to reach", () => {
+  it("pairs carbs and fat, each with its part, above protein, fiber and salt", () => {
     const html = panel(74);
-    expect(html.indexOf("Protein")).toBeLessThan(html.indexOf("Carbs"));
-    expect(html).toContain('data-bar="protein"');
-    expect(html).toContain("106 g to go");
+    expect(html.indexOf("Carbs")).toBeLessThan(html.indexOf("Protein"));
+    expect(html.indexOf("Fat")).toBeLessThan(html.indexOf("Protein"));
     expect(html.match(/data-bar="part"/g)).toHaveLength(2);
-  });
-
-  it("says the protein goal is reached", () => {
-    expect(panel(190)).toContain("Goal reached");
+    expect(html).toContain("Salt");
   });
 });

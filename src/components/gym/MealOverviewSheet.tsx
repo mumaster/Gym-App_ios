@@ -144,7 +144,6 @@ export function MealOverviewSheet({
 
           <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
             <NutrientPanel
-              showLeft={false}
               protein={{
                 label: t.nutrients.protein,
                 value: String(Math.round(totals.protein)),
