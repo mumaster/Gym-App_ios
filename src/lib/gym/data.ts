@@ -17,12 +17,24 @@ export const EQUIPMENT: { id: EquipmentId; label: string }[] = [
   { id: "dip_bars", label: "Dip Bars / Parallel Bars" },
   { id: "leg_press", label: "Leg Press" },
   { id: "machine", label: "Pin-Loaded Machines" },
+  { id: "plate_machine", label: "Plate-Loaded Machines" },
+  { id: "ez_bar", label: "EZ Curl Bar" },
+  { id: "preacher_bench", label: "Preacher Curl Bench" },
+  { id: "seated_calf", label: "Seated Calf Raise Machine" },
+  { id: "captains_chair", label: "Captain's Chair (Leg Raise Station)" },
+  { id: "back_ext_bench", label: "Back Extension Bench / GHD" },
 ];
 
 /** Dutch names for the equipment that has one; the rest keep their English label. */
 const EQUIPMENT_NL: Partial<Record<EquipmentId, string>> = {
   cable: "Lage kabel",
   cable_high: "Hoge kabel",
+  plate_machine: "Machines met platen",
+  ez_bar: "EZ-curlstang",
+  preacher_bench: "Preekbank",
+  seated_calf: "Zittende kuitmachine",
+  captains_chair: "Captain's chair (beenheffen)",
+  back_ext_bench: "Rugextensiebank / GHD",
 };
 
 export const equipmentLabel = (id: EquipmentId, language: "en" | "nl"): string => {
@@ -93,6 +105,7 @@ export const DEFAULT_PROFILES: EquipmentProfile[] = (
   ...p,
   ...baseProfile(),
   loadable_dumbbells: defaultLoadableDumbbells(p.id),
+  new_gear_seen: true,
 }));
 
 /** Home setups have a handle and plates; a commercial or hotel gym has a

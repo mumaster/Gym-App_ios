@@ -78,6 +78,7 @@ import type {
   CardioPlanDay,
   CardioSession,
   ColorScheme,
+  EquipmentId,
   EquipmentProfile,
   Language,
   LoggedSet,
@@ -405,7 +406,33 @@ function migrate(raw: Partial<GymState>): GymState {
         } as T)
       : w;
 
-  const fixProfile = (p: EquipmentProfile): EquipmentProfile => ({
+  // Gear added in 0.056 (EZ bar, preacher bench, seated calf machine,
+  // captain's chair, back extension bench, plate-loaded machines). The full
+  // gym has all of it; a profile with pin-loaded machines keeps the
+  // exercises that used to need "machine" and are now plate-loaded or on a
+  // seated calf machine or a back extension bench, so nothing it could do
+  // disappears. Everything else is for the user to tick in Equipment.
+  const NEW_GEAR_IDS: EquipmentId[] = [
+    "plate_machine",
+    "ez_bar",
+    "preacher_bench",
+    "seated_calf",
+    "captains_chair",
+    "back_ext_bench",
+  ];
+  const addNewGear = (p: EquipmentProfile): EquipmentProfile => {
+    if (p.new_gear_seen) return p;
+    const ids = new Set(p.active_equipment_ids);
+    if (p.id === "full-gym") NEW_GEAR_IDS.forEach((g) => ids.add(g));
+    else if (ids.has("machine"))
+      (["plate_machine", "seated_calf", "back_ext_bench"] as const).forEach((g) => ids.add(g));
+    return { ...p, active_equipment_ids: [...ids], new_gear_seen: true };
+  };
+  const fixProfile = (p0: EquipmentProfile): EquipmentProfile => {
+    const p = addNewGear(p0);
+    return fixProfileRest(p);
+  };
+  const fixProfileRest = (p: EquipmentProfile): EquipmentProfile => ({
     ...p,
     plates: p.plates ?? { ...DEFAULT_PLATES },
     bar_weight: p.bar_weight ?? 20,

@@ -20,7 +20,23 @@
  * curl, machine preacher curl, reverse pec deck, dumbbell sumo squat,
  * decline bench press and others were added — and to drop niche ones.
  */
+import { NICHE_BELOW_PROGRAMS, programCountOf } from "./exercisePrograms";
+
 export const EXERCISE_POPULARITY: Record<string, number> = {
+  // Added with the gear (16 Oct 2026), not measured on YouTube: ranked by program count.
+  "ez-bar-curl": 0,
+  "ez-bar-preacher-curl": 0,
+  "barbell-preacher-curl": 0,
+  "ez-bar-skullcrusher": 0,
+  "ez-bar-overhead-triceps-extension": 0,
+  "ez-bar-reverse-curl": 0,
+  "captains-chair-leg-raise": 0,
+  "captains-chair-knee-raise": 0,
+  "plate-chest-press": 0,
+  "plate-incline-chest-press": 0,
+  "plate-shoulder-press": 0,
+  "plate-row": 0,
+  "plate-high-row": 0,
   pushup: 182.03,
   "seated-cable-row": 130.48,
   pullup: 119.47,
@@ -285,6 +301,15 @@ export const EXERCISE_POPULARITY: Record<string, number> = {
 export const NICHE_BELOW_M = 1;
 
 /** Millions of matched YouTube views (0 for your own exercises). */
-export const popularityOf = (id: string) => EXERCISE_POPULARITY[id] ?? 0;
+export const viewsOf = (id: string) => EXERCISE_POPULARITY[id] ?? 0;
 
-export const isNiche = (id: string) => popularityOf(id) < NICHE_BELOW_M;
+/**
+ * The ranking score: how many of 280 programs have the exercise
+ * (exercisePrograms.ts) first, YouTube views only as the tie-break (the
+ * views never reach 1 program: the biggest is 182 M / 1000). Higher is more
+ * popular.
+ */
+export const popularityOf = (id: string) => programCountOf(id) + viewsOf(id) / 1000;
+
+export const isNiche = (id: string) =>
+  programCountOf(id) < NICHE_BELOW_PROGRAMS && viewsOf(id) < NICHE_BELOW_M;

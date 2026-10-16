@@ -335,7 +335,7 @@ const en = {
       exerciseSelection:
         "Which exercises are in the list and offered as swaps (muscle-length, EMG and training studies)",
       exercisePopularity:
-        "Which exercises are suggested first: the best-known ones, by how often people look them up",
+        "Which exercises are suggested first: the ones most training programs contain, then the best-known by how often people look them up",
       startWeights:
         'Starting weights from related exercises, and "you could go heavier" when your RPE showed reps to spare',
       progression:
@@ -2705,7 +2705,7 @@ const nl: Dict = {
       exerciseSelection:
         "Welke oefeningen in de lijst staan en als alternatief worden aangeboden (onderzoek naar spierlengte, EMG en training)",
       exercisePopularity:
-        "Welke oefeningen als eerste worden voorgesteld: de bekendste, naar hoe vaak mensen ze opzoeken",
+        "Welke oefeningen als eerste worden voorgesteld: die in de meeste trainingsschema's voorkomen, daarna de bekendste naar hoe vaak mensen ze opzoeken",
       startWeights:
         'Startgewichten op basis van verwante oefeningen, en "je kunt zwaarder" als je RPE liet zien dat er reps over waren',
       progression:

@@ -564,6 +564,23 @@ export const CHANGELOG: ChangelogEntry[] = [
       nl: "De gemarkeerde portiekolom in het voedseloverzicht volgt nu de afgeronde hoeken van de kaart.",
     },
   },
+  {
+    version: 56,
+    items: [
+      {
+        en: "New gear in Equipment: EZ curl bar, preacher bench, seated calf machine, captain's chair, back extension bench and plate-loaded machines. Tick what you have and the matching exercises show up.",
+        nl: "Nieuwe uitrusting bij Uitrusting: EZ-curlstang, preekbank, zittende kuitmachine, captain's chair, rugextensiebank en machines met platen. Vink aan wat je hebt en de bijpassende oefeningen verschijnen.",
+      },
+      {
+        en: "13 new exercises, such as EZ-bar curl, EZ-bar skullcrusher, captain's chair leg raise and plate-loaded chest press.",
+        nl: "13 nieuwe oefeningen, zoals EZ-bar curl, EZ-bar skullcrusher, captain's chair beenheffen en chest press met platen.",
+      },
+      {
+        en: "Better suggestions: swaps and generated workouts now favour the exercises that most real training programs contain (counted in 280 programs), so you see familiar exercises first.",
+        nl: "Betere suggesties: wisselen en gegenereerde trainingen kiezen nu eerst de oefeningen die de meeste echte trainingsschema's bevatten (geteld in 280 schema's), zodat je bekende oefeningen eerst ziet.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -573,7 +590,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 55;
+export const CURRENT_VERSION = 56;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

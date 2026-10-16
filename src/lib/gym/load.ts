@@ -10,6 +10,8 @@ const BODYWEIGHT_GEAR: ReadonlySet<EquipmentId> = new Set([
   "pullup_bar",
   "dip_bars",
   "bench",
+  "captains_chair",
+  "back_ext_bench",
 ]);
 
 /**
