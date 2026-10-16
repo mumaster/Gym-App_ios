@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Repeat } from "lucide-react";
 import { badge, button } from "./ui";
 import { ListCard } from "./ListCard";
+import { SearchField } from "./SearchField";
 import { BottomSheet } from "./BottomSheet";
 import { EQUIPMENT, exerciseById } from "../../lib/gym/data";
 import { alternativesFor, availableExercises } from "../../lib/gym/generator";
@@ -15,6 +16,9 @@ import {
 import { muscleIcon } from "../../lib/gym/muscleIcons";
 import { nearDuplicateIn } from "../../lib/gym/similar";
 import { sharesLoadStation } from "../../lib/gym/stations";
+import { foldText } from "../../lib/gym/nevoFoods";
+import { popularityOf } from "../../lib/gym/exercisePopularity";
+import { useTapFocus } from "../../lib/gym/tapFocus";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
 import type { Exercise } from "../../lib/gym/types";
@@ -118,8 +122,15 @@ export function SwapSheet({
     reason: "station" | "antagonist" | "similar";
     other?: string;
   } | null>(null);
+  const [query, setQuery] = useState("");
+  const [searchMode, setSearchMode] = useState(false);
+  const searchTap = useTapFocus(() => setSearchMode(true));
   useEffect(() => {
-    if (!exerciseId) setPending(null);
+    if (!exerciseId) {
+      setPending(null);
+      setQuery("");
+      setSearchMode(false);
+    }
   }, [exerciseId]);
 
   const sameMuscle = current
@@ -177,6 +188,24 @@ export function SwapSheet({
     return id ? exerciseById(id)?.name : undefined;
   };
 
+  // Search covers everything the gym allows, not only the suggestions: every
+  // typed word has to appear in the name, muscle or gear, most popular first.
+  const words = foldText(query).trim().split(/\s+/).filter(Boolean);
+  const searching = words.length > 0;
+  const inName = (e: Exercise) => words.every((w) => foldText(e.name).includes(w));
+  const results = searching
+    ? pool
+        .filter((e) => e.id !== current?.id && e.id !== pairWith?.id)
+        .filter((e) => {
+          const hay = foldText(`${e.name} ${subtitleOf(e)}`);
+          return words.every((w) => hay.includes(w));
+        })
+        .sort(
+          (a, b) =>
+            Number(inName(b)) - Number(inName(a)) || popularityOf(b.id) - popularityOf(a.id),
+        )
+    : [];
+
   const choose = (e: Exercise) => {
     if (clashes(e)) {
       setPending({ e, reason: "station" });
@@ -195,7 +224,24 @@ export function SwapSheet({
   };
 
   return (
-    <BottomSheet open={!!exerciseId} onClose={onClose} title={t.swapSheet.title}>
+    <BottomSheet
+      open={!!exerciseId}
+      onClose={onClose}
+      title={t.swapSheet.title}
+      toolbar={
+        pending ? undefined : (
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            {...searchTap}
+            onFocus={() => setSearchMode(true)}
+            placeholder={t.swapSheet.searchPlaceholder}
+          />
+        )
+      }
+      fullHeight={!pending && searchMode}
+      scrollKey={query}
+    >
       {pending ? (
         <div className="space-y-3">
           <div className="rounded-2xl border border-warning/50 bg-warning/10 p-4">
@@ -274,6 +320,24 @@ export function SwapSheet({
               {t.swapSheet.backToList}
             </button>
           </div>
+        </div>
+      ) : searching ? (
+        <div className="space-y-2">
+          {results.length === 0 ? (
+            <p className="text-[14px] text-muted-foreground">{t.swapSheet.noSearchResults}</p>
+          ) : null}
+          {results.map((e) => (
+            <Row
+              key={e.id}
+              e={e}
+              onPick={choose}
+              {...(clashes(e) && pairWith
+                ? { clash: t.swapSheet.sameEquipmentAs(pairWith.name) }
+                : {})}
+              {...(similarName(e) ? { similar: t.swapSheet.similarTo(similarName(e)!) } : {})}
+              {...(!fresh(e) ? { inWorkout: t.swapSheet.alreadyInWorkout } : {})}
+            />
+          ))}
         </div>
       ) : (
         <div className="space-y-2">

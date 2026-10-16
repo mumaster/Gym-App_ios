@@ -17,6 +17,7 @@ import type { EquipmentId, Exercise } from "./types";
  */
 const LOADED: EquipmentId[] = [
   "barbell",
+  "ez_bar",
   "smith",
   "kettlebell",
   "bands",
@@ -48,7 +49,7 @@ export function loadStations(ex: Exercise): string[] {
       ex.equipment_required.filter((e) => LOADED.includes(e)).map((e) => SAME_STATION[e] ?? e),
     ),
   ];
-  if (ex.equipment_required.includes("machine"))
+  if (ex.equipment_required.includes("machine") || ex.equipment_required.includes("plate_machine"))
     stations.push(`machine:${SHARED_MACHINES[ex.id] ?? ex.id}`);
   return stations;
 }

@@ -130,37 +130,40 @@ describe("generator focus", () => {
     regionsForMuscles(["Chest", "Back", "Shoulders", "Arms"], "upper"),
   );
   const ARMS = musclesInGroups(["arms"]);
-  const armSets = (n: ReturnType<typeof planSets>) => (n.Biceps ?? 0) + (n.Triceps ?? 0);
-  const sets = (args: Partial<Parameters<typeof generateWorkout>[0]>, duration = 45) =>
-    planSets(generateWorkout({ duration, equipment, targets: upper, ...args }));
+  // Direct arm work: sets of exercises whose main muscle is the arms. (The
+  // fractional count also gets half a set from every press and row, which
+  // popular programs' favourite compound lifts fill up either way.)
+  const directArms = (args: Partial<Parameters<typeof generateWorkout>[0]>, duration = 45) =>
+    generateWorkout({ duration, equipment, targets: upper, ...args })
+      .filter((p) => exerciseById(p.exercise_id)?.primary_muscle === "Arms")
+      .reduce((n, p) => n + p.target_sets, 0);
 
   it("plans more sets for a muscle to grow", () => {
     for (const supersets of [false, true]) {
-      const focus = armSets(sets({ supersets, focusMuscles: ARMS }, 60));
-      const plain = armSets(sets({ supersets }, 60));
+      const focus = directArms({ supersets, focusMuscles: ARMS }, 60);
+      const plain = directArms({ supersets }, 60);
       expect(focus).toBeGreaterThan(plain);
     }
   });
 
   it("gives a muscle that's behind on this week's target more than one that's done", () => {
-    const fresh = armSets(sets({ focusMuscles: ARMS }));
-    const done = armSets(
-      sets({ focusMuscles: ARMS, weekDone: { Biceps: 20, Triceps: 20, Forearms: 20 } }),
-    );
+    const fresh = directArms({ focusMuscles: ARMS });
+    const done = directArms({
+      focusMuscles: ARMS,
+      weekDone: { Biceps: 20, Triceps: 20, Forearms: 20 },
+    });
     expect(done).toBeLessThan(fresh);
-    const behind = armSets(
-      sets({
-        weekDone: {
-          Chest: 10,
-          Lats: 10,
-          Traps: 10,
-          "Front Delts": 10,
-          "Side Delts": 10,
-          "Rear Delts": 10,
-        },
-      }),
-    );
-    expect(behind).toBeGreaterThan(armSets(sets({})));
+    const behind = directArms({
+      weekDone: {
+        Chest: 10,
+        Lats: 10,
+        Traps: 10,
+        "Front Delts": 10,
+        "Side Delts": 10,
+        "Rear Delts": 10,
+      },
+    });
+    expect(behind).toBeGreaterThan(directArms({}));
   });
 
   it("trains a prioritised group with its own exercises, not only other groups' lifts", () => {

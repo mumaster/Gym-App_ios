@@ -79,6 +79,7 @@ export const SOURCES: SourceEntry[] = [
     group: "training",
     refs: [
       "YouTube search results per exercise: views of the top 20 results naming it, measured 1 October 2026 (no published ranking of exercise popularity exists)",
+      "280 training programs (153 from Boostcamp, 127 from Jefit), read 16 October 2026: how many of them contain each exercise; YouTube views only break ties",
       "DeltaBolic (Andrew Kwong) YouTube channel: 981 videos and Shorts, used to find popular exercises the list lacked",
     ],
   },

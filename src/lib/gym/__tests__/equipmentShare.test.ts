@@ -20,6 +20,7 @@ describe("gym sharing", () => {
       ...gym,
       active_equipment_ids: [...gym.active_equipment_ids],
       plates: { "1.25": 2, "5": 4 },
+      new_gear_seen: true,
     });
   });
 

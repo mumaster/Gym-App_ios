@@ -117,6 +117,7 @@ function EquipmentScreen() {
           bar_weight: 20,
           dumbbell_bar_weight: 2,
           loadable_dumbbells: true,
+          new_gear_seen: true,
         },
       ],
     });

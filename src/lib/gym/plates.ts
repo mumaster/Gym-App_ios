@@ -83,10 +83,11 @@ export function plateStep(exercise: Exercise, profile: EquipmentProfile): number
   const smallest = smallestPlate(profile);
   const bothSides = (fallback: number) =>
     smallest == null ? fallback : Number((smallest * 2).toFixed(2));
-  if (gear.includes("barbell") || gear.includes("smith")) return bothSides(2.5);
+  if (gear.includes("barbell") || gear.includes("smith") || gear.includes("ez_bar"))
+    return bothSides(2.5);
   if (gear.includes("dumbbell"))
     return profile.loadable_dumbbells === false ? FIXED_DUMBBELL_STEP : (smallest ?? 2);
-  if (gear.includes("leg_press")) return bothSides(2.5);
+  if (gear.includes("leg_press") || gear.includes("plate_machine")) return bothSides(2.5);
   if (ONE_PIN.some((g) => gear.includes(g)))
     return smallest == null ? 2.5 : Math.min(2.5, smallest);
   return 2.5;

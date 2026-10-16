@@ -12,7 +12,13 @@ export type EquipmentId =
   | "leg_press"
   | "leg_developer"
   | "bench"
-  | "machine";
+  | "machine"
+  | "ez_bar"
+  | "preacher_bench"
+  | "seated_calf"
+  | "captains_chair"
+  | "back_ext_bench"
+  | "plate_machine";
 
 export type Muscle =
   "Chest" | "Back" | "Shoulders" | "Arms" | "Quads" | "Hamstrings" | "Glutes" | "Core" | "Calves";
@@ -320,6 +326,8 @@ export interface EquipmentProfile {
   bar_weight: number;
   /** Empty dumbbell handle weight in kg (loadable dumbbells). */
   dumbbell_bar_weight: number;
+  /** Set once the gear added in 0.056 has been offered to this profile. */
+  new_gear_seen?: boolean;
   /** Dumbbells are a handle plus plates (true), or a fixed rack (false):
    *  decides their weight step and whether the plate hint shows. Missing on
    *  older saves until migrate() fills it. */

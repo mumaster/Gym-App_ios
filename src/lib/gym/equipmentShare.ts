@@ -15,6 +15,7 @@ export type SharedGym = Pick<
   | "bar_weight"
   | "dumbbell_bar_weight"
   | "loadable_dumbbells"
+  | "new_gear_seen"
 >;
 
 const VERSION = 1;
@@ -64,6 +65,7 @@ export function decodeGym(code: string): SharedGym | null {
       bar_weight: raw.b,
       dumbbell_bar_weight: raw.d,
       loadable_dumbbells: raw.l !== false,
+      new_gear_seen: true,
     };
   } catch {
     return null;
