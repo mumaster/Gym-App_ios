@@ -1331,15 +1331,19 @@ export function AddFoodSheet({
                       placeholder={key === "sugars" ? "–" : "0"}
                       className="tabular h-7 w-full min-w-0 bg-transparent text-right text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
                     />
-                    <span className="w-6 shrink-0 text-[11px] text-muted-foreground">{unit}</span>
+                    <span className="w-8 shrink-0 text-left text-[11px] text-muted-foreground">
+                      {unit}
+                    </span>
                   </span>
-                  <span
-                    className={`tabular w-[6.75rem] shrink-0 text-center font-bold ${
-                      opts.hero ? "text-[20px]" : "text-[17px]"
-                    }`}
-                  >
-                    {portion}
-                    <span className="ml-0.5 text-[11px] font-semibold text-muted-foreground">
+                  <span className="flex w-[6.75rem] shrink-0 items-baseline justify-center font-bold">
+                    <span
+                      className={`tabular w-12 text-right ${
+                        opts.hero ? "text-[20px]" : "text-[17px]"
+                      }`}
+                    >
+                      {portion}
+                    </span>
+                    <span className="w-8 pl-0.5 text-left text-[11px] font-semibold text-muted-foreground">
                       {unit}
                     </span>
                   </span>
