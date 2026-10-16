@@ -104,7 +104,14 @@ import { readableAccentText, readableInk, visibleAccentFill } from "./accentInk"
 import { moveExerciseData } from "./moveExercise";
 import { SUGARS_BACKFILL_VERSION, applySugarsBackfill, fetchBarcodeSugars } from "./sugarsBackfill";
 import { lookupBarcode } from "./barcodeLookup";
-import { backfillMyFoods, removeMyFood, upsertMyFood, type MyFood } from "./myFoods";
+import {
+  backfillMyFoods,
+  deleteSavedFood,
+  editSavedFood,
+  removeMyFood,
+  upsertMyFood,
+  type MyFood,
+} from "./myFoods";
 import { cardioStartIso, roundWatchNumbers } from "./watch";
 import {
   keepRunningWorkout,
@@ -729,6 +736,9 @@ interface Ctx extends GymState {
   rememberFood: (food: MealIngredient, barcode?: string) => void;
   /** Removes a food from "your foods" by myFoodKey; the log is untouched. */
   forgetFood: (key: string) => void;
+  /** My food tab: edit or delete one saved food (library and favourites). */
+  editSavedFood: (old: Pick<MyFood, "name" | "barcode">, next: MealIngredient) => void;
+  deleteSavedFood: (old: Pick<MyFood, "name" | "barcode">) => void;
   /** Sets an exercise's note; blank removes it. */
   setExerciseNote: (exerciseId: string, note: string) => void;
   /** Moves logged sets of one exercise to another in the chosen sessions
@@ -1908,6 +1918,12 @@ export function GymProvider({ children }: { children: ReactNode }) {
           myFoods: upsertMyFood(s.myFoods, food, barcode, new Date().toISOString()),
         })),
       forgetFood: (key) => setState((s) => ({ ...s, myFoods: removeMyFood(s.myFoods, key) })),
+      editSavedFood: (old, next) =>
+        setState((s) => ({
+          ...s,
+          ...editSavedFood(s, old, next, new Date().toISOString()),
+        })),
+      deleteSavedFood: (old) => setState((s) => ({ ...s, ...deleteSavedFood(s, old) })),
       saveMealTemplate: (name, ingredients) =>
         setState((s) => ({
           ...s,

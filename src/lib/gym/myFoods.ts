@@ -150,3 +150,88 @@ export function searchMyFoods(list: MyFood[], query: string, limit = 20): MyFood
   );
   return scored.slice(0, limit).map((s) => s.food);
 }
+
+/** A row of the My food tab: a food in "your foods" and/or favourites. */
+export type SavedFood = MyFood & { favorite: boolean };
+
+/**
+ * Everything saved to the account as a single food: "your foods" plus the
+ * favourites that aren't in it (a favourite is saved too), sorted by name.
+ * A food in both shows once, with its library values.
+ */
+export function savedFoods(myFoods: MyFood[], favorites: MealIngredient[]): SavedFood[] {
+  const favoriteKeys = new Set(favorites.map((f) => nameKey(f.name)));
+  const keys = new Set(myFoods.map((f) => nameKey(f.name)));
+  const fromLibrary = myFoods.map((f) => ({ ...f, favorite: favoriteKeys.has(nameKey(f.name)) }));
+  const onlyFavorites = favorites
+    .filter((f) => !keys.has(nameKey(f.name)))
+    .map((f) => ({
+      name: f.name.trim(),
+      grams: f.grams,
+      per100: f.per100,
+      lastUsed: "",
+      uses: 0,
+      favorite: true,
+    }));
+  return [...fromLibrary, ...onlyFavorites].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
+}
+
+/**
+ * Applies an edit of one saved food to both lists it can live in. The
+ * library entry keeps its barcode and usage; a favourite-only food moves into
+ * the library under its new values. A different entry already holding the
+ * new name is replaced (a name is one food). Edited values are the user's
+ * own, so a NEVO mark is dropped.
+ */
+export function editSavedFood(
+  lists: { myFoods: MyFood[]; favoriteFoods: MealIngredient[] },
+  old: Pick<MyFood, "name" | "barcode">,
+  next: MealIngredient,
+  now: string,
+): { myFoods: MyFood[]; favoriteFoods: MealIngredient[] } {
+  const name = next.name.trim();
+  if (!name) return lists;
+  const oldKey = myFoodKey(old);
+  const newKey = nameKey(name);
+  const index = lists.myFoods.findIndex((f) => myFoodKey(f) === oldKey);
+  const previous = index >= 0 ? lists.myFoods[index] : undefined;
+  const edited: MyFood = {
+    name,
+    grams: next.grams,
+    per100: next.per100,
+    lastUsed: previous?.lastUsed ?? now,
+    uses: previous?.uses ?? 0,
+    ...(previous?.barcode ? { barcode: previous.barcode } : {}),
+  };
+  const rest = lists.myFoods.filter(
+    (f, i) => i !== index && !(nameKey(f.name) === newKey && !f.barcode),
+  );
+  const myFoods =
+    index >= 0 ? [...rest.slice(0, index), edited, ...rest.slice(index)] : [edited, ...rest];
+  const oldName = nameKey(old.name);
+  const hadFavorite = lists.favoriteFoods.some((f) => nameKey(f.name) === oldName);
+  const seen = new Set<string>();
+  const favoriteFoods = hadFavorite
+    ? lists.favoriteFoods
+        .map((f) =>
+          nameKey(f.name) === oldName ? { name, grams: next.grams, per100: next.per100 } : f,
+        )
+        .filter((f) => !seen.has(nameKey(f.name)) && seen.add(nameKey(f.name)))
+    : lists.favoriteFoods;
+  return { myFoods, favoriteFoods };
+}
+
+/** Forgets a saved food everywhere it is kept as a food. Saved meals,
+ *  recipes and the log keep their own copies. */
+export function deleteSavedFood(
+  lists: { myFoods: MyFood[]; favoriteFoods: MealIngredient[] },
+  old: Pick<MyFood, "name" | "barcode">,
+): { myFoods: MyFood[]; favoriteFoods: MealIngredient[] } {
+  const oldName = nameKey(old.name);
+  return {
+    myFoods: removeMyFood(lists.myFoods, myFoodKey(old)),
+    favoriteFoods: lists.favoriteFoods.filter((f) => nameKey(f.name) !== oldName),
+  };
+}

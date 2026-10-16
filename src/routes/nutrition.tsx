@@ -30,6 +30,7 @@ import { FoodListSheet } from "../components/gym/FoodListSheet";
 import { NutritionGoalsSheet } from "../components/gym/NutritionGoalsSheet";
 import { Card, Screen, SectionLabel } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
+import { MyFoodTab } from "../components/gym/MyFoodTab";
 import { SwipeToDelete } from "../components/gym/SwipeToDelete";
 import { CanIEatSheet } from "../components/gym/CanIEatSheet";
 import { DrinksTab } from "../components/gym/DrinksTab";
@@ -76,7 +77,7 @@ import { barFill } from "../components/gym/bar";
  *  data per day; the picked day is shared, so switching keeps it. */
 /** How many weeks ahead the week strip goes (planning meals in advance). */
 const MAX_WEEKS_AHEAD = 12;
-const NUTRITION_TABS = ["food", "drinks", "weight"] as const;
+const NUTRITION_TABS = ["food", "myFood", "drinks", "weight"] as const;
 export type NutritionTab = (typeof NUTRITION_TABS)[number];
 
 export const Route = createFileRoute("/nutrition")({
@@ -318,13 +319,17 @@ function NutritionScreen() {
         />
       }
     >
-      <WeekStrip
-        selectedKey={selectedKey}
-        todayKey={todayKey}
-        onSelect={setSelectedKey}
-        day={stripDay}
-        footer={stripFooter}
-      />
+      {tab === "myFood" ? null : (
+        <WeekStrip
+          selectedKey={selectedKey}
+          todayKey={todayKey}
+          onSelect={setSelectedKey}
+          day={stripDay}
+          footer={stripFooter}
+        />
+      )}
+
+      {tab === "myFood" ? <MyFoodTab /> : null}
 
       {tab === "food" ? (
         <>
