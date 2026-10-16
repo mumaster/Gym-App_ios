@@ -1196,6 +1196,10 @@ const en = {
     gramsInMeal: "Grams in this meal",
     gramsEaten: "Grams eaten",
     per100g: "Per 100g — as printed on the label",
+    per100gShort: "Per 100 g",
+    per100gNote:
+      "Left: the values per 100 g as printed on the label, which you can edit. Right: what your amount adds up to.",
+    per100gInfoAria: "About these values",
     ofWhichSugars: "Of which sugars",
     sugarsUnknown: "Not known",
     thisIngredient: "This ingredient",
@@ -3526,6 +3530,10 @@ const nl: Dict = {
     gramsInMeal: "Gram in deze maaltijd",
     gramsEaten: "Gegeten gram",
     per100g: "Per 100g — zoals op het label vermeld",
+    per100gShort: "Per 100 g",
+    per100gNote:
+      "Links: de waarden per 100 g zoals op het label vermeld, aanpasbaar. Rechts: wat jouw hoeveelheid oplevert.",
+    per100gInfoAria: "Over deze waarden",
     ofWhichSugars: "Waarvan suikers",
     sugarsUnknown: "Onbekend",
     thisIngredient: "Dit ingrediënt",
