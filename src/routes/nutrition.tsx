@@ -36,6 +36,7 @@ import {
   addDays,
   dailyTotals,
   sugarsComplete,
+  satFatComplete,
   dayKeyFromDate,
   entriesForDay,
   ingredientsFromEntries,
@@ -322,6 +323,7 @@ function NutritionScreen() {
             dayKind={dayNutrition.byDayType ? dayNutrition.dayKind : null}
             totals={totals}
             sugarsKnownForAll={sugarsComplete(selectedEntries)}
+            satFatKnownForAll={satFatComplete(selectedEntries)}
             goals={dayGoals}
             hasGoals={hasGoals}
             onSetGoals={() => {
@@ -682,6 +684,7 @@ function DaySummary({
   dayKind,
   totals,
   sugarsKnownForAll,
+  satFatKnownForAll,
   goals,
   hasGoals,
   onSetGoals,
@@ -693,6 +696,8 @@ function DaySummary({
   /** False when some food with carbs has no sugars figure: the sugars total
    *  is then a floor, shown as "at least". */
   sugarsKnownForAll: boolean;
+  /** Same for saturated fat: false when some food with fat has no figure. */
+  satFatKnownForAll: boolean;
   goals: NutritionGoals;
   hasGoals: boolean;
   onSetGoals: () => void;
@@ -701,6 +706,7 @@ function DaySummary({
   const locale = useLocale();
   const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
   const sugarGoal = goals.sugars;
+  const satFat = totals.satFat != null ? Number(totals.satFat.toFixed(0)) : null;
   const kcal = Math.round(totals.calories);
   const calStatus = nutrientStatus(kcal, goals.calories);
   const calPct = goals.calories ? Math.min(100, (kcal / goals.calories) * 100) : 0;
@@ -789,12 +795,28 @@ function DaySummary({
         />
       </div>
       <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-        {(["fat", "fiber", "salt"] as const).map((key) => {
+      <div className="grid grid-cols-4 gap-x-2 gap-y-2">
+        <NutrientCell
+          compact
+          label={t.nutrients.fat}
+          value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
+          amount={totals.fat}
+          goal={goals.fat}
+        />
+        <NutrientCell
+          compact
+          label={t.nutrients.satFatShort}
+          value={satFat == null ? "–" : satFatKnownForAll ? String(satFat) : `~${satFat}`}
+          amount={totals.satFat ?? 0}
+          goal={goals.satFat ?? undefined}
+          overIsAccent
+        />
+        {(["fiber", "salt"] as const).map((key) => {
           const digits = key === "salt" ? 1 : 0;
           return (
             <NutrientCell
               key={key}
+              compact
               label={t.nutrients[key]}
               value={Number(totals[key].toFixed(digits)).toLocaleString(locale)}
               amount={totals[key]}

@@ -82,3 +82,43 @@ describe("meal sharing with sugars", () => {
     expect(decodeMeal(code)!.ingredients[0]!.per100.sugars).toBe(10);
   });
 });
+
+describe("meal sharing with saturated fat", () => {
+  const ing = (name: string, per100: object) => ({
+    name,
+    grams: 50,
+    per100: { calories: 100, protein: 1, carbs: 10, fat: 8, fiber: 0, salt: 0, ...per100 },
+  });
+  const satMeal = {
+    name: "Mixed",
+    ingredients: [
+      { ...ing("Both", { sugars: 4, satFat: 3.5 }), nevo: [7] },
+      ing("Only sat", { satFat: 2 }),
+      ing("Only sugars", { sugars: 3 }),
+      ing("Neither", {}),
+    ],
+  };
+
+  it("round-trips saturated fat with and without sugars or NEVO codes", () => {
+    const back = decodeMeal(encodeMeal(satMeal))!;
+    expect(back).toEqual(satMeal);
+    expect("satFat" in back.ingredients[2]!.per100).toBe(false);
+    expect("sugars" in back.ingredients[1]!.per100).toBe(false);
+  });
+
+  it("decodes a link from before saturated fat, and one with only sugars", () => {
+    const code = toBase64Url(
+      JSON.stringify({ v: 1, n: "x", i: [["Cola", 100, [42, 0, 10, 3, 0, 0], [], 9]] }),
+    );
+    const per100 = decodeMeal(code)!.ingredients[0]!.per100;
+    expect(per100.sugars).toBe(9);
+    expect(per100.satFat).toBeUndefined();
+  });
+
+  it("keeps saturated fat at or below fat from a hand-made link", () => {
+    const code = toBase64Url(
+      JSON.stringify({ v: 1, n: "x", i: [["Butter", 10, [700, 0, 0, 80, 0, 0], [], null, 99]] }),
+    );
+    expect(decodeMeal(code)!.ingredients[0]!.per100.satFat).toBe(80);
+  });
+});

@@ -7,6 +7,7 @@ import {
   dailyTotals,
   energySplit,
   scaledMacros,
+  satFatComplete,
   sugarsComplete,
   type FoodEntry,
   type Macros,
@@ -168,10 +169,30 @@ export function MealOverviewSheet({
               />
             </div>
             <div className="h-px bg-border" />
-            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-              {(["fat", "fiber", "salt"] as const).map((key) => (
+            <div className="grid grid-cols-4 gap-x-2 gap-y-2">
+              <NutrientCell
+                compact
+                label={t.nutrients.fat}
+                value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
+                amount={totals.fat}
+                goal={goals.fat}
+              />
+              <NutrientCell
+                compact
+                label={t.nutrients.satFatShort}
+                value={
+                  totals.satFat == null
+                    ? "–"
+                    : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`
+                }
+                amount={totals.satFat ?? 0}
+                goal={goals.satFat ?? undefined}
+                overIsAccent
+              />
+              {(["fiber", "salt"] as const).map((key) => (
                 <NutrientCell
                   key={key}
+                  compact
                   label={t.nutrients[key]}
                   value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
                   amount={totals[key]}

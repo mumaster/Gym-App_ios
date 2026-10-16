@@ -6,14 +6,15 @@ export const barClass = (status: NutrientStatus) =>
   status === "over" ? "bg-destructive" : status === "near" ? "bg-warning" : "bg-primary";
 
 /** One nutrient of the day card: label, "value / goal g" and a bar. Every
- *  cell of the two rows (protein, carbs, sugars; fat, fiber, salt) looks the
- *  same so the columns stay even (asked for, 2026-10-14). Shared by the day card and a meal's overview. */
+ *  cell of the two rows (protein, carbs, sugars; fat, saturated, fiber, salt) looks the
+ *  same size so the columns stay even (asked for, 2026-10-14). Shared by the day card and a meal's overview. */
 export function NutrientCell({
   label,
   value,
   amount,
   goal,
   overIsAccent,
+  compact,
 }: {
   label: string;
   value: string;
@@ -21,6 +22,9 @@ export function NutrientCell({
   goal: number | undefined;
   /** Sugars: over the goal is the accent colour, not the red used for limits. */
   overIsAccent?: boolean;
+  /** The four-column row (fat, saturated, fiber, salt) has less room per
+   *  cell, so its values are a step smaller; all four share it. */
+  compact?: boolean;
 }) {
   const status = nutrientStatus(amount, goal);
   const over = status === "over";
@@ -29,7 +33,7 @@ export function NutrientCell({
       <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
       <p className="tabular truncate leading-tight">
         <span
-          className={`text-[16px] font-bold ${
+          className={`${compact ? "text-[14px]" : "text-[16px]"} font-bold ${
             over ? (overIsAccent ? "text-primary-text" : "text-destructive-text") : ""
           }`}
         >

@@ -6,6 +6,7 @@ const gym = vi.hoisted(() => ({
   state: {
     nutritionGoals: { calories: 2000 } as Record<string, number>,
     sugarGoalShare: null as number | null,
+    satFatGoalShare: null as number | null,
   },
 }));
 
@@ -19,8 +20,10 @@ vi.mock("../store", () => ({
     nutritionProfile: null,
     restDayGoalOverrides: {},
     sugarGoalShare: gym.state.sugarGoalShare,
+    satFatGoalShare: gym.state.satFatGoalShare,
     setNutritionGoals: () => {},
     setSugarGoalShare: () => {},
+    setSatFatGoalShare: () => {},
     update: () => {},
     plannedCardio: [],
     workouts: [],
@@ -64,12 +67,64 @@ describe("NutritionGoalsSheet sugar goal", () => {
   });
 });
 
+describe("NutritionGoalsSheet saturated fat goal", () => {
+  it("shows the switch, off by default, without the chips", () => {
+    gym.state.satFatGoalShare = null;
+    const html = render();
+    expect(html).toContain("Saturated fat goal");
+    expect(html).toMatch(
+      /role="switch"[^>]*aria-checked="false"[^>]*aria-label="Saturated fat goal"/,
+    );
+    expect(html).not.toContain("Custom");
+  });
+
+  it("highlights 10% as Recommended when on, with 6%, Custom and grams", () => {
+    gym.state.satFatGoalShare = 0.1;
+    const html = render();
+    expect(html).toContain("10%");
+    expect(html).toContain("6%");
+    expect(html).toContain("Custom");
+    expect(html).toContain("22 g a day");
+    expect(html).toContain("13 g a day");
+    expect(html).toContain("Recommended");
+    expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>(?:(?!<\/button>).)*10%/);
+    expect(html).not.toContain("Percent of calories");
+    gym.state.satFatGoalShare = null;
+  });
+
+  it("opens the percent field for a custom share", () => {
+    gym.state.satFatGoalShare = 0.08;
+    const html = render();
+    expect(html).toContain("Percent of calories");
+    expect(html).toContain('value="8"');
+    expect(html).toContain("18 g a day");
+    gym.state.satFatGoalShare = null;
+  });
+
+  it("asks for a calorie goal when there is none", () => {
+    gym.state.nutritionGoals = {};
+    gym.state.satFatGoalShare = 0.1;
+    expect(render()).toContain("Set a calorie goal first: the saturated fat");
+    gym.state.nutritionGoals = { calories: 2000 };
+    gym.state.satFatGoalShare = null;
+  });
+
+  it("warns when it takes more than half of the fat limit", () => {
+    gym.state.nutritionGoals = { calories: 2000, fat: 40 };
+    gym.state.satFatGoalShare = 0.1;
+    expect(render()).toContain("more than half of your fat limit");
+    gym.state.nutritionGoals = { calories: 2000 };
+    gym.state.satFatGoalShare = null;
+  });
+});
+
 describe("NutritionGoalsSheet sub tabs", () => {
   it("limits tab shows the suggest button and fields, not the options", () => {
     const html = render("limits");
     expect(html).toContain("Suggest my limits");
     expect(html).toContain("No limit");
     expect(html).not.toContain("Sugar goal");
+    expect(html).not.toContain("Saturated fat goal");
     expect(html).not.toContain("Weekend budget");
   });
 

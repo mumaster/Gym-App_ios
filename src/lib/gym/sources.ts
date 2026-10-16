@@ -46,6 +46,7 @@ export type SourceId =
   | "calorieFloor"
   | "restDayCarbs"
   | "sugars"
+  | "satFat"
   | "weekend"
   | "proteinPerMeal"
   | "watchCalories"
@@ -317,6 +318,17 @@ export const SOURCES: SourceEntry[] = [
       "WHO, Guideline: sugars intake for adults and children (2015): free sugars below 10% of total energy (strong recommendation), below 5% for added benefit (conditional) (https://who.int/news/item/04-03-2015-who-calls-on-countries-to-reduce-sugars-intake-among-adults-and-children)",
       "US Dietary Guidelines for Americans 2025-2030 (added sugars below 10% of calories)",
       "EFSA Scientific Opinion on the Tolerable Upper Intake Level for dietary sugars (2022): intake of added and free sugars should be as low as possible",
+    ],
+  },
+  {
+    id: "satFat",
+    group: "nutrition",
+    refs: [
+      "WHO, Saturated fatty acid and trans-fatty acid intake for adults and children: guideline (2023): saturated fat below 10% of total energy (https://www.who.int/news/item/17-07-2023-who-updates-guidelines-on-fats-and-carbohydrates)",
+      "EFSA Panel on Dietetic Products, Nutrition and Allergies, Scientific Opinion on Dietary Reference Values for fats (2010): saturated fat as low as possible within a nutritionally adequate diet",
+      "Gezondheidsraad, Richtlijnen goede voeding 2015, and Voedingscentrum: saturated fat below 10% of energy (https://www.voedingscentrum.nl/encyclopedie/verzadigd-vet.aspx)",
+      "Hooper et al., Reduction in saturated fat intake for cardiovascular disease, Cochrane Database Syst Rev 2020 (https://doi.org/10.1002/14651858.CD011737.pub3)",
+      "Sacks et al., Dietary Fats and Cardiovascular Disease: A Presidential Advisory from the American Heart Association, Circulation 2017 (https://doi.org/10.1161/CIR.0000000000000510)",
     ],
   },
   {

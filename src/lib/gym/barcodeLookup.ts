@@ -90,6 +90,8 @@ function toLabel(product: OffProduct, language?: "en" | "nl"): ScannedLabel {
     // Missing stays null (unknown), never 0.
     sugars: num(n["sugars_100g"]),
     fat: num(n["fat_100g"]),
+    // Missing stays null (unknown), never 0.
+    saturatedFat: num(n["saturated-fat_100g"]),
     fiber: num(n["fiber_100g"]),
     salt: num(n["salt_100g"]),
     servingSizeGrams: parseServingSizeGrams(product.serving_size),
