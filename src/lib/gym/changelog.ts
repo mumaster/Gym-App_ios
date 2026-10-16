@@ -581,6 +581,20 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 57,
+    animation: "plate-chest-press",
+    items: [
+      {
+        en: "Animations for the 13 new exercises.",
+        nl: "Animaties voor de 13 nieuwe oefeningen.",
+      },
+      {
+        en: "30 more exercise animations.",
+        nl: "30 extra oefeninganimaties.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -590,7 +604,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 56;
+export const CURRENT_VERSION = 57;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;
