@@ -1366,7 +1366,7 @@ export function AddFoodSheet({
               return (
                 <div>
                   <div className="relative overflow-hidden rounded-3xl bg-muted p-1">
-                    <div className="absolute top-1 right-1 bottom-1 w-[6.75rem] rounded-[20px] border border-primary/30 bg-primary/10" />
+                    <div className="absolute top-1 right-1 bottom-1 w-[6.75rem] rounded-[calc(var(--radius-3xl)-0.25rem)] border border-primary/30 bg-primary/10" />
                     <div className="relative z-10 flex items-center pt-1.5 pb-0.5 pl-3">
                       <span className="min-w-0 flex-1" />
                       <span className="flex w-[5.5rem] shrink-0 justify-center text-[12px] font-semibold whitespace-nowrap text-muted-foreground">
