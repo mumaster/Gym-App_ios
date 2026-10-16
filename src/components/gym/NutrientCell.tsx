@@ -10,14 +10,17 @@ export const barClass = (status: NutrientStatus) =>
  *  track, the intake the card header's tint, amber near a limit and red over
  *  it. Carbs and fat carry their "of which" part (sugars, saturated fat) in
  *  the same bar, as a solid accent pill from the start, like the weekly carbs
- *  and fat bars, with its own "value / goal" under the bar. Shared by the day
- *  card and a meal's overview. */
+ *  and fat bars; the part's name and "value / goal" sit on the right, across
+ *  from the total, with a swatch in the accent. Those two take the wide left
+ *  column of the card, protein, fiber and salt the narrow right one
+ *  (`compact`). Shared by the day card and a meal's overview. */
 export function NutrientCell({
   label,
   value,
   amount,
   goal,
   overIsAccent,
+  compact,
   part,
 }: {
   label: string;
@@ -26,6 +29,8 @@ export function NutrientCell({
   goal: number | undefined;
   /** Sugars: over the goal is the accent colour, not the red used for limits. */
   overIsAccent?: boolean;
+  /** The narrow column (protein, fiber, salt): a step smaller. */
+  compact?: boolean;
   /** The "of which" part drawn inside this bar (sugars in carbs, saturated
    *  in fat). `value` is the text ("~29", or "–" when unknown). */
   part?: { label: string; value: string; amount: number; goal: number | undefined };
@@ -37,12 +42,12 @@ export function NutrientCell({
   // its share of what was eaten.
   const scale = goal != null ? Math.max(goal, amount) : 0;
   const fill = (n: number) => (scale > 0 ? (n / scale) * 100 : 0);
-  return (
+  const total = (
     <div className="min-w-0">
       <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
       <p className="tabular truncate leading-tight">
         <span
-          className={`text-[16px] font-bold ${
+          className={`${compact ? "text-[15px]" : "text-[17px]"} font-bold ${
             over ? (overIsAccent ? "text-primary-text" : "text-destructive-text") : ""
           }`}
         >
@@ -52,8 +57,33 @@ export function NutrientCell({
           {goal != null ? ` / ${goal}` : ""} g
         </span>
       </p>
+    </div>
+  );
+  return (
+    <div className="min-w-0">
+      {part ? (
+        <div className="flex items-end justify-between gap-2">
+          {total}
+          <div className="min-w-0 text-right">
+            <p className="flex items-center justify-end gap-1 text-[12px] font-semibold text-muted-foreground">
+              <span aria-hidden className="size-2.5 shrink-0 rounded-sm bg-primary" />
+              <span className="truncate">{part.label}</span>
+            </p>
+            <p className="tabular truncate leading-tight">
+              <span className={`text-[15px] font-bold ${partOver ? "text-primary-text" : ""}`}>
+                {part.value}
+              </span>
+              <span className="text-[12px] text-muted-foreground">
+                {part.goal != null ? ` / ${part.goal}` : ""} g
+              </span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        total
+      )}
       {goal != null ? (
-        <div className={`mt-1 ${part ? "h-2" : "h-1.5"} bar-track bg-muted`}>
+        <div className={`mt-1.5 ${part ? "h-2.5" : "h-1.5"} bar-track bg-muted`}>
           <div
             data-bar="total"
             className={`bar-grow bar-fill-x ${
@@ -69,24 +99,6 @@ export function NutrientCell({
             />
           ) : null}
         </div>
-      ) : null}
-      {part ? (
-        <p className="mt-1 flex min-w-0 items-center gap-1 leading-tight">
-          <span aria-hidden className="size-2.5 shrink-0 rounded-sm bg-primary" />
-          <span className="truncate text-[11px] font-semibold text-muted-foreground">
-            {part.label}
-          </span>
-        </p>
-      ) : null}
-      {part ? (
-        <p className="tabular truncate leading-tight">
-          <span className={`text-[13px] font-bold ${partOver ? "text-primary-text" : ""}`}>
-            {part.value}
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            {part.goal != null ? ` / ${part.goal}` : ""} g
-          </span>
-        </p>
       ) : null}
     </div>
   );

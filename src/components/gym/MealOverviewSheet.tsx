@@ -143,55 +143,64 @@ export function MealOverviewSheet({
           </div>
 
           <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
-            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-              <NutrientCell
-                label={t.nutrients.protein}
-                value={String(Math.round(totals.protein))}
-                amount={totals.protein}
-                goal={goals.protein}
-              />
-              <NutrientCell
-                label={t.nutrients.carbs}
-                value={String(Math.round(totals.carbs))}
-                amount={totals.carbs}
-                goal={goals.carbs}
-                part={{
-                  label: t.nutrients.sugars,
-                  value:
-                    totals.sugars == null
-                      ? "–"
-                      : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
-                  amount: totals.sugars ?? 0,
-                  goal: goals.sugars ?? undefined,
-                }}
-              />
-              <NutrientCell
-                label={t.nutrients.fat}
-                value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
-                amount={totals.fat}
-                goal={goals.fat}
-                part={{
-                  label: t.nutrients.satFatShort,
-                  value:
-                    totals.satFat == null
-                      ? "–"
-                      : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
-                  amount: totals.satFat ?? 0,
-                  goal: goals.satFat ?? undefined,
-                }}
-              />
-            </div>
-            <div className="h-px bg-border" />
-            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-              {(["fiber", "salt"] as const).map((key) => (
+            {/* Two columns (asked for, 2026-10-16): carbs and fat, each one bar with
+                its sugars or saturated fat inside, stacked on the wide left; protein,
+                fiber and salt stacked on the narrow right. */}
+            <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4">
+              <div className="flex flex-col justify-between gap-3">
                 <NutrientCell
-                  key={key}
-                  label={t.nutrients[key]}
-                  value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
-                  amount={totals[key]}
-                  goal={goals[key]}
+                  label={t.nutrients.carbs}
+                  value={String(Math.round(totals.carbs))}
+                  amount={totals.carbs}
+                  goal={goals.carbs}
+                  part={{
+                    label: t.nutrients.sugars,
+                    value:
+                      totals.sugars == null
+                        ? "–"
+                        : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
+                    amount: totals.sugars ?? 0,
+                    goal: goals.sugars ?? undefined,
+                  }}
                 />
-              ))}
+                <div aria-hidden className="h-px bg-border" />
+                <NutrientCell
+                  label={t.nutrients.fat}
+                  value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
+                  amount={totals.fat}
+                  goal={goals.fat}
+                  part={{
+                    label: t.nutrients.satFatShort,
+                    value:
+                      totals.satFat == null
+                        ? "–"
+                        : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
+                    amount: totals.satFat ?? 0,
+                    goal: goals.satFat ?? undefined,
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-2 border-l border-border pl-4">
+                <NutrientCell
+                  compact
+                  label={t.nutrients.protein}
+                  value={String(Math.round(totals.protein))}
+                  amount={totals.protein}
+                  goal={goals.protein}
+                />
+                {(["fiber", "salt"] as const).map((key) => (
+                  <NutrientCell
+                    key={key}
+                    compact
+                    label={t.nutrients[key]}
+                    value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(
+                      locale,
+                    )}
+                    amount={totals[key]}
+                    goal={goals[key]}
+                  />
+                ))}
+              </div>
             </div>
             {proteinTarget != null ? (
               <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
