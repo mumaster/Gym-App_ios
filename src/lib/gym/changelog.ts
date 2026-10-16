@@ -568,16 +568,16 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 56,
     items: [
       {
-        en: "New gear in Equipment: EZ curl bar, preacher bench, seated calf machine, captain's chair, back extension bench and plate-loaded machines. Tick what you have and the matching exercises show up.",
-        nl: "Nieuwe uitrusting bij Uitrusting: EZ-curlstang, preekbank, zittende kuitmachine, captain's chair, rugextensiebank en machines met platen. Vink aan wat je hebt en de bijpassende oefeningen verschijnen.",
+        en: "We've extended our workout database with new gear and 13 new exercises.",
+        nl: "We hebben onze oefeningendatabase uitgebreid met nieuwe uitrusting en 13 nieuwe oefeningen.",
       },
       {
-        en: "13 new exercises, such as EZ-bar curl, EZ-bar skullcrusher, captain's chair leg raise and plate-loaded chest press.",
-        nl: "13 nieuwe oefeningen, zoals EZ-bar curl, EZ-bar skullcrusher, captain's chair beenheffen en chest press met platen.",
+        en: "We've improved the generation flow, so you see familiar exercises first.",
+        nl: "We hebben het genereren van trainingen verbeterd, zodat je bekende oefeningen eerst ziet.",
       },
       {
-        en: "Better suggestions: swaps and generated workouts now favour the exercises that most real training programs contain (counted in 280 programs), so you see familiar exercises first.",
-        nl: "Betere suggesties: wisselen en gegenereerde trainingen kiezen nu eerst de oefeningen die de meeste echte trainingsschema's bevatten (geteld in 280 schema's), zodat je bekende oefeningen eerst ziet.",
+        en: "You can now search when swapping an exercise.",
+        nl: "Je kunt nu zoeken bij het wisselen van een oefening.",
       },
     ],
   },
