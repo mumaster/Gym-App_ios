@@ -1296,7 +1296,7 @@ export function AddFoodSheet({
               ) => (
                 <label
                   key={key}
-                  className={`relative z-10 flex items-center rounded-xl pl-3 ${
+                  className={`relative z-10 flex items-baseline rounded-xl pl-3 ${
                     opts.hero ? "py-1.5" : "py-1"
                   } ${key !== "sugars" && unmatched.has(key as MacroKey) ? "bg-warning/15" : ""}`}
                 >
@@ -1311,7 +1311,7 @@ export function AddFoodSheet({
                   >
                     {label}
                   </span>
-                  <span className="flex w-[5rem] shrink-0 items-baseline justify-end gap-0.5 pr-2">
+                  <span className="flex w-[5.5rem] shrink-0 items-baseline justify-center gap-0.5">
                     <input
                       inputMode="decimal"
                       type="text"
@@ -1329,7 +1329,7 @@ export function AddFoodSheet({
                           });
                       }}
                       placeholder={key === "sugars" ? "–" : "0"}
-                      className="tabular h-6 w-full min-w-0 bg-transparent text-right text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
+                      className="tabular h-6 w-[3.25rem] min-w-0 bg-transparent text-right text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
                     />
                     <span className="w-8 shrink-0 text-left text-[11px] text-muted-foreground">
                       {unit}
@@ -1359,7 +1359,7 @@ export function AddFoodSheet({
                     <div className="absolute top-1 right-1 bottom-1 w-[6.75rem] rounded-[20px] border border-primary/30 bg-primary/10" />
                     <div className="relative z-10 flex items-center pt-1.5 pb-0.5 pl-3">
                       <span className="min-w-0 flex-1" />
-                      <span className="flex w-[5rem] shrink-0 justify-end pr-2 text-[12px] font-semibold whitespace-nowrap text-muted-foreground">
+                      <span className="flex w-[5.5rem] shrink-0 justify-center text-[12px] font-semibold whitespace-nowrap text-muted-foreground">
                         {t.addFood.per100gShort}
                       </span>
                       <span className="w-[6.75rem] shrink-0 text-center text-[12px] font-semibold whitespace-nowrap text-primary-text">
