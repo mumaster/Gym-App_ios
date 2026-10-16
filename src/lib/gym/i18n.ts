@@ -938,7 +938,7 @@ const en = {
     weekAvg: (avg: string, goal: string | null, days: number) =>
       `Avg ${avg}${goal ? ` / ${goal}` : ""} kcal a day · ${days} ${days === 1 ? "day" : "days"} logged`,
     weekAvgNone: "Your weekly average shows once a full day is logged.",
-    tabs: { food: "Food", drinks: "Drinks", weight: "Weight" },
+    tabs: { food: "Food", myFood: "My food", drinks: "Drinks", weight: "Weight" },
     waterWeekAvg: (avg: string, goal: string | null, days: number) =>
       `Avg ${avg}${goal ? ` / ${goal}` : ""} water a day · ${days} ${days === 1 ? "day" : "days"} logged`,
     waterDayAria: (day: string, ml: number | null) =>
@@ -2402,6 +2402,36 @@ const en = {
       `You hit ${top}+ reps on every set in your last two sessions — add weight (belt or vest) or use less assistance.`,
     matching: "Matching your last session's weight — aim for one more rep.",
   },
+  myFood: {
+    count: (n: number) => `${n} ${n === 1 ? "food" : "foods"} saved`,
+    add: "Add a food",
+    search: "Search your foods",
+    empty: "No saved foods yet. Foods you scan, type in or star show up here.",
+    noMatch: "No saved food matches that.",
+    infoAria: "About My food",
+    info: "Everything saved to your account: foods you scanned, typed in or starred, plus your saved meals and recipes. Changing or deleting a food here doesn't touch what's already in your log or inside a saved meal.",
+    mealsCount: (n: number) => `${n} ${n === 1 ? "saved meal" : "saved meals"}`,
+    recipesCount: (n: number) => `${n} ${n === 1 ? "recipe" : "recipes"}`,
+    foodsTitle: "Foods",
+    mealsTitle: "Saved meals",
+    recipesTitle: "Recipes",
+    mealMeta: (n: number) => `${n} ${n === 1 ? "ingredient" : "ingredients"}`,
+    recipeMeta: (n: number, servings: number) =>
+      `${n} ${n === 1 ? "ingredient" : "ingredients"} · ${servings} ${servings === 1 ? "serving" : "servings"}`,
+    foodMeta: (kcal: string, protein: string, carbs: string, fat: string) =>
+      `Per 100 g · ${kcal} kcal · P ${protein} · C ${carbs} · F ${fat}`,
+    editTitle: "Edit food",
+    newTitle: "New food",
+    name: "Name",
+    namePlaceholder: "e.g. Greek yogurt",
+    portion: "Usual portion (g)",
+    save: "Save food",
+    delete: "Delete food",
+    deleteSure: "Tap again to delete",
+    deleteItemAria: (name: string) => `Delete ${name}`,
+    editAria: (name: string) => `Edit ${name}`,
+    starred: "Favourite",
+  },
 } satisfies Record<string, Record<string, unknown>>;
 
 export type Dict = typeof en;
@@ -3315,7 +3345,7 @@ const nl: Dict = {
     weekAvg: (avg: string, goal: string | null, days: number) =>
       `Gem. ${avg}${goal ? ` / ${goal}` : ""} kcal per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
     weekAvgNone: "Je weekgemiddelde verschijnt na een volledige dag.",
-    tabs: { food: "Eten", drinks: "Drinken", weight: "Gewicht" },
+    tabs: { food: "Eten", myFood: "Mijn eten", drinks: "Drinken", weight: "Gewicht" },
     waterWeekAvg: (avg: string, goal: string | null, days: number) =>
       `Gem. ${avg}${goal ? ` / ${goal}` : ""} water per dag · ${days} ${days === 1 ? "dag" : "dagen"} gelogd`,
     waterDayAria: (day: string, ml: number | null) =>
@@ -4783,6 +4813,37 @@ const nl: Dict = {
     hitTopBodyweight: (top: number) =>
       `Je hebt in je laatste twee sessies bij elke set ${top}+ reps gehaald — voeg gewicht toe (riem of vest) of gebruik minder ondersteuning.`,
     matching: "Gelijk aan het gewicht van je vorige sessie — probeer één rep meer.",
+  },
+  myFood: {
+    count: (n: number) => `${n} ${n === 1 ? "voedingsmiddel" : "voedingsmiddelen"} opgeslagen`,
+    add: "Voedingsmiddel toevoegen",
+    search: "Zoek in je voedingsmiddelen",
+    empty:
+      "Nog geen opgeslagen voedingsmiddelen. Wat je scant, zelf invoert of met een ster markeert komt hier.",
+    noMatch: "Geen opgeslagen voedingsmiddel gevonden.",
+    infoAria: "Over Mijn eten",
+    info: "Alles wat in je account staat: voedingsmiddelen die je scande, invoerde of met een ster markeerde, plus je opgeslagen maaltijden en recepten. Aanpassen of verwijderen hier verandert niets aan wat al in je logboek of in een opgeslagen maaltijd staat.",
+    mealsCount: (n: number) => `${n} ${n === 1 ? "opgeslagen maaltijd" : "opgeslagen maaltijden"}`,
+    recipesCount: (n: number) => `${n} ${n === 1 ? "recept" : "recepten"}`,
+    foodsTitle: "Voedingsmiddelen",
+    mealsTitle: "Opgeslagen maaltijden",
+    recipesTitle: "Recepten",
+    mealMeta: (n: number) => `${n} ${n === 1 ? "ingrediënt" : "ingrediënten"}`,
+    recipeMeta: (n: number, servings: number) =>
+      `${n} ${n === 1 ? "ingrediënt" : "ingrediënten"} · ${servings} ${servings === 1 ? "portie" : "porties"}`,
+    foodMeta: (kcal: string, protein: string, carbs: string, fat: string) =>
+      `Per 100 g · ${kcal} kcal · E ${protein} · K ${carbs} · V ${fat}`,
+    editTitle: "Voedingsmiddel aanpassen",
+    newTitle: "Nieuw voedingsmiddel",
+    name: "Naam",
+    namePlaceholder: "bijv. Griekse yoghurt",
+    portion: "Gebruikelijke portie (g)",
+    save: "Opslaan",
+    delete: "Verwijderen",
+    deleteSure: "Tik nogmaals om te verwijderen",
+    deleteItemAria: (name: string) => `${name} verwijderen`,
+    editAria: (name: string) => `${name} aanpassen`,
+    starred: "Favoriet",
   },
 };
 
