@@ -22,7 +22,7 @@ import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodShe
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
 import { barClass } from "../components/gym/NutrientCell";
-import { NutrientPanel, panelLayout, type PanelLayout } from "../components/gym/NutrientPanel";
+import { NutrientPanel } from "../components/gym/NutrientPanel";
 import { CopyMealSheet, ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
 import { mealCodeFrom, type SharedMeal } from "../lib/gym/mealShare";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
@@ -703,8 +703,6 @@ function DaySummary({
   hasGoals: boolean;
   onSetGoals: () => void;
 }) {
-  const [layout, setLayout] = useState<PanelLayout>("pairs");
-  useEffect(() => setLayout(panelLayout()), []);
   const t = useTranslation();
   const locale = useLocale();
   const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
@@ -780,7 +778,6 @@ function DaySummary({
       </div>
 
       <NutrientPanel
-        layout={layout}
         protein={{
           label: t.nutrients.protein,
           value: String(Math.round(totals.protein)),

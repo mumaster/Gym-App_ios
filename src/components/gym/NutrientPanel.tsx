@@ -1,6 +1,7 @@
-import { nutrientStatus } from "../../lib/gym/nutrition";
+import { Check } from "lucide-react";
+import { useLocale, useTranslation } from "../../lib/gym/i18n";
 import { barFill } from "./bar";
-import { NutrientCell, barClass } from "./NutrientCell";
+import { NutrientCell } from "./NutrientCell";
 
 /** One nutrient for the panel. `part` is the "of which" share drawn inside
  *  its bar (sugars in carbs, saturated fat in fat). */
@@ -12,85 +13,38 @@ export type PanelItem = {
   part?: { label: string; value: string; amount: number; goal: number | undefined };
 };
 
-export type PanelLayout = "rows" | "pairs" | "columns";
-
-/** Which layout to draw; a trial switch while Max picks one (2026-10-16). */
-export function panelLayout(): PanelLayout {
-  try {
-    const v = localStorage.getItem("forge.nutrientLayout");
-    if (v === "rows" || v === "pairs" || v === "columns") return v;
-  } catch {
-    // storage blocked: fall through to the default
-  }
-  return "pairs";
-}
-
-const fillClass = (amount: number, goal: number | undefined) => {
-  const status = nutrientStatus(amount, goal);
-  return status === "ok" ? "intake-fill" : barClass(status);
-};
-
-/** The day's macros, fiber and salt on the Today card and a meal's overview. */
+/** The day's macros, fiber and salt on the Today card and a meal's overview
+ *  (Max picked this layout from three, 2026-10-16): protein on its own line
+ *  at the top, bigger, with a solid accent bar, because it's the one to
+ *  reach rather than stay under (asked for: protein should stand out more);
+ *  then carbs and fat side by side, each one bar with its sugars or
+ *  saturated fat inside and a line under it; then fiber and salt. */
 export function NutrientPanel({
   carbs,
   fat,
   protein,
   fiber,
   salt,
-  layout,
+  showLeft = true,
 }: {
+  /** "106 g to go": off in a meal's overview, where the goal is the day's. */
+  showLeft?: boolean;
   carbs: PanelItem;
   fat: PanelItem;
   protein: PanelItem;
   fiber: PanelItem;
   salt: PanelItem;
-  layout: PanelLayout;
 }) {
-  if (layout === "rows") {
-    return (
-      <div className="space-y-2.5">
-        {[protein, carbs, fat, fiber, salt].map((item) => (
-          <Row key={item.label} item={item} />
-        ))}
-      </div>
-    );
-  }
-  if (layout === "columns") {
-    const items = [protein, carbs, fat, fiber, salt];
-    const parts = [carbs.part, fat.part].filter((p) => p != null);
-    return (
-      <div>
-        <ul className="grid grid-cols-5 gap-1">
-          {items.map((item) => (
-            <Column key={item.label} item={item} />
-          ))}
-        </ul>
-        {parts.length ? (
-          <ul className="mt-2.5 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px]">
-            {parts.map((p) => (
-              <li key={p.label} className="tabular flex items-center gap-1.5">
-                <span aria-hidden className="size-2.5 rounded-sm bg-primary" />
-                <span className="text-muted-foreground">{p.label}</span>
-                <span className="font-bold">{p.value}</span>
-                <span className="text-muted-foreground">
-                  {p.goal != null ? `/ ${p.goal} ` : ""}g
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    );
-  }
   return (
     <div className="space-y-2.5">
+      <Protein item={protein} showLeft={showLeft} />
+      <div className="h-px bg-border" />
       <div className="grid grid-cols-2 gap-x-4">
         <NutrientCell partBelow {...carbs} />
         <NutrientCell partBelow {...fat} />
       </div>
       <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-x-3">
-        <NutrientCell compact {...protein} />
+      <div className="grid grid-cols-2 gap-x-4">
         <NutrientCell compact {...fiber} />
         <NutrientCell compact {...salt} />
       </div>
@@ -98,92 +52,47 @@ export function NutrientPanel({
   );
 }
 
-/** A full-width line: name, bar, "value / goal g"; a part adds a second,
- *  smaller line with its swatch under the name and its value under the total. */
-function Row({ item }: { item: PanelItem }) {
-  const { label, value, amount, goal, part } = item;
-  const scale = goal != null ? Math.max(goal, amount) : 0;
-  const pct = (n: number) => (scale > 0 ? (n / scale) * 100 : 0);
-  const over = nutrientStatus(amount, goal) === "over";
+/** Protein's full-width line: name and "74 / 180 g" larger, what's left to
+ *  reach on the right, and a thicker bar in the solid accent. */
+function Protein({ item, showLeft }: { item: PanelItem; showLeft: boolean }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const { label, value, amount, goal } = item;
+  const left = showLeft && goal != null ? Math.round(goal - amount) : null;
   return (
-    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)_5.25rem] items-center gap-x-3">
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold">{label}</p>
-        {part ? (
-          <p className="flex items-center gap-1 text-[11.5px] text-muted-foreground">
-            <span aria-hidden className="size-2 shrink-0 rounded-sm bg-primary" />
-            <span className="truncate">{part.label}</span>
+    <div>
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] font-semibold text-muted-foreground">{label}</p>
+          <p className="tabular truncate leading-tight">
+            <span className="text-[22px] font-bold">{value}</span>
+            <span className="text-[13px] text-muted-foreground">
+              {goal != null ? ` / ${goal}` : ""} g
+            </span>
+          </p>
+        </div>
+        {left != null ? (
+          <p className="tabular flex shrink-0 items-center gap-1 pb-0.5 text-[13px] font-semibold text-muted-foreground">
+            {left <= 0 ? (
+              <>
+                <Check className="size-3.5 text-primary-text" strokeWidth={3} />
+                {t.nutrition.proteinReached}
+              </>
+            ) : (
+              t.nutrition.proteinLeft(left.toLocaleString(locale))
+            )}
           </p>
         ) : null}
       </div>
       {goal != null ? (
-        <div className={`${part ? "h-2.5" : "h-2"} bar-track bg-muted`}>
+        <div className="mt-1.5 h-2.5 bar-track bg-muted">
           <div
-            className={`bar-grow bar-fill-x ${fillClass(amount, goal)}`}
-            style={barFill(pct(amount))}
+            data-bar="protein"
+            className="bar-grow bar-fill-x bg-primary"
+            style={barFill((amount / goal) * 100)}
           />
-          {part && part.amount > 0 ? (
-            <div
-              className="bar-grow bar-fill-x bg-primary"
-              style={barFill(pct(Math.min(part.amount, amount)))}
-            />
-          ) : null}
         </div>
-      ) : (
-        <span />
-      )}
-      <div className="tabular text-right leading-tight">
-        <p>
-          <span className={`text-[14px] font-bold ${over ? "text-destructive-text" : ""}`}>
-            {value}
-          </span>
-          <span className="text-[12px] text-muted-foreground">
-            {goal != null ? ` / ${goal}` : ""} g
-          </span>
-        </p>
-        {part ? (
-          <p className="text-[11.5px] text-muted-foreground">
-            <span className="font-bold text-foreground">{part.value}</span>
-            {part.goal != null ? ` / ${part.goal}` : ""} g
-          </p>
-        ) : null}
-      </div>
+      ) : null}
     </div>
-  );
-}
-
-/** A vertical bar like the weekly recap's: the grey track is the goal, the
- *  tint what was eaten, the accent the part inside it. */
-function Column({ item }: { item: PanelItem }) {
-  const { label, value, amount, goal, part } = item;
-  const scale = goal != null ? Math.max(goal, amount) : Math.max(1, amount);
-  const pct = (n: number) => (scale > 0 ? (n / scale) * 100 : 0);
-  const over = nutrientStatus(amount, goal) === "over";
-  return (
-    <li className="flex min-w-0 flex-col items-center">
-      <div className="h-20 w-5 bar-track bg-muted" aria-hidden>
-        <span
-          className={`bar-in bar-fill-y ${fillClass(amount, goal)}`}
-          style={barFill(pct(amount))}
-        />
-        {part && part.amount > 0 ? (
-          <span
-            className="bar-in bar-fill-y bg-primary"
-            style={barFill(pct(Math.min(part.amount, amount)))}
-          />
-        ) : null}
-      </div>
-      <p className="tabular mt-1.5 leading-tight">
-        <span className={`text-[14px] font-bold ${over ? "text-destructive-text" : ""}`}>
-          {value}
-        </span>
-      </p>
-      <p className="tabular text-[11px] leading-tight text-muted-foreground">
-        {goal != null ? `/ ${goal} g` : "g"}
-      </p>
-      <p className="w-full truncate text-center text-[10px] font-semibold tracking-tight text-muted-foreground">
-        {label}
-      </p>
-    </li>
   );
 }

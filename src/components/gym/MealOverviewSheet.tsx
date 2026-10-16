@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { BookmarkPlus, Check, CopyPlus, Plus, Share2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
@@ -17,7 +16,7 @@ import {
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
 import { useInfoTip } from "./InfoTip";
-import { NutrientPanel, panelLayout, type PanelLayout } from "./NutrientPanel";
+import { NutrientPanel } from "./NutrientPanel";
 
 /**
  * Tapping a meal heading in the food log: what that meal added up to on the
@@ -54,8 +53,6 @@ export function MealOverviewSheet({
   onCopy: () => void;
   onEdit: (entry: FoodEntry) => void;
 }) {
-  const [layout, setLayout] = useState<PanelLayout>("pairs");
-  useEffect(() => setLayout(panelLayout()), []);
   const t = useTranslation();
   const locale = useLocale();
   const totals = dailyTotals(entries);
@@ -147,7 +144,7 @@ export function MealOverviewSheet({
 
           <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
             <NutrientPanel
-              layout={layout}
+              showLeft={false}
               protein={{
                 label: t.nutrients.protein,
                 value: String(Math.round(totals.protein)),
