@@ -581,6 +581,20 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 57,
+    animation: "plate-chest-press",
+    items: [
+      {
+        en: "See how the 13 new exercises are done: animations for the EZ-bar, preacher, captain's chair and plate-loaded machine exercises.",
+        nl: "Bekijk hoe de 13 nieuwe oefeningen gaan: animaties voor de EZ-stang-, preacher-, captain's chair- en plate-loaded machine-oefeningen.",
+      },
+      {
+        en: "30 more exercise animations, including the lying leg curl, close-grip pulldown, cable curl, calf raise machines, hip thrust variations, barbell rollout and upright rows.",
+        nl: "30 nieuwe oefeninganimaties, waaronder de liggende beencurl, lat pulldown met smalle greep, kabelcurl, kuitmachines, hip thrust-varianten, barbell rollout en upright rows.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -590,7 +604,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 56;
+export const CURRENT_VERSION = 57;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

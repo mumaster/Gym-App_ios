@@ -10,41 +10,21 @@ import { ANIMATIONS_W8 } from "./exerciseAnimationW8";
 import { ANIMATIONS_W9 } from "./exerciseAnimationW9";
 import { ANIMATIONS_W10 } from "./exerciseAnimationW10";
 import { ANIMATIONS_W11 } from "./exerciseAnimationW11";
+import { ANIMATIONS_W12 } from "./exerciseAnimationW12";
+import { ANIMATIONS_W13 } from "./exerciseAnimationW13";
+import { ANIMATIONS_W14 } from "./exerciseAnimationW14";
+import { ANIMATIONS_W15 } from "./exerciseAnimationW15";
+import { ANIMATIONS_W16 } from "./exerciseAnimationW16";
+import { variantSpec } from "./exerciseVariant";
 
-/** Another catalog exercise with the same movement as an animated one (a
- *  lever leg extension, a bodyweight step-up): its animation with its own
- *  names, and optionally another implement and first cue. */
+/** Another catalog exercise with the same movement as an animated one. */
 function variant(
   of: string,
   en: string,
   nl: string,
-  change: {
-    implement?: string;
-    neutralGrip?: boolean;
-    firstCue?: { en: string; nl: string };
-    cues?: ExerciseAnimationSpec["cues"];
-  } = {},
+  change: Parameters<typeof variantSpec>[3] = {},
 ): ExerciseAnimationSpec {
-  const base = BASE_ANIMATIONS[of]!;
-  const cue = change.firstCue;
-  return {
-    ...base,
-    ...(base.figure
-      ? {
-          figure: {
-            ...base.figure,
-            ...(change.implement ? { implement: change.implement } : {}),
-            ...(change.neutralGrip !== undefined ? { neutralGrip: change.neutralGrip } : {}),
-          },
-        }
-      : {}),
-    labels: label(en, nl),
-    cues:
-      change.cues ??
-      (cue
-        ? { en: [cue.en, ...base.cues.en.slice(1)], nl: [cue.nl, ...base.cues.nl.slice(1)] }
-        : base.cues),
-  };
+  return variantSpec(BASE_ANIMATIONS[of]!, en, nl, change);
 }
 
 const VARIANTS: Record<string, ExerciseAnimationSpec> = {
@@ -162,4 +142,9 @@ export const EXERCISE_ANIMATIONS: Record<string, ExerciseAnimationSpec> = {
   ...ANIMATIONS_W9,
   ...ANIMATIONS_W10,
   ...ANIMATIONS_W11,
+  ...ANIMATIONS_W12,
+  ...ANIMATIONS_W13,
+  ...ANIMATIONS_W14,
+  ...ANIMATIONS_W15,
+  ...ANIMATIONS_W16,
 };

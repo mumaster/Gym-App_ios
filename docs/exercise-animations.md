@@ -183,3 +183,166 @@ Picked by running `generateWorkout` with only the Home Gym profile's equipment (
 - Smith machine shoulder press: `w11-smith-seat` is the W6 Smith frame (`smithFrame`, now exported from w6.tsx) plus an upright bench. `w11-smith-bar-small` draws side-view plates at radius 10 so they stay clear of the face; the bar's z is fixed (shoulder z + 19) and it runs from chin height to lockout.
 - Half-kneeling single-arm lat pulldown: reuses `w8-hi-tower` and `w8-hi-handle`; the near knee is down with the shin flat on the floor, the far foot flat 40 cm ahead, the free hand on the front thigh. Starts in a full stretch with the hand in front of the face line.
 - Smith machine RDL: `w3-smith-bar` with a `w11-smith-rdl` frame (top 150). Bar z fixed over mid-foot (12 against an ankle z of 6), torso 0 to 76 degrees, hips about 28 cm back, shins about vertical. With straight arms the bar only reaches just below the knee, which is where an RDL stops for most people anyway.
+
+## Batch 9 (0.057: the 13 new gear exercises plus the 30 most-suggested without animation)
+
+Picked with `popularityOf` (program-count ranking from 0.056) over the generator output, as for batch 7. Built as `exerciseAnimationW12.ts` … `W16.ts` with furniture in `figureExtras/w12.tsx` … `w16.tsx`; near-copies use `variantSpec` (`exerciseVariant.ts`). W12 arms (EZ bar, preacher, cable curl, overhead cable extension), W13 plate-loaded and other machines, W14 calves, leg curl and hip thrusts, W15 core, W16 pulls, close-grip bench and hip machines.
+
+### W12
+
+# Notes W12 (EZ bar, preacher curls, cable curl, overhead cable extension)
+
+Files: `src/lib/gym/exerciseAnimationW12.ts`, `src/components/gym/figureExtras/w12.tsx`, `src/lib/gym/__tests__/exerciseAnimationW12.test.ts` (67 tests green, prettier + eslint clean). Frames: `/tmp/claude-0/scratch/frames-W12/<id>.png`. No shared file touched.
+
+## Posture
+
+- EZ-bar curl (`ez-bar-curl`): standing tall (ankle z = hip z), underhand grip 12 cm each side of the midline (barbell curl is 17), elbows pinned (exactly fixed, x 17.5, 5 cm ahead of the shoulder line), only the forearms turn about them from 10 to 146 degrees. Hands hang 9.5 cm in front of the hip (bar against the thighs, arms almost straight, shoulder-wrist 51+ cm), bar ends at shoulder height, 20+ cm from the face.
+- EZ-bar reverse curl (`ez-bar-reverse-curl`): same curl with an overhand grip (14 cm half width, knuckle caps drawn on top of the bar in the front view `w12-ez-bar-over`), forearm swing only to 128 degrees so the bar ends lower, at the chest (tested lower than the underhand curl).
+- EZ-bar preacher curl (`ez-bar-preacher-curl`): seated (hip y 53, shins about vertical, feet flat 40 cm ahead), torso leans 22 degrees onto the pad, pad 52 degrees below horizontal, upper arms lie along it from the shoulder (armpit at the top edge), both elbows exactly fixed on the pad (x 15, tested; upper-arm angle = pad angle tested every 0.05), forearms rotate in the arm plane from 12 to 130 degrees of flexion. Wrist always on the upper side of the pad plane, never within 19 cm of the head, never within 8 cm of the thigh.
+- Barbell preacher curl: same, straight bar grip 17 half width, 15 cm plates, flexion 12 to 126 degrees so the plate stays off the face.
+- Dumbbell preacher curl (`db-preacher-curl`): same pose, one arm: the near arm curls with one dumbbell (`oneDumbbell`, palm up, flex 8 to 138), the far hand rests on top of the far thigh (fixed, tested). Catalog text says "incline bench back pad"; I drew the same preacher pad (cue 1 mentions an incline bench works too).
+- Machine preacher curl (`machine-preacher-curl`): seat plus pad (55 degrees) on a housing, pivot ring on the elbow axis, lever and handle dot at the wrist in the side view, front view pivots 14 cm outside the elbows with a lever line to each grip. Flexion 10 to 136 degrees.
+- EZ-bar skullcrusher: flat bench (shared `flat-bench`), upper arms 8 degrees toward the head and exactly still, elbows 4 cm inside the shoulders (not flared), grip 9 cm half width on the EZ inner angles, forearm swings from straight (reach 54.9) to 104 degrees, bar ends 12+ cm above the forehead, 21+ cm from head centre, small plates (r 10) so they do not cover the face.
+- EZ-bar overhead triceps extension: standing tall, elbows fixed overhead beside the ears (x 14, 3 cm ahead), forearms hinge from almost straight to 138 degrees behind the head: bar ends behind the neck at neck height, never nearer than 17 cm to the head. Scale 0.88 like the dumbbell version. The front view draws the bar in the `behind` layer so it passes behind head and neck.
+- Cable curl (`cable-curl`): same curl as the EZ curl (grip 15, flexion to 144), low pulley (y 14, z 74) on a tall column in front (`w12-low-tower`), straight bar with cable from the bar centre to the pulley; cable stays more than 10 cm from knees and hips and 8 cm from the ankles (tested).
+- Overhead cable extension (`overhead-cable-extension`): high pulley behind the lifter (y 192, z -58), lifter faces away, staggered stance (near foot 26 ahead, far foot 26 behind, both flat), hips y 90, torso leans 26 degrees and stays fixed, soft knees, upper arms pinned 28 degrees forward of vertical beside the ears (elbows fixed), rope hands 8 cm from the midline; forearm from nearly straight (forward and up) to 138 degrees back: hands end behind the head (more than 10 cm behind it), cable from above/behind never nearer than 14 cm to the head (tested). Scale 0.85.
+
+## New furniture / implements (all in `figureExtras/w12.tsx`)
+
+- `w12-ez-bar`, `w12-ez-bar-over`, `w12-ez-bar-small`, `w12-ez-bar-behind`: EZ bar with the zig-zag drawn relative to the actual grip (the angled sections cross the bar line at the hands), plates at +-44 (r 15, or r 10 for the `small`/`behind` variants), side view plate circle like the barbell. `-over` adds knuckle caps, `-behind` draws the bar behind the body in the front view.
+- `w12-barbell`: straight barbell (+-75) with 15 cm plates for the preacher curl.
+- `w12-preacher` (furniture): seat, stem, base rail, pad slab (polygon drawn from the pose's shoulder-elbow line, so it always matches the arms), support strut; front view pad rectangle in the `mid` layer so the arms lie on it.
+- `w12-preacher-machine` (furniture, adds a housing under the pad) and `w12-preacher-lever` (implement: pivot ring, lever, handles).
+- `w12-low-tower`, `w12-cable-bar` (cable curl); `w12-oh-tower` (front view only draws the pulley housing, no pole behind the head), `w12-oh-rope` (cable plus rope ends).
+
+## Things to know
+
+- Depth convention follows the siblings: depth 0 = start of the rep (arms hanging / arms extended), 1 = turning point.
+- Plates on EZ and preacher bars are 15 cm radius (10 near the head), smaller than the 22.5 of `barbell`, so they stay off the legs and face; `barbell` itself is used only via my `w12-barbell` look.
+- Known imperfections: the EZ zig-zag is only visible in the front view as a small W (in the side view the bar is end-on); the reverse-curl overhand grip is shown by knuckle caps only; machine lever is stylised (no weight stack).
+- No shared-file change needed.
+
+### W13
+
+# Notes W13 (plate/machine presses and rows, cable chest press)
+
+Posture:
+
+- Plate-loaded chest press (`plate-chest-press`) and Machine chest press (`machine-chest-press`, same pose): seated, hips on seat (y 52), back pad 8 deg, feet flat; handles start 22 cm ahead of and 10 cm below the shoulder joint (mid-chest, x 34), press along an exactly horizontal path to x 26, reach 52.8 (just short of lockout); forearm near horizontal, elbows ~13 cm below the shoulder. Travel monotone (tested).
+- Plate incline chest press: back pad reclined 38 deg, press path 40 deg above horizontal (tested), handles from the upper chest, reach 52.8.
+- Plate shoulder press: reuses `machineShoulderPressPose` (W6) with `upright-bench` + implement `w13-plate-press`.
+- Plate row: reuses `machineRowPose` (W4), furniture `w13-plate-row`.
+- Plate high row: seated tall, torso 5 deg back and fixed, chest pad; hands from up/forward of the head (reach ~51) down and back to the lower ribs, elbows end 19 cm behind the shoulder; wrist height monotone (tested).
+- Chest-supported T-bar row machine: torso fixed 46 deg on the pad, feet flat on an 8 cm platform (`floor` 8), hands hang then row to the lower chest, elbows back.
+- Machine lateral raise: seated, back 6 deg, elbows bent 90 deg with forearms forward; upper arm abducts 14 to 82 deg so elbows end ~4 cm below shoulder height, never above (tested); pads on the outside of the elbows.
+- Standing cable chest press: split stance (ankles z +20/-18, both flat), lean 12 deg, hands from beside the chest (x 28) pressing forward and together to x 4 (reach 52.4); high pulleys 62 cm behind the hips (`pulley` y 170, z -62), reuses `w4-cross-towers` / `w4-cross-cable`.
+
+Furniture / implements (figureExtras/w13.tsx):
+
+- `w13-plate-chest`, `w13-plate-incline`: seat, back pad, upright with lever pivots, levers to the handles, horn with plates (side: disc; front: edge-on plates that move slightly as you press). `w13-stack-chest`: same frame with a weight stack (selected slabs lift while pressing).
+- `w13-plate-press` (implement): levers from a pivot behind the pad, horn with plates; used with `upright-bench`.
+- `w13-plate-row`, `w13-high-row`, `w13-tbar-machine`, `w13-lateral-machine` (selectorized stack).
+
+Known imperfections: lever lines are drawn faint behind the body and change apparent length a little (hinge levers seen in projection); in the side view lever lines pass behind the legs at the end of the plate row. Cable press cable grazes under the chin in the side view (pulley behind, as in real life). No shared-file changes needed.
+
+### W14
+
+# Notes W14 (animation batch, 10 exercises)
+
+Files: `src/lib/gym/exerciseAnimationW14.ts`, `src/components/gym/figureExtras/w14.tsx`, `src/lib/gym/__tests__/exerciseAnimationW14.test.ts` (63 tests green, prettier + eslint clean, no tsc errors in my files). Frames: `/tmp/claude-0/scratch/frames-W14/<id>.png`. No shared file touched.
+
+## Posture
+
+- Lying leg curl (`lying-leg-curl`): face down on a pad (top 36), torso/hips/thighs fixed (hip y 46, thigh slopes 6 deg down to the knee, pad ends just behind the knee so the legs hang free). Shin curls from 8 to 100 degrees of knee bend (hip-ankle reach shrinks monotonically, ankle rises until the shin is vertical, then drops <0.5 cm). Foot hangs off the shin (`angle = shin angle + 80`, toes down at start, pointing back at the top). Hands hold handles hanging beside the pad (wrist y 31 below the pad top, elbows out and down) so no arm crosses the head (tested). Scale 1.15.
+- Smith machine calf raise (`smith-calf-raise`): standing upright, legs straight (hip-ankle 87.95), toes on a 7 cm step, bar on the traps (z -6, 4 cm above the shoulder joint, exactly vertical, hands at +-28). Heel range from 9.8 cm above flat to 4.6 cm below flat. Scale 0.9, Smith frame top 200 (taller than the squat's because the lifter stands on the step and rises).
+- Single-leg calf raise (`single-leg-calf-raise`): near foot on the edge of a 14 cm step, straight leg, other leg hooked up behind (thigh vertical, shin about horizontal, free foot hanging toes-down via `angle`), near hand slides up an upright (x 36, z 14, 46 cm below the shoulder, balance only), other hand on the hip. Scale 0.9.
+- Seated calf machine (`seated-calf-machine`): hips fixed on the seat (hip y = step 10 + 50), shin near vertical, thigh tilts about -5 to +13 degrees as the heels sink/rise, ball of foot on a 10 cm platform. Pads on the thighs just above the knees (along 0.74-0.98 of the thigh), lever to a front column with a weight stack. Hands rest on the thighs.
+- Seated dumbbell calf raise (`seated-db-calf-raise`): flat bench (top 48), ball of foot on a 6 cm plate, one dumbbell across each thigh 80% of the way to the knee (centre 11 cm above the thigh axis, hand on it), thigh tilt like the machine. Standard `dumbbells` implement (end-on circle in side view, bar across thighs in front view).
+- Smith machine seated calf raise (`smith-seated-calf-raise`): bench in the Smith, bar across the thighs 30 cm ahead of the hip (z fixed, x 0), resting 1.5 cm above the thigh surface at every depth (bar y follows the thigh, tested 6.4-8.2 cm from the thigh axis), hands on the bar at +-30, small plates (`w11-smith-bar-small`), frame top 140.
+- Leg press calf raise (`leg-press-calf-raise`): reclined 60 degrees on the shared leg-press seat (`LEG_PRESS_HIP`, tilt 35), legs straight (reach 87.8) and completely still; only the foot rotates about the ankle (`angle = tilt + gamma`, gamma 55 = ankles extended, 102 = dorsiflexed) while the platform slides ~10.5 cm along the rails. Platform lower edge sits 3 cm above the ankle line so the heels hang off below it (heel b < edge, tested), contact is the toe tip when plantarflexed, the ball when pulled back. Hands on the side handles (wrist 6 cm ahead of the hip, reachable; the base leg-press wrist is not).
+- Machine hip thrust (`machine-hip-thrust`) and Smith hip thrust (`smith-hip-thrust`): the barbell hip-thrust body (`hipThrustPose`: upper back on the bench, torso level and shins vertical at the top, hips to 18 cm at the bottom, feet flat) with the load on a vertical guide at z -46. The bar/belt rests on the highest point of the pelvis/thigh capsules at that z (3 cm above the body, tested 2.2-3.6 cm), so it stays exactly vertical yet touches the hip crease at the top and the thighs lower down, never inside the body. Hands at +-26 (machine, on the belt ends) and +-32 (Smith).
+- Dumbbell reverse lunge (`db-reverse-lunge`): the bodyweight lunge legs/torso (`reverseLungePose`, front foot never moves, back foot on the ball, front shin vertical, thigh level), arms straight down at x +-27 (palms in, `neutralGrip`), dumbbells hang beside the legs, forearm vertical. Uses `variantSpec` for spec and cues, pose wrapped (wrists/elbows replaced).
+
+## Calf-raise foot model (shared by 5 exercises, `calfFoot(step, e)`)
+
+Heel up (lift >= 0): `pitch` foot like the standing calf raise (ankle = step + 8 + 11*pitch/45, toe tip stays on the step). Heel down (lift < 0): `angle = asin(-lift/15)` with `drop 8`, so the toe tip stays on the step top and the heel hangs below the step (heel about 6 cm under the step top at the bottom). `floor` = step height in both. The two foot forms agree at lift 0 (flat sole).
+
+## New furniture / implements (figureExtras/w14.tsx)
+
+- `w14-lying-curl`: pad with posts, floor rail, hanging handles, pivot post at the knee, lever to the roller, roller (circle in side view, bar across the ankles in front view) on the back of the shin at 90% of its length.
+- `w14-lp-calf`: leg press frame for the calf raise (back pad, seat, rails, platform line starting 3 cm above the ankle line at the pose's plate reach, plate rect in the front view).
+- `w14-seated-calf`: seat on a stem, floor rail, front column with weight stack, 10 cm platform, thigh pad and lever (mid layer, follows the thigh), front-view pad bar.
+- `w14-single-step`: 14 cm step (rear edge z 4, front edge 44) plus a balance upright.
+- `w14-seated-db`: flat bench plus 6 cm plate.
+- `w14-smith-seated`: bench, plate, Smith rails (own `smithRails` with a short base so it does not run under the feet) and a pad on the bar over the thighs.
+- `w14-smith-calf`: Smith rails (top 200) plus 7 cm step.
+- `w14-thrust-machine` + implement `w14-thrust-belt`: bench pad, two guide columns at +-52 (top 110) and a belt pad across the hips with arms to the carriages and plates at +-60 (front) / radius-18 plate circle (side).
+- `w14-smith-thrust`: the same bench with Smith rails (top 125); implement is the shared `w3-smith-bar`.
+
+## Known imperfections / things to know
+
+- Machine hip thrust is drawn with a guided carriage (vertical rail) rather than a pivoting lever: a lever whose arm has constant length cannot follow the hips without passing through the torso/head in a 2D side view. It reads as a belt carriage machine and looks close to the Smith version (belt + smaller plates is the difference).
+- Reverse lunge bottom: the hanging dumbbells are at thigh height (wrist y 47, front thigh y 52), so in the side view the near dumbbell overlaps the front thigh (it hangs beside the leg, x 27 vs thigh x 11).
+- Single-leg calf raise: the balance upright is drawn behind the body (same as `w7-support`), so it appears behind the near leg although it stands on the near side.
+- Lying leg curl front view is an end-on view of a prone figure (flat slab with raised shins), like other lying exercises.
+- Seated calf machine lever is not exact constant length (length varies < 0.5 cm over the rep).
+- `exerciseAnimations.ts` / `ExerciseFigureExtras.tsx` already register W14; no changes needed. For the test list `ANIMATED` in `exerciseAnimation.test.ts`: add the ten ids.
+- Review helper (not part of the repo): `/tmp/claude-0/scratch/w14tools/big.sh <id> <d1,d2,...> <abs out.png> [width]` renders large side+front frames at chosen depths.
+
+### W15
+
+# W15 notes
+
+Files: `src/lib/gym/exerciseAnimationW15.ts`, `src/components/gym/figureExtras/w15.tsx`, `src/lib/gym/__tests__/exerciseAnimationW15.test.ts` (64 tests green; prettier, eslint and tsc clean for these three). Frames: `/tmp/claude-0/scratch/frames-W15/<id>.png`. No shared file was changed. For `exerciseAnimation.test.ts` the ids to add to `ANIMATED` (if you want them there): captains-chair-leg-raise, captains-chair-knee-raise, hanging-knee-raise, ab-crunch-machine, barbell-rollout, decline-situp, bar-triceps-extension.
+
+Posture (depth 0 = the loop start; for the sit-up it is lying, for the rollout the folded start):
+
+- Captain's chair leg raise: shoulders fixed at y 157, elbows right under the shoulders (upper arm 3 degrees forward of vertical), forearms level on the pads (4 degrees up), hands on the handles at the pad ends (wrist z 27.5, x 19), torso vertical against the back pad (head and torso never behind the pad face). Straight legs (hip-to-ankle 87.9) swing from 4 to 86 degrees from hanging, level with the hips at the top; the pelvis curls forward (lean 0 to -7, hip 6 cm forward of the shoulder line, monotone). Feet hang off the shin (`angle = a - 45`, `floor = ankle y - 2`), toes at least 4 cm off the floor all rep (ankle 14 cm at the start). The legs rise under the forearm pads (hips 12+ cm below the pad).
+- Captain's chair knee raise: same chair and upper body; thigh from 3 to 125 degrees from hanging, knee flexion 8 to 120 (shin ends about vertical, `angle = shin - 45`). Knee ends about 26 cm above the hip and 37 cm in front of it, passing between the two arm rests (the near pad is drawn over the thigh in the side view, as the pad is nearer the camera). Hip-to-ankle distance and knee height are monotone (tested).
+- Hanging knee raise: `pullup-bar`, grip 26, straight arms, shoulders fixed (like the hanging leg raise, scale 0.8). Thigh 3 to 135 degrees, flexion 8 to 130 (shin ends vertical), pelvis lean 2 to -13. Knees end 32 cm above the hips.
+- Ab crunch machine: seated (seat hip y 53, thighs level, feet flat 42 cm ahead, `footHalf` 14), back pad tilted 10 degrees, torso starts reclined 10 degrees against it and curls to 36 degrees forward while shortening from 50 to 43 cm (the spine rounds, not a hinge). The chest pad sits on lever arms that pivot beside the hip joint, so its centre is always exactly `ACM_ARM` (36 cm) from the hip joint (side view circle, no stretching lever). Hands hold the handles at the pad's upper edge (wrist 15 cm either side), elbows in front and forward-down, clear of the thighs (elbow at least 5 cm above the thigh).
+- Barbell rollout: kneeling on a 4 cm mat, knee fixed at (y 9.5, z 0), shins lie back flat (feet `dir -1`, `floor` 4). Barbell (built-in `barbell`, round plates) on the floor (bar y 22.5, plates touch the floor), straight arms (reach 54.7). Thigh 12 to 78 degrees and torso 64 to 78 degrees from vertical: hips piked with the bar under the shoulders at the start, one straight knee-to-shoulder line at the end with the torso nearly level (shoulder y 29), hips never below that line (tested). Bar travels 80 cm forward. Head 0.62 of the torso lean, clear of the arms.
+- Decline sit-up: pad tilted 25 degrees head down (`DS_ANGLE`), hip fixed on it (10 cm above the surface), thigh along the pad, shin 50 degrees below horizontal to the ankle roller (hanging foot `angle = shin + 90`, same logic as the W6 decline press), knees bent about 105 degrees. Torso direction goes from 2 degrees above the pad (just above flat) to 88 degrees (upright) as a rigid pivot about the hip (length 50, 46 at mid rep for the spine curl); shoulders and head stay above the pad (tested), chest never touches the thigh (tested). Hands crossed on the chest (wrists 14 cm either side of the midline), elbows folded down the front of the chest. Head tucks 17 degrees as it comes up.
+- Bar triceps extension: bar at y 105 on two posts, toes on the floor 150 cm behind it (`pitch 65`, ankle y 17, like the push-up plank), body one rigid line (hip on the ankle-shoulder line, tested) pivoting about the toes from 45.8 degrees (arms straight, shoulder 54.7 from the wrists) to 31 degrees. Elbows point up (skull-crusher style), forearms stay above the head, the head slides under bar and forearms (head tucks from +6 to -55 degrees relative to the body so it clears the bar by more than 14 cm throughout and the forearm by more than 14.5 cm in the lower 30 percent of the rep (tested)). Hands on the bar at x 19. Shoulder-to-wrist distance decreases monotonically 54.7 to 32.
+
+Furniture and implements (`figureExtras/w15.tsx`):
+
+- `w15-captains-chair`: back pad (z -15, from shoulder -62 to +27), spine post and floor base behind it, beam under the arm rests, two forearm pads (top 4 cm under the forearm, near one in the `mid` layer, far one `behind`), vertical grip handles at the pad ends (`over`). Front view: back pad rect, spine, pads and handles.
+- `w15-ab-machine`: floor base, seat, 10 degree back pad and support, chest pad (rounded, lighter), lever from a pivot dot at the hip to the pad centre; front view: pad rect on the chest and two lever arms at x +-25 to hip pivots; handle bar between pad and wrist (`over`).
+- `w15-rollout-mat`: thin 4 cm mat under the knees and shins (z -62 to 14). The barbell is the built-in implement.
+- `w15-decline-situp-bench`: 25 degree pad (z/y from `DS_PAD`), two posts with floor feet, leg holder post, roller on the lower shin (same placement as the W6 decline bench, no bar rack), front view pad and roller.
+- `w15-low-bar`: waist-height bar on two uprights at x +-58 (front), single upright at z 0 and floor foot (side, bar end as a dot in `over`).
+
+Known imperfections / things to know:
+
+- Ab crunch machine is a generic selectorized machine (chest pad + hip-pivot lever); it looks schematic, the pad is mostly hidden behind the arm in the side view.
+- Bar triceps extension: in the middle of the rep the near elbow/forearm crosses the head circle in the side view (the arms are beside the head in 3D, so nothing really collides). The head is clear of the bar and of the forearm for the lower 30 percent of the rep (tested).
+- Captain's chair: the knee raise's thigh passes behind the near arm pad in the side view (physically the knees pass between the pads).
+- Captain's chair shoulder height 157 and scale 0.95 keep the head top inside the frame (head top 190 cm at scale 0.95).
+
+### W16
+
+# Notes W16
+
+Posture:
+
+- Close-grip lat pulldown: built-in `pulldown` furniture (thigh pad), lean 12 to 18 deg like the lat pulldown, V-handle with a neutral grip (hands 8 cm from the midline). Starts with long arms (shoulder-wrist 52.5, handle 24 cm in front of the shoulder, clear of the face), handle drops quickly then settles on the upper chest (9 cm below the shoulder joint). Elbows hang down (pole down): they swing forward to shoulder height early (a narrow grip forces that), then come down in front of / beside the ribs. Feet flat (ankle z 42, as the lat pulldown).
+- Barbell shrug: standing straight (ankle z = hip z), grip 26 (just outside the shoulders), bar z 8 in front of the thighs, arms straight (reach ARM-0.05); shoulders rise 8 cm straight up (smooth), head and hips fixed, no rolling. `barbell` implement, scale 1.05.
+- Dumbbell upright row: standing straight, dumbbells (pronated, drawn lengthways in the front view) start in front of the thighs (x 16, z 12, arm straight) and rise close to the body to 16.5 cm below the shoulder joint at x 23 / z 16.5; elbow pole fixed at (25.5, -2, 13.6) from the shoulder, so the elbows lead out and up and stop at shoulder height (never above, tested), elbows more than 6 cm above the wrists from depth 0.35 on, forearms angled in.
+- Cable upright row: same movement with a short straight bar (grip 16 to 21) and a low pulley in front (`w16-low-tower`, pulley y 16, z 46); cable line from the bar centre to the pulley. Hands finish 16 cm under the shoulder joint.
+- Close-grip bench press: figure (not the old rig) lying on the shared `flat-bench`, `barbell` implement, scale 1.3. Grip 16 (inside the 19 cm shoulder joints), bottom forearm exactly vertical, elbow right under the wrist (about 3 cm from the shoulder line in x: tucked), bar at chest height 12 cm above the shoulder joint, z about 25 cm below the shoulder (lower chest). Top: bar 4 cm toward the feet from the shoulder, arm at full length (54.8). Bar z uses the J-curve (depth^1.6), y linear.
+- Hip abduction / adduction machine: built-in `upright-bench` seat and 10 deg back pad, hips fixed (SEAT_HIP_Y), hands on side grips, thighs level (knee 1 cm above hip), shin vertical, ankles on 3 cm foot plates (`floor` 3) that travel with the legs. Thigh swings about the vertical axis from 3 to 30 degrees (knee gap 23 to 66 cm); knees move only a few cm back in the side view. Abduction: depth 0 closed, 1 wide, pads on the outside (`w16-abduction`). Adduction: depth 0 wide, 1 closed, pads on the inside (`w16-adduction`), start of the rep is the wide position.
+
+Furniture / implements (figureExtras/w16.tsx):
+
+- `w16-vhandle`: V-handle (triangle with two end-on grips in the front view, grip rod plus triangle in the side view), cable to the pulldown pulley (170, z 16).
+- `w16-low-tower`: low cable tower drawn behind the body (column, base, carriage, pulley wheel at CUR_PULLEY y 16 z 46); `w16-low-bar`: short straight bar, cable from its middle to the low pulley (needs `pulley: CUR_PULLEY` in the model).
+- `w16-abduction` / `w16-adduction`: pads (outer or inner), posts rising from the foot plates, foot plates, floor rail, grip posts. Side view: outer pad as a rounded slab on the near thigh; the inner pad only shows its rim.
+
+Know-how / imperfections:
+
+- No shared file was changed. Frame review used `/tmp/claude-0/scratch/frames-W16/`.
+- Bench bottom: the near elbow (y 41) dips 4 cm under the bench top in the side view, same as the Smith flat press (forced by a vertical forearm and bar on the chest).
+- Shrug: the drawn torso lengthens by 8 cm at the top (shoulder moves, hip fixed), same as db-shrug.
+- Cable lines in the front view pass over the legs (single line to the pulley at x 0), and the tower column is drawn behind the lifter (same convention as the pushdown).
+- Hip machines: foot plates are assumed to ride on the levers (feet do not slide).
