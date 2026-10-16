@@ -161,7 +161,7 @@ export function preacherPose(cfg: PreacherCfg, depth: number): FigurePose {
       ankleZ: 40,
       footHalf: 16,
       wrist: (s) => (cfg.oneArm && s < 0 && free ? free : arms.wrist(s)),
-      bar: arms.wrist(1),
+      bar: cfg.oneArm ? arms.wrist(1) : [0, arms.wrist(1)[1], arms.wrist(1)[2]],
       kneePole: (s) => [s * 0.2, 1, 0.5],
       elbowPole: (s) =>
         cfg.oneArm && s < 0 && free

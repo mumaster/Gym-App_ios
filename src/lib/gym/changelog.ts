@@ -586,12 +586,12 @@ export const CHANGELOG: ChangelogEntry[] = [
     animation: "plate-chest-press",
     items: [
       {
-        en: "See how the 13 new exercises are done: animations for the EZ-bar, preacher, captain's chair and plate-loaded machine exercises.",
-        nl: "Bekijk hoe de 13 nieuwe oefeningen gaan: animaties voor de EZ-stang-, preacher-, captain's chair- en plate-loaded machine-oefeningen.",
+        en: "Animations for the 13 new exercises.",
+        nl: "Animaties voor de 13 nieuwe oefeningen.",
       },
       {
-        en: "30 more exercise animations, including the lying leg curl, close-grip pulldown, cable curl, calf raise machines, hip thrust variations, barbell rollout and upright rows.",
-        nl: "30 nieuwe oefeninganimaties, waaronder de liggende beencurl, lat pulldown met smalle greep, kabelcurl, kuitmachines, hip thrust-varianten, barbell rollout en upright rows.",
+        en: "30 more exercise animations.",
+        nl: "30 extra oefeninganimaties.",
       },
     ],
   },
