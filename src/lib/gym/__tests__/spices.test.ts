@@ -28,6 +28,16 @@ describe("spices", () => {
     expect(SPICES.find((s) => s.id === "cinnamon")!.per100.sugars).toBe(2.2);
   });
 
+  it("has saturated fat per 100 g that fits inside the fat", () => {
+    for (const s of SPICES) {
+      expect(s.per100.satFat).toBeDefined();
+      expect(s.per100.satFat!).toBeGreaterThanOrEqual(0);
+      expect(s.per100.satFat!).toBeLessThanOrEqual(s.per100.fat);
+    }
+    expect(SPICES.find((s) => s.id === "salt")!.per100.satFat).toBe(0);
+    expect(SPICES.find((s) => s.id === "nutmeg")!.per100.satFat).toBe(25.9);
+  });
+
   it("finds salt and pepper in both languages", () => {
     expect(searchSpices("zout", "nl")[0]!.id).toBe("salt");
     expect(searchSpices("salt", "en")[0]!.per100.salt).toBe(100);

@@ -1,4 +1,4 @@
-import { withSugars, type MealIngredient, type Macros } from "./nutrition";
+import { withSatFat, withSugars, type MealIngredient, type Macros } from "./nutrition";
 
 /**
  * Sharing a logged meal with another user: the meal and all its ingredients
@@ -13,11 +13,12 @@ export interface SharedMeal {
 
 const VERSION = 1;
 const MAX_INGREDIENTS = 60;
-/** The six macros every link carries, in order. Sugars is not one of them:
- *  it travels as an optional fifth element of an ingredient row (after the
- *  NEVO codes), so links from before sugars existed still decode, and an
- *  older app reading a new link just ignores it. */
-const MACRO_KEYS: Exclude<keyof Macros, "sugars">[] = [
+/** The six macros every link carries, in order. Sugars and saturated fat are
+ *  not among them: they travel as optional fifth and sixth elements of an
+ *  ingredient row (after the NEVO codes; an unknown sugars holds its place
+ *  as null), so links from before they existed still decode, and an older
+ *  app reading a new link just ignores them. */
+const MACRO_KEYS: Exclude<keyof Macros, "sugars" | "satFat">[] = [
   "calories",
   "protein",
   "carbs",
@@ -50,11 +51,17 @@ export function encodeMeal(meal: SharedMeal): string {
         ing.name,
         round(ing.grams),
         MACRO_KEYS.map((k) => round(ing.per100[k])),
-        ...(ing.per100.sugars != null
-          ? [ing.nevo?.length ? ing.nevo : [], round(ing.per100.sugars)]
-          : ing.nevo?.length
-            ? [ing.nevo]
-            : []),
+        ...(ing.per100.satFat != null
+          ? [
+              ing.nevo?.length ? ing.nevo : [],
+              ing.per100.sugars != null ? round(ing.per100.sugars) : null,
+              round(ing.per100.satFat),
+            ]
+          : ing.per100.sugars != null
+            ? [ing.nevo?.length ? ing.nevo : [], round(ing.per100.sugars)]
+            : ing.nevo?.length
+              ? [ing.nevo]
+              : []),
       ]),
     }),
   );
@@ -71,7 +78,7 @@ export function decodeMeal(code: string): SharedMeal | null {
     const ingredients: MealIngredient[] = [];
     for (const row of raw.i) {
       if (!Array.isArray(row)) return null;
-      const [name, grams, macros, nevo, sugars] = row;
+      const [name, grams, macros, nevo, sugars, satFat] = row;
       if (typeof name !== "string" || !finite(grams) || grams <= 0) return null;
       if (!Array.isArray(macros) || macros.length !== MACRO_KEYS.length) return null;
       if (!macros.every(finite)) return null;
@@ -79,7 +86,10 @@ export function decodeMeal(code: string): SharedMeal | null {
         MACRO_KEYS.map((k, idx) => [k, macros[idx]]),
       ) as unknown as Macros;
       // Missing in an old link (or not a number): unknown, never 0.
-      const per100 = withSugars(base, finite(sugars) ? sugars : undefined);
+      const per100 = withSatFat(
+        withSugars(base, finite(sugars) ? sugars : undefined),
+        finite(satFat) ? satFat : undefined,
+      );
       const codes = Array.isArray(nevo) ? nevo.filter((c): c is number => Number.isInteger(c)) : [];
       ingredients.push({
         name: name.slice(0, 120),

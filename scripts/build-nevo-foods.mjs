@@ -72,6 +72,12 @@ const COLUMNS = {
  *  before (no sugars), and a food with no value in it gets none (never 0). */
 const SUGARS_COLUMN = "SUGAR (g)";
 
+/** NEVO's saturated fat column ("FASAT", the sum of the saturated fatty
+ *  acids), checked against the NEVO 2025/9.0 file where every food has a
+ *  value. Optional like sugars: a file without the column builds without
+ *  saturated fat, and a food with no value in it gets none (never 0). */
+const SATFAT_COLUMN = "FASAT (g)";
+
 /** Parses NEVO's `|`-separated, double-quoted CSV. */
 function parse(text) {
   const lines = text
@@ -109,6 +115,10 @@ const hasSugars = SUGARS_COLUMN in rows[0];
 if (!hasSugars) {
   console.warn(`No "${SUGARS_COLUMN}" column in the NEVO file: building without sugars.`);
 }
+const hasSatFat = SATFAT_COLUMN in rows[0];
+if (!hasSatFat) {
+  console.warn(`No "${SATFAT_COLUMN}" column in the NEVO file: building without saturated fat.`);
+}
 
 const groups = [];
 const foods = [];
@@ -128,6 +138,7 @@ for (const r of rows) {
   }
   const alcohol = num(r[COLUMNS.alcohol]);
   const sugars = hasSugars ? num(r[SUGARS_COLUMN]) : null;
+  const satFat = hasSatFat ? num(r[SATFAT_COLUMN]) : null;
   foods.push([
     Number(r[COLUMNS.code]),
     r[COLUMNS.nl],
@@ -141,10 +152,13 @@ for (const r of rows) {
     fiber,
     num(r[COLUMNS.sodium]),
     // Alcohol g per 100 g, only where NEVO has a value above 0 (a 0 holds
-    // its place when sugars follow).
-    ...(alcohol || sugars != null ? [alcohol ?? 0] : []),
-    // Total sugars g per 100 g, only where NEVO has a value.
-    ...(sugars != null ? [sugars] : []),
+    // its place when sugars or saturated fat follow).
+    ...(alcohol || sugars != null || satFat != null ? [alcohol ?? 0] : []),
+    // Total sugars g per 100 g, only where NEVO has a value (a null holds
+    // its place when saturated fat follows).
+    ...(sugars != null || satFat != null ? [sugars] : []),
+    // Saturated fat g per 100 g, only where NEVO has a value.
+    ...(satFat != null ? [satFat] : []),
   ]);
 }
 foods.sort((a, b) => a[0] - b[0]);
@@ -162,8 +176,9 @@ export const NEVO_GROUPS: [string, string][] = ${JSON.stringify(groups)};
 /** [code, Dutch name, English name, Dutch synonyms ("/"-separated), group,
  *  kcal, protein g, available carbohydrate g, fat g, fibre g, sodium mg
  *  (null when NEVO has no value), alcohol g (only present when above 0, or
- *  when a sugars value follows, then 0), total sugars g (absent when NEVO
- *  has none)] — all per 100 g. */
+ *  when a sugars or saturated fat value follows, then 0), total sugars g
+ *  (absent when NEVO has none; null when only a saturated fat value follows),
+ *  saturated fat g (absent when NEVO has none)] — all per 100 g. */
 export type NevoRow = [
   number,
   string,
@@ -177,6 +192,7 @@ export type NevoRow = [
   number,
   number | null,
   number?,
+  (number | null)?,
   number?,
 ];
 

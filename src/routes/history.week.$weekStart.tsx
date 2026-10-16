@@ -6,6 +6,7 @@ import {
   CardioCard,
   DrinksCard,
   CarbsCard,
+  FatCard,
   FoodCard,
   StrengthCard,
   WaterCard,
@@ -66,6 +67,7 @@ function WeekRecapScreen() {
               waterGoalMl,
               calorieGoalFor: (date) => resolveGoals(date).goals.calories,
               sugarGoalFor: (date) => resolveGoals(date).goals.sugars,
+              satFatGoalFor: (date) => resolveGoals(date).goals.satFat,
             },
             monday,
           )
@@ -179,6 +181,7 @@ function WeekRecapScreen() {
             <CardioCard recap={recap} prev={prevRecap} />
             <FoodCard recap={recap} prev={prevRecap} />
             <CarbsCard recap={recap} />
+            <FatCard recap={recap} />
             <WaterCard recap={recap} />
             <DrinksCard recap={recap} />
             <WeightCard recap={recap} />

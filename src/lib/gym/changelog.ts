@@ -536,6 +536,27 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 54,
+    items: [
+      {
+        en: "See the saturated fat in your fat: your day, meals and the weekly Fat card show it, and you can set an optional goal of 10%, 6% or your own.",
+        nl: "Zie het verzadigd vet in je vet: je dag, maaltijden en de weekkaart Vet tonen het, en je kunt een optioneel doel instellen van 10%, 6% of een eigen percentage.",
+      },
+      {
+        en: "Carbs and sugars, and fat and saturated fat, now share one bar on your Today card and in a meal's overview, like the weekly cards.",
+        nl: "Koolhydraten en suikers, en vet en verzadigd vet, delen nu één balk op je kaart Vandaag en in het overzicht van een maaltijd, net als op de weekkaarten.",
+      },
+      {
+        en: "The weekly goal under the Food week strip now follows your planned week, so it no longer shifts with which days you logged.",
+        nl: "Het weekdoel onder de weekbalk van Voeding volgt nu je geplande week, en verschuift dus niet meer mee met welke dagen je hebt gelogd.",
+      },
+      {
+        en: "The food overview now reads like a nutrition label: per 100 g on the left and your portion on the right, one row per nutrient.",
+        nl: "Het voedseloverzicht leest nu als een voedingswaardelabel: per 100 g links en jouw portie rechts, één rij per voedingsstof.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -545,7 +566,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 53;
+export const CURRENT_VERSION = 54;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

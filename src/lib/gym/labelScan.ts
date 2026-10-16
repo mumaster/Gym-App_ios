@@ -16,6 +16,10 @@ Return protein, carbs, fat, fiber in grams. Return sugars in grams: the "of whic
 under carbohydrate on EU labels (total sugars, per 100g like the rest; US labels: "Total Sugars").
 Never use "added sugars" or sugar alcohols (polyols) for it. If that line isn't printed or legible,
 return null for sugars: do not guess, and do not return 0 unless the label itself states 0.
+Return saturatedFat in grams: the "of which saturates" line printed under fat on EU labels
+("waarvan verzadigd", per 100g like the rest; US labels: "Saturated Fat"). Never use trans fat,
+mono- or polyunsaturates for it. If that line isn't printed or legible, return null for
+saturatedFat: do not guess, and do not return 0 unless the label itself states 0.
 Return salt in grams (if only sodium is listed,
 convert: salt_g = sodium_mg * 2.5 / 1000).
 
@@ -37,6 +41,7 @@ const RESPONSE_SCHEMA = {
     carbs: { type: "number", nullable: true },
     sugars: { type: "number", nullable: true },
     fat: { type: "number", nullable: true },
+    saturatedFat: { type: "number", nullable: true },
     fiber: { type: "number", nullable: true },
     salt: { type: "number", nullable: true },
     servingSizeGrams: { type: "number", nullable: true },
@@ -48,6 +53,7 @@ const RESPONSE_SCHEMA = {
     "carbs",
     "sugars",
     "fat",
+    "saturatedFat",
     "fiber",
     "salt",
     "servingSizeGrams",
@@ -63,6 +69,9 @@ export interface ScannedLabel {
    *  when not on the label (or not in the database), never defaulted to 0. */
   sugars?: number | null;
   fat: number | null;
+  /** Saturated fat ("of which saturates" under fat); null or missing when
+   *  not on the label (or not in the database), never defaulted to 0. */
+  saturatedFat?: number | null;
   fiber: number | null;
   salt: number | null;
   /** The label's own suggested portion size in grams, if it states one directly. */

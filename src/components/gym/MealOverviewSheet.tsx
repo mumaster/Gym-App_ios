@@ -7,6 +7,7 @@ import {
   dailyTotals,
   energySplit,
   scaledMacros,
+  satFatComplete,
   sugarsComplete,
   type FoodEntry,
   type Macros,
@@ -15,7 +16,7 @@ import {
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
 import { useInfoTip } from "./InfoTip";
-import { NutrientCell } from "./NutrientCell";
+import { NutrientPanel } from "./NutrientPanel";
 
 /**
  * Tapping a meal heading in the food log: what that meal added up to on the
@@ -142,43 +143,56 @@ export function MealOverviewSheet({
           </div>
 
           <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
-            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-              <NutrientCell
-                label={t.nutrients.protein}
-                value={String(Math.round(totals.protein))}
-                amount={totals.protein}
-                goal={goals.protein}
-              />
-              <NutrientCell
-                label={t.nutrients.carbs}
-                value={String(Math.round(totals.carbs))}
-                amount={totals.carbs}
-                goal={goals.carbs}
-              />
-              <NutrientCell
-                label={t.nutrients.sugars}
-                value={
-                  totals.sugars == null
-                    ? "–"
-                    : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`
-                }
-                amount={totals.sugars ?? 0}
-                goal={goals.sugars ?? undefined}
-                overIsAccent
-              />
-            </div>
-            <div className="h-px bg-border" />
-            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-              {(["fat", "fiber", "salt"] as const).map((key) => (
-                <NutrientCell
-                  key={key}
-                  label={t.nutrients[key]}
-                  value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
-                  amount={totals[key]}
-                  goal={goals[key]}
-                />
-              ))}
-            </div>
+            <NutrientPanel
+              protein={{
+                label: t.nutrients.protein,
+                value: String(Math.round(totals.protein)),
+                amount: totals.protein,
+                goal: goals.protein,
+              }}
+              carbs={{
+                label: t.nutrients.carbs,
+                value: String(Math.round(totals.carbs)),
+                amount: totals.carbs,
+                goal: goals.carbs,
+                part: {
+                  label: t.nutrients.sugars,
+                  value:
+                    totals.sugars == null
+                      ? "–"
+                      : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
+                  amount: totals.sugars ?? 0,
+                  goal: goals.sugars ?? undefined,
+                },
+              }}
+              fat={{
+                label: t.nutrients.fat,
+                value: Number(totals.fat.toFixed(0)).toLocaleString(locale),
+                amount: totals.fat,
+                goal: goals.fat,
+                part: {
+                  label: t.nutrients.satFatShort,
+                  value:
+                    totals.satFat == null
+                      ? "–"
+                      : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
+                  amount: totals.satFat ?? 0,
+                  goal: goals.satFat ?? undefined,
+                },
+              }}
+              fiber={{
+                label: t.nutrients.fiber,
+                value: Number(totals.fiber.toFixed(0)).toLocaleString(locale),
+                amount: totals.fiber,
+                goal: goals.fiber,
+              }}
+              salt={{
+                label: t.nutrients.salt,
+                value: Number(totals.salt.toFixed(1)).toLocaleString(locale),
+                amount: totals.salt,
+                goal: goals.salt,
+              }}
+            />
             {proteinTarget != null ? (
               <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
                 {proteinOk ? (

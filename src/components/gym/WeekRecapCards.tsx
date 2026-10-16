@@ -6,6 +6,7 @@ import {
   Coffee,
   Droplet,
   Dumbbell,
+  Egg,
   Footprints,
   Scale,
   Sparkles,
@@ -875,6 +876,147 @@ export function CarbsCard({ recap }: { recap: WeekRecap }) {
             dayName(carbs.highestSugars.key),
             g(carbs.highestSugars.value),
           )}
+        </FunFact>
+      ) : null}
+    </Card>
+  );
+}
+
+/**
+ * Fat per day as seven nested bars, like the carbs: a pale pill as tall as the
+ * day's fat with a solid accent fill inside up to the saturated fat. A day
+ * whose saturated fat is unknown is just the pale pill.
+ */
+function FatBars({ days }: { days: WeekRecapDay[] }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const { picked, toggle } = usePickedBar();
+  const scale = Math.max(1, ...days.map((d) => d.fat));
+  const name = (d: WeekRecapDay) => d.date.toLocaleDateString(locale, { weekday: "long" });
+  const aria = (d: WeekRecapDay) =>
+    d.logged
+      ? t.weekRecap.fatDay(
+          name(d),
+          Math.round(d.fat).toLocaleString(locale),
+          d.satFat != null
+            ? `${d.satFatComplete ? "" : "~"}${Math.round(d.satFat).toLocaleString(locale)}`
+            : null,
+        )
+      : `${name(d)}: ${t.weekRecap.notLogged}`;
+  return (
+    <>
+      <BarReadout text={picked == null ? null : aria(days[picked]!)} />
+      <ul className="grid grid-cols-7 gap-1">
+        {days.map((d, i) => (
+          <li key={d.key}>
+            <button
+              type="button"
+              onClick={() => toggle(i)}
+              aria-label={aria(d)}
+              aria-pressed={picked === i}
+              className={`${barColumn(picked === i)} flex w-full flex-col items-center py-1`}
+            >
+              <div className="flex h-28 w-full items-end justify-center" aria-hidden>
+                {d.fat > 0 ? (
+                  <div
+                    data-bar="fat"
+                    className="bar-in-y intake-fill bar-track w-5"
+                    style={{ height: `max(1.25rem, ${(d.fat / scale) * 100}%)` }}
+                  >
+                    {d.satFat != null && d.satFat > 0 ? (
+                      <span
+                        data-bar="satFat"
+                        className="bar-fill-y bg-primary"
+                        style={barFill((d.satFat / d.fat) * 100)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              <span className="tabular mt-1.5 h-4 text-[11px] font-semibold leading-4">
+                {d.fat > 0 ? Math.round(d.fat).toLocaleString(locale) : null}
+              </span>
+              <span
+                className={`text-[10px] font-semibold uppercase ${
+                  d.today ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {t.common.dow[d.date.getDay()]}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+export function FatCard({ recap }: { recap: WeekRecap }) {
+  const t = useTranslation();
+  const locale = useLocale();
+  const dayName = useDayName();
+  const { fat } = recap;
+  if (!recap.nutrition.loggedDays || fat.totalFat <= 0) return null;
+  const g = (n: number) => Math.round(n).toLocaleString(locale);
+  // A total with some foods lacking a figure is a floor, shown with "~".
+  const approx = (n: number | null) =>
+    n == null ? (
+      "–"
+    ) : (
+      <>
+        {!fat.complete ? (
+          <>
+            <span aria-hidden>~ </span>
+            <span className="sr-only">{t.weekRecap.atLeast} </span>
+          </>
+        ) : null}
+        {g(n)}
+      </>
+    );
+  const finished = recap.days.filter((d) => d.logged && !d.today && !d.future).length;
+  return (
+    <Card className="overflow-hidden p-4">
+      <CardHead
+        icon={Egg}
+        title={t.weekRecap.fat}
+        subtitle={t.weekRecap.fatTotal(g(fat.totalFat))}
+      />
+      <div className="grid grid-cols-3 gap-2">
+        <Stat
+          label={t.weekRecap.totalSatFat}
+          value={approx(fat.totalSatFat)}
+          unit={fat.totalSatFat == null ? undefined : "g"}
+        />
+        <Stat
+          label={t.weekRecap.avgSatFat}
+          value={approx(fat.averageSatFat)}
+          unit={fat.averageSatFat == null ? undefined : "g"}
+        />
+        <Stat
+          label={t.weekRecap.satFatShare}
+          value={fat.satFatPct == null ? "–" : fat.satFatPct.toLocaleString(locale)}
+          unit={fat.satFatPct == null ? undefined : "%"}
+        />
+      </div>
+      <div className="mt-4 border-t border-border pt-4">
+        <p className={`${text.eyebrow} mb-2`}>{t.weekRecap.perDayFat}</p>
+        <FatBars days={recap.days} />
+        <Legend
+          items={[
+            { dot: "intake-fill", label: t.weekRecap.legendFat },
+            { dot: "bg-primary", label: t.weekRecap.legendSatFat },
+          ]}
+        />
+        <p className={`${text.meta} mt-3`}>{t.weekRecap.fatLegend}</p>
+      </div>
+      {fat.daysWithSatFatGoal > 0 && finished > 0 ? (
+        <FunFact icon={Target}>
+          {t.weekRecap.withinSatFatGoal(fat.daysWithinSatFatGoal, fat.daysWithSatFatGoal)}
+        </FunFact>
+      ) : null}
+      {fat.highestSatFat ? (
+        <FunFact>
+          {t.weekRecap.factMostSatFat(dayName(fat.highestSatFat.key), g(fat.highestSatFat.value))}
         </FunFact>
       ) : null}
     </Card>

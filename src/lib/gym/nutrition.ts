@@ -56,6 +56,11 @@ export interface Macros {
    *  below `carbs` (see withSugars). */
   sugars?: number;
   fat: number;
+  /** Saturated fat, the part of `fat` that is saturated ("of which
+   *  saturates" on an EU label). Optional: undefined means not known (an
+   *  old entry, or a food without the figure), never 0. Kept at or below
+   *  `fat` (see withSatFat). */
+  satFat?: number;
   fiber: number;
   salt: number;
 }
@@ -73,6 +78,21 @@ export function withSugars<T extends Macros>(m: T, sugars: number | null | undef
   const { sugars: _old, ...rest } = m;
   const clean = cleanSugars(sugars, m.carbs);
   return (clean == null ? rest : { ...rest, sugars: clean }) as T;
+}
+
+/** `satFat` as a value to store: undefined when unknown (null, NaN or
+ *  negative), never more than `fat`. */
+export function cleanSatFat(satFat: number | null | undefined, fat: number): number | undefined {
+  if (satFat == null || !Number.isFinite(satFat) || satFat < 0) return undefined;
+  return Math.min(satFat, Math.max(0, fat));
+}
+
+/** Copies macros with `satFat` cleaned (see cleanSatFat), dropping the key
+ *  when it isn't known so saved state never holds `satFat: undefined`. */
+export function withSatFat<T extends Macros>(m: T, satFat: number | null | undefined): T {
+  const { satFat: _old, ...rest } = m;
+  const clean = cleanSatFat(satFat, m.fat);
+  return (clean == null ? rest : { ...rest, satFat: clean }) as T;
 }
 
 export type NutrientKey = keyof Macros;
@@ -121,6 +141,9 @@ export function recipePerServing(recipe: Recipe): Macros {
       ? { sugars: Number((total.sugars / servings).toFixed(1)) }
       : {}),
     fat: Number((total.fat / servings).toFixed(1)),
+    ...(total.satFat != null && satFatComplete(recipe.ingredients)
+      ? { satFat: Number((total.satFat / servings).toFixed(1)) }
+      : {}),
     fiber: Number((total.fiber / servings).toFixed(1)),
     salt: Number((total.salt / servings).toFixed(2)),
   };
@@ -265,7 +288,8 @@ export const formatLiters = (ml: number) => `${(ml / 1000).toFixed(2).replace(/\
 
 /** Display order used everywhere a nutrient list is shown. Sugars isn't in
  *  it: it's part of carbs, so it shows as an "of which sugars" line under
- *  carbs, and its goal is the optional sugar goal (sugarGoalGrams). */
+ *  carbs, and its goal is the optional sugar goal (sugarGoalGrams). Saturated
+ *  fat likewise is an "of which saturates" line under fat (satFatGoalGrams). */
 export const NUTRIENT_ORDER: NutrientKey[] = [
   "calories",
   "protein",
@@ -281,6 +305,7 @@ export const NUTRIENT_LABELS: Record<NutrientKey, string> = {
   carbs: "Carbs",
   sugars: "Sugars",
   fat: "Fat",
+  satFat: "Saturated fat",
   fiber: "Fiber",
   salt: "Salt",
 };
@@ -291,6 +316,7 @@ export const NUTRIENT_UNITS: Record<NutrientKey, string> = {
   carbs: "g",
   sugars: "g",
   fat: "g",
+  satFat: "g",
   fiber: "g",
   salt: "g",
 };
@@ -672,6 +698,9 @@ export function scaledMacros(entry: { grams: number; per100: Macros }): Macros {
       ? { sugars: Number((Math.min(entry.per100.sugars, entry.per100.carbs) * factor).toFixed(1)) }
       : {}),
     fat: Number((entry.per100.fat * factor).toFixed(1)),
+    ...(entry.per100.satFat != null
+      ? { satFat: Number((Math.min(entry.per100.satFat, entry.per100.fat) * factor).toFixed(1)) }
+      : {}),
     fiber: Number((entry.per100.fiber * factor).toFixed(1)),
     salt: Number((entry.per100.salt * factor).toFixed(2)),
   };
@@ -730,9 +759,10 @@ export function foodKeysInMeal(entries: FoodEntry[], meal: MealType): Set<string
   return new Set(entries.filter((e) => e.meal === meal).map((e) => e.name.trim().toLowerCase()));
 }
 
-/** Totals of a list of foods. `sugars` is the sum of the foods whose sugars
- *  are known, and is left out when none is; use sugarsComplete to tell
- *  whether that sum is the whole figure or "at least". */
+/** Totals of a list of foods. `sugars` (and `satFat`) is the sum of the
+ *  foods whose value is known, and is left out when none is; use
+ *  sugarsComplete (satFatComplete) to tell whether that sum is the whole
+ *  figure or "at least". */
 export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macros {
   return entries.reduce<Macros>(
     (acc, e) => {
@@ -741,12 +771,17 @@ export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macro
         m.sugars != null || acc.sugars != null
           ? Number(((acc.sugars ?? 0) + (m.sugars ?? 0)).toFixed(1))
           : undefined;
+      const satFat =
+        m.satFat != null || acc.satFat != null
+          ? Number(((acc.satFat ?? 0) + (m.satFat ?? 0)).toFixed(1))
+          : undefined;
       return {
         calories: acc.calories + m.calories,
         protein: Number((acc.protein + m.protein).toFixed(1)),
         carbs: Number((acc.carbs + m.carbs).toFixed(1)),
         ...(sugars != null ? { sugars } : {}),
         fat: Number((acc.fat + m.fat).toFixed(1)),
+        ...(satFat != null ? { satFat } : {}),
         fiber: Number((acc.fiber + m.fiber).toFixed(1)),
         salt: Number((acc.salt + m.salt).toFixed(2)),
       };
@@ -759,6 +794,12 @@ export function dailyTotals(entries: { grams: number; per100: Macros }[]): Macro
  *  summed sugars are the real figure; false means show it as "at least". */
 export function sugarsComplete(entries: { grams: number; per100: Macros }[]): boolean {
   return entries.every((e) => e.per100.sugars != null || e.per100.carbs <= 0 || e.grams <= 0);
+}
+
+/** True when every food that has fat also has its saturated fat known, so
+ *  the summed satFat is the real figure; false means show it as "at least". */
+export function satFatComplete(entries: { grams: number; per100: Macros }[]): boolean {
+  return entries.every((e) => e.per100.satFat != null || e.per100.fat <= 0 || e.grams <= 0);
 }
 
 /**
@@ -782,6 +823,40 @@ export const sugarGoalGrams = (calories: number, share: number): number =>
 export function withSugarGoal(goals: NutritionGoals, share: number | null): NutritionGoals {
   if (goals.sugars != null || !share || goals.calories == null) return goals;
   return { ...goals, sugars: sugarGoalGrams(goals.calories, share) };
+}
+
+/**
+ * The optional saturated fat goal: a share of the calorie goal, at 9 kcal per
+ * gram. 10% is the common recommendation (WHO 2023, the Dutch
+ * Gezondheidsraad and CVRM guideline, US Dietary Guidelines 2025-2030); 6%
+ * is the stricter AHA-style option. Users can also pick a custom whole
+ * percent (1-20), so the state holds any number. Off unless the user picks
+ * a share; a satFat value typed into the goals wins over it.
+ */
+export const SATFAT_GOAL_SHARES = [0.1, 0.06] as const;
+
+export const satFatGoalGrams = (calories: number, share: number): number =>
+  Math.round((calories * share) / 9);
+
+/** The goals with the saturated fat goal filled in from `baseCalories`, the
+ *  unshifted training-day calorie goal: unlike sugars it does not follow
+ *  rest, cardio or weekend-budget days (the app keeps fat constant on rest
+ *  days, and the budget only moves carbs), so every day gets the same
+ *  grams. Capped at the fat goal when there is one. Unchanged when the user
+ *  typed a satFat value, the goal is off or there is no calorie goal. */
+export function withSatFatGoal(
+  goals: NutritionGoals,
+  share: number | null,
+  baseCalories: number | null | undefined,
+): NutritionGoals {
+  if (goals.satFat != null || !share || baseCalories == null) return goals;
+  const grams = satFatGoalGrams(baseCalories, share);
+  return { ...goals, satFat: goals.fat != null ? Math.min(grams, goals.fat) : grams };
+}
+
+/** True when the saturated fat goal takes more than half of the fat goal. */
+export function satFatGoalTakesMostOfFat(goals: NutritionGoals): boolean {
+  return goals.satFat != null && goals.fat != null && goals.satFat > goals.fat / 2;
 }
 
 /**

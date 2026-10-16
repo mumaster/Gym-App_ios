@@ -19,6 +19,7 @@ import {
   UserRound,
   UtensilsCrossed,
   type LucideIcon,
+  Info,
 } from "lucide-react";
 import { SearchField } from "./SearchField";
 import { FoodScanner, type FoodScannerStatus, type ScanMode } from "./FoodScanner";
@@ -52,6 +53,7 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   scaledMacros,
+  withSatFat,
   withSugars,
   type FoodEntry,
   type Macros,
@@ -85,18 +87,18 @@ export type ReadListRequest = { meal: MealType } & (
 );
 type MacroKey = NutrientKey;
 
-// Sugars isn't in NUTRIENT_ORDER (it's a part of carbs), so the draft carries
-// it on its own: "" means not known, never 0.
-const emptyPer100 = Object.fromEntries(
-  [...NUTRIENT_ORDER, "sugars" as const].map((key) => [key, ""]),
-) as Record<MacroKey, string>;
+// Sugars (a part of carbs) and saturated fat (a part of fat) aren't in
+// NUTRIENT_ORDER, so the draft carries them on their own: "" means not known,
+// never 0.
+const DRAFT_KEYS = [...NUTRIENT_ORDER, "sugars" as const, "satFat" as const];
+const emptyPer100 = Object.fromEntries(DRAFT_KEYS.map((key) => [key, ""])) as Record<
+  MacroKey,
+  string
+>;
 
 const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
   Object.fromEntries(
-    [...NUTRIENT_ORDER, "sugars" as const].map((key) => [
-      key,
-      per100[key] == null ? "" : String(per100[key]),
-    ]),
+    DRAFT_KEYS.map((key) => [key, per100[key] == null ? "" : String(per100[key])]),
   ) as Record<MacroKey, string>;
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
@@ -180,6 +182,7 @@ export function AddFoodSheet({
   /** Grams a swap carries over to whatever food is picked (still editable). */
   const swapGrams = swap?.grams ?? null;
 
+  const [labelInfoOpen, setLabelInfoOpen] = useState(false);
   const [step, setStep] = useState<Step>("start");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState<FoodScannerStatus>("scanning");
@@ -539,13 +542,15 @@ export function AddFoodSheet({
     const missing = new Set<MacroKey>();
     const next: Record<MacroKey, string> = { ...emptyPer100 };
     for (const { key } of MACRO_FIELDS) {
-      const v = result[key];
+      const v = result[key as Exclude<MacroKey, "sugars" | "satFat">];
       if (v === null) missing.add(key);
       else next[key] = String(v);
     }
     // Sugars is optional on a scan: absent or null just leaves the field empty.
     const scannedSugars = (result as { sugars?: number | null }).sugars;
     if (scannedSugars != null) next.sugars = String(scannedSugars);
+    const scannedSatFat = result.saturatedFat;
+    if (scannedSatFat != null) next.satFat = String(scannedSatFat);
     setPer100(next);
     setUnmatched(missing);
     setNevoSource(null);
@@ -635,16 +640,19 @@ export function AddFoodSheet({
 
   /** Writes the current form to the store. Returns whether it actually saved. */
   const draftPer100 = (): Macros =>
-    withSugars(
-      {
-        calories: parseDecimal(per100.calories) || 0,
-        protein: parseDecimal(per100.protein) || 0,
-        carbs: parseDecimal(per100.carbs) || 0,
-        fat: parseDecimal(per100.fat) || 0,
-        fiber: parseDecimal(per100.fiber) || 0,
-        salt: parseDecimal(per100.salt) || 0,
-      },
-      per100.sugars.trim() === "" ? null : parseDecimal(per100.sugars),
+    withSatFat(
+      withSugars(
+        {
+          calories: parseDecimal(per100.calories) || 0,
+          protein: parseDecimal(per100.protein) || 0,
+          carbs: parseDecimal(per100.carbs) || 0,
+          fat: parseDecimal(per100.fat) || 0,
+          fiber: parseDecimal(per100.fiber) || 0,
+          salt: parseDecimal(per100.salt) || 0,
+        },
+        per100.sugars.trim() === "" ? null : parseDecimal(per100.sugars),
+      ),
+      per100.satFat.trim() === "" ? null : parseDecimal(per100.satFat),
     );
 
   /** NEVO codes to keep on the entry: only while the values are NEVO's. */
@@ -1275,96 +1283,134 @@ export function AddFoodSheet({
               </p>
             ) : null}
 
-            {/* What this portion adds up to, right under the grams that set
-                it: the numbers you eat, so they come first and big, in the
-                accent (asked for: it was one small line above the label's
-                values). */}
-            <div className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-primary-text">
-                {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
-              </p>
-              <div className="mt-1 grid grid-cols-3 gap-x-3 gap-y-1.5">
-                {MACRO_FIELDS.map(({ key, label, unit }) => (
-                  <div key={key} className="min-w-0">
-                    <p className="tabular truncate text-[20px] font-bold leading-tight">
-                      {preview[key as keyof typeof preview]}
-                      <span className="ml-0.5 text-[12px] font-semibold text-muted-foreground">
-                        {unit}
-                      </span>
-                    </p>
-                    <p className="truncate text-[12px] text-muted-foreground">{label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* The label's own values per 100 g, which the portion is worked
-                out from: still editable, in one compact pill under it. */}
-            <div>
-              <p className="mb-1.5 px-1 text-[13px] font-semibold text-muted-foreground">
-                {t.addFood.per100g}
-              </p>
-              <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted p-1">
-                {MACRO_FIELDS.map(({ key, label, unit }) => (
-                  <label
-                    key={key}
-                    className={`flex min-w-0 flex-col rounded-xl px-2.5 pt-1.5 pb-2 ${
-                      unmatched.has(key) ? "bg-warning/15" : ""
+            {/* A vertical nutrition label: one row per nutrient in the order
+                of an EU label, the label's per-100 g values on the left
+                (editable) and this portion on the right, in an accent pill
+                that is concentric with the card. */}
+            {(() => {
+              const sugarsPortion =
+                per100.sugars.trim() === ""
+                  ? "–"
+                  : String(Number(((parseDecimal(per100.sugars) || 0) * factor).toFixed(1)));
+              const satFatPortion =
+                per100.satFat.trim() === ""
+                  ? "–"
+                  : String(Number(((parseDecimal(per100.satFat) || 0) * factor).toFixed(1)));
+              const field = (k: MacroKey) => MACRO_FIELDS.find((f) => f.key === k)!;
+              const renderRow = (
+                key: MacroKey | "sugars" | "satFat",
+                label: string,
+                unit: string,
+                portion: string | number,
+                opts: { sub?: boolean; hero?: boolean },
+              ) => (
+                <label
+                  key={key}
+                  className={`relative z-10 flex items-baseline rounded-xl pl-3 ${
+                    opts.hero ? "py-1.5" : "py-1"
+                  } ${key !== "sugars" && key !== "satFat" && unmatched.has(key as MacroKey) ? "bg-warning/15" : ""}`}
+                >
+                  <span
+                    className={`min-w-0 flex-1 truncate ${
+                      opts.sub
+                        ? "pl-3 text-[13px] text-muted-foreground"
+                        : opts.hero
+                          ? "text-[16px] font-bold"
+                          : "text-[14px] font-semibold"
                     }`}
                   >
-                    <span className="truncate text-[11px] font-semibold text-muted-foreground">
-                      {label}
-                    </span>
-                    <div className="flex items-baseline gap-0.5">
-                      <input
-                        inputMode="decimal"
-                        type="text"
-                        value={per100[key]}
-                        onFocus={selectOnFocus}
-                        onChange={(e) => {
-                          if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-                          setPer100((cur) => ({ ...cur, [key]: e.target.value }));
+                    {label}
+                  </span>
+                  <span className="flex w-[5.5rem] shrink-0 items-baseline justify-center gap-0.5">
+                    <input
+                      inputMode="decimal"
+                      type="text"
+                      aria-label={`${label} ${t.addFood.per100gShort}`}
+                      value={per100[key]}
+                      onFocus={selectOnFocus}
+                      onChange={(e) => {
+                        if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
+                        setPer100((cur) => ({ ...cur, [key]: e.target.value }));
+                        if (key !== "sugars" && key !== "satFat")
                           setUnmatched((cur) => {
                             const next = new Set(cur);
-                            next.delete(key);
+                            next.delete(key as MacroKey);
                             return next;
                           });
-                        }}
-                        placeholder="0"
-                        className="tabular h-7 w-full min-w-0 bg-transparent text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
-                      />
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{unit}</span>
+                      }}
+                      placeholder={key === "sugars" || key === "satFat" ? "–" : "0"}
+                      className="tabular h-6 w-[3.25rem] min-w-0 bg-transparent text-right text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
+                    />
+                    <span className="w-8 shrink-0 text-left text-[11px] text-muted-foreground">
+                      {unit}
+                    </span>
+                  </span>
+                  <span className="flex w-[6.75rem] shrink-0 items-baseline justify-center font-bold">
+                    <span
+                      className={`tabular w-12 text-right ${
+                        opts.hero ? "text-[20px]" : "text-[17px]"
+                      }`}
+                    >
+                      {portion}
+                    </span>
+                    <span className="w-8 pl-0.5 text-left text-[11px] font-semibold text-muted-foreground">
+                      {unit}
+                    </span>
+                  </span>
+                </label>
+              );
+              const row = (k: MacroKey) =>
+                renderRow(k, field(k).label, field(k).unit, preview[k as keyof typeof preview], {
+                  hero: k === "calories",
+                });
+              return (
+                <div>
+                  <div className="relative overflow-hidden rounded-3xl bg-muted p-1">
+                    <div className="absolute top-1 right-1 bottom-1 w-[6.75rem] rounded-[20px] border border-primary/30 bg-primary/10" />
+                    <div className="relative z-10 flex items-center pt-1.5 pb-0.5 pl-3">
+                      <span className="min-w-0 flex-1" />
+                      <span className="flex w-[5.5rem] shrink-0 justify-center text-[12px] font-semibold whitespace-nowrap text-muted-foreground">
+                        {t.addFood.per100gShort}
+                      </span>
+                      <span className="w-[6.75rem] shrink-0 text-center text-[12px] font-semibold whitespace-nowrap text-primary-text">
+                        {onIngredientCaptured ? t.addFood.thisIngredient : t.addFood.thisPortion}
+                      </span>
                     </div>
-                  </label>
-                ))}
-              </div>
-              <label className="mt-1 flex items-center gap-3 rounded-xl px-2.5 pt-1.5 pb-2">
-                <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-muted-foreground">
-                  {t.addFood.ofWhichSugars}
-                </span>
-                <input
-                  inputMode="decimal"
-                  type="text"
-                  aria-label={t.addFood.ofWhichSugars}
-                  value={per100.sugars}
-                  onFocus={selectOnFocus}
-                  onChange={(e) => {
-                    if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
-                    setPer100((cur) => ({ ...cur, sugars: e.target.value }));
-                  }}
-                  placeholder={t.addFood.sugarsUnknown}
-                  className="tabular h-7 w-24 min-w-0 bg-transparent text-right text-[16px] font-bold text-foreground outline-none placeholder:text-muted-foreground placeholder:text-[13px] placeholder:font-normal"
-                />
-                <span className="shrink-0 text-[11px] text-muted-foreground">g</span>
-              </label>
-              {/* RIVM's conditions: say the values are NEVO's, and mark the
-                  app's own addition (salt from sodium) as one. */}
-              {currentNevo() ? (
-                <p className="mt-1.5 px-1 text-[11px] leading-snug text-muted-foreground">
-                  {t.addFood.nevoSaltNote} {t.nutrition.nevoReference}
-                </p>
-              ) : null}
-            </div>
+                    {row("calories")}
+                    {row("fat")}
+                    {renderRow("satFat", t.addFood.ofWhichSatFat, "g", satFatPortion, {
+                      sub: true,
+                    })}
+                    {row("carbs")}
+                    {renderRow("sugars", t.addFood.ofWhichSugars, "g", sugarsPortion, {
+                      sub: true,
+                    })}
+                    {row("fiber")}
+                    {row("protein")}
+                    {row("salt")}
+                  </div>
+                  <div className="mt-1.5 flex items-start gap-1 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setLabelInfoOpen((v) => !v)}
+                      aria-expanded={labelInfoOpen}
+                      aria-label={t.addFood.per100gInfoAria}
+                      className="tap-target flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground active:scale-95"
+                    >
+                      <Info className="size-4" />
+                    </button>
+                    <p className="pt-0.5 text-[12px] leading-snug text-muted-foreground">
+                      {labelInfoOpen ? t.addFood.per100gNote : t.addFood.per100g}
+                    </p>
+                  </div>
+                  {currentNevo() ? (
+                    <p className="mt-1 px-1 text-[11px] leading-snug text-muted-foreground">
+                      {t.addFood.nevoSaltNote} {t.nutrition.nevoReference}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })()}
 
             {/* Editing an existing entry already saves on Done/backdrop close
               (see `close` above) — a separate button here would just be a
