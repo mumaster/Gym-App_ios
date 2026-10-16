@@ -22,6 +22,7 @@ export function NutrientCell({
   overIsAccent,
   compact,
   part,
+  partBelow,
 }: {
   label: string;
   value: string;
@@ -34,6 +35,9 @@ export function NutrientCell({
   /** The "of which" part drawn inside this bar (sugars in carbs, saturated
    *  in fat). `value` is the text ("~29", or "–" when unknown). */
   part?: { label: string; value: string; amount: number; goal: number | undefined };
+  /** Put the part's line under the bar instead of across from the total
+   *  (a half-width cell has no room beside it). */
+  partBelow?: boolean;
 }) {
   const status = nutrientStatus(amount, goal);
   const over = status === "over";
@@ -61,7 +65,7 @@ export function NutrientCell({
   );
   return (
     <div className="min-w-0">
-      {part ? (
+      {part && !partBelow ? (
         <div className="flex items-end justify-between gap-2">
           {total}
           <div className="min-w-0 text-right">
@@ -99,6 +103,18 @@ export function NutrientCell({
             />
           ) : null}
         </div>
+      ) : null}
+      {part && partBelow ? (
+        <p className="tabular mt-1.5 flex min-w-0 items-center gap-1.5 text-[12px] leading-tight">
+          <span aria-hidden className="size-2.5 shrink-0 rounded-sm bg-primary" />
+          <span className="truncate text-muted-foreground">{part.label}</span>
+          <span className={`shrink-0 font-bold ${partOver ? "text-primary-text" : ""}`}>
+            {part.value}
+          </span>
+          <span className="shrink-0 text-muted-foreground">
+            {part.goal != null ? `/ ${part.goal} ` : ""}g
+          </span>
+        </p>
       ) : null}
     </div>
   );

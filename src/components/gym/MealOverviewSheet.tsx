@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { BookmarkPlus, Check, CopyPlus, Plus, Share2 } from "lucide-react";
 import { button } from "./ui";
 import { BottomSheet } from "./BottomSheet";
@@ -16,7 +17,7 @@ import {
 } from "../../lib/gym/nutrition";
 import { barFill } from "./bar";
 import { useInfoTip } from "./InfoTip";
-import { NutrientCell } from "./NutrientCell";
+import { NutrientPanel, panelLayout, type PanelLayout } from "./NutrientPanel";
 
 /**
  * Tapping a meal heading in the food log: what that meal added up to on the
@@ -53,6 +54,8 @@ export function MealOverviewSheet({
   onCopy: () => void;
   onEdit: (entry: FoodEntry) => void;
 }) {
+  const [layout, setLayout] = useState<PanelLayout>("pairs");
+  useEffect(() => setLayout(panelLayout()), []);
   const t = useTranslation();
   const locale = useLocale();
   const totals = dailyTotals(entries);
@@ -143,65 +146,57 @@ export function MealOverviewSheet({
           </div>
 
           <div className="space-y-2.5 rounded-2xl bg-foreground/[0.05] p-3">
-            {/* Two columns (asked for, 2026-10-16): carbs and fat, each one bar with
-                its sugars or saturated fat inside, stacked on the wide left; protein,
-                fiber and salt stacked on the narrow right. */}
-            <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-x-4">
-              <div className="flex flex-col justify-between gap-3">
-                <NutrientCell
-                  label={t.nutrients.carbs}
-                  value={String(Math.round(totals.carbs))}
-                  amount={totals.carbs}
-                  goal={goals.carbs}
-                  part={{
-                    label: t.nutrients.sugars,
-                    value:
-                      totals.sugars == null
-                        ? "–"
-                        : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
-                    amount: totals.sugars ?? 0,
-                    goal: goals.sugars ?? undefined,
-                  }}
-                />
-                <div aria-hidden className="h-px bg-border" />
-                <NutrientCell
-                  label={t.nutrients.fat}
-                  value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
-                  amount={totals.fat}
-                  goal={goals.fat}
-                  part={{
-                    label: t.nutrients.satFatShort,
-                    value:
-                      totals.satFat == null
-                        ? "–"
-                        : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
-                    amount: totals.satFat ?? 0,
-                    goal: goals.satFat ?? undefined,
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-2 border-l border-border pl-4">
-                <NutrientCell
-                  compact
-                  label={t.nutrients.protein}
-                  value={String(Math.round(totals.protein))}
-                  amount={totals.protein}
-                  goal={goals.protein}
-                />
-                {(["fiber", "salt"] as const).map((key) => (
-                  <NutrientCell
-                    key={key}
-                    compact
-                    label={t.nutrients[key]}
-                    value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(
-                      locale,
-                    )}
-                    amount={totals[key]}
-                    goal={goals[key]}
-                  />
-                ))}
-              </div>
-            </div>
+            <NutrientPanel
+              layout={layout}
+              protein={{
+                label: t.nutrients.protein,
+                value: String(Math.round(totals.protein)),
+                amount: totals.protein,
+                goal: goals.protein,
+              }}
+              carbs={{
+                label: t.nutrients.carbs,
+                value: String(Math.round(totals.carbs)),
+                amount: totals.carbs,
+                goal: goals.carbs,
+                part: {
+                  label: t.nutrients.sugars,
+                  value:
+                    totals.sugars == null
+                      ? "–"
+                      : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
+                  amount: totals.sugars ?? 0,
+                  goal: goals.sugars ?? undefined,
+                },
+              }}
+              fat={{
+                label: t.nutrients.fat,
+                value: Number(totals.fat.toFixed(0)).toLocaleString(locale),
+                amount: totals.fat,
+                goal: goals.fat,
+                part: {
+                  label: t.nutrients.satFatShort,
+                  value:
+                    totals.satFat == null
+                      ? "–"
+                      : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
+                  amount: totals.satFat ?? 0,
+                  goal: goals.satFat ?? undefined,
+                },
+              }}
+              fiber={{
+                label: t.nutrients.fiber,
+                value: Number(totals.fiber.toFixed(0)).toLocaleString(locale),
+                amount: totals.fiber,
+                goal: goals.fiber,
+              }}
+              salt={{
+                label: t.nutrients.salt,
+                value: Number(totals.salt.toFixed(1)).toLocaleString(locale),
+                amount: totals.salt,
+                goal: goals.salt,
+              }}
+            />
             {proteinTarget != null ? (
               <p className="tabular flex items-center gap-1.5 px-1 text-[12.5px]">
                 {proteinOk ? (
