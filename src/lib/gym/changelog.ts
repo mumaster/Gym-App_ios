@@ -543,6 +543,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         en: "See the saturated fat in your fat: your day, meals and the weekly Fat card show it, and you can set an optional goal of 10%, 6% or your own.",
         nl: "Zie het verzadigd vet in je vet: je dag, maaltijden en de weekkaart Vet tonen het, en je kunt een optioneel doel instellen van 10%, 6% of een eigen percentage.",
       },
+      {
+        en: "Carbs and sugars, and fat and saturated fat, now share one bar on your Today card and in a meal's overview, like the weekly cards.",
+        nl: "Koolhydraten en suikers, en vet en verzadigd vet, delen nu één balk op je kaart Vandaag en in het overzicht van een maaltijd, net als op de weekkaarten.",
+      },
     ],
   },
 ];

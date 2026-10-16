@@ -155,44 +155,37 @@ export function MealOverviewSheet({
                 value={String(Math.round(totals.carbs))}
                 amount={totals.carbs}
                 goal={goals.carbs}
+                part={{
+                  label: t.nutrients.sugars,
+                  value:
+                    totals.sugars == null
+                      ? "–"
+                      : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`,
+                  amount: totals.sugars ?? 0,
+                  goal: goals.sugars ?? undefined,
+                }}
               />
               <NutrientCell
-                label={t.nutrients.sugars}
-                value={
-                  totals.sugars == null
-                    ? "–"
-                    : `${sugarsComplete(entries) ? "" : "~"}${Number(totals.sugars.toFixed(0))}`
-                }
-                amount={totals.sugars ?? 0}
-                goal={goals.sugars ?? undefined}
-                overIsAccent
-              />
-            </div>
-            <div className="h-px bg-border" />
-            <div className="grid grid-cols-4 gap-x-2 gap-y-2">
-              <NutrientCell
-                compact
                 label={t.nutrients.fat}
                 value={Number(totals.fat.toFixed(0)).toLocaleString(locale)}
                 amount={totals.fat}
                 goal={goals.fat}
+                part={{
+                  label: t.nutrients.satFatShort,
+                  value:
+                    totals.satFat == null
+                      ? "–"
+                      : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`,
+                  amount: totals.satFat ?? 0,
+                  goal: goals.satFat ?? undefined,
+                }}
               />
-              <NutrientCell
-                compact
-                label={t.nutrients.satFatShort}
-                value={
-                  totals.satFat == null
-                    ? "–"
-                    : `${satFatComplete(entries) ? "" : "~"}${Number(totals.satFat.toFixed(0))}`
-                }
-                amount={totals.satFat ?? 0}
-                goal={goals.satFat ?? undefined}
-                overIsAccent
-              />
+            </div>
+            <div className="h-px bg-border" />
+            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
               {(["fiber", "salt"] as const).map((key) => (
                 <NutrientCell
                   key={key}
-                  compact
                   label={t.nutrients[key]}
                   value={Number(totals[key].toFixed(key === "salt" ? 1 : 0)).toLocaleString(locale)}
                   amount={totals[key]}
