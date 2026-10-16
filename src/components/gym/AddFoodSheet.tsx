@@ -53,6 +53,7 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   scaledMacros,
+  withSatFat,
   withSugars,
   type FoodEntry,
   type Macros,
@@ -86,18 +87,18 @@ export type ReadListRequest = { meal: MealType } & (
 );
 type MacroKey = NutrientKey;
 
-// Sugars isn't in NUTRIENT_ORDER (it's a part of carbs), so the draft carries
-// it on its own: "" means not known, never 0.
-const emptyPer100 = Object.fromEntries(
-  [...NUTRIENT_ORDER, "sugars" as const].map((key) => [key, ""]),
-) as Record<MacroKey, string>;
+// Sugars (a part of carbs) and saturated fat (a part of fat) aren't in
+// NUTRIENT_ORDER, so the draft carries them on their own: "" means not known,
+// never 0.
+const DRAFT_KEYS = [...NUTRIENT_ORDER, "sugars" as const, "satFat" as const];
+const emptyPer100 = Object.fromEntries(DRAFT_KEYS.map((key) => [key, ""])) as Record<
+  MacroKey,
+  string
+>;
 
 const per100ToDraft = (per100: FoodEntry["per100"]): Record<MacroKey, string> =>
   Object.fromEntries(
-    [...NUTRIENT_ORDER, "sugars" as const].map((key) => [
-      key,
-      per100[key] == null ? "" : String(per100[key]),
-    ]),
+    DRAFT_KEYS.map((key) => [key, per100[key] == null ? "" : String(per100[key])]),
   ) as Record<MacroKey, string>;
 
 /** Max distinct recent foods offered for one-tap re-logging on the start step. */
@@ -541,13 +542,15 @@ export function AddFoodSheet({
     const missing = new Set<MacroKey>();
     const next: Record<MacroKey, string> = { ...emptyPer100 };
     for (const { key } of MACRO_FIELDS) {
-      const v = result[key];
+      const v = result[key as Exclude<MacroKey, "sugars" | "satFat">];
       if (v === null) missing.add(key);
       else next[key] = String(v);
     }
     // Sugars is optional on a scan: absent or null just leaves the field empty.
     const scannedSugars = (result as { sugars?: number | null }).sugars;
     if (scannedSugars != null) next.sugars = String(scannedSugars);
+    const scannedSatFat = result.saturatedFat;
+    if (scannedSatFat != null) next.satFat = String(scannedSatFat);
     setPer100(next);
     setUnmatched(missing);
     setNevoSource(null);
@@ -637,16 +640,19 @@ export function AddFoodSheet({
 
   /** Writes the current form to the store. Returns whether it actually saved. */
   const draftPer100 = (): Macros =>
-    withSugars(
-      {
-        calories: parseDecimal(per100.calories) || 0,
-        protein: parseDecimal(per100.protein) || 0,
-        carbs: parseDecimal(per100.carbs) || 0,
-        fat: parseDecimal(per100.fat) || 0,
-        fiber: parseDecimal(per100.fiber) || 0,
-        salt: parseDecimal(per100.salt) || 0,
-      },
-      per100.sugars.trim() === "" ? null : parseDecimal(per100.sugars),
+    withSatFat(
+      withSugars(
+        {
+          calories: parseDecimal(per100.calories) || 0,
+          protein: parseDecimal(per100.protein) || 0,
+          carbs: parseDecimal(per100.carbs) || 0,
+          fat: parseDecimal(per100.fat) || 0,
+          fiber: parseDecimal(per100.fiber) || 0,
+          salt: parseDecimal(per100.salt) || 0,
+        },
+        per100.sugars.trim() === "" ? null : parseDecimal(per100.sugars),
+      ),
+      per100.satFat.trim() === "" ? null : parseDecimal(per100.satFat),
     );
 
   /** NEVO codes to keep on the entry: only while the values are NEVO's. */
@@ -1286,9 +1292,13 @@ export function AddFoodSheet({
                 per100.sugars.trim() === ""
                   ? "–"
                   : String(Number(((parseDecimal(per100.sugars) || 0) * factor).toFixed(1)));
+              const satFatPortion =
+                per100.satFat.trim() === ""
+                  ? "–"
+                  : String(Number(((parseDecimal(per100.satFat) || 0) * factor).toFixed(1)));
               const field = (k: MacroKey) => MACRO_FIELDS.find((f) => f.key === k)!;
               const renderRow = (
-                key: MacroKey | "sugars",
+                key: MacroKey | "sugars" | "satFat",
                 label: string,
                 unit: string,
                 portion: string | number,
@@ -1298,7 +1308,7 @@ export function AddFoodSheet({
                   key={key}
                   className={`relative z-10 flex items-baseline rounded-xl pl-3 ${
                     opts.hero ? "py-1.5" : "py-1"
-                  } ${key !== "sugars" && unmatched.has(key as MacroKey) ? "bg-warning/15" : ""}`}
+                  } ${key !== "sugars" && key !== "satFat" && unmatched.has(key as MacroKey) ? "bg-warning/15" : ""}`}
                 >
                   <span
                     className={`min-w-0 flex-1 truncate ${
@@ -1321,14 +1331,14 @@ export function AddFoodSheet({
                       onChange={(e) => {
                         if (!DECIMAL_INPUT_RE.test(e.target.value)) return;
                         setPer100((cur) => ({ ...cur, [key]: e.target.value }));
-                        if (key !== "sugars")
+                        if (key !== "sugars" && key !== "satFat")
                           setUnmatched((cur) => {
                             const next = new Set(cur);
                             next.delete(key as MacroKey);
                             return next;
                           });
                       }}
-                      placeholder={key === "sugars" ? "–" : "0"}
+                      placeholder={key === "sugars" || key === "satFat" ? "–" : "0"}
                       className="tabular h-6 w-[3.25rem] min-w-0 bg-transparent text-right text-[16px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
                     />
                     <span className="w-8 shrink-0 text-left text-[11px] text-muted-foreground">
@@ -1368,6 +1378,9 @@ export function AddFoodSheet({
                     </div>
                     {row("calories")}
                     {row("fat")}
+                    {renderRow("satFat", t.addFood.ofWhichSatFat, "g", satFatPortion, {
+                      sub: true,
+                    })}
                     {row("carbs")}
                     {renderRow("sugars", t.addFood.ofWhichSugars, "g", sugarsPortion, {
                       sub: true,

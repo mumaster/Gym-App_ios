@@ -21,7 +21,8 @@ import {
 import { AddFoodSheet, type ReadListRequest } from "../components/gym/AddFoodSheet";
 import { CreateMealSheet } from "../components/gym/CreateMealSheet";
 import { MealOverviewSheet, PortionLine } from "../components/gym/MealOverviewSheet";
-import { NutrientCell, barClass } from "../components/gym/NutrientCell";
+import { barClass } from "../components/gym/NutrientCell";
+import { NutrientPanel } from "../components/gym/NutrientPanel";
 import { CopyMealSheet, ImportMealSheet, ShareMealSheet } from "../components/gym/MealShareSheets";
 import { mealCodeFrom, type SharedMeal } from "../lib/gym/mealShare";
 import { CreateRecipeSheet, type RecipeSeed } from "../components/gym/CreateRecipeSheet";
@@ -36,6 +37,7 @@ import {
   addDays,
   dailyTotals,
   sugarsComplete,
+  satFatComplete,
   dayKeyFromDate,
   entriesForDay,
   ingredientsFromEntries,
@@ -322,6 +324,7 @@ function NutritionScreen() {
             dayKind={dayNutrition.byDayType ? dayNutrition.dayKind : null}
             totals={totals}
             sugarsKnownForAll={sugarsComplete(selectedEntries)}
+            satFatKnownForAll={satFatComplete(selectedEntries)}
             goals={dayGoals}
             hasGoals={hasGoals}
             onSetGoals={() => {
@@ -682,6 +685,7 @@ function DaySummary({
   dayKind,
   totals,
   sugarsKnownForAll,
+  satFatKnownForAll,
   goals,
   hasGoals,
   onSetGoals,
@@ -693,6 +697,8 @@ function DaySummary({
   /** False when some food with carbs has no sugars figure: the sugars total
    *  is then a floor, shown as "at least". */
   sugarsKnownForAll: boolean;
+  /** Same for saturated fat: false when some food with fat has no figure. */
+  satFatKnownForAll: boolean;
   goals: NutritionGoals;
   hasGoals: boolean;
   onSetGoals: () => void;
@@ -701,6 +707,7 @@ function DaySummary({
   const locale = useLocale();
   const sugars = totals.sugars != null ? Number(totals.sugars.toFixed(0)) : null;
   const sugarGoal = goals.sugars;
+  const satFat = totals.satFat != null ? Number(totals.satFat.toFixed(0)) : null;
   const kcal = Math.round(totals.calories);
   const calStatus = nutrientStatus(kcal, goals.calories);
   const calPct = goals.calories ? Math.min(100, (kcal / goals.calories) * 100) : 0;
@@ -770,39 +777,50 @@ function DaySummary({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-        {(["protein", "carbs"] as const).map((key) => (
-          <NutrientCell
-            key={key}
-            label={t.nutrients[key]}
-            value={String(Math.round(totals[key]))}
-            amount={totals[key]}
-            goal={goals[key]}
-          />
-        ))}
-        <NutrientCell
-          label={t.nutrients.sugars}
-          value={sugars == null ? "–" : sugarsKnownForAll ? String(sugars) : `~${sugars}`}
-          amount={totals.sugars ?? 0}
-          goal={sugarGoal ?? undefined}
-          overIsAccent
-        />
-      </div>
-      <div className="h-px bg-border" />
-      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-        {(["fat", "fiber", "salt"] as const).map((key) => {
-          const digits = key === "salt" ? 1 : 0;
-          return (
-            <NutrientCell
-              key={key}
-              label={t.nutrients[key]}
-              value={Number(totals[key].toFixed(digits)).toLocaleString(locale)}
-              amount={totals[key]}
-              goal={goals[key]}
-            />
-          );
-        })}
-      </div>
+      <NutrientPanel
+        protein={{
+          label: t.nutrients.protein,
+          value: String(Math.round(totals.protein)),
+          amount: totals.protein,
+          goal: goals.protein,
+        }}
+        carbs={{
+          label: t.nutrients.carbs,
+          value: String(Math.round(totals.carbs)),
+          amount: totals.carbs,
+          goal: goals.carbs,
+          part: {
+            label: t.nutrients.sugars,
+            value: sugars == null ? "–" : sugarsKnownForAll ? String(sugars) : `~${sugars}`,
+            amount: totals.sugars ?? 0,
+            goal: goals.sugars ?? undefined,
+          },
+        }}
+        fat={{
+          label: t.nutrients.fat,
+          value: Number(totals.fat.toFixed(0)).toLocaleString(locale),
+          amount: totals.fat,
+          goal: goals.fat,
+          part: {
+            label: t.nutrients.satFatShort,
+            value: satFat == null ? "–" : satFatKnownForAll ? String(satFat) : `~${satFat}`,
+            amount: totals.satFat ?? 0,
+            goal: goals.satFat ?? undefined,
+          },
+        }}
+        fiber={{
+          label: t.nutrients.fiber,
+          value: Number(totals.fiber.toFixed(0)).toLocaleString(locale),
+          amount: totals.fiber,
+          goal: goals.fiber,
+        }}
+        salt={{
+          label: t.nutrients.salt,
+          value: Number(totals.salt.toFixed(1)).toLocaleString(locale),
+          amount: totals.salt,
+          goal: goals.salt,
+        }}
+      />
 
       {!hasGoals ? (
         <button

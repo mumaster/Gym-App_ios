@@ -4,6 +4,7 @@ import { cardioDay } from "./cardio";
 import {
   RESISTANCE_TRAINING_MET,
   addDayEnergy,
+  withSatFatGoal,
   withSugarGoal,
   SUPERSET_TRAINING_MET,
   restDayGoals,
@@ -78,6 +79,7 @@ export function useDayGoalsResolver(): (date: Date) => {
     nutritionByDayType,
     restDayGoalOverrides,
     sugarGoalShare,
+    satFatGoalShare,
     weekendBudget,
     nutritionProfile,
     program,
@@ -123,7 +125,13 @@ export function useDayGoalsResolver(): (date: Date) => {
         );
         shifted = withEnergyShift(dayGoals, offsets[(date.getDay() + 6) % 7] ?? 0);
       }
-      const goals = withSugarGoal(shifted, sugarGoalShare);
+      // Saturated fat is worked out from the unshifted training-day calories,
+      // so rest, cardio and weekend-budget days all get the same grams.
+      const goals = withSatFatGoal(
+        withSugarGoal(shifted, sugarGoalShare),
+        satFatGoalShare,
+        nutritionGoals.calories,
+      );
       const dayKind: DayKind = dayType === "training" ? "training" : cardio.any ? "cardio" : "rest";
       return { dayType, dayKind, goals };
     },
@@ -138,6 +146,7 @@ export function useDayGoalsResolver(): (date: Date) => {
       nutritionGoals,
       restDayGoalOverrides,
       sugarGoalShare,
+      satFatGoalShare,
       weekendBudget,
       nutritionProfile,
       session,

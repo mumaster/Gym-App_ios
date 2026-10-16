@@ -53,6 +53,7 @@ export function nevoFoodFromRow(row: NevoRow): NevoFood {
     sodiumMg,
     alcohol,
     sugars,
+    satFat,
   ] = row;
   return {
     code,
@@ -69,6 +70,7 @@ export function nevoFoodFromRow(row: NevoRow): NevoFood {
       carbs,
       ...(sugars != null ? { sugars: Math.min(sugars, carbs) } : {}),
       fat,
+      ...(satFat != null ? { satFat: Math.min(satFat, fat) } : {}),
       fiber,
       salt: sodiumMg == null ? 0 : Math.round(sodiumMg * SALT_PER_SODIUM) / 1000,
     },
@@ -194,12 +196,12 @@ export function searchNevoFoods(
 /** Whether values still equal NEVO's, so an entry may keep its NEVO mark.
  *  Once the user changes a number it's their own data, not NEVO's. */
 export function matchesNevo(values: Macros, nevo: Macros): boolean {
-  // Sugars only count when both sides know them: an entry saved before NEVO
-  // sugars arrived still matches (sugarsBackfill.ts adds them later).
+  // Sugars and saturated fat only count when both sides know them: an entry
+  // saved before NEVO had them still matches (sugarsBackfill.ts adds them).
   return (Object.keys(nevo) as (keyof Macros)[]).every((k) => {
     const a = values[k];
     const b = nevo[k];
-    if (a == null || b == null) return k === "sugars";
+    if (a == null || b == null) return k === "sugars" || k === "satFat";
     return Math.abs(a - b) < 1e-9;
   });
 }

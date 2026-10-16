@@ -9,6 +9,10 @@ import {
   NUTRIENT_ORDER,
   NUTRIENT_UNITS,
   SUGAR_GOAL_SHARES,
+  SATFAT_GOAL_SHARES,
+  satFatGoalGrams,
+  satFatGoalTakesMostOfFat,
+  withSatFatGoal,
   DEFAULT_WEEKEND_BUDGET,
   WEEKEND_SHARES,
   calorieFloor,
@@ -47,6 +51,15 @@ const fromDraft = (draft: Draft): NutritionGoals => {
   return goals;
 };
 
+const SATFAT_CUSTOM_MAX = 20;
+
+/** A saved saturated fat share that isn't one of the two presets. */
+const isCustomShare = (share: number | null): boolean =>
+  share != null && !(SATFAT_GOAL_SHARES as readonly number[]).includes(share);
+
+const sharePercentText = (share: number | null): string =>
+  share == null ? "" : String(Math.round(share * 100));
+
 export function NutritionGoalsSheet({
   open,
   onClose,
@@ -65,6 +78,8 @@ export function NutritionGoalsSheet({
     setNutritionGoals,
     sugarGoalShare,
     setSugarGoalShare,
+    satFatGoalShare,
+    setSatFatGoalShare,
     weekendBudget,
     update,
     plannedCardio: cardioPlan,
@@ -81,6 +96,11 @@ export function NutritionGoalsSheet({
   const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
   /** The optional sugar goal's share of calories; null is off. */
   const [sugarShare, setSugarShare] = useState<number | null>(sugarGoalShare);
+  /** The optional saturated fat goal's share of calories; null is off. */
+  const [satFatShare, setSatFatShare] = useState<number | null>(satFatGoalShare);
+  /** Whether the Custom chip is the picked one (any whole percent from 1 to 20). */
+  const [satFatCustom, setSatFatCustom] = useState(isCustomShare(satFatGoalShare));
+  const [satFatCustomText, setSatFatCustomText] = useState(sharePercentText(satFatGoalShare));
   /** The weekend calorie budget; null is off. */
   const [weekend, setWeekend] = useState<WeekendBudget | null>(weekendBudget);
 
@@ -90,6 +110,9 @@ export function NutritionGoalsSheet({
     setRestDraft(toDraft(restDayGoalOverrides));
     setByDayType(nutritionByDayType);
     setSugarShare(sugarGoalShare);
+    setSatFatShare(satFatGoalShare);
+    setSatFatCustom(isCustomShare(satFatGoalShare));
+    setSatFatCustomText(sharePercentText(satFatGoalShare));
     setWeekend(weekendBudget);
     setTab("training");
     setPage(initialPage);
@@ -100,6 +123,7 @@ export function NutritionGoalsSheet({
     restDayGoalOverrides,
     nutritionByDayType,
     sugarGoalShare,
+    satFatGoalShare,
     weekendBudget,
   ]);
 
@@ -109,6 +133,7 @@ export function NutritionGoalsSheet({
     haptic([20, 30]);
     setNutritionGoals(fromDraft(draft));
     setSugarGoalShare(sugarShare);
+    setSatFatGoalShare(satFatShare);
     update({
       nutritionByDayType: byDayType,
       restDayGoalOverrides: fromDraft(restDraft),
@@ -125,6 +150,11 @@ export function NutritionGoalsSheet({
 
   const calorieGoal = fromDraft(draft).calories ?? null;
   const showingRest = byDayType && tab === "rest";
+  // The saturated fat goal is a share of the training-day calories, so the
+  // check against the fat limit uses the same numbers the app will.
+  const satFatTakesMost = satFatGoalTakesMostOfFat(
+    withSatFatGoal(fromDraft(draft), satFatShare, calorieGoal),
+  );
   // What the budget does to a flat week of the calorie goal, for the preview.
   const weekendPreview =
     weekend && calorieGoal != null
@@ -234,6 +264,7 @@ export function NutritionGoalsSheet({
                 <p>{t.nutritionGoals.desc}</p>
                 {showingRest ? <p>{t.nutritionGoals.restHint}</p> : null}
                 {byDayType && session ? <p>{t.nutritionGoals.cardioHint}</p> : null}
+                {showingRest && satFatShare != null ? <p>{t.satFatUi.restDayNote}</p> : null}
                 {weekAverage != null && trainingDays != null ? (
                   <p>
                     {t.nutritionGoals.weeklyAverage(
@@ -344,7 +375,7 @@ export function NutritionGoalsSheet({
                             haptic(10);
                             setSugarShare(share);
                           }}
-                          className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 text-center ${
+                          className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-center ${
                             sugarShare === share ? chip.on : "text-muted-foreground"
                           }`}
                         >
@@ -366,6 +397,123 @@ export function NutritionGoalsSheet({
                         </button>
                       ))}
                     </div>
+                  </>
+                ) : null}
+              </div>
+
+              <div className="space-y-3 rounded-2xl bg-muted px-4 py-3">
+                <SwitchRow
+                  className=""
+                  label={t.satFatUi.goal}
+                  info={
+                    <>
+                      <p>{t.satFatUi.goalDesc}</p>
+                      <p>{t.satFatUi.caveat}</p>
+                    </>
+                  }
+                  infoLabel={t.nutritionGoals.infoSatFat}
+                  ariaLabel={t.satFatUi.goal}
+                  on={satFatShare != null}
+                  onToggle={() => {
+                    haptic(12);
+                    setSatFatCustom(false);
+                    setSatFatShare((v) => (v == null ? SATFAT_GOAL_SHARES[0] : null));
+                  }}
+                />
+                {satFatShare != null ? (
+                  <>
+                    {calorieGoal == null ? (
+                      <p className="text-[12.5px] text-muted-foreground">
+                        {t.satFatUi.goalNeedsCalories}
+                      </p>
+                    ) : null}
+                    <div
+                      role="radiogroup"
+                      aria-label={t.satFatUi.goal}
+                      className="grid grid-cols-3 gap-1 rounded-2xl bg-background/60 p-1"
+                    >
+                      {SATFAT_GOAL_SHARES.map((share) => {
+                        const picked = !satFatCustom && satFatShare === share;
+                        return (
+                          <button
+                            key={share}
+                            role="radio"
+                            aria-checked={picked}
+                            onClick={() => {
+                              haptic(10);
+                              setSatFatCustom(false);
+                              setSatFatShare(share);
+                              setSatFatCustomText(sharePercentText(share));
+                            }}
+                            className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-center ${
+                              picked ? chip.on : "text-muted-foreground"
+                            }`}
+                          >
+                            <span className="text-[14px] font-bold">{`${Math.round(share * 100)}%`}</span>
+                            {calorieGoal != null ? (
+                              <span className="tabular text-[12px]">
+                                {t.satFatUi.shareGrams(satFatGoalGrams(calorieGoal, share))}
+                              </span>
+                            ) : null}
+                            {share === SATFAT_GOAL_SHARES[0] ? (
+                              <span className="text-[11px] font-semibold opacity-80">
+                                {t.satFatUi.recommended}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                      <button
+                        role="radio"
+                        aria-checked={satFatCustom}
+                        onClick={() => {
+                          haptic(10);
+                          setSatFatCustom(true);
+                          setSatFatCustomText(sharePercentText(satFatShare));
+                        }}
+                        className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-center ${
+                          satFatCustom ? chip.on : "text-muted-foreground"
+                        }`}
+                      >
+                        <span className="text-[14px] font-bold">{t.satFatUi.custom}</span>
+                        {satFatCustom && calorieGoal != null ? (
+                          <span className="tabular text-[12px]">
+                            {t.satFatUi.shareGrams(satFatGoalGrams(calorieGoal, satFatShare))}
+                          </span>
+                        ) : null}
+                      </button>
+                    </div>
+                    {satFatCustom ? (
+                      <label className="flex items-center gap-3 rounded-xl bg-background/60 px-3 py-1.5">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-muted-foreground">
+                          {t.satFatUi.customLabel}
+                        </span>
+                        <input
+                          inputMode="numeric"
+                          type="text"
+                          aria-label={t.satFatUi.customLabel}
+                          value={satFatCustomText}
+                          onFocus={selectOnFocus}
+                          onChange={(e) => {
+                            const text = e.target.value;
+                            if (!/^\d{0,2}$/.test(text)) return;
+                            setSatFatCustomText(text);
+                            const n = Number(text);
+                            if (text !== "" && n >= 1 && n <= SATFAT_CUSTOM_MAX) {
+                              setSatFatShare(n / 100);
+                            }
+                          }}
+                          onBlur={() => setSatFatCustomText(sharePercentText(satFatShare))}
+                          className="tabular h-9 w-14 min-w-0 bg-transparent text-right text-[16px] font-bold text-foreground outline-none"
+                        />
+                        <span className="shrink-0 text-[12px] text-muted-foreground">%</span>
+                      </label>
+                    ) : null}
+                    {satFatTakesMost ? (
+                      <p className="text-[12.5px] text-muted-foreground">
+                        {t.satFatUi.takesMostOfFat}
+                      </p>
+                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -446,7 +594,7 @@ export function NutritionGoalsSheet({
                             haptic(10);
                             setWeekend({ ...weekend, from });
                           }}
-                          className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 text-center ${
+                          className={`flex min-h-[52px] flex-col items-center justify-center rounded-xl px-1 py-1.5 text-center ${
                             weekend.from === from ? chip.on : "text-muted-foreground"
                           }`}
                         >

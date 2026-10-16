@@ -208,6 +208,11 @@ interface GymState {
    *  0.05, see SUGAR_GOAL_SHARES in nutrition.ts); null while it's off. A
    *  `sugars` value in nutritionGoals overrides it. */
   sugarGoalShare: number | null;
+  /** The optional saturated fat goal as a share of the training-day calorie
+   *  goal (0.1, 0.06 or a custom whole percent, see SATFAT_GOAL_SHARES in
+   *  nutrition.ts); null while it's off. A `satFat` value in
+   *  nutritionGoals overrides it. */
+  satFatGoalShare: number | null;
   /** The weekend calorie budget (nutrition.ts's WeekendBudget): more on
    *  Friday evening to Sunday, less on the other days, the week's total the
    *  same. Null while it's off. */
@@ -298,6 +303,7 @@ const initialState: GymState = {
   nutritionByDayType: false,
   restDayGoalOverrides: {},
   sugarGoalShare: null,
+  satFatGoalShare: null,
   weekendBudget: null,
   sugarsBackfillDone: 0,
   nutritionProfile: null,
@@ -486,6 +492,7 @@ function migrate(raw: Partial<GymState>): GymState {
     nutritionByDayType: raw.nutritionByDayType ?? false,
     restDayGoalOverrides: raw.restDayGoalOverrides ?? {},
     sugarGoalShare: typeof raw.sugarGoalShare === "number" ? raw.sugarGoalShare : null,
+    satFatGoalShare: typeof raw.satFatGoalShare === "number" ? raw.satFatGoalShare : null,
     weekendBudget: cleanWeekendBudget(raw.weekendBudget),
     sugarsBackfillDone: typeof raw.sugarsBackfillDone === "number" ? raw.sugarsBackfillDone : 0,
     nutritionProfile: raw.nutritionProfile ?? null,
@@ -686,6 +693,8 @@ interface Ctx extends GymState {
   setNutritionGoals: (goals: NutritionGoals) => void;
   /** Turns the optional sugar goal on at a share of calories, or off (null). */
   setSugarGoalShare: (share: number | null) => void;
+  /** Turns the optional saturated fat goal on at a share of calories, or off (null). */
+  setSatFatGoalShare: (share: number | null) => void;
   saveMealTemplate: (name: string, ingredients: MealIngredient[]) => void;
   /** Stars or un-stars a food, matched by name (case-insensitive). */
   toggleFavoriteFood: (food: MealIngredient) => void;
@@ -832,7 +841,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
     };
   }, [hydrated, state.language, nevoItemCount]);
 
-  // One-time fill of sugars into food saved before they existed
+  // One-time fill of sugars and saturated fat into food saved before they existed
   // (sugarsBackfill.ts): NEVO's, then Open Food Facts' for barcoded "your
   // foods". Lookups are sequential and a failure just skips that food; the
   // flag is set at the end so it never repeats (a bump of the version does).
@@ -1833,6 +1842,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, foodEntries: s.foodEntries.filter((e) => e.id !== id) })),
       setNutritionGoals: (goals) => setState((s) => ({ ...s, nutritionGoals: goals })),
       setSugarGoalShare: (share) => setState((s) => ({ ...s, sugarGoalShare: share })),
+      setSatFatGoalShare: (share) => setState((s) => ({ ...s, satFatGoalShare: share })),
 
       moveExerciseData: (from, to, workoutIds) =>
         setState((s) => moveExerciseData(s, from, to, workoutIds)),

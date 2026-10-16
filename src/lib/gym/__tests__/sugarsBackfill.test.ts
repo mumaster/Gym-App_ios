@@ -40,13 +40,19 @@ const entry = (name: string, per100: Macros, nevo?: number[]) => ({
   ...(nevo ? { nevo } : {}),
 });
 
-const label = (carbs: number | null, sugars: number | null): ScannedLabel => ({
+const label = (
+  carbs: number | null,
+  sugars: number | null,
+  fat: number | null = 1,
+  saturatedFat: number | null = null,
+): ScannedLabel => ({
   name: "x",
   calories: 100,
   protein: 1,
   carbs,
   sugars,
-  fat: 1,
+  fat,
+  saturatedFat,
   fiber: 0,
   salt: 0,
   servingSizeGrams: null,
@@ -138,7 +144,7 @@ describe("barcode sugars for your foods", () => {
       myFood("A", m(60), "111"),
       myFood("B", m(60), "bad"),
       myFood("C", m(60), "none"),
-      myFood("D", m(60, 5), "222"),
+      myFood("D", { ...m(60, 5), satFat: 1 }, "222"),
       myFood("E", m(60)),
       myFood("F", m(60), "333"),
     ];
@@ -199,5 +205,108 @@ describe("barcode sugars for your foods", () => {
     expect(out.foodEntries[0]!.per100.sugars).toBe(12);
     expect(out.foodEntries[1]!.per100.sugars).toBe(12);
     expect(applySugarsBackfill(out, labels, nevoTable)).toEqual(out);
+  });
+});
+
+describe("saturated fat backfill", () => {
+  // Fat is 2 g per 100 g in m(); this twin carries a saturated fat figure.
+  const sf = (satFat?: number, fat = 2): Macros => ({
+    ...m(20),
+    fat,
+    ...(satFat != null ? { satFat } : {}),
+  });
+  const myFood = (name: string, per100: Macros, barcode?: string): MyFood => ({
+    name,
+    grams: 30,
+    per100,
+    ...(barcode ? { barcode } : {}),
+    lastUsed: "",
+    uses: 1,
+  });
+  const nevoSat: NevoLookup = (code) => (code === 1 ? { ...sf(0.7, 2), sugars: 12 } : undefined);
+
+  it("takes NEVO's saturated fat for single-code items whose fat still matches", () => {
+    const foods: SugarsBackfillFoods = {
+      ...empty,
+      foodEntries: [
+        entry("Same", sf(), [1]),
+        entry("Edited", sf(undefined, 5), [1]),
+        entry("Own", sf(0.2), [1]),
+        entry("Recipe", sf(), [1, 3]),
+      ],
+    };
+    const out = backfillNevoSugars(foods, nevoSat);
+    expect(out.foodEntries[0]!.per100.satFat).toBe(0.7);
+    expect(out.foodEntries[0]!.per100.sugars).toBe(12);
+    expect("satFat" in out.foodEntries[1]!.per100).toBe(false);
+    expect(out.foodEntries[2]!.per100.satFat).toBe(0.2);
+    expect("satFat" in out.foodEntries[3]!.per100).toBe(false);
+    expect(backfillNevoSugars(out, nevoSat)).toBe(out);
+  });
+
+  it("asks OFF about foods lacking either value, and keeps satFat only when OFF's fat is the food's", async () => {
+    const foods = [
+      myFood("A", sf(), "111"),
+      myFood("B", sf(undefined, 5), "222"),
+      myFood("C", { ...sf(0.4), sugars: 3 }, "333"),
+    ];
+    const asked: string[] = [];
+    const labels = await fetchBarcodeSugars(foods, async (code) => {
+      asked.push(code);
+      return label(20, 6, 2, 0.9);
+    });
+    expect(asked).toEqual(["111", "222"]);
+    const out = applyBarcodeSugars(foods, labels);
+    expect(out[0]!.per100).toMatchObject({ sugars: 6, satFat: 0.9 });
+    // OFF's carbs equal B's (so its sugars are kept) but its fat does not.
+    expect(out[1]!.per100.sugars).toBe(6);
+    expect("satFat" in out[1]!.per100).toBe(false);
+    expect(out[2]).toBe(foods[2]);
+    expect(applyBarcodeSugars(out, labels)).toBe(out);
+  });
+
+  it("clamps OFF's saturated fat to fat and ignores labels without it", () => {
+    const foods = [myFood("A", sf(), "111")];
+    expect(
+      applyBarcodeSugars(foods, new Map([["111", label(20, null, 2, 9)]]))[0]!.per100.satFat,
+    ).toBe(2);
+    expect(applyBarcodeSugars(foods, new Map([["111", label(20, null, 2, null)]]))).toBe(foods);
+  });
+
+  it("fills by name and equal fat only, leaving existing values alone", () => {
+    const foods: SugarsBackfillFoods = {
+      ...empty,
+      myFoods: [myFood("Cheese", sf(1.5), "111")],
+      foodEntries: [entry("cheese", sf()), entry("Cheese", sf(undefined, 3)), entry("Other", sf())],
+      favoriteFoods: [{ name: " CHEESE ", grams: 40, per100: sf() }],
+      recipes: [
+        {
+          id: "r",
+          name: "R",
+          servings: 1,
+          ingredients: [{ name: "Cheese", grams: 40, per100: sf(0.1) }],
+        },
+      ],
+    };
+    const out = backfillFromMyFoods(foods);
+    expect(out.foodEntries[0]!.per100.satFat).toBe(1.5);
+    expect("satFat" in out.foodEntries[1]!.per100).toBe(false);
+    expect("satFat" in out.foodEntries[2]!.per100).toBe(false);
+    expect(out.favoriteFoods[0]!.per100.satFat).toBe(1.5);
+    expect(out.recipes[0]!.ingredients[0]!.per100.satFat).toBe(0.1);
+    expect(backfillFromMyFoods(out)).toBe(out);
+  });
+
+  it("runs the whole fill in one go", () => {
+    const foods: SugarsBackfillFoods = {
+      ...empty,
+      myFoods: [myFood("Cheese", sf(), "111")],
+      foodEntries: [entry("Cheese", sf()), entry("Apple", sf(), [1])],
+    };
+    const out = applySugarsBackfill(foods, new Map([["111", label(20, 1, 2, 1.1)]]), nevoSat);
+    expect(out.myFoods[0]!.per100.satFat).toBe(1.1);
+    expect(out.foodEntries[0]!.per100.satFat).toBe(1.1);
+    expect(out.foodEntries[1]!.per100.satFat).toBe(0.7);
+    expect(applySugarsBackfill(out, new Map(), nevoSat)).toBe(out);
   });
 });

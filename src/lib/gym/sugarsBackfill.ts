@@ -1,27 +1,30 @@
 /**
- * One-time fill of "of which sugars" into food saved before sugars existed
- * (GymState.sugarsBackfillDone). Everything here is pure except
- * fetchBarcodeSugars, and idempotent: anything that already has sugars is
- * left alone, and anything that can't be matched stays undefined (unknown),
- * never 0.
+ * One-time fill of "of which sugars" and "of which saturates" into food saved
+ * before they existed (GymState.sugarsBackfillDone). Everything here is pure
+ * except fetchBarcodeSugars, and idempotent: anything that already has a
+ * value is left alone, and anything that can't be matched stays undefined
+ * (unknown), never 0. Sugars are matched on carbs and saturated fat on fat,
+ * each independently.
  *
  *  1. NEVO: an entry, favourite or ingredient carrying exactly one NEVO code
- *     (a plain NEVO food, not a recipe) gets that food's sugars, but only
- *     while its values still equal NEVO's carbs (it wasn't edited).
- *  2. Your foods with a barcode and no sugars: Open Food Facts is asked once
- *     (fetchBarcodeSugars); the sugars are kept only if OFF's carbs equal the
- *     food's (so an edited food isn't given the label's sugars). Entries,
- *     favourites and ingredients without sugars that match a food by name
- *     (case-insensitive) and equal carbs per 100 g then get the same value.
+ *     (a plain NEVO food, not a recipe) gets that food's sugars and
+ *     saturated fat, but only while its carbs (fat) still equal NEVO's (it
+ *     wasn't edited).
+ *  2. Your foods with a barcode and no sugars or no saturated fat: Open Food
+ *     Facts is asked once (fetchBarcodeSugars); a value is kept only if OFF's
+ *     carbs (fat) equal the food's (so an edited food isn't given the
+ *     label's figure). Entries, favourites and ingredients without the value
+ *     that match a food by name (case-insensitive) and equal carbs (fat) per
+ *     100 g then get the same value.
  */
 import type { ScannedLabel } from "./labelScan";
 import { nameKey, type MyFood } from "./myFoods";
-import { cleanSugars, withSugars } from "./nutrition";
+import { cleanSatFat, cleanSugars, withSatFat, withSugars } from "./nutrition";
 import type { FoodEntry, Macros, MealIngredient, MealTemplate, Recipe } from "./nutrition";
 
 /** Bump to run the backfill again on every device. 2: the NEVO table gained
- *  sugars, so NEVO foods logged before then get them now. */
-export const SUGARS_BACKFILL_VERSION = 2;
+ *  sugars, so NEVO foods logged before then get them now. 3: saturated fat. */
+export const SUGARS_BACKFILL_VERSION = 3;
 
 /** Most barcode lookups in one run, so a big library can't hammer Open Food
  *  Facts; the rest stay unknown. */
@@ -40,6 +43,10 @@ export interface SugarsBackfillFoods {
 export type NevoLookup = (code: number) => Macros | undefined;
 
 const sameCarbs = (a: number, b: number) => Math.abs(a - b) < 0.05;
+const sameFat = sameCarbs;
+
+/** What the backfill reads from a label (Open Food Facts' answer). */
+type LabelFigures = Pick<ScannedLabel, "carbs" | "sugars" | "fat" | "saturatedFat">;
 
 interface Item {
   name: string;
@@ -54,6 +61,15 @@ export function nevoSugarsFor(item: Item, lookup: NevoLookup): Macros {
   const nevo = lookup(item.nevo[0]!);
   if (!nevo || nevo.sugars == null || !sameCarbs(item.per100.carbs, nevo.carbs)) return item.per100;
   return withSugars(item.per100, nevo.sugars);
+}
+
+/** `per100` with NEVO's saturated fat when the item is exactly one NEVO food
+ *  whose fat it still has; the same object otherwise. */
+export function nevoSatFatFor(item: Item, lookup: NevoLookup): Macros {
+  if (item.per100.satFat != null || item.nevo?.length !== 1) return item.per100;
+  const nevo = lookup(item.nevo[0]!);
+  if (!nevo || nevo.satFat == null || !sameFat(item.per100.fat, nevo.fat)) return item.per100;
+  return withSatFat(item.per100, nevo.satFat);
 }
 
 /** Applies `fix` to every per100 of the foods, keeping object identity of
@@ -89,52 +105,79 @@ function mapPer100(foods: SugarsBackfillFoods, fix: (item: Item) => Macros): Sug
   return same ? foods : next;
 }
 
-/** Step 1: sugars from NEVO for single-code NEVO foods. */
+/** Step 1: sugars and saturated fat from NEVO for single-code NEVO foods. */
 export function backfillNevoSugars(
   foods: SugarsBackfillFoods,
   lookup: NevoLookup,
 ): SugarsBackfillFoods {
-  return mapPer100(foods, (item) => nevoSugarsFor(item, lookup));
+  return mapPer100(foods, (item) => {
+    const withSugarsFilled = nevoSugarsFor(item, lookup);
+    return nevoSatFatFor({ ...item, per100: withSugarsFilled }, lookup);
+  });
 }
 
-/** Your foods with a barcode and no sugars: the ones worth asking OFF about. */
+/** Your foods with a barcode and no sugars or saturated fat: the ones worth
+ *  asking OFF about. */
 export const myFoodsNeedingSugars = (myFoods: MyFood[]): MyFood[] =>
-  myFoods.filter((f) => f.barcode && f.per100.sugars == null);
+  myFoods.filter((f) => f.barcode && (f.per100.sugars == null || f.per100.satFat == null));
 
-/** Step 2a: puts OFF's sugars (by barcode) on your foods, when OFF's carbs
- *  are the food's own. `labels` holds what OFF said per barcode. */
+/** Step 2a: puts OFF's sugars and saturated fat (by barcode) on your foods,
+ *  when OFF's carbs (fat) are the food's own. `labels` holds what OFF said
+ *  per barcode. */
 export function applyBarcodeSugars(
   myFoods: MyFood[],
-  labels: ReadonlyMap<string, Pick<ScannedLabel, "carbs" | "sugars">>,
+  labels: ReadonlyMap<string, LabelFigures>,
 ): MyFood[] {
   const next = myFoods.map((f) => {
-    if (!f.barcode || f.per100.sugars != null) return f;
+    if (!f.barcode) return f;
     const label = labels.get(f.barcode);
-    if (!label || label.carbs == null || label.sugars == null) return f;
-    if (!sameCarbs(label.carbs, f.per100.carbs)) return f;
-    const sugars = cleanSugars(label.sugars, f.per100.carbs);
-    return sugars == null ? f : { ...f, per100: withSugars(f.per100, sugars) };
+    if (!label) return f;
+    let per100 = f.per100;
+    if (per100.sugars == null && label.carbs != null && label.sugars != null) {
+      const sugars = sameCarbs(label.carbs, per100.carbs)
+        ? cleanSugars(label.sugars, per100.carbs)
+        : undefined;
+      if (sugars != null) per100 = withSugars(per100, sugars);
+    }
+    if (per100.satFat == null && label.fat != null && label.saturatedFat != null) {
+      const satFat = sameFat(label.fat, per100.fat)
+        ? cleanSatFat(label.saturatedFat, per100.fat)
+        : undefined;
+      if (satFat != null) per100 = withSatFat(per100, satFat);
+    }
+    return per100 === f.per100 ? f : { ...f, per100 };
   });
   return next.some((f, i) => f !== myFoods[i]) ? next : myFoods;
 }
 
-/** Step 2b: entries, favourites and ingredients without sugars take them
- *  from the your-food of the same name (case-insensitive) and carbs. */
+/** Step 2b: entries, favourites and ingredients without sugars (saturated
+ *  fat) take them from the your-food of the same name (case-insensitive) and
+ *  carbs (fat). */
 export function backfillFromMyFoods(foods: SugarsBackfillFoods): SugarsBackfillFoods {
-  const known = foods.myFoods.filter((f) => f.per100.sugars != null);
-  if (!known.length) return foods;
+  const knownSugars = foods.myFoods.filter((f) => f.per100.sugars != null);
+  const knownSatFat = foods.myFoods.filter((f) => f.per100.satFat != null);
+  if (!knownSugars.length && !knownSatFat.length) return foods;
   return mapPer100(foods, (item) => {
-    if (item.per100.sugars != null) return item.per100;
+    let per100 = item.per100;
     const key = nameKey(item.name);
-    const hit = known.find(
-      (f) => nameKey(f.name) === key && sameCarbs(f.per100.carbs, item.per100.carbs),
-    );
-    return hit ? withSugars(item.per100, hit.per100.sugars) : item.per100;
+    if (per100.sugars == null) {
+      const hit = knownSugars.find(
+        (f) => nameKey(f.name) === key && sameCarbs(f.per100.carbs, per100.carbs),
+      );
+      if (hit) per100 = withSugars(per100, hit.per100.sugars);
+    }
+    if (per100.satFat == null) {
+      const hit = knownSatFat.find(
+        (f) => nameKey(f.name) === key && sameFat(f.per100.fat, per100.fat),
+      );
+      if (hit) per100 = withSatFat(per100, hit.per100.satFat);
+    }
+    return per100;
   });
 }
 
 /** Asks `lookup` (Open Food Facts) about the barcodes of foods lacking
- *  sugars, one at a time. A network error or unknown barcode just skips
+ *  sugars or saturated fat, one at a time. A network error or unknown barcode just skips
  *  that food. */
 export async function fetchBarcodeSugars(
   myFoods: MyFood[],
@@ -158,7 +201,7 @@ export async function fetchBarcodeSugars(
  *  state (setState's updater), so edits made while OFF was answering win. */
 export function applySugarsBackfill(
   foods: SugarsBackfillFoods,
-  labels: ReadonlyMap<string, Pick<ScannedLabel, "carbs" | "sugars">>,
+  labels: ReadonlyMap<string, LabelFigures>,
   nevo: NevoLookup,
 ): SugarsBackfillFoods {
   const withNevo = backfillNevoSugars(foods, nevo);

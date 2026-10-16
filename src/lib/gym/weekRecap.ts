@@ -10,6 +10,7 @@ import {
   type CoffeeEntry,
   type FoodEntry,
   type Macros,
+  satFatComplete,
   sugarsComplete,
   type WaterEntry,
 } from "./nutrition";
@@ -42,6 +43,8 @@ export interface WeekRecapInput {
   calorieGoalFor?: (date: Date) => number | undefined;
   /** The daily sugar goal (grams) that applies to a date, if it is on. */
   sugarGoalFor?: (date: Date) => number | undefined;
+  /** The daily saturated fat goal (grams) that applies to a date, if it is on. */
+  satFatGoalFor?: (date: Date) => number | undefined;
   /** Daily water target in ml. */
   waterGoalMl?: number | null;
 }
@@ -66,6 +69,13 @@ export interface WeekRecapDay {
   /** Every food with carbs that day has its sugars known. */
   sugarsComplete: boolean;
   sugarGoal: number | undefined;
+  /** Grams of fat that day. */
+  fat: number;
+  /** Grams of saturated fat that day (the known ones); null when none is known. */
+  satFat: number | null;
+  /** Every food with fat that day has its saturated fat known. */
+  satFatComplete: boolean;
+  satFatGoal: number | undefined;
   waterMl: number;
   /** Cups of coffee, in total and per kind. */
   coffeeCups: number;
@@ -154,6 +164,26 @@ export interface WeekRecap {
     daysWithSugarGoal: number;
     /** The day with the most sugars; null with under two days with sugars. */
     highestSugars: WeekRecapPeak | null;
+  };
+  fat: {
+    totalFat: number;
+    /** Known saturated fat; null when no food has any. */
+    totalSatFat: number | null;
+    /** Every food with fat this week has its saturated fat known. */
+    complete: boolean;
+    /** Saturated fat as a share of fat (0-100); null without either. */
+    satFatPct: number | null;
+    /** Per counted day (same rule as nutrition.average). */
+    averageFat: number | null;
+    /** Null without saturated fat. */
+    averageSatFat: number | null;
+    /** Finished logged days with a saturated fat goal that stayed within it
+     *  (a day with any food's saturated fat unknown doesn't count). */
+    daysWithinSatFatGoal: number;
+    /** Finished logged days with complete saturated fat that have a goal. */
+    daysWithSatFatGoal: number;
+    /** The day with the most saturated fat; null with under two days with it. */
+    highestSatFat: WeekRecapPeak | null;
   };
   water: {
     totalMl: number;
@@ -258,6 +288,10 @@ export function buildWeekRecap(
       sugars: dayTotals.sugars ?? null,
       sugarsComplete: sugarsComplete(dayFood),
       sugarGoal: input.sugarGoalFor?.(date),
+      fat: dayTotals.fat,
+      satFat: dayTotals.satFat ?? null,
+      satFatComplete: satFatComplete(dayFood),
+      satFatGoal: input.satFatGoalFor?.(date),
       waterMl: entriesForDay(water, key).reduce((s, e) => s + e.ml, 0),
       coffeeCups: dayCoffee.length,
       coffeeByKind: byKind,
@@ -297,6 +331,9 @@ export function buildWeekRecap(
   const countedTotals = dailyTotals(countedFood);
   const withGoal = counted.filter((d) => d.calorieGoal != null);
   const sugarDays = finishedLogged.filter((d) => d.sugarGoal != null && d.sugars != null);
+  const satFatDays = finishedLogged.filter(
+    (d) => d.satFatGoal != null && d.satFat != null && d.satFatComplete,
+  );
   const weekTotals = dailyTotals(food);
 
   // Water and coffee
@@ -412,6 +449,26 @@ export function buildWeekRecap(
       highestSugars: peak(
         started.filter((d) => d.sugars != null),
         (d) => d.sugars ?? 0,
+      ),
+    },
+    fat: {
+      totalFat: Math.round(weekTotals.fat),
+      totalSatFat: weekTotals.satFat != null ? Math.round(weekTotals.satFat) : null,
+      complete: satFatComplete(food),
+      satFatPct:
+        weekTotals.satFat != null && weekTotals.fat > 0
+          ? Math.round((weekTotals.satFat / weekTotals.fat) * 100)
+          : null,
+      averageFat: counted.length ? avg(countedTotals.fat, counted.length) : null,
+      averageSatFat:
+        counted.length && countedTotals.satFat != null
+          ? avg(countedTotals.satFat, counted.length)
+          : null,
+      daysWithinSatFatGoal: satFatDays.filter((d) => d.satFat! <= d.satFatGoal!).length,
+      daysWithSatFatGoal: satFatDays.length,
+      highestSatFat: peak(
+        started.filter((d) => d.satFat != null),
+        (d) => d.satFat ?? 0,
       ),
     },
     water: {

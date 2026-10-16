@@ -370,6 +370,7 @@ const en = {
       calorieFloor: "Minimum calories (1200 women, 1500 men)",
       restDayCarbs: "Fewer carbs on rest days, more on cardio days; protein and fat unchanged",
       sugars: "Sugar goal: free sugars under 10% of calories (WHO), as low as possible (EFSA)",
+      satFat: "Saturated fat goal: under 10% of calories (WHO, Gezondheidsraad), 6% if stricter",
       weekend:
         "Weekend budget: a planned weekend extra of roughly 50–250 kcal a day did not cost weight loss, 500+ kcal did (observational)",
       proteinPerMeal: "Protein per meal: 0.4 g/kg, over at least 4 meals",
@@ -806,6 +807,22 @@ const en = {
     legendSugars: "Sugars",
     withinSugarGoal: (n: number, of: number) => `Within your sugar goal on ${n} of ${of} days`,
     factMostSugar: (day: string, g: string) => `${day} had the most sugars: ${g} g`,
+    fat: "Fat",
+    fatTotal: (g: string) => `${g} g fat this week`,
+    totalSatFat: "Saturated",
+    avgSatFat: "Per day",
+    satFatShare: "Of fat",
+    perDayFat: "Fat per day",
+    fatDay: (day: string, fat: string, satFat: string | null) =>
+      satFat == null
+        ? `${day}: ${fat} g fat`
+        : `${day}: ${fat} g fat, of which ${satFat} g saturated`,
+    fatLegend: "Pale is fat, solid is the saturated fat in it.",
+    legendFat: "Fat",
+    legendSatFat: "Saturated",
+    withinSatFatGoal: (n: number, of: number) =>
+      `Within your saturated fat goal on ${n} of ${of} days`,
+    factMostSatFat: (day: string, g: string) => `${day} had the most saturated fat: ${g} g`,
     notLogged: "Not logged",
     water: "Water",
     waterAvg: "Average per day",
@@ -1202,6 +1219,8 @@ const en = {
     per100gInfoAria: "About these values",
     ofWhichSugars: "Of which sugars",
     sugarsUnknown: "Not known",
+    ofWhichSatFat: "Of which saturated",
+    satFatUnknown: "Not known",
     thisIngredient: "This ingredient",
     thisPortion: "This portion",
     scanReadError: (detail: string) =>
@@ -1649,6 +1668,7 @@ const en = {
     infoLimits: "About these limits",
     infoDayTypes: "About training and rest days",
     infoSugar: "About the sugar goal",
+    infoSatFat: "About the saturated fat goal",
     infoWeekend: "About the weekend budget",
     byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
       `Rest days leave out the energy of your usual session — about ${kcal} kcal (${minutes} min at ${met} METs, ${kg} kg), taken from carbs. Protein and fat stay the same.`,
@@ -2205,6 +2225,8 @@ const en = {
     protein: "Protein",
     carbs: "Carbs",
     sugars: "Sugars",
+    satFat: "Saturated fat",
+    satFatShort: "Saturated",
     fat: "Fat",
     fiber: "Fiber",
     salt: "Salt",
@@ -2224,6 +2246,27 @@ const en = {
     shareGrams: (g: number) => `${g} g a day`,
     caveat:
       "Counts all sugars, fruit and milk included. The WHO advises keeping free sugars under 10% of your calories, 5% for extra benefit. A health guide, not a training lever.",
+  },
+  satFatUi: {
+    ofWhich: "of which saturated",
+    /** A total where some foods have no saturated fat figure: a floor, not the sum. */
+    atLeast: (g: string | number) => `~ ${g} g`,
+    atLeastOf: (g: string | number, goal: string | number) => `~ ${g} / ${goal} g`,
+    ofGoal: (g: string | number, goal: string | number) => `${g} / ${goal} g`,
+    goal: "Saturated fat goal",
+    goalDesc: "A limit for the saturated fat in your food, as a share of your calories.",
+    goalNeedsCalories: "Set a calorie goal first: the saturated fat goal is a share of it.",
+    share10: "10% of calories",
+    share6: "6% of calories",
+    custom: "Custom",
+    customLabel: "Percent of calories",
+    customShare: (pct: number) => `${pct}% of calories`,
+    recommended: "Recommended",
+    shareGrams: (g: number) => `${g} g a day`,
+    takesMostOfFat: "This is more than half of your fat limit.",
+    restDayNote: "Saturated fat stays the same on rest days: fat and protein do not change.",
+    caveat:
+      "Saturated fat is the part of your fat that raises LDL cholesterol. WHO and the Gezondheidsraad advise under 10% of your calories; 6% is a stricter choice. Swapping it for unsaturated fats such as olive oil, nuts and fish helps most, more than the exact number. Foods differ: cheese and butter are not the same. A health guide, not a training lever; follow your doctor's advice if you have one.",
   },
   weekendUi: {
     title: "Weekend budget",
@@ -2699,6 +2742,8 @@ const nl: Dict = {
       calorieFloor: "Minimum aantal calorieën (1200 vrouwen, 1500 mannen)",
       restDayCarbs: "Minder koolhydraten op rustdagen, meer op cardiodagen; eiwit en vet gelijk",
       sugars: "Suikerdoel: vrije suikers onder 10% van de calorieën (WHO), zo laag mogelijk (EFSA)",
+      satFat:
+        "Doel voor verzadigd vet: onder 10% van de calorieën (WHO, Gezondheidsraad), 6% als je strenger wilt zijn",
       weekend:
         "Weekendbudget: een geplande weekendextra van ongeveer 50–250 kcal per dag kostte geen gewichtsverlies, 500+ kcal wel (observationeel)",
       proteinPerMeal: "Eiwit per maaltijd: 0,4 g/kg, over minstens 4 maaltijden",
@@ -3136,6 +3181,22 @@ const nl: Dict = {
     legendSugars: "Suikers",
     withinSugarGoal: (n: number, of: number) => `Binnen je suikerdoel op ${n} van ${of} dagen`,
     factMostSugar: (day: string, g: string) => `${cap(day)} had de meeste suikers: ${g} g`,
+    fat: "Vet",
+    fatTotal: (g: string) => `${g} g vet deze week`,
+    totalSatFat: "Verzadigd",
+    avgSatFat: "Per dag",
+    satFatShare: "Van vet",
+    perDayFat: "Vet per dag",
+    fatDay: (day: string, fat: string, satFat: string | null) =>
+      satFat == null
+        ? `${day}: ${fat} g vet`
+        : `${day}: ${fat} g vet, waarvan ${satFat} g verzadigd`,
+    fatLegend: "Licht is vet, vol is het verzadigd vet daarin.",
+    legendFat: "Vet",
+    legendSatFat: "Verzadigd",
+    withinSatFatGoal: (n: number, of: number) =>
+      `Binnen je doel voor verzadigd vet op ${n} van ${of} dagen`,
+    factMostSatFat: (day: string, g: string) => `${cap(day)} had het meeste verzadigd vet: ${g} g`,
     notLogged: "Niet bijgehouden",
     water: "Water",
     waterAvg: "Gemiddeld per dag",
@@ -3536,6 +3597,8 @@ const nl: Dict = {
     per100gInfoAria: "Over deze waarden",
     ofWhichSugars: "Waarvan suikers",
     sugarsUnknown: "Onbekend",
+    ofWhichSatFat: "Waarvan verzadigd",
+    satFatUnknown: "Onbekend",
     thisIngredient: "Dit ingrediënt",
     thisPortion: "Deze portie",
     scanReadError: (detail: string) =>
@@ -3979,6 +4042,7 @@ const nl: Dict = {
     infoLimits: "Over deze limieten",
     infoDayTypes: "Over trainings- en rustdagen",
     infoSugar: "Over het suikerdoel",
+    infoSatFat: "Over het doel voor verzadigd vet",
     infoWeekend: "Over het weekendbudget",
     byDayTypeDesc: (kcal: number, minutes: number, met: number, kg: number) =>
       `Rustdagen laten de energie van je gebruikelijke training weg — zo'n ${kcal} kcal (${minutes} min bij ${String(met).replace(".", ",")} MET, ${String(kg).replace(".", ",")} kg), uit koolhydraten. Eiwit en vet blijven gelijk.`,
@@ -4541,6 +4605,8 @@ const nl: Dict = {
     protein: "Eiwit",
     carbs: "Koolhydraten",
     sugars: "Suikers",
+    satFat: "Verzadigd vet",
+    satFatShort: "Verzadigd",
     fat: "Vet",
     fiber: "Vezels",
     salt: "Zout",
@@ -4559,6 +4625,27 @@ const nl: Dict = {
     shareGrams: (g: number) => `${g} g per dag`,
     caveat:
       "Telt alle suikers mee, ook van fruit en melk. De WHO adviseert vrije suikers onder de 10% van je calorieën te houden, 5% voor extra voordeel. Een gezondheidsrichtlijn, geen trainingshefboom.",
+  },
+  satFatUi: {
+    ofWhich: "waarvan verzadigd",
+    atLeast: (g: string | number) => `~ ${g} g`,
+    atLeastOf: (g: string | number, goal: string | number) => `~ ${g} / ${goal} g`,
+    ofGoal: (g: string | number, goal: string | number) => `${g} / ${goal} g`,
+    goal: "Doel voor verzadigd vet",
+    goalDesc: "Een grens voor het verzadigd vet in je eten, als deel van je calorieën.",
+    goalNeedsCalories:
+      "Stel eerst een caloriedoel in: het doel voor verzadigd vet is een deel daarvan.",
+    share10: "10% van je calorieën",
+    share6: "6% van je calorieën",
+    custom: "Eigen keuze",
+    customLabel: "Percentage van je calorieën",
+    customShare: (pct: number) => `${pct}% van je calorieën`,
+    recommended: "Aanbevolen",
+    shareGrams: (g: number) => `${g} g per dag`,
+    takesMostOfFat: "Dit is meer dan de helft van je vetlimiet.",
+    restDayNote: "Verzadigd vet blijft op rustdagen gelijk: vet en eiwit veranderen niet.",
+    caveat:
+      "Verzadigd vet is het deel van je vet dat het LDL-cholesterol verhoogt. De WHO en de Gezondheidsraad adviseren minder dan 10% van je calorieën; 6% is strenger. Vervangen door onverzadigd vet, zoals olijfolie, noten en vis, helpt het meest, meer dan het precieze getal. Producten verschillen: kaas en boter zijn niet hetzelfde. Een gezondheidsrichtlijn, geen trainingshefboom; volg het advies van je huisarts als je dat hebt.",
   },
   weekendUi: {
     title: "Weekendbudget",

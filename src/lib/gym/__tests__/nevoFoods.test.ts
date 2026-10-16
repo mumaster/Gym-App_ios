@@ -46,6 +46,25 @@ describe("NEVO data", () => {
     expect(NEVO_FOODS.filter((r) => r[12] != null).length).toBeGreaterThan(1400);
   });
 
+  it("carries NEVO's saturated fat (FASAT) unchanged, with placeholders before it", () => {
+    // From the 2025/9.0 file: Banaan 0,1 g, Chiazaad gedroogd 3,3 g with no
+    // sugars value (a null holds sugars' place), Aardappelen rauw 0.
+    expect(byCode(151).per100.satFat).toBe(0.1);
+    expect(byCode(3447).per100.satFat).toBe(3.3);
+    expect(byCode(3447).per100.sugars).toBeUndefined();
+    expect(byCode(1).per100.satFat).toBe(0);
+    expect(NEVO_FOODS.find((r) => r[0] === 3447)![12]).toBeNull();
+    expect(NEVO_FOODS.filter((r) => r[13] != null).length).toBe(1486);
+    for (const f of foods) expect(f.per100.satFat!).toBeLessThanOrEqual(f.per100.fat);
+  });
+
+  it("lets an entry saved without saturated fat still match NEVO", () => {
+    const nevo = byCode(151).per100;
+    const { satFat: _s, ...old } = nevo;
+    expect(matchesNevo(old, nevo)).toBe(true);
+    expect(matchesNevo({ ...nevo, satFat: 0.5 }, nevo)).toBe(false);
+  });
+
   it("keeps NEVO's values unchanged (spot checks against the 2025/9.0 file)", () => {
     // Banaan: 92 kcal, protein 1.1, carbohydrate 20, fat 0.3, fibre 1.9, Na 0 mg.
     expect(byCode(151)).toMatchObject({
