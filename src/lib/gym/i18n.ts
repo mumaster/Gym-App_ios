@@ -2113,6 +2113,17 @@ const en = {
     sameEquipmentBody: (name: string, partner: string) =>
       `${name} uses the same equipment as ${partner}, so you'd change the weight every round of the superset. Pick one on other equipment to keep it flowing.`,
     sameEquipmentAs: (partner: string) => `Same equipment as ${partner}`,
+    dayMismatch: "Doesn't fit this day",
+    dayMismatchBody: (name: string, kind: string, day: string) =>
+      `${name} is a ${kind} exercise and this is a ${day} day.`,
+    notForDay: (kind: string, day: string) =>
+      `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)} exercise on a ${day} day`,
+    keepDayMismatch: "Use it anyway",
+    dayKinds: { push: "push", pull: "pull", legs: "leg", core: "core" } as Record<string, string>,
+    dayNames: { push: "push", pull: "pull", legs: "leg", upper: "upper body" } as Record<
+      string,
+      string
+    >,
     otherEquipment: "On other equipment",
     keepSameEquipment: "Keep it anyway",
     backToList: "Back to list",
@@ -4524,6 +4535,17 @@ const nl: Dict = {
     sameEquipmentBody: (name: string, partner: string) =>
       `${name} gebruikt hetzelfde materiaal als ${partner}, dus je wisselt elke ronde van de superset van gewicht. Kies er een op ander materiaal, dan loopt het door.`,
     sameEquipmentAs: (partner: string) => `Zelfde materiaal als ${partner}`,
+    dayMismatch: "Past niet bij deze dag",
+    dayMismatchBody: (name: string, kind: string, day: string) =>
+      `${name} is een ${kind}-oefening en dit is een ${day}-dag.`,
+    notForDay: (kind: string, day: string) =>
+      `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)}-oefening op een ${day}-dag`,
+    keepDayMismatch: "Toch gebruiken",
+    dayKinds: { push: "push", pull: "pull", legs: "been", core: "core" } as Record<string, string>,
+    dayNames: { push: "push", pull: "pull", legs: "been", upper: "bovenlichaam" } as Record<
+      string,
+      string
+    >,
     otherEquipment: "Op ander materiaal",
     keepSameEquipment: "Toch behouden",
     backToList: "Terug naar lijst",

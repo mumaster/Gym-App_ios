@@ -493,6 +493,7 @@ export function DayWorkoutSheet({
         </div>
       </BottomSheet>
       <SwapSheet
+        dayId={slot.dayId}
         exerciseId={swapIndex !== null ? (plan[swapIndex]?.exercise_id ?? null) : null}
         inWorkoutIds={plan.map((p) => p.exercise_id)}
         pairedExerciseId={swapPartner}

@@ -14,6 +14,7 @@ import {
   sameMuscleSwaps,
 } from "../../lib/gym/antagonist";
 import { muscleIcon } from "../../lib/gym/muscleIcons";
+import { exerciseKind, fitDayFromMuscles, fitDayOf, fitsDay } from "../../lib/gym/dayFit";
 import { nearDuplicateIn } from "../../lib/gym/similar";
 import { sharesLoadStation } from "../../lib/gym/stations";
 import { foldText } from "../../lib/gym/nevoFoods";
@@ -21,7 +22,7 @@ import { popularityOf } from "../../lib/gym/exercisePopularity";
 import { useTapFocus } from "../../lib/gym/tapFocus";
 import { useTranslation } from "../../lib/gym/i18n";
 import { useGym } from "../../lib/gym/store";
-import type { Exercise } from "../../lib/gym/types";
+import type { Exercise, Muscle } from "../../lib/gym/types";
 
 /** "Chest · Barbell · Bench": the muscle first, then the gear needed. */
 const subtitleOf = (e: Exercise) =>
@@ -87,6 +88,8 @@ export function SwapSheet({
   partnerExerciseId,
   pairedExerciseId,
   inWorkoutIds,
+  dayId,
+  dayMuscles,
   onClose,
   onPick,
 }: {
@@ -100,6 +103,10 @@ export function SwapSheet({
   /** Every exercise already in the workout. They stay pickable but are listed
    *  last under their own heading, so a swap doesn't quietly double one up. */
   inWorkoutIds?: readonly string[];
+  /** The plan day's id ("push"…), or else the muscles the workout trains:
+   *  swaps then only offer what fits the day (dayFit.ts). */
+  dayId?: string;
+  dayMuscles?: readonly Muscle[];
   onClose: () => void;
   onPick: (e: Exercise) => void;
 }) {
@@ -108,7 +115,14 @@ export function SwapSheet({
   const profile = profiles.find((p) => p.id === activeProfileId) ?? profiles[0]!;
   const current = exerciseId ? exerciseById(exerciseId) : undefined;
   const partner = partnerExerciseId ? exerciseById(partnerExerciseId) : undefined;
-  const pool = availableExercises(profile.active_equipment_ids, avoidedExerciseIds);
+  const allPool = availableExercises(profile.active_equipment_ids, avoidedExerciseIds);
+  // What fits the day (a push day gets no rows): its own kind of exercise, or
+  // the kind of the one being swapped, which the person already chose.
+  const day = dayId ? fitDayOf(dayId) : fitDayFromMuscles(dayMuscles ?? []);
+  const currentKind = current ? exerciseKind(current) : undefined;
+  const fitsHere = (e: Exercise) =>
+    fitsDay(e, day) || (currentKind !== undefined && exerciseKind(e) === currentKind);
+  const pool = allPool.filter(fitsHere);
 
   // In a superset, an exercise on the partner's equipment (the same barbell,
   // dumbbells, cable stack…) would mean changing the weight every round
@@ -119,7 +133,7 @@ export function SwapSheet({
 
   const [pending, setPending] = useState<{
     e: Exercise;
-    reason: "station" | "antagonist" | "similar";
+    reason: "station" | "antagonist" | "similar" | "day";
     other?: string;
   } | null>(null);
   const [query, setQuery] = useState("");
@@ -134,7 +148,7 @@ export function SwapSheet({
   }, [exerciseId]);
 
   const sameMuscle = current
-    ? alternativesFor(current, profile.active_equipment_ids, avoidedExerciseIds)
+    ? alternativesFor(current, profile.active_equipment_ids, avoidedExerciseIds).filter(fitsHere)
     : [];
   const recommended = partner
     ? antagonistAlternatives(partner, pool).filter((e) => !clashes(e))
@@ -194,7 +208,7 @@ export function SwapSheet({
   const searching = words.length > 0;
   const inName = (e: Exercise) => words.every((w) => foldText(e.name).includes(w));
   const results = searching
-    ? pool
+    ? allPool
         .filter((e) => e.id !== current?.id && e.id !== pairWith?.id)
         .filter((e) => {
           const hay = foldText(`${e.name} ${subtitleOf(e)}`);
@@ -207,6 +221,10 @@ export function SwapSheet({
     : [];
 
   const choose = (e: Exercise) => {
+    if (!fitsHere(e)) {
+      setPending({ e, reason: "day" });
+      return;
+    }
     if (clashes(e)) {
       setPending({ e, reason: "station" });
       return;
@@ -247,28 +265,36 @@ export function SwapSheet({
           <div className="rounded-2xl border border-warning/50 bg-warning/10 p-4">
             <p className="flex items-center gap-2 text-[15px] font-bold text-warning-text">
               <AlertTriangle className="size-5" />{" "}
-              {pending.reason === "similar"
-                ? t.swapSheet.similarTitle
-                : pending.reason === "station"
-                  ? t.swapSheet.sameEquipment
-                  : t.swapSheet.antagonistMismatch}
+              {pending.reason === "day"
+                ? t.swapSheet.dayMismatch
+                : pending.reason === "similar"
+                  ? t.swapSheet.similarTitle
+                  : pending.reason === "station"
+                    ? t.swapSheet.sameEquipment
+                    : t.swapSheet.antagonistMismatch}
             </p>
             <p className="mt-2 text-[14px] text-muted-foreground">
-              {pending.reason === "similar"
-                ? t.swapSheet.similarBody(pending.e.name, pending.other ?? "")
-                : pairWith && pending.reason === "station"
-                  ? t.swapSheet.sameEquipmentBody(pending.e.name, pairWith.name)
-                  : pairWith
-                    ? t.swapSheet.antagonistMismatchBody(
-                        pending.e.name,
-                        pairWith.primary_muscle,
-                        opposingLabel(pairWith).toLowerCase(),
-                      )
-                    : ""}
+              {pending.reason === "day"
+                ? t.swapSheet.dayMismatchBody(
+                    pending.e.name,
+                    t.swapSheet.dayKinds[exerciseKind(pending.e) ?? ""] ?? "",
+                    t.swapSheet.dayNames[day ?? ""] ?? "",
+                  )
+                : pending.reason === "similar"
+                  ? t.swapSheet.similarBody(pending.e.name, pending.other ?? "")
+                  : pairWith && pending.reason === "station"
+                    ? t.swapSheet.sameEquipmentBody(pending.e.name, pairWith.name)
+                    : pairWith
+                      ? t.swapSheet.antagonistMismatchBody(
+                          pending.e.name,
+                          pairWith.primary_muscle,
+                          opposingLabel(pairWith).toLowerCase(),
+                        )
+                      : ""}
             </p>
           </div>
 
-          {better.length && pending.reason !== "similar" ? (
+          {better.length && pending.reason !== "similar" && pending.reason !== "day" ? (
             <div className="space-y-2">
               <p className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
                 {partner ? t.swapSheet.recommendedSwaps : t.swapSheet.otherEquipment}
@@ -307,11 +333,13 @@ export function SwapSheet({
               onClick={() => onPick(pending.e)}
               className="glass min-h-[52px] w-full rounded-2xl text-[16px] font-semibold active:scale-95"
             >
-              {pending.reason === "similar"
-                ? t.swapSheet.keepSimilar
-                : pending.reason === "station"
-                  ? t.swapSheet.keepSameEquipment
-                  : t.swapSheet.keepAnyway}
+              {pending.reason === "day"
+                ? t.swapSheet.keepDayMismatch
+                : pending.reason === "similar"
+                  ? t.swapSheet.keepSimilar
+                  : pending.reason === "station"
+                    ? t.swapSheet.keepSameEquipment
+                    : t.swapSheet.keepAnyway}
             </button>
             <button
               onClick={() => setPending(null)}
@@ -333,6 +361,14 @@ export function SwapSheet({
               onPick={choose}
               {...(clashes(e) && pairWith
                 ? { clash: t.swapSheet.sameEquipmentAs(pairWith.name) }
+                : {})}
+              {...(!fitsHere(e) && day
+                ? {
+                    clash: t.swapSheet.notForDay(
+                      t.swapSheet.dayKinds[exerciseKind(e) ?? ""] ?? "",
+                      t.swapSheet.dayNames[day] ?? "",
+                    ),
+                  }
                 : {})}
               {...(similarName(e) ? { similar: t.swapSheet.similarTo(similarName(e)!) } : {})}
               {...(!fresh(e) ? { inWorkout: t.swapSheet.alreadyInWorkout } : {})}

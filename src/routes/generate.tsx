@@ -42,6 +42,7 @@ import { ListCard } from "../components/gym/ListCard";
 import { Card, Screen } from "../components/gym/Screen";
 import { SegmentedTabs } from "../components/gym/SegmentedTabs";
 import { SwitchRow } from "../components/gym/SwitchRow";
+import { fitDayFromMuscles } from "../lib/gym/dayFit";
 import { SwapSheet } from "../components/gym/SwapSheet";
 import { WeeklyPlanSheet } from "../components/gym/WeeklyPlanSheet";
 import { WorkoutTemplatesSheet } from "../components/gym/WorkoutTemplatesSheet";
@@ -339,6 +340,13 @@ function WorkoutHome() {
       duration,
       equipment: profile.active_equipment_ids,
       targets: targetsFor(rs, fs),
+      // a scheduled push day gets no pulls (dayFit.ts); a free pick is as chosen
+      ...((from?.followingProgram ?? followingProgram) || followingSchedule
+        ? (() => {
+            const day = fitDayFromMuscles(musclesFromRegions(rs));
+            return day ? { day } : {};
+          })()
+        : {}),
       variation: nextVariation,
       supersets: supersetsEnabled,
       warmups: warmupsEnabled,
@@ -1613,6 +1621,7 @@ function WorkoutHome() {
         />
       ) : null}
       <SwapSheet
+        dayMuscles={muscles}
         inWorkoutIds={(plan ?? []).map((p) => p.exercise_id)}
         exerciseId={swapIndex !== null ? (plan?.[swapIndex]?.exercise_id ?? null) : null}
         pairedExerciseId={(() => {
