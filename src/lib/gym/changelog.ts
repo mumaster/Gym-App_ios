@@ -604,6 +604,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
     ],
   },
+  {
+    version: 59,
+    items: [
+      {
+        en: "Swaps now only offer exercises that fit the day, so no rows on push day.",
+        nl: "Bij wisselen zie je nu alleen oefeningen die bij de dag passen, dus geen roeien op push-dag.",
+      },
+    ],
+  },
 ];
 
 /** The texts of an entry in one language: one for a plain entry, one per
@@ -613,7 +622,7 @@ export const entryTexts = (entry: ChangelogEntry, language: Language): string[] 
 
 /** What this build is. Bump it with every deploy-worthy change, together with
  *  its entry above (the changelog test fails when the two disagree). */
-export const CURRENT_VERSION = 58;
+export const CURRENT_VERSION = 59;
 
 /** `5` → "0.005" (alpha: major 0, three-digit build number). */
 export const formatVersion = (version: number): string => `0.${String(version).padStart(3, "0")}`;

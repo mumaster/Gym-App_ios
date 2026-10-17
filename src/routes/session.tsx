@@ -1374,6 +1374,7 @@ function SessionScreen() {
       />
 
       <SwapSheet
+        dayMuscles={activeWorkout.target_muscles}
         inWorkoutIds={plan.map((p) => p.exercise_id)}
         exerciseId={swapIndex === null ? null : (plan[swapIndex]?.exercise_id ?? null)}
         partnerExerciseId={swapPartnerId}

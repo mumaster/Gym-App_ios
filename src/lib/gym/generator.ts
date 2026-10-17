@@ -1,4 +1,5 @@
 import { isAntagonistPair } from "./antagonist";
+import { fitsDay, headFitsDay, type FitDay } from "./dayFit";
 import { EXERCISES, TARGET_MUSCLE_GROUP } from "./data";
 import { plateStep } from "./plates";
 import { isNiche, popularityOf } from "./exercisePopularity";
@@ -289,6 +290,9 @@ export interface GenerateArgs {
    *  it, so a slower lifter gets fewer sets for the same minutes. Omitted
    *  or null = the app's fixed constants. */
   pace?: Pace | null;
+  /** The kind of day this is (dayFit.ts): only exercises and muscle heads
+   *  that fit it are used, so a push day gets no rows or face pulls. */
+  day?: FitDay;
 }
 
 /** The progressive-overload fields of one plan entry (`suggested_weight`,
@@ -494,7 +498,14 @@ export function generateWorkout({
   focusMuscles = [],
   weekDone = {},
   pace = null,
+  day: dayArg,
 }: GenerateArgs): PlannedExercise[] {
+  // A day none of the asked-for muscles fit (only rear delts on a push day)
+  // is ignored: the person chose those muscles on purpose.
+  const day =
+    dayArg && requestedTargets.length && !requestedTargets.some((m) => headFitsDay(m, dayArg))
+      ? undefined
+      : dayArg;
   const focus = new Set(focusMuscles);
   /** Sets still missing from a muscle's weekly target (10, or 20 for a
    *  muscle you want to grow: volume.ts), at least 1 so a muscle you picked
@@ -513,7 +524,7 @@ export function generateWorkout({
           ...p,
           target_sets: Math.max(1, Math.round(p.target_sets * volumeMultiplier)),
         }));
-  const pool = availableExercises(equipment, avoided);
+  const pool = availableExercises(equipment, avoided).filter((e) => fitsDay(e, day));
   const shape = shapeFor(duration);
   const budget = duration * 60;
 
@@ -546,7 +557,7 @@ export function generateWorkout({
   // Loved exercises are pinned into the plan first (equipment permitting) and are
   // never dropped by the budget trims below.
   const lovedExercises = loved
-    .map((id) => pool.find((e) => e.id === id))
+    .map((id) => availableExercises(equipment, avoided).find((e) => e.id === id))
     .filter((e): e is Exercise => !!e)
     .slice(0, shape.maxExercises);
   for (const ex of lovedExercises) {
@@ -555,8 +566,16 @@ export function generateWorkout({
   }
 
   // no targets picked but exercises are loved → build the session purely from them
+  // A pull day also trains the rear delts (face pulls, rear delt flyes);
+  // a day's other heads that don't fit it are left out.
+  const dayTargets = (list: TargetMuscle[]): TargetMuscle[] => {
+    const fit = list.filter((m) => headFitsDay(m, day));
+    return day === "pull" && fit.length && !fit.includes("Rear Delts")
+      ? [...fit, "Rear Delts"]
+      : fit;
+  };
   const targets: TargetMuscle[] = requestedTargets.length
-    ? [...new Set(requestedTargets)]
+    ? [...new Set(dayTargets(requestedTargets))]
     : lovedExercises.length
       ? []
       : ["Mid Chest", "Lats", "Quads", "Abs"];
@@ -783,6 +802,7 @@ export function generateWorkout({
             const alt = alternativesFor(oldEx, equipment, avoided).find(
               (e) =>
                 !used.has(e.id) &&
+                fitsDay(e, day) &&
                 ![...used].some((id) => id !== oldEx.id && isNearDuplicate(id, e.id)) &&
                 pairScore(keptEx, e) !== null,
             );

@@ -28,4 +28,18 @@ describe("SwapSheet render", () => {
       render({ partnerExerciseId: "bb-row", inWorkoutIds: ["bb-bench", "bb-row", "pullup"] }),
     ).not.toThrow();
   });
+
+  it("renders for a push day without offering rows", () => {
+    const html = render({
+      exerciseId: "ohp",
+      dayId: "push",
+      dayMuscles: ["Chest", "Shoulders", "Arms"],
+    });
+    expect(html).toContain("Lateral Raise");
+    expect(html).not.toContain("Face Pull");
+    expect(html).not.toContain("Rear Delt");
+    expect(() =>
+      render({ exerciseId: "face-pull", dayMuscles: ["Chest", "Shoulders"] }),
+    ).not.toThrow();
+  });
 });

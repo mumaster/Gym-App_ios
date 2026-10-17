@@ -1,3 +1,4 @@
+import { fitDayOf } from "./dayFit";
 import { regionsForMuscles, targetsFromRegions } from "./anatomy";
 import { exerciseById } from "./data";
 import { generateWorkout, suggestionFor, type GenerateArgs } from "./generator";
@@ -63,6 +64,7 @@ export function generateDayWorkout(
     targets,
     variation,
     weekDone: {},
+    ...(fitDayOf(slot.dayId) ? { day: fitDayOf(slot.dayId)! } : {}),
   });
   return { plan, duration_minutes: duration, target_muscles: muscles, saved_at: now.toISOString() };
 }
