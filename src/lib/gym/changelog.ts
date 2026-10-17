@@ -608,8 +608,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: 59,
     items: [
       {
-        en: "Swapping an exercise now only offers what fits the day: no rows or face pulls on a push day. Rear delts moved to pull day.",
-        nl: "Bij het wisselen van een oefening zie je nu alleen wat bij de dag past: geen roeien of face pulls op een push-dag. Achterste schouders zitten nu op pull-dag.",
+        en: "Swaps now only offer exercises that fit the day, so no rows on push day.",
+        nl: "Bij wisselen zie je nu alleen oefeningen die bij de dag passen, dus geen roeien op push-dag.",
       },
     ],
   },
